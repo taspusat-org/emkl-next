@@ -1,0 +1,58 @@
+{
+  "GridCutiApprovalCuti-1665": {
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "lampiran": 171,
+      "namakaryawan": 250,
+      "namaalias": 150,
+      "tglpengajuan": 200,
+      "tglcuti": 348,
+      "alasancuti": 243,
+      "statuscuti": 150,
+      "jumlahcuti": 150,
+      "jatahcuti": 150,
+      "sisacuti": 150,
+      "prediksicuti": 150
+    }
+  },
+  "GridUser-1541": {
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "username": 123,
+      "name": 150,
+      "email": 250,
+      "statusaktif": 150,
+      "modifiedby": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  }
+}

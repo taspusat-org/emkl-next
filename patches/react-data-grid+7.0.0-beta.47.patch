@@ -1,0 +1,157 @@
+diff --git a/node_modules/react-data-grid/lib/bundle.cjs b/node_modules/react-data-grid/lib/bundle.cjs
+index 810cb87..1ee2703 100644
+--- a/node_modules/react-data-grid/lib/bundle.cjs
++++ b/node_modules/react-data-grid/lib/bundle.cjs
+@@ -1337,8 +1337,8 @@ function SortableHeaderCell({
+ }
+ 
+ const cellSortableClassname = "c6l2wv17-0-0-beta-47";
+-const cellResizable = "c1kqdw7y7-0-0-beta-47";
+-const cellResizableClassname = `rdg-cell-resizable ${cellResizable}`;
++// const cellResizable = "c1kqdw7y7-0-0-beta-47";
++// const cellResizableClassname = `rdg-cell-resizable ${cellResizable}`;
+ const resizeHandleClassname = "r1y6ywlx7-0-0-beta-47";
+ const cellDraggableClassname = 'rdg-cell-draggable';
+ const cellDragging = "c1bezg5o7-0-0-beta-47";
+@@ -1378,7 +1378,7 @@ function HeaderCell({
+     resizable,
+     draggable
+   } = column;
+-  const className = getCellClassname(column, column.headerCellClass, sortable && cellSortableClassname, resizable && cellResizableClassname, draggable && cellDraggableClassname, isDragging && cellDraggingClassname, isOver && cellOverClassname);
++  const className = getCellClassname(column, column.headerCellClass, sortable && cellSortableClassname, draggable && cellDraggableClassname, isDragging && cellDraggingClassname, isOver && cellOverClassname);
+   const renderHeaderCell$1 = column.renderHeaderCell ?? renderHeaderCell;
+   function onPointerDown(event) {
+     if (event.pointerType === 'mouse' && event.buttons !== 1) {
+diff --git a/node_modules/react-data-grid/lib/bundle.js b/node_modules/react-data-grid/lib/bundle.js
+index ac667d9..8da90ba 100644
+--- a/node_modules/react-data-grid/lib/bundle.js
++++ b/node_modules/react-data-grid/lib/bundle.js
+@@ -1272,6 +1272,7 @@ function GroupedColumnHeaderCell({
+   } = column;
+   const rowSpan = getHeaderCellRowSpan(column, rowIdx);
+   const index = column.idx + 1;
++ 
+   function onClick() {
+     selectCell({
+       idx: column.idx,
+@@ -1332,10 +1333,10 @@ function SortableHeaderCell({
+   });
+ }
+ 
+-const cellSortableClassname = "c6l2wv17-0-0-beta-47";
+-const cellResizable = "c1kqdw7y7-0-0-beta-47";
+-const cellResizableClassname = `rdg-cell-resizable ${cellResizable}`;
+-const resizeHandleClassname = "r1y6ywlx7-0-0-beta-47";
++// const cellSortableClassname = "c6l2wv17-0-0-beta-47";
++// const cellResizable = "c1kqdw7y7-0-0-beta-47";
++// const cellResizableClassname = `rdg-cell-resizable ${cellResizable}`;
++// const resizeHandleClassname = "r1y6ywlx7-0-0-beta-47";
+ const cellDraggableClassname = 'rdg-cell-draggable';
+ const cellDragging = "c1bezg5o7-0-0-beta-47";
+ const cellDraggingClassname = `rdg-cell-dragging ${cellDragging}`;
+@@ -1374,7 +1375,7 @@ function HeaderCell({
+     resizable,
+     draggable
+   } = column;
+-  const className = getCellClassname(column, column.headerCellClass, sortable && cellSortableClassname, resizable && cellResizableClassname, draggable && cellDraggableClassname, isDragging && cellDraggingClassname, isOver && cellOverClassname);
++  const className = getCellClassname(column, column.headerCellClass, sortable && cellSortableClassname, draggable && cellDraggableClassname, isDragging && cellDraggingClassname, isOver && cellOverClassname);
+   const renderHeaderCell$1 = column.renderHeaderCell ?? renderHeaderCell;
+   function onPointerDown(event) {
+     if (event.pointerType === 'mouse' && event.buttons !== 1) {
+@@ -1526,17 +1527,17 @@ function HeaderCell({
+     "aria-colindex": column.idx + 1,
+     "aria-colspan": colSpan,
+     "aria-rowspan": rowSpan,
+-    "aria-selected": isCellSelected,
++    // "aria-selected": isCellSelected,
+     "aria-sort": ariaSort,
+-    tabIndex: shouldFocusGrid ? 0 : tabIndex,
++    tabIndex: -1,
+     className: className,
+     style: {
+       ...getHeaderCellStyle(column, rowIdx, rowSpan),
+       ...getCellStyle(column, colSpan)
+     },
+-    onFocus: handleFocus,
+-    onClick: onClick,
+-    onKeyDown: sortable ? onKeyDown : undefined,
++    onFocus: undefined,
++    onClick: undefined,
++    onKeyDown: undefined,
+     ...draggableProps,
+     children: [renderHeaderCell$1({
+       column,
+@@ -1544,7 +1545,7 @@ function HeaderCell({
+       priority,
+       tabIndex: childTabIndex
+     }), resizable && /*#__PURE__*/jsx("div", {
+-      className: resizeHandleClassname,
++      // className: resizeHandleClassname,
+       onClick: stopPropagation,
+       onPointerDown: onPointerDown
+     })]
+@@ -2290,9 +2291,18 @@ function DataGrid(props, ref) {
+       mode
+     } = selectedPosition;
+     if (mode === 'EDIT') return;
++ 
++    if (rowIdx === 0) {
++      if (event.key === 'ArrowUp') {
++        // Abaikan panah atas
++        return;
++      }
++    }
++
+     if (onCellKeyDown && isRowIdxWithinViewportBounds(rowIdx)) {
+       const row = rows[rowIdx];
+       const cellEvent = createCellEvent(event);
++   
+       onCellKeyDown({
+         mode: 'SELECT',
+         row,
+diff --git a/node_modules/react-data-grid/lib/styles.css b/node_modules/react-data-grid/lib/styles.css
+index 952bb03..2ed7ee9 100644
+--- a/node_modules/react-data-grid/lib/styles.css
++++ b/node_modules/react-data-grid/lib/styles.css
+@@ -34,7 +34,6 @@
+      */
+     position: relative; /* needed for absolute positioning to work */
+     padding-block: 0;
+-    padding-inline: 8px;
+     border-inline-end: 1px solid var(--rdg-border-color);
+     border-block-end: 1px solid var(--rdg-border-color);
+     grid-row-start: var(--rdg-grid-row-start);
+@@ -58,7 +57,6 @@
+     position: sticky;
+     /* Should have a higher value than 0 to show up above unfrozen cells */
+     z-index: 1;
+-
+     /* Add box-shadow on the last frozen cell */
+     &:nth-last-child(1 of &) {
+       box-shadow: var(--rdg-cell-frozen-box-shadow);
+@@ -231,7 +229,6 @@
+   @layer rdg.HeaderRow {
+     display: contents;
+     background-color: var(--rdg-header-background-color);
+-    font-weight: bold;
+ 
+     & > .cj343x07-0-0-beta-47 {
+       /* Should have a higher value than 1 to show up above regular cells and the focus sink */
+@@ -306,7 +303,8 @@
+     block-size: 350px;
+     border: 1px solid var(--rdg-border-color);
+     box-sizing: border-box;
+-    overflow: auto;
++    overflow-y: auto;
++    overflow-x: auto;
+     background-color: var(--rdg-background-color);
+     color: var(--rdg-color);
+     font-size: var(--rdg-font-size);
+@@ -425,7 +423,6 @@
+     inline-size: 100%;
+     block-size: 100%;
+     padding-block: 0;
+-    padding-inline: 6px;
+     border: 2px solid #ccc;
+     vertical-align: top;
+     color: var(--rdg-color);
