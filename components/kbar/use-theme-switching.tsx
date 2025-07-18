@@ -5,7 +5,7 @@ const useThemeSwitching = () => {
   const { theme, setTheme } = useTheme();
 
   const toggleTheme = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+    setTheme(theme === 'light' ? 'light' : 'light');
   };
 
   const themeAction = [
@@ -26,7 +26,7 @@ const useThemeSwitching = () => {
       id: 'setDarkTheme',
       name: 'Set Dark Theme',
       section: 'Theme',
-      perform: () => setTheme('dark')
+      perform: () => setTheme('light')
     }
   ];
 

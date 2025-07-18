@@ -12,11 +12,14 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { SessionProvider } from 'next-auth/react';
 import { persistor, RootState, store } from '@/lib/store/store';
 import Alert, { AlertOptions } from '@/components/custom-ui/AlertCustom';
+import { useDispatch } from 'react-redux';
 import { useAlert } from '@/lib/store/client/useAlert';
 import IdleTimerProvider from '@/components/IdleTimerProvider';
 import { Roboto } from 'next/font/google';
 import { useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { setLoaded, setLoading } from '../lib/store/loadingSlice/loadingSlice';
+import { useRouter } from 'next/navigation';
 const roboto = Roboto({
   subsets: ['latin'],
   weight: ['400', '700'], // Pilih berat font sesuai kebutuhan

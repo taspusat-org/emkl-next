@@ -273,12 +273,12 @@ export default function SignInViewPage() {
             PT. TRANSPORINDO AGUNG SEJAHTERA
           </p>
           <p className="text-header text-base font-semibold tracking-wider text-red-500">
-            HUMAN RESOURCES SYSTEM
+            TAS EMKL SYSTEM
           </p>
         </div>
       </div>
 
-      <div className="3xl:w-[25%] mb-5 h-fit w-[95%] dark:bg-gray-800 lg:h-fit lg:w-[40%] xl:w-[35%] 2xl:w-[27%]">
+      <div className="3xl:w-[25%] mb-5 h-fit w-[95%] lg:h-fit lg:w-[40%] xl:w-[35%] 2xl:w-[27%]">
         <div className="flex h-full w-full flex-col items-center justify-between bg-[#fff] shadow-xl">
           <div
             className="w-full border border-blue-500 px-3 py-1"
@@ -286,9 +286,7 @@ export default function SignInViewPage() {
               background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
             }}
           >
-            <h2 className="text-base text-gray-600 dark:text-gray-600">
-              LOGIN
-            </h2>
+            <h2 className="text-base text-gray-600 ">LOGIN</h2>
           </div>
 
           <div className="flex h-full w-full flex-row items-center justify-between px-4">
@@ -307,7 +305,7 @@ export default function SignInViewPage() {
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold text-gray-700 lg:w-[15%]">
                             Username
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -336,7 +334,7 @@ export default function SignInViewPage() {
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold text-gray-700 lg:w-[15%]">
                             Password
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -346,7 +344,7 @@ export default function SignInViewPage() {
                                   {...field}
                                   value={field.value ?? ''}
                                   type={showPassword ? 'text' : 'password'}
-                                  className="h-9 w-full rounded-[5px] border-none p-0 pl-2 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 focus-visible:ring-0"
+                                  className="h-9 w-full rounded-[5px] border-none bg-white p-0 pl-2 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 focus-visible:ring-0"
                                 />
                                 <div
                                   onClick={() => setShowPassword(!showPassword)}

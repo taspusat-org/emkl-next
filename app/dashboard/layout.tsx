@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 
 // Define metadata for the page
 export const metadata: Metadata = {
-  title: 'HR | PT. TRANSPORINDO AGUNG SEJAHTERA',
+  title: 'EMKL | PT. TRANSPORINDO AGUNG SEJAHTERA',
   description: 'PT. TRANSPORINDO AGUNG SEJAHTERA'
 };
 

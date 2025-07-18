@@ -23,9 +23,7 @@ export default function Header({ ip, currentDateTime }: Props) {
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-row items-center gap-2">
             <Image src={IcTasSmall} width={25} height={25} alt="icon-tas" />
-            <p className="text-sm font-bold text-black">
-              HUMAN RESOURCES SYSTEM
-            </p>
+            <p className="text-sm font-bold text-black">TAS EMKL SYSTEM</p>
           </div>
         </div>
 

@@ -48,6 +48,7 @@ import { signOut } from 'next-auth/react';
 import { clearCredentials } from '@/lib/store/authSlice/authSlice';
 import { deleteCookie } from '@/lib/utils/cookie-actions';
 import { clearHeaderData } from '@/lib/store/headerSlice/headerSlice';
+import { setLoaded, setLoading } from '@/lib/store/loadingSlice/loadingSlice';
 export const company = {
   name: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
   logo: GalleryVerticalEnd
@@ -90,6 +91,17 @@ export default function AppSidebar({
 
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
+  React.useEffect(() => {
+    // Memulai loading saat path berubah
+    dispatch(setLoading());
+
+    // Menghentikan loading setelah halaman selesai dirender
+    const timer = setTimeout(() => {
+      dispatch(setLoaded());
+    }, 1000); // Durasi loading 1 detik (sesuaikan sesuai kebutuhan)
+
+    return () => clearTimeout(timer);
+  }, [pathname, dispatch]);
   React.useEffect(() => {
     setActivePath(pathname);
   }, [pathname]);
@@ -350,7 +362,9 @@ export default function AppSidebar({
         </SidebarContent>
         <SidebarFooter className="mt-8">
           <div>
-            <p className="text-center">VERSION 0.1.0</p>
+            <p className="text-center">
+              VERSION {process.env.NEXT_PUBLIC_VERSION}
+            </p>
           </div>
         </SidebarFooter>
       </Sidebar>

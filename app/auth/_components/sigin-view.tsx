@@ -118,11 +118,11 @@ export default function SignInViewPage() {
           <Image src={IcHeader} alt="header-icon" width={300} height={50} />
         </div>
       </div>
-      <div className="mb-5 h-[40vh] w-[25%] dark:bg-gray-800">
+      <div className="mb-5 h-[40vh] w-[25%] ">
         <div className="flex h-full w-full flex-row items-center justify-between rounded-lg bg-[#e6d7c7] px-4">
           <div className="w-[40%]">{View}</div>
           <div className="flex h-full w-[60%] flex-col justify-center py-4">
-            <h2 className="text-center text-lg font-bold text-gray-600 dark:text-gray-600">
+            <h2 className="text-center text-lg font-bold text-gray-600 ">
               LOGIN
             </h2>
             <Form {...forms}>
@@ -164,7 +164,7 @@ export default function SignInViewPage() {
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold text-gray-600 dark:text-gray-200">
+                        <FormLabel className="font-semibold text-gray-600 ">
                           Password
                         </FormLabel>
                         <FormControl>
