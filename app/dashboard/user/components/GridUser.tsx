@@ -19,7 +19,6 @@ import { toast } from '@/hooks/use-toast';
 import FormUser from './FormUser';
 import {
   IRoleUser,
-  IUser,
   IUserAcl,
   resetUser,
   setUser
@@ -73,6 +72,7 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { highlightText } from '@/components/custom-ui/HighlightText';
+import { IUser } from '@/lib/types/user.type';
 
 interface Row {
   id: number;
@@ -110,6 +110,7 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
+
 const GridUser = () => {
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -926,7 +927,6 @@ const GridUser = () => {
     setSelectedId(clickedRow?.id);
     if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
-      dispatch(setUser(foundRow as unknown as IUser));
     }
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
@@ -977,7 +977,6 @@ const GridUser = () => {
   const onSuccess = async (indexOnPage: any, pageNumber: any) => {
     try {
       forms.reset();
-      dispatch(resetUser());
       setRows([]);
 
       setPopOver(false);
@@ -1522,7 +1521,6 @@ const GridUser = () => {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
       setIsFirstLoad(false);
-      dispatch(setUser(rows[0] as unknown as IUser));
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
@@ -1534,7 +1532,6 @@ const GridUser = () => {
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
       const selectedRowData = rows[selectedRow];
-      dispatch(setUser(selectedRowData as unknown as IUser)); // Pastikan data sudah benar
     }
   }, [rows, selectedRow, dispatch]);
 
@@ -1595,12 +1592,6 @@ const GridUser = () => {
     // Menghapus event listener saat komponen di-unmount
     return () => {
       document.removeEventListener('keydown', preventScrollOnSpace);
-    };
-  }, []);
-  useEffect(() => {
-    window.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
   return (

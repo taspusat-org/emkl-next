@@ -136,7 +136,7 @@ export default function SignInViewPage() {
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold text-gray-600 dark:text-gray-200">
+                        <FormLabel className="font-semibold text-gray-600">
                           Username
                         </FormLabel>
                         <FormControl>

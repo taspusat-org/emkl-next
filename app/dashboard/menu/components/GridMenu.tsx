@@ -59,6 +59,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
+import { IMenu } from '@/lib/types/menu.type';
 
 interface Filter {
   page: number;
@@ -76,22 +77,6 @@ interface Filter {
   sortDirection: 'asc' | 'desc';
 }
 
-interface Row {
-  id: number;
-  title: string;
-  url: string;
-  aco_id: number;
-  icon: string;
-  items: string;
-  acos_nama: string;
-  parent_nama: string;
-  text: string;
-  statusaktif: number;
-  parentId: number;
-  order: number;
-  created_at: string;
-  updated_at: string;
-}
 interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
@@ -130,7 +115,7 @@ const GridMenu = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [rows, setRows] = useState<IMenu[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -173,19 +158,13 @@ const GridMenu = () => {
     ...filters,
     page: currentPage
   });
-  const inputColRefs = {
-    title: useRef<HTMLInputElement>(null),
-    parentId: useRef<HTMLInputElement>(null),
-    text: useRef<HTMLInputElement>(null),
-    icon: useRef<HTMLInputElement>(null),
-    created_at: useRef<HTMLInputElement>(null),
-    updated_at: useRef<HTMLInputElement>(null)
-  };
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
+    const columnIndex = columns.findIndex((col) => col.key === colKey);
     setFilters((prev) => ({
       ...prev,
       filters: {
@@ -199,16 +178,17 @@ const GridMenu = () => {
     setCheckedRows(new Set());
     setIsAllSelected(false);
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: columnIndex });
     }, 100);
     setTimeout(() => {
-      const ref = inputColRefs[colKey]?.current;
+      const ref = inputColRefs.current[colKey];
       if (ref) {
         ref.focus();
       }
     }, 200);
     setSelectedRow(0);
   };
+
   const gridRef = useRef<DataGridHandle>(null);
 
   function highlightText(
@@ -343,7 +323,7 @@ const GridMenu = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<Row>[] => {
+  const columns = useMemo((): Column<IMenu>[] => {
     return [
       {
         key: 'nomor',
@@ -410,7 +390,7 @@ const GridMenu = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: Row }) => (
+        renderCell: ({ row }: { row: IMenu }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -456,7 +436,9 @@ const GridMenu = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <Input
-                ref={inputColRefs.title}
+                ref={(el) => {
+                  inputColRefs.current['title'] = el;
+                }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
                   filters.filters.title
@@ -530,7 +512,9 @@ const GridMenu = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <Input
-                ref={inputColRefs.parentId}
+                ref={(el) => {
+                  inputColRefs.current['parentId'] = el;
+                }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.parentId.toUpperCase() || ''}
                 onChange={(e) => {
@@ -675,7 +659,9 @@ const GridMenu = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <Input
-                ref={inputColRefs.icon}
+                ref={(el) => {
+                  inputColRefs.current['icon'] = el;
+                }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.icon || ''}
                 type="text"
@@ -747,7 +733,9 @@ const GridMenu = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <Input
-                ref={inputColRefs.created_at}
+                ref={(el) => {
+                  inputColRefs.current['created_at'] = el;
+                }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.created_at.toUpperCase() || ''}
                 onChange={(e) => {
@@ -820,7 +808,9 @@ const GridMenu = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <Input
-                ref={inputColRefs.updated_at}
+                ref={(el) => {
+                  inputColRefs.current['created_at'] = el;
+                }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
                 onChange={(e) => {
@@ -931,7 +921,7 @@ const GridMenu = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<Row>) {
+  function handleCellClick(args: CellClickArgs<IMenu>) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -939,7 +929,7 @@ const GridMenu = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<Row>,
+    args: CellKeyDownArgs<IMenu>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1248,12 +1238,12 @@ const GridMenu = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: Row) {
+  function getRowClass(row: IMenu) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: Row) {
+  function rowKeyGetter(row: IMenu) {
     return row.id;
   }
 
@@ -1537,6 +1527,15 @@ const GridMenu = () => {
       forms.setValue('statusaktif_nama', rowData.text || '');
     }
   }, [forms, selectedRow, rows, addMode, editMode, deleteMode, viewMode]);
+  useEffect(() => {
+    // Initialize the refs based on columns dynamically
+    columns.forEach((col) => {
+      if (!inputColRefs.current[col.key]) {
+        inputColRefs.current[col.key] = null;
+      }
+    });
+  }, []);
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

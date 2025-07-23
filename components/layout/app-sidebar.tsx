@@ -266,32 +266,6 @@ export default function AppSidebar({
                   </Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
-              <SidebarMenuSubItem
-                onMouseEnter={() => setHoveredItemId('CUTI-OVERVIEW')}
-                onMouseLeave={() => setHoveredItemId(null)}
-              >
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={activePath === '/dashboard/cuti/overview'}
-                >
-                  <Link
-                    prefetch={true}
-                    href="/dashboard/cuti/overview"
-                    className="py-4"
-                  >
-                    <Icons
-                      name="USEREDIT"
-                      className={
-                        hoveredItemId === 'CUTI-OVERVIEW' ||
-                        activePath === '/dashboard/cuti/overview'
-                          ? 'icon-white text-white'
-                          : 'icon-white text-white'
-                      }
-                    />
-                    <span className="text-sm">OVERVIEW CUTI</span>
-                  </Link>
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
               <JsxParser
                 bindings={{
                   handleToggle: (title: any) => {

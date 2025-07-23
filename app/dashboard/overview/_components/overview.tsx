@@ -42,7 +42,7 @@ export default function OverViewPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Saldo Cuti</CardTitle>
+            <CardTitle className="text-sm font-medium">TEXT</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -57,9 +57,7 @@ export default function OverViewPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Cuti Diambil ({currentYear})
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">TEXT</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -75,9 +73,7 @@ export default function OverViewPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              TERAKHIR MENGAJUKAN CUTI
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">TEXT</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -96,7 +92,7 @@ export default function OverViewPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">TOTAL IZIN</CardTitle>
+            <CardTitle className="text-sm font-medium">TEXT</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
