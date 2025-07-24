@@ -125,7 +125,7 @@ const GridParameter = () => {
       kelompok: '',
       text: '',
       memo: {},
-      type: 0, // Gunakan undefined sebagai default
+      type: '', // Gunakan undefined sebagai default
       default: '',
       info: ''
     }
@@ -1099,7 +1099,7 @@ const GridParameter = () => {
         rowData.memo ? JSON.parse(rowData.memo as unknown as string) : {}
       );
 
-      forms.setValue('type', rowData.type); // Null jika type tidak ada
+      forms.setValue('type', String(rowData.type)); // Null jika type tidak ada
       forms.setValue('default', rowData.default || '');
       forms.setValue('info', rowData.info || '');
       forms.setValue('statusaktif_text', rowData.text);

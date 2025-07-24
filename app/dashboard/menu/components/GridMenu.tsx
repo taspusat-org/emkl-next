@@ -98,12 +98,11 @@ const GridMenu = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
     useDeleteMenu();
-  const [editMode, setEditMode] = useState<boolean>(false);
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
-  const [addMode, setAddMode] = useState<boolean>(false);
+  const [mode, setMode] = useState<string>('');
 
   const [dataGridKey, setDataGridKey] = useState(0);
 
@@ -119,8 +118,6 @@ const GridMenu = () => {
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
-  const [viewMode, setViewMode] = useState<boolean>(false);
-  const [deleteMode, setDeleteMode] = useState<boolean>(false);
   const dispatch = useDispatch();
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
@@ -983,7 +980,7 @@ const GridMenu = () => {
       setPopOver(false);
       setIsFetchingManually(true);
       setRows([]);
-      if (!deleteMode) {
+      if (mode !== 'delete') {
         const response = await api2.get(`/redis/get/menus-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
@@ -1012,7 +1009,7 @@ const GridMenu = () => {
   const onSubmit = async (values: MenuInput) => {
     const selectedRowId = rows[selectedRow]?.id;
 
-    if (deleteMode) {
+    if (mode === 'delete') {
       if (selectedRowId) {
         await deleteMenu(selectedRowId as unknown as string, {
           onSuccess: () => {
@@ -1032,7 +1029,7 @@ const GridMenu = () => {
       }
       return;
     }
-    if (editMode === false) {
+    if (mode === 'add') {
       const newOrder = await createMenu(
         {
           ...values,
@@ -1048,7 +1045,7 @@ const GridMenu = () => {
       return;
     }
 
-    if (selectedRowId) {
+    if (selectedRowId && mode === 'edit') {
       await updateMenu(
         {
           id: selectedRowId as unknown as string,
@@ -1064,29 +1061,19 @@ const GridMenu = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
       setPopOver(true);
-      setDeleteMode(false);
-      setAddMode(false);
-
-      setEditMode(true);
+      setMode('edit');
     }
   };
   const handleDelete = () => {
     if (selectedRow !== null) {
-      setAddMode(false);
-
+      setMode('delete');
       setPopOver(true);
-      setEditMode(false);
-      setDeleteMode(true);
     }
   };
   const handleView = () => {
     if (selectedRow !== null) {
-      setAddMode(false);
-
+      setMode('view');
       setPopOver(true);
-      setDeleteMode(true);
-      setEditMode(false);
-      setViewMode(true);
     }
   };
   const handleExport = async () => {
@@ -1269,20 +1256,18 @@ const GridMenu = () => {
   }
   const handleClose = () => {
     setPopOver(false);
-    setEditMode(false);
-    setAddMode(false);
-    setViewMode(false);
-    setDeleteMode(false);
+    setMode('');
+
     forms.reset();
   };
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
       const syncResponse = await syncAcosFn();
-      setAddMode(true);
+      setMode('add');
+
       setPopOver(true);
-      setEditMode(false);
-      setDeleteMode(false);
+
       forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
@@ -1512,7 +1497,7 @@ const GridMenu = () => {
     if (
       selectedRow !== null &&
       rows.length > 0 &&
-      addMode === false // Only fill the form if not in addMode
+      mode !== 'add' // Only fill the form if not in addMode
     ) {
       forms.setValue('title', rowData.title);
       forms.setValue('aco_id', rowData.aco_id ? Number(rowData.aco_id) : 0);
@@ -1522,11 +1507,11 @@ const GridMenu = () => {
       forms.setValue('statusaktif_nama', rowData.text || '');
       forms.setValue('acos_nama', rowData.acos_nama || '');
       forms.setValue('parent_nama', rowData.parent_nama || '');
-    } else if (selectedRow !== null && rows.length > 0 && addMode === true) {
+    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     }
-  }, [forms, selectedRow, rows, addMode, editMode, deleteMode, viewMode]);
+  }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -1675,8 +1660,7 @@ const GridMenu = () => {
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
         forms={forms}
-        deleteMode={deleteMode}
-        viewMode={viewMode}
+        mode={mode}
         onSubmit={forms.handleSubmit(onSubmit)}
         isLoadingCreate={isLoadingCreate}
       />

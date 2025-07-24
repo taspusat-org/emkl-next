@@ -341,15 +341,16 @@ const FormParameter = ({
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[20%]">
                           Nama Grup
                         </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            className="lg:w-[80%]"
-                            type="text"
-                            readOnly={deleteMode}
-                          />
-                        </FormControl>
-                        <FormMessage />
+                        <div className="flex flex-col lg:w-[80%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="text"
+                              readOnly={deleteMode}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -361,15 +362,16 @@ const FormParameter = ({
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[20%]">
                           Nama Sub Grup
                         </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            readOnly={deleteMode}
-                            type="text"
-                            className="lg:w-[80%]"
-                          />
-                        </FormControl>
-                        <FormMessage />
+                        <div className="flex flex-col lg:w-[80%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              readOnly={deleteMode}
+                              type="text"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -382,15 +384,16 @@ const FormParameter = ({
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[20%]">
                           Kelompok
                         </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="text"
-                            readOnly={deleteMode}
-                            className="lg:w-[80%]"
-                          />
-                        </FormControl>
-                        <FormMessage />
+                        <div className="flex flex-col lg:w-[80%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="text"
+                              readOnly={deleteMode}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />
@@ -402,15 +405,37 @@ const FormParameter = ({
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[20%]">
                           Nama Parameter
                         </FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="text"
-                            readOnly={deleteMode}
-                            className="lg:w-[80%]"
-                          />
-                        </FormControl>
-                        <FormMessage />
+                        <div className="flex flex-col lg:w-[80%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="text"
+                              readOnly={deleteMode}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="type"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[20%]">
+                          Type
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[80%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="text"
+                              readOnly={deleteMode}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
                       </FormItem>
                     )}
                   />

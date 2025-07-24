@@ -23,14 +23,12 @@ const FormMenu = ({
   setPopOver,
   forms,
   onSubmit,
-  deleteMode,
+  mode,
   handleClose,
   isLoadingCreate,
-  viewMode,
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const { data: menu, isLoading: isLoadingMenu } = useGetMenu();
   const lookUpProps = [
     {
       columns: [
@@ -199,7 +197,7 @@ const FormMenu = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={deleteMode}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -242,7 +240,7 @@ const FormMenu = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={deleteMode}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -297,12 +295,14 @@ const FormMenu = ({
           <Button
             type="submit"
             onClick={onSubmit}
-            disabled={viewMode}
+            disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
-            <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>
+            <p className="text-center">
+              {mode === 'delete' ? 'DELETE' : 'SAVE'}
+            </p>
           </Button>
           <Button
             type="button"
