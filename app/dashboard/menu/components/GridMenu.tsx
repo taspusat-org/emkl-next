@@ -918,7 +918,7 @@ const GridMenu = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<IMenu>) {
+  function handleCellClick(args: { row: IMenu }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1568,8 +1568,10 @@ const GridMenu = () => {
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           renderers={{
             noRowsFallback: <EmptyRowsRenderer />
           }}

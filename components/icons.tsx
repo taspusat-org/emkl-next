@@ -24,7 +24,8 @@ import {
   BsMenuButtonWideFill,
   BsFillEyeFill,
   BsPersonFillLock,
-  BsFillEyeSlashFill
+  BsFillEyeSlashFill,
+  BsCurrencyDollar
 } from 'react-icons/bs';
 import { RiLogoutBoxRFill } from 'react-icons/ri';
 import {
@@ -72,7 +73,8 @@ const iconMap: Record<string, IconComponent> = {
   REPORT: FaPrint,
   NOTE: FaPencilAlt,
   CABANG: FaBuildingUser,
-  EMAIL: FaVoicemail
+  EMAIL: FaVoicemail,
+  MONEY: BsCurrencyDollar
 };
 
 type IconsProps = {

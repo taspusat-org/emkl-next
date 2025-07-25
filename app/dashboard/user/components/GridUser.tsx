@@ -928,6 +928,7 @@ const GridUser = () => {
     if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
     }
+    dispatch(setUser(foundRow as unknown as IUser));
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
@@ -1521,6 +1522,7 @@ const GridUser = () => {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
       setIsFirstLoad(false);
+      dispatch(setUser(rows[0] as unknown as IUser));
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
@@ -1532,6 +1534,7 @@ const GridUser = () => {
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
       const selectedRowData = rows[selectedRow];
+      dispatch(setUser(selectedRowData as unknown as IUser)); // Pastikan data sudah benar
     }
   }, [rows, selectedRow, dispatch]);
 

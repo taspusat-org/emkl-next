@@ -91,17 +91,7 @@ export default function AppSidebar({
 
   const pathname = usePathname();
   const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
-  React.useEffect(() => {
-    // Memulai loading saat path berubah
-    dispatch(setLoading());
 
-    // Menghentikan loading setelah halaman selesai dirender
-    const timer = setTimeout(() => {
-      dispatch(setLoaded());
-    }, 1000); // Durasi loading 1 detik (sesuaikan sesuai kebutuhan)
-
-    return () => clearTimeout(timer);
-  }, [pathname, dispatch]);
   React.useEffect(() => {
     setActivePath(pathname);
   }, [pathname]);

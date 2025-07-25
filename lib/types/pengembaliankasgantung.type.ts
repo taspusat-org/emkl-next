@@ -1,0 +1,58 @@
+import { IMeta } from './error.type';
+
+export interface PengembalianKasGantungHeader {
+  id: number;
+  nobukti: string;
+  tglbukti: string;
+  keterangan: string | null;
+  bank_nama: string | null;
+  bank_id: number | null;
+  penerimaan_nobukti: string | null;
+  coakasmasuk: string | null;
+  relasi_nama: string | null;
+  relasi_id: number | null;
+  info: string | null;
+  modifiedby: string | null;
+  editing_by: string | null;
+  editing_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IPengembalianKasGantungDetail {
+  id: number;
+  pengembaliankasgantung_id: number | null;
+  nobukti: string;
+  kasgantung_nobukti: string;
+  keterangan: string | null;
+  nominal: string | null; // Adjusted to 'string' since money type in the schema could be treated as string in TypeScript
+  info: string | null;
+  modifiedby: string | null;
+  editing_by: string | null;
+  editing_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IAllPengembalianKasGantung {
+  data: PengembalianKasGantungHeader[];
+  pagination: IMeta;
+}
+export interface IAllPengembalianKasGantungDetail {
+  data: IPengembalianKasGantungDetail[];
+}
+export const filterPengembalianKasGantung = {
+  nobukti: '',
+  tglbukti: '',
+  keterangan: null,
+  bank_id: null,
+  penerimaan_nobukti: null,
+  coakasmasuk: null,
+  relasi_id: null,
+  info: null,
+  modifiedby: null,
+  editing_by: null,
+  editing_at: null,
+  created_at: '',
+  updated_at: ''
+};

@@ -76,6 +76,7 @@ const FormUserAcl = ({
   const { data: useracl, isLoading: isLoadingUserAcl } = useGetUserAcl(
     userAclDetail?.id ?? 0 // Gunakan default 0 jika id undefined
   );
+  console.log(userAclDetail);
   const [currentPage, setCurrentPage] = useState(1);
   const [fetchedPages, setFetchedPages] = useState(new Set([currentPage]));
 
