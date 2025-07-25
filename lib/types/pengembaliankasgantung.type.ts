@@ -44,6 +44,8 @@ export interface IAllPengembalianKasGantungDetail {
 export const filterPengembalianKasGantung = {
   nobukti: '',
   tglbukti: '',
+  bank_nama: '',
+  relasi_nama: '',
   keterangan: null,
   bank_id: null,
   penerimaan_nobukti: null,
