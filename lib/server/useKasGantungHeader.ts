@@ -7,7 +7,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useDispatch } from 'react-redux';
 
-export const useKasGantungHeader = (
+export const useGetKasGantungHeader = (
   filters: {
     filters?: {
       nobukti?: string;
@@ -16,6 +16,8 @@ export const useKasGantungHeader = (
       bank_id?: number | null;
       pengeluaran_nobukti?: string | null;
       coakaskeluar?: string | null;
+      tglDari?: string | null;
+      tglSampai?: string | null;
     };
     page?: number;
     sortBy?: string;

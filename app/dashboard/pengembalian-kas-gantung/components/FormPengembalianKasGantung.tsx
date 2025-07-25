@@ -16,7 +16,7 @@ import { RootState } from '@/lib/store/store';
 import LookUp from '@/components/custom-ui/LookUp';
 import { Input } from '@/components/ui/input';
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
-import { FaSave } from 'react-icons/fa';
+import { FaSave, FaTimes } from 'react-icons/fa';
 import InputMask from '@mona-health/react-input-mask';
 import DataGrid, {
   CellKeyDownArgs,
@@ -25,6 +25,7 @@ import DataGrid, {
 } from 'react-data-grid';
 import {
   formatDateCalendar,
+  formatDateToDDMMYYYY,
   isLeapYear,
   parseDateFromDDMMYYYY
 } from '@/lib/utils';
@@ -37,6 +38,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { parse } from 'date-fns';
 import { KasGantungHeader } from '@/lib/types/kasgantungheader.type';
+import { useGetKasGantungHeader } from '@/lib/server/useKasGantungHeader';
+import { Checkbox } from '@/components/ui/checkbox';
 const FormPengembalianKasGantung = ({
   popOver,
   setPopOver,
@@ -49,13 +52,34 @@ const FormPengembalianKasGantung = ({
   isLoadingDelete
 }: any) => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
+  const [isReload, setIsReload] = useState<boolean>(false);
   const [popOverTglBukti, setPopOverTglBukti] = useState<boolean>(false);
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
   const [popOverTglSampai, setPopOverTglSampai] = useState<boolean>(false);
+  const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
+  const [editableValues, setEditableValues] = useState<Map<number, string>>(
+    new Map()
+  ); // Nilai yang sedang diedit untuk setiap baris
   const [tglDari, setTglDari] = useState<string>('');
   const [tglSampai, setTglSampai] = useState<string>('');
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+
   const [dataGridKey, setDataGridKey] = useState(0);
+
   const gridRef = useRef<DataGridHandle>(null);
+  const {
+    data: allData,
+    isLoading: isLoadingData,
+    refetch
+  } = useGetKasGantungHeader({
+    filters: {
+      tglDari: tglDari,
+      tglSampai: tglSampai
+    }
+    // ...filters,
+    // page: currentPage
+  });
   const [rows, setRows] = useState<KasGantungHeader[]>([]);
   function handleCellClick(args: { row: KasGantungHeader }) {
     const clickedRow = args.row;
@@ -64,8 +88,121 @@ const FormPengembalianKasGantung = ({
       setSelectedRow(rowIndex);
     }
   }
+  const handleRowSelect = (rowId: number) => {
+    setCheckedRows((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
+      } else {
+        updated.add(rowId);
+      }
+
+      setIsAllSelected(updated.size === rows.length);
+      return updated;
+    });
+  };
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setCheckedRows(new Set());
+    } else {
+      const allIds = rows.map((row) => row.id);
+      setCheckedRows(new Set(allIds));
+    }
+    setIsAllSelected(!isAllSelected);
+  };
+  const handleDoubleClick = (rowId: number, value: string) => {
+    if (checkedRows.has(rowId)) {
+      setEditingRowId(rowId); // Set baris yang sedang diedit
+      setEditableValues((prev) => new Map(prev).set(rowId, value)); // Set nilai yang sedang diedit
+    }
+  };
+
+  // Fungsi untuk menangani perubahan input
+  const handleChange = (
+    rowId: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setEditableValues((prev) => new Map(prev).set(rowId, e.target.value)); // Update nilai input
+  };
+
+  // Fungsi untuk menangani blur (keluar dari input)
+  const handleBlur = (rowId: number) => {
+    setEditingRowId(null); // Kembali ke tampilan setelah selesai mengedit
+    const newEditableValues = new Map(editableValues);
+    const newValue = newEditableValues.get(rowId);
+
+    // Update rows dengan nilai yang telah diubah
+    setRows((prevRows) =>
+      prevRows.map(
+        (row) =>
+          row.id === rowId ? { ...row, nominal: String(newValue) } : row // Ganti nilai nominal dengan yang baru
+      )
+    );
+
+    // Reset editableValues untuk baris yang telah selesai diedit
+    setEditableValues((prev) => {
+      const updated = new Map(prev);
+      updated.delete(rowId);
+      return updated;
+    });
+  };
   const columns = useMemo((): Column<KasGantungHeader>[] => {
     return [
+      {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm font-normal">No.</p>
+            </div>
+
+            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
+              <FaTimes className="bg-red-500 text-white" />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {rowIndex + 1}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'select',
+        name: '',
+        width: 50,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%]"></div>
+            <div className="flex h-[50%] w-full items-center justify-center">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={() => handleSelectAll()}
+                id="header-checkbox"
+                className="mb-2"
+              />
+            </div>
+          </div>
+        ),
+        renderCell: ({ row }: { row: KasGantungHeader }) => (
+          <div className="flex h-full items-center justify-center">
+            <Checkbox
+              checked={checkedRows.has(row.id)}
+              onCheckedChange={() => handleRowSelect(row.id)}
+              id={`row-checkbox-${row.id}`}
+            />
+          </div>
+        )
+      },
       {
         key: 'nobukti',
         headerCellClass: 'column-headers',
@@ -107,6 +244,47 @@ const FormPengembalianKasGantung = ({
         }
       },
       {
+        key: 'nominal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
+            <p className="text-sm font-normal">Nominal</p>
+          </div>
+        ),
+        name: 'nominal',
+        renderCell: (props: any) => {
+          const rowId = props.row.id;
+
+          // Pengecekan apakah baris dalam mode edit dan baris ini dicentang
+          const isEditing = rowId === editingRowId;
+          const value = editableValues.get(rowId) || props.row.nominal;
+
+          return (
+            <div
+              className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs"
+              onDoubleClick={() => handleDoubleClick(rowId, props.row.nominal)} // Menambahkan event double click
+            >
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => handleChange(rowId, e)}
+                  onBlur={() => handleBlur(rowId)} // Kembali ke tampilan setelah blur
+                  className="w-full p-1 text-xs"
+                  autoFocus
+                />
+              ) : (
+                <span>{props.row.nominal}</span> // Menampilkan nilai jika tidak dalam mode edit
+              )}
+            </div>
+          );
+        }
+      },
+
+      {
         key: 'sisa',
         headerCellClass: 'column-headers',
         resizable: true,
@@ -114,10 +292,10 @@ const FormPengembalianKasGantung = ({
         width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
-            <p className="text-sm font-normal">TGL BUKTI</p>
+            <p className="text-sm font-normal">sisa</p>
           </div>
         ),
-        name: 'TGL BUKTI',
+        name: 'sisa',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -147,8 +325,7 @@ const FormPengembalianKasGantung = ({
         }
       }
     ];
-  }, [rows]);
-
+  }, [rows, checkedRows, editingRowId, editableValues]);
   const lookUpProps = [
     {
       columns: [
@@ -273,6 +450,11 @@ const FormPengembalianKasGantung = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
+
+  const onReload = () => {
+    setIsReload(true);
+    refetch();
+  };
   const dateMask = [
     /[0-3]/, // D1
     /\d/, // D2
@@ -296,6 +478,26 @@ const FormPengembalianKasGantung = ({
       </div>
     );
   }
+  useEffect(() => {
+    // Hanya mengupdate rows jika isReload bernilai true
+    if (isReload && allData) {
+      const newRows =
+        allData?.data.map((row: KasGantungHeader) => ({
+          ...row,
+          nominal: row.nominal ?? '' // Jika nominal tidak ada, set default ke ""
+        })) || [];
+      setRows(newRows);
+      setIsReload(false); // Setelah data di-set, set kembali isReload ke false
+    }
+  }, [allData, isReload]);
+
+  useEffect(() => {
+    const currentDate = new Date(); // Dapatkan tanggal sekarang
+    const formattedDate = formatDateToDDMMYYYY(currentDate); // Format ke DD-MM-YYYY
+    setTglDari(formattedDate); // Set nilai tglDari
+    setTglSampai(formattedDate); // Set nilai tglSampai
+    forms.setValue('tglbukti', formattedDate); // Set nilai tglbukti di form
+  }, [forms]); // Empty dependency array memastikan ini hanya dijalankan sekali saat komponen dimuat
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -315,7 +517,7 @@ const FormPengembalianKasGantung = ({
           </div>
         </div>
         <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="h-full bg-white px-5 py-3">
+          <div className=" bg-white px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -677,7 +879,7 @@ const FormPengembalianKasGantung = ({
                                     const formattedDate =
                                       formatDateCalendar(value); // Format the selected date to string
                                     setTglSampai(formattedDate); // Update the tglDari state with the formatted date
-                                    setPopOverTglDari(false); // Close the popover
+                                    setPopOverTglSampai(false); // Close the popover
                                   }
                                 }}
                               />
@@ -689,8 +891,9 @@ const FormPengembalianKasGantung = ({
                   </div>
                   <Button
                     variant="default"
+                    type="button"
                     className="mt-2 flex w-fit flex-row items-center justify-center px-4"
-                    // onClick={onSubmit}
+                    onClick={onReload}
                   >
                     <IoMdRefresh />
                     <p style={{ fontSize: 12 }} className="font-normal">

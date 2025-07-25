@@ -8,6 +8,7 @@ export interface KasGantungHeader {
   bank_id: number | null;
   pengeluaran_nobukti: string | null;
   coakaskeluar: string | null;
+  nominal: string | null;
   dibayarke: string | null;
   alatbayar_id: number | null;
   nowarkat: string | null;
