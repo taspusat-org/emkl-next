@@ -51,10 +51,7 @@ export const filterPengembalianKasGantung = {
   penerimaan_nobukti: null,
   coakasmasuk: null,
   relasi_id: null,
-  info: null,
   modifiedby: null,
-  editing_by: null,
-  editing_at: null,
   created_at: '',
   updated_at: ''
 };

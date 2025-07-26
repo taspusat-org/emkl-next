@@ -103,6 +103,7 @@
     "react-input-mask": "^2.0.4",
     "react-jsx-parser": "^2.2.2",
     "react-nestable": "^3.0.2",
+    "react-number-format": "^5.4.4",
     "react-pdf": "^9.2.1",
     "react-query": "^3.39.3",
     "react-redux": "^9.2.0",

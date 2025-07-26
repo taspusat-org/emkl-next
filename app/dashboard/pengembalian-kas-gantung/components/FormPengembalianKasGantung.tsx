@@ -67,6 +67,13 @@ const FormPengembalianKasGantung = ({
 
   const [dataGridKey, setDataGridKey] = useState(0);
 
+  const [filters, setFilters] = useState({
+    nobukti: '',
+    tglbukti: '',
+    keterangan: '',
+    sisa: '',
+    nominal: ''
+  });
   const gridRef = useRef<DataGridHandle>(null);
   const {
     data: allData,
@@ -80,6 +87,7 @@ const FormPengembalianKasGantung = ({
     // ...filters,
     // page: currentPage
   });
+
   const [rows, setRows] = useState<KasGantungHeader[]>([]);
   function handleCellClick(args: { row: KasGantungHeader }) {
     const clickedRow = args.row;
@@ -110,11 +118,29 @@ const FormPengembalianKasGantung = ({
     }
     setIsAllSelected(!isAllSelected);
   };
-  const handleDoubleClick = (rowId: number, value: string) => {
-    if (checkedRows.has(rowId)) {
-      setEditingRowId(rowId); // Set baris yang sedang diedit
-      setEditableValues((prev) => new Map(prev).set(rowId, value)); // Set nilai yang sedang diedit
-    }
+
+  const parseCurrency = (value: string): number => {
+    if (value.trim() === '') return NaN;
+    const cleaned = value.replace(/\./g, '').replace(',', '.');
+    return parseFloat(cleaned);
+  };
+
+  // Fungsi untuk memformat nilai menjadi format currency IDR dengan 2 desimal
+  const formatCurrency = (value: number | string): string => {
+    if (typeof value === 'string' && value.trim() === '') return '';
+    const number = typeof value === 'string' ? parseCurrency(value) : value;
+    if (isNaN(number)) return '';
+    return number.toLocaleString('id-ID', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Fungsi untuk menangani double click (memulai mode edit dengan nilai yang diformat)
+  const handleDoubleClick = (rowId: number, initialValue: string) => {
+    const formatted = formatCurrency(initialValue);
+    setEditableValues((prev) => new Map(prev).set(rowId, formatted));
+    setEditingRowId(rowId);
   };
 
   // Fungsi untuk menangani perubahan input
@@ -122,20 +148,54 @@ const FormPengembalianKasGantung = ({
     rowId: number,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setEditableValues((prev) => new Map(prev).set(rowId, e.target.value)); // Update nilai input
+    setEditableValues((prev) => new Map(prev).set(rowId, e.target.value)); // Update nilai input (sudah masked)
+  };
+
+  const beforeMaskedValueChange = (
+    newState: { value: string; selection: { start: number; end: number } },
+    oldState: { value: string },
+    userInput: string | null
+  ) => {
+    let { value, selection } = newState;
+
+    // 1. Ambil hanya digit & koma
+    let raw = value.replace(/[^0-9,]/g, '');
+
+    // 2. Jika operasi delete/backspace atau select-all+delete,
+    //    dan setelah itu tidak ada digit sama sekali → kosongkan
+    if (
+      (userInput === null || userInput === '') &&
+      raw.replace(/,/g, '').length === 0
+    ) {
+      return { value: '', selection: { start: 0, end: 0 } };
+    }
+
+    // 3. Hanya keep satu koma pertama (seluruh sisanya dianggap desimal)
+    const [intPart, ...decParts] = raw.split(',');
+    const decPart = decParts.join('');
+
+    // 4. Format ribuan di integer part
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    // 5. Satukan lagi dengan koma jika ada decimal
+    const formatted = decPart ? `${formattedInt},${decPart}` : formattedInt;
+
+    return { value: formatted, selection };
   };
 
   // Fungsi untuk menangani blur (keluar dari input)
   const handleBlur = (rowId: number) => {
     setEditingRowId(null); // Kembali ke tampilan setelah selesai mengedit
     const newEditableValues = new Map(editableValues);
-    const newValue = newEditableValues.get(rowId);
+    let newValue = newEditableValues.get(rowId) || '';
 
-    // Update rows dengan nilai yang telah diubah
+    // Parse dan format ulang untuk memastikan selalu ada 2 desimal, atau kosong jika input kosong
+    const formattedValue = formatCurrency(newValue);
+
+    // Update rows dengan nilai yang telah diubah dan diformat
     setRows((prevRows) =>
       prevRows.map(
-        (row) =>
-          row.id === rowId ? { ...row, nominal: String(newValue) } : row // Ganti nilai nominal dengan yang baru
+        (row) => (row.id === rowId ? { ...row, nominal: formattedValue } : row) // Ganti nilai nominal dengan yang baru
       )
     );
 
@@ -146,6 +206,38 @@ const FormPengembalianKasGantung = ({
       return updated;
     });
   };
+
+  const handleColumnFilterChange = (
+    colKey: keyof typeof filters,
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [colKey]: value
+    }));
+  };
+
+  // Fungsi untuk mengfilter data berdasarkan filters
+  const filteredRows = useMemo(() => {
+    return rows.filter((row) => {
+      return (
+        (filters.nobukti
+          ? row.nobukti.toUpperCase().includes(filters.nobukti.toUpperCase())
+          : true) &&
+        (filters.tglbukti ? row?.tglbukti?.includes(filters.tglbukti) : true) &&
+        (filters.keterangan
+          ? row?.keterangan
+              ?.toUpperCase()
+              .includes(filters.keterangan.toUpperCase())
+          : true) &&
+        (filters.sisa ? row?.sisa?.toString().includes(filters.sisa) : true) &&
+        (filters.nominal
+          ? row?.nominal?.toString().includes(filters.nominal)
+          : true)
+      );
+    });
+  }, [rows, filters]);
+
   const columns = useMemo((): Column<KasGantungHeader>[] => {
     return [
       {
@@ -158,7 +250,7 @@ const FormPengembalianKasGantung = ({
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm font-normal">No.</p>
+              <p className="text-sm  ">No.</p>
             </div>
 
             <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
@@ -210,14 +302,36 @@ const FormPengembalianKasGantung = ({
         draggable: true,
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
-            <p className="text-sm font-normal">NOMOR BUKTI</p>
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Nomor Bukti</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.nobukti ? filters?.nobukti?.toUpperCase() : ''}
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('nobukti', value);
+                }}
+              />
+              {filters.nobukti && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('nobukti', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
           </div>
         ),
         name: 'NOMOR BUKTI',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {props.row.nobukti}
             </div>
           );
@@ -230,14 +344,36 @@ const FormPengembalianKasGantung = ({
         draggable: true,
         width: 150,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
-            <p className="text-sm font-normal">TGL BUKTI</p>
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>TGL Bukti</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.tglbukti ? filters?.tglbukti?.toUpperCase() : ''}
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('tglbukti', value);
+                }}
+              />
+              {filters.tglbukti && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('tglbukti', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
           </div>
         ),
         name: 'TGL BUKTI',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {props.row.tglbukti}
             </div>
           );
@@ -250,8 +386,30 @@ const FormPengembalianKasGantung = ({
         draggable: true,
         width: 150,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
-            <p className="text-sm font-normal">Nominal</p>
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Nominal</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.nominal ? filters?.nominal?.toUpperCase() : ''}
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('nominal', value);
+                }}
+              />
+              {filters.nominal && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('nominal', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
           </div>
         ),
         name: 'nominal',
@@ -260,24 +418,28 @@ const FormPengembalianKasGantung = ({
 
           // Pengecekan apakah baris dalam mode edit dan baris ini dicentang
           const isEditing = rowId === editingRowId;
-          const value = editableValues.get(rowId) || props.row.nominal;
+          const value =
+            editableValues.get(rowId) ?? formatCurrency(props.row.nominal);
 
           return (
             <div
-              className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs"
+              className="m-0 flex h-full w-full cursor-pointer items-center py-2 text-sm "
               onDoubleClick={() => handleDoubleClick(rowId, props.row.nominal)} // Menambahkan event double click
             >
               {isEditing ? (
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) => handleChange(rowId, e)}
-                  onBlur={() => handleBlur(rowId)} // Kembali ke tampilan setelah blur
-                  className="w-full p-1 text-xs"
+                <InputMask
+                  mask="999.999.999.999,99" // Mask untuk format currency IDR
+                  maskPlaceholder={null}
+                  className={`h-7 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0`}
+                  maskChar={null}
+                  value={value ?? ''}
+                  beforeMaskedValueChange={beforeMaskedValueChange}
                   autoFocus
+                  onChange={(e) => handleChange(rowId, e)}
+                  onBlur={() => handleBlur(rowId)}
                 />
               ) : (
-                <span>{props.row.nominal}</span> // Menampilkan nilai jika tidak dalam mode edit
+                <p className="text-sm">{formatCurrency(props.row.nominal)}</p> // Menampilkan nilai jika tidak dalam mode edit
               )}
             </div>
           );
@@ -291,14 +453,36 @@ const FormPengembalianKasGantung = ({
         draggable: true,
         width: 150,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
-            <p className="text-sm font-normal">sisa</p>
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Sisa</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.sisa ? filters?.sisa?.toUpperCase() : ''}
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('sisa', value);
+                }}
+              />
+              {filters.sisa && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('sisa', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
           </div>
         ),
         name: 'sisa',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {props.row.sisa}
             </div>
           );
@@ -311,21 +495,45 @@ const FormPengembalianKasGantung = ({
         draggable: true,
         width: 150,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-2">
-            <p className="text-sm font-normal">KETERANGAN</p>
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Keterangan</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.keterangan ? filters?.keterangan?.toUpperCase() : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('keterangan', value);
+                }}
+              />
+              {filters.keterangan && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('keterangan', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
           </div>
         ),
         name: 'KETERANGAN',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {props.row.keterangan}
             </div>
           );
         }
       }
     ];
-  }, [rows, checkedRows, editingRowId, editableValues]);
+  }, [rows, checkedRows, editingRowId, editableValues, filteredRows]);
   const lookUpProps = [
     {
       columns: [
@@ -517,7 +725,7 @@ const FormPengembalianKasGantung = ({
           </div>
         </div>
         <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className=" bg-white px-5 py-3">
+          <div className="min-h-full bg-white px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -949,29 +1157,38 @@ const FormPengembalianKasGantung = ({
                       />
                     </div>
                   </div>
+                  <div className="h-[400px] min-h-[400px]">
+                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
+                      <div
+                        className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
+                        style={{
+                          background:
+                            'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                        }}
+                      ></div>
 
-                  <div className="flex h-[100%] w-full flex-col border border-blue-500 bg-white">
-                    <DataGrid
-                      key={dataGridKey}
-                      ref={gridRef}
-                      columns={columns}
-                      onCellClick={handleCellClick}
-                      rows={rows}
-                      onSelectedCellChange={(args) => {
-                        handleCellClick({ row: args.row });
-                      }}
-                      headerRowHeight={null}
-                      rowHeight={30}
-                      renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                      className="rdg-light fill-grid text-xs"
-                    />
-                    <div
-                      className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-                      style={{
-                        background:
-                          'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                      }}
-                    ></div>
+                      <DataGrid
+                        key={dataGridKey}
+                        ref={gridRef}
+                        columns={columns}
+                        onCellClick={handleCellClick}
+                        rows={filteredRows}
+                        onSelectedCellChange={(args) => {
+                          handleCellClick({ row: args.row });
+                        }}
+                        headerRowHeight={70}
+                        rowHeight={30}
+                        renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
+                        className="rdg-light fill-grid text-sm"
+                      />
+                      <div
+                        className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+                        style={{
+                          background:
+                            'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                        }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </form>
