@@ -49,7 +49,7 @@ const GridPengembalianKasGantungDetail = () => {
   const columns = useMemo((): Column<IPengembalianKasGantungDetail>[] => {
     return [
       {
-        key: 'namaperusahaan',
+        key: 'nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -59,20 +59,20 @@ const GridPengembalianKasGantungDetail = () => {
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={handleContextMenu}
           >
-            <p className="text-sm font-normal">NAMA PERUSAHAAN</p>
+            <p className="text-sm font-normal">NO BUKTI</p>
           </div>
         ),
-        name: 'NAMA PERUSAHAAN',
+        name: 'NO BUKTI',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.namaperusahaan}
+              {props.row.nobukti}
             </div>
           );
         }
       },
       {
-        key: 'jabatan',
+        key: 'kasgantung_nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -82,60 +82,14 @@ const GridPengembalianKasGantungDetail = () => {
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={handleContextMenu}
           >
-            <p className="text-sm font-normal">JABATAN</p>
+            <p className="text-sm font-normal">NO BUKTI KAS GANTUNG</p>
           </div>
         ),
-        name: 'JABATAN',
+        name: 'NO BUKTI KAS GANTUNG',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.jabatan}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'tglmulai',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        renderHeaderCell: () => (
-          <div
-            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
-            onContextMenu={handleContextMenu}
-          >
-            <p className="text-sm font-normal">TANGGAL MULAI</p>
-          </div>
-        ),
-        name: 'TANGGAL MULAI',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.tglmulai}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'tglakhir',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        renderHeaderCell: () => (
-          <div
-            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
-            onContextMenu={handleContextMenu}
-          >
-            <p className="text-sm font-normal">TANGGAL AKHIR</p>
-          </div>
-        ),
-        name: 'TANGGAL AKHIR',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.tglakhir}
+              {props.row.kasgantung_nobukti}
             </div>
           );
         }
@@ -151,10 +105,10 @@ const GridPengembalianKasGantungDetail = () => {
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={handleContextMenu}
           >
-            <p className="text-sm font-normal">KETERANGAN</p>
+            <p className="text-sm font-normal">keterangan</p>
           </div>
         ),
-        name: 'KETERANGAN',
+        name: 'keterangan',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -164,7 +118,7 @@ const GridPengembalianKasGantungDetail = () => {
         }
       },
       {
-        key: 'statusaktif',
+        key: 'nominal',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -174,14 +128,37 @@ const GridPengembalianKasGantungDetail = () => {
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={handleContextMenu}
           >
-            <p className="text-sm font-normal">Status Aktif</p>
+            <p className="text-sm font-normal">nominal</p>
           </div>
         ),
-        name: 'Status Aktif',
+        name: 'nominal',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.statusaktif_text}
+              {props.row.nominal}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'modifiedby',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">modified by</p>
+          </div>
+        ),
+        name: 'modified by',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.modifiedby}
             </div>
           );
         }

@@ -9,6 +9,14 @@ import { useDispatch } from 'react-redux';
 import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 import GridPengembalianKasGantung from './components/GridPengembalianKasGantung';
 import GridPengembalianKasGantungDetail from './components/GridPengembalianKasGantungDetail';
+import { getRelasiFn } from '@/lib/apis/relasi.api';
+import { getBankFn } from '@/lib/apis/bank.api';
+import { getAlatBayarFn } from '@/lib/apis/alatbayar.api';
+import { setData, setType } from '@/lib/store/lookupSlice/lookupSlice';
+interface ApiResponse {
+  type: string;
+  data: any; // Define a more specific type for data if possible
+}
 
 const Page = () => {
   const dispatch = useDispatch();
@@ -16,11 +24,39 @@ const Page = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await fieldLength('menus');
-        dispatch(setFieldLength(result.data));
+        // Fetching field length data
+        const fieldLengthResult = await fieldLength('menus');
+
+        // Fetching data for BANK, ALAT BAYAR, and RELASI
+        const [dataBank, dataAlatBayar, dataRelasi] =
+          await Promise.all<ApiResponse>([
+            getBankFn({ isLookUp: 'true' }),
+            getAlatBayarFn({ isLookUp: 'true' }),
+            getRelasiFn({ isLookUp: 'true' })
+          ]);
+
+        // Handle BANK data
+        if (dataBank.type === 'local') {
+          dispatch(setData({ key: 'BANK', data: dataBank.data }));
+        }
+        dispatch(setType({ key: 'BANK', type: dataBank.type }));
+
+        // Handle ALAT BAYAR data
+        if (dataAlatBayar.type === 'local') {
+          dispatch(setData({ key: 'ALAT BAYAR', data: dataAlatBayar.data }));
+        }
+        dispatch(setType({ key: 'ALAT BAYAR', type: dataAlatBayar.type }));
+
+        // Handle RELASI data
+        if (dataRelasi.type === 'local') {
+          dispatch(setData({ key: 'RELASI', data: dataRelasi.data }));
+        }
+        dispatch(setType({ key: 'RELASI', type: dataRelasi.type }));
+
+        // Dispatch the field length data separately
+        dispatch(setFieldLength(fieldLengthResult.data));
       } catch (err) {
         console.error('Error fetching data:', err);
-      } finally {
       }
     };
 

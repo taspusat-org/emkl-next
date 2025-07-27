@@ -1276,6 +1276,10 @@ const GridPengembalianKasGantung = () => {
       const newOrder = await createPengembalianKasgantungHeader(
         {
           ...values,
+          details: values.details.map((detail: any) => ({
+            ...detail,
+            id: 0 // Ubah id setiap detail menjadi 0
+          })),
           ...filters // Kirim filter ke body/payload
         },
         {
@@ -1506,7 +1510,6 @@ const GridPengembalianKasGantung = () => {
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
-      const syncResponse = await syncAcosFn();
       setMode('add');
 
       setPopOver(true);
@@ -1748,6 +1751,8 @@ const GridPengembalianKasGantung = () => {
       forms.setValue('relasi_id', row.relasi_id ?? null);
       forms.setValue('bank_nama', row.bank_nama);
       forms.setValue('relasi_nama', row.relasi_nama);
+      // Saat form pertama kali di-render
+      forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
       // Clear or set defaults when adding a new record
       forms.setValue('bank_nama', '');

@@ -2,18 +2,18 @@ import { z } from 'zod';
 
 export const pengembalianKasGantungDetailSchema = z.object({
   id: z.number().optional(),
-  nobukti: z.string().nonempty(),
-  kasgantung_nobukti: z.string().nonempty(),
+  nobukti: z.string().nullable(),
+  kasgantung_nobukti: z.string().nullable().optional(),
   keterangan: z.string().nullable(),
-  nominal: z.number().nullable()
+  nominal: z.string().nullable()
 });
 export type PengembalianKasGantungDetailInput = z.infer<
   typeof pengembalianKasGantungDetailSchema
 >;
 
 export const pengembalianKasGantungHeaderSchema = z.object({
-  nobukti: z.string().nonempty(),
-  tglbukti: z.string().nonempty(),
+  nobukti: z.string().nullable(),
+  tglbukti: z.string().nullable(),
   keterangan: z.string().nullable(),
   bank_id: z.number().nullable(),
   bank_nama: z.string().nullable(),

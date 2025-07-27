@@ -96,7 +96,7 @@ const FormPengembalianKasGantung = ({
       setSelectedRow(rowIndex);
     }
   }
-  const handleRowSelect = (rowId: number) => {
+  const handleRowSelect = (rowId: number, row: any) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
       if (updated.has(rowId)) {
@@ -105,10 +105,36 @@ const FormPengembalianKasGantung = ({
         updated.add(rowId);
       }
 
+      // Extract the required fields from the row
+      const { id, nobukti, kasgantung_nobukti, keterangan, nominal } = row;
+
+      // Get the current 'details' from the form
+      const currentDetails = forms.getValues('details') || [];
+
+      // Check if the item with the same id already exists in 'details'
+      const isItemExists = currentDetails.some((item) => item.id === id);
+
+      if (!isItemExists) {
+        // If the item doesn't exist, push the new item to the array
+        currentDetails.push({
+          id,
+          nobukti: '',
+          kasgantung_nobukti: nobukti,
+          keterangan,
+          nominal: formatCurrency(nominal)
+        });
+
+        // Update the 'details' array in the form
+        forms.setValue('details', currentDetails);
+      } else {
+        console.log('Item with the same ID already exists in details');
+      }
+
       setIsAllSelected(updated.size === rows.length);
       return updated;
     });
   };
+
   const handleSelectAll = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
@@ -137,9 +163,13 @@ const FormPengembalianKasGantung = ({
   };
 
   // Fungsi untuk menangani double click (memulai mode edit dengan nilai yang diformat)
-  const handleDoubleClick = (rowId: number, initialValue: string) => {
-    const formatted = formatCurrency(initialValue);
-    setEditableValues((prev) => new Map(prev).set(rowId, formatted));
+  const handleDoubleClick = (rowId: number, initialValue: string | number) => {
+    // Simpan nilai asli (tanpa formatting) agar saat diedit tidak kacau
+
+    console.log('initialValue', initialValue, typeof initialValue);
+    const raw =
+      typeof initialValue === 'number' ? initialValue.toString() : initialValue;
+    setEditableValues((prev) => new Map(prev).set(rowId, raw));
     setEditingRowId(rowId);
   };
 
@@ -148,7 +178,27 @@ const FormPengembalianKasGantung = ({
     rowId: number,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    setEditableValues((prev) => new Map(prev).set(rowId, e.target.value)); // Update nilai input (sudah masked)
+    const newValue = e.target.value;
+    setEditableValues((prev) => new Map(prev).set(rowId, newValue)); // Update the raw input value
+    const parsedNominal = parseCurrency(newValue); // Parse raw value to number
+
+    // Update the corresponding nominal value in the row
+    setRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === rowId ? { ...row, nominal: parsedNominal } : row
+      )
+    );
+
+    // Ensure the 'nominal' in 'details' field is also updated in the form
+    const updatedDetails = forms.getValues('details') || []; // Get the current details
+    const updatedArray = updatedDetails.map((detail) =>
+      detail.id === rowId
+        ? { ...detail, nominal: parsedNominal } // Update only the correct detail
+        : detail
+    );
+
+    // Set updated array to 'details'
+    forms.setValue('details', updatedArray);
   };
 
   const beforeMaskedValueChange = (
@@ -183,23 +233,37 @@ const FormPengembalianKasGantung = ({
     return { value: formatted, selection };
   };
 
-  // Fungsi untuk menangani blur (keluar dari input)
   const handleBlur = (rowId: number) => {
-    setEditingRowId(null); // Kembali ke tampilan setelah selesai mengedit
+    setEditingRowId(null);
+
     const newEditableValues = new Map(editableValues);
     let newValue = newEditableValues.get(rowId) || '';
 
-    // Parse dan format ulang untuk memastikan selalu ada 2 desimal, atau kosong jika input kosong
-    const formattedValue = formatCurrency(newValue);
+    // Parse the raw value from the input
+    const parsedValue = parseCurrency(newValue);
 
-    // Update rows dengan nilai yang telah diubah dan diformat
+    // Format the value back to currency for display
+    const formattedValue = formatCurrency(parsedValue);
+
+    // Update rows with the parsed value
     setRows((prevRows) =>
-      prevRows.map(
-        (row) => (row.id === rowId ? { ...row, nominal: formattedValue } : row) // Ganti nilai nominal dengan yang baru
+      prevRows.map((row) =>
+        row.id === rowId ? { ...row, nominal: parsedValue } : row
       )
     );
 
-    // Reset editableValues untuk baris yang telah selesai diedit
+    // Ensure the 'nominal' field in 'details' is updated in the form
+    const updatedDetails = forms.getValues('details') || []; // Get the current details
+    const updatedArray = updatedDetails.map((detail) =>
+      detail.id === rowId
+        ? { ...detail, nominal: formattedValue } // Update only the correct detail
+        : detail
+    );
+
+    // Set updated array to 'details'
+    forms.setValue('details', updatedArray);
+
+    // Reset editableValues after editing
     setEditableValues((prev) => {
       const updated = new Map(prev);
       updated.delete(rowId);
@@ -289,7 +353,7 @@ const FormPengembalianKasGantung = ({
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
-              onCheckedChange={() => handleRowSelect(row.id)}
+              onCheckedChange={() => handleRowSelect(row.id, row)}
               id={`row-checkbox-${row.id}`}
             />
           </div>
@@ -418,8 +482,9 @@ const FormPengembalianKasGantung = ({
 
           // Pengecekan apakah baris dalam mode edit dan baris ini dicentang
           const isEditing = rowId === editingRowId;
-          const value =
-            editableValues.get(rowId) ?? formatCurrency(props.row.nominal);
+          const value = isEditing
+            ? editableValues.get(rowId) ?? '' // saat edit, gunakan raw
+            : formatCurrency(props.row.nominal); // saat display, format
 
           return (
             <div
@@ -534,48 +599,40 @@ const FormPengembalianKasGantung = ({
       }
     ];
   }, [rows, checkedRows, editingRowId, editableValues, filteredRows]);
-  const lookUpProps = [
+  const lookUpPropsRelasi = [
     {
-      columns: [
-        { key: 'method', name: 'METHOD' },
-        { key: 'nama', name: 'NAMA' }
-      ],
+      columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
-      endpoint: 'acos/get-all',
-      label: 'ACOS',
+      label: 'RELASI',
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
     }
   ];
-  const lookUpPropsMenu = [
+  const lookUpPropsBank = [
     {
-      columns: [{ key: 'title', name: 'Judul' }],
+      columns: [{ key: 'nama_bank', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
-      endpoint: 'menu',
-      label: 'MENU PARENT',
-      singleColumn: true,
+      label: 'BANK',
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
-      postData: 'title'
+      postData: 'nama_bank'
     }
   ];
-  const lookUpPropsStatusAktif = [
+  const lookUpPropsAlatBayar = [
     {
-      columns: [{ key: 'text', name: 'NAMA' }],
+      columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
-      labelLookup: 'STATUS AKTIF LOOKUP',
-      required: true,
       selectedRequired: false,
-      endpoint: 'parameter?grp=status+aktif',
-      label: 'status aktif',
-      singleColumn: true,
+      label: 'ALAT BAYAR',
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text'
+      postData: 'nama'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
@@ -706,6 +763,7 @@ const FormPengembalianKasGantung = ({
     setTglSampai(formattedDate); // Set nilai tglSampai
     forms.setValue('tglbukti', formattedDate); // Set nilai tglbukti di form
   }, [forms]); // Empty dependency array memastikan ini hanya dijalankan sekali saat komponen dimuat
+  console.log(forms.getValues());
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -940,7 +998,7 @@ const FormPengembalianKasGantung = ({
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpProps.map((props, index) => (
+                      {lookUpPropsRelasi.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
@@ -1113,19 +1171,19 @@ const FormPengembalianKasGantung = ({
                     <div className="flex w-full flex-col lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[15%]">
                         <FormLabel className="text-sm font-semibold text-gray-700">
-                          RELASI
+                          KAS/BANK
                         </FormLabel>
                       </div>
                       <div className="w-full lg:w-[35%]">
-                        {lookUpProps.map((props, index) => (
+                        {lookUpPropsBank.map((props, index) => (
                           <LookUp
                             key={index}
                             {...props}
                             lookupValue={(id) =>
-                              forms.setValue('relasi_id', Number(id))
+                              forms.setValue('bank_id', Number(id))
                             }
-                            inputLookupValue={forms.getValues('relasi_id')}
-                            lookupNama={forms.getValues('relasi_nama')}
+                            inputLookupValue={forms.getValues('bank_id')}
+                            lookupNama={forms.getValues('bank_nama')}
                           />
                         ))}
                       </div>
