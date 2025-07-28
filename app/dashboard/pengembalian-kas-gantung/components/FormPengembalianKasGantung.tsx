@@ -40,6 +40,7 @@ import { parse } from 'date-fns';
 import { KasGantungHeader } from '@/lib/types/kasgantungheader.type';
 import { useGetKasGantungHeader } from '@/lib/server/useKasGantungHeader';
 import { Checkbox } from '@/components/ui/checkbox';
+import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 const FormPengembalianKasGantung = ({
   popOver,
   setPopOver,
@@ -828,140 +829,14 @@ const FormPengembalianKasGantung = ({
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
-                              <div
-                                className={`relative flex flex-row rounded-sm border border-zinc-300 focus:outline-none focus:ring-0 ${
-                                  mode === 'delete'
-                                    ? 'text-zinc-400'
-                                    : 'text-zinc-600'
-                                } focus-within:border-blue-500`} // Menggunakan focus-within
-                              >
-                                <InputMask
-                                  mask={dateMask}
-                                  {...field}
-                                  className={`h-9 w-full rounded-sm px-3 py-2 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0`}
-                                  // maskChar="dmy"
-                                  // maskChar={null} // Tidak menampilkan karakter mask saat input kosong
-                                  maskPlaceholder="DD-MM-YYYY"
-                                  placeholder="DD-MM-YYYY"
-                                  value={field.value ?? ''}
-                                  alwaysShowMask={true}
-                                  beforeMaskedStateChange={({
-                                    previousState,
-                                    currentState,
-                                    nextState
-                                  }: {
-                                    previousState: any;
-                                    currentState: any;
-                                    nextState: any;
-                                  }) => {
-                                    const nextVal = nextState.value || '';
-                                    const parts = nextVal.split('-');
-
-                                    // Validasi jika format sudah memenuhi "dd-02-YYYY" atau "31-MM-YYYY"
-                                    if (
-                                      parts.length === 3 &&
-                                      parts[0] !== 'DD' &&
-                                      parts[1] !== 'MM' &&
-                                      /^\d{2}$/.test(parts[0]) && // Validasi hari, 2 digit
-                                      /^\d{2}$/.test(parts[1]) // Validasi bulan, 2 digit
-                                    ) {
-                                      const day = Number(parts[0]);
-                                      let month = parts[1]; // Jangan mengubah bulan langsung ke angka dulu
-                                      const year = Number(parts[2]);
-
-                                      const dayNum = Number(day);
-                                      const monthNum = Number(month);
-
-                                      if (dayNum === 31) {
-                                        const monthsWith31Days = [
-                                          '01',
-                                          '03',
-                                          '05',
-                                          '07',
-                                          '08',
-                                          '10',
-                                          '12'
-                                        ]; // Bulan dengan 31 hari
-                                        if (!monthsWith31Days.includes(month)) {
-                                          return {
-                                            value: previousState.value,
-                                            selection: previousState.selection
-                                          };
-                                        }
-                                      }
-
-                                      if (
-                                        parts[0] === '29' &&
-                                        parts[1] === '02' &&
-                                        /^\d{4}$/.test(parts[2])
-                                      ) {
-                                        const yearNum = Number(parts[2]);
-
-                                        if (!isLeapYear(yearNum)) {
-                                          return {
-                                            value: previousState.value,
-                                            selection: previousState.selection
-                                          };
-                                        }
-                                      }
-                                    }
-                                    return {
-                                      value: nextState.value,
-                                      selection: nextState.selection
-                                    };
-                                  }}
-                                ></InputMask>
-
-                                <Popover
-                                  open={popOverTglBukti}
-                                  onOpenChange={setPopOverTglBukti}
-                                >
-                                  <PopoverTrigger asChild>
-                                    <button
-                                      type="button"
-                                      className="flex w-9 cursor-pointer items-center justify-center border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f]"
-                                    >
-                                      <CalendarIcon className="h-4 w-4 text-gray-500" />
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent
-                                    className="right-4 w-fit max-w-xs border border-blue-500 bg-white"
-                                    style={{ position: 'fixed' }}
-                                    sideOffset={-1}
-                                  >
-                                    <Calendar
-                                      mode="single"
-                                      captionLayout="dropdown-buttons"
-                                      fromYear={1960}
-                                      toYear={2030}
-                                      // initialFocus
-                                      defaultMonth={
-                                        field.value &&
-                                        field.value !== 'DD-MM-YYYY'
-                                          ? parse(
-                                              field.value,
-                                              'dd-MM-yyyy',
-                                              new Date()
-                                            )
-                                          : new Date()
-                                      }
-                                      selected={
-                                        field.value
-                                          ? parseDateFromDDMMYYYY(field.value)
-                                          : undefined
-                                      } // Memastikan format yang dipilih sesuai dengan input
-                                      onSelect={(value: any) => {
-                                        if (value) {
-                                          const formattedDate =
-                                            formatDateCalendar(value);
-                                          field.onChange(formattedDate); // Memastikan format yang dikirim yyyy-mm-dd
-                                          setPopOverTglBukti(false);
-                                        }
-                                      }}
-                                    />
-                                  </PopoverContent>
-                                </Popover>
-                              </div>
+                              <InputDatePicker
+                                value={field.value}
+                                onChange={field.onChange}
+                                showCalendar
+                                onSelect={(date) =>
+                                  forms.setValue('tglbukti', date)
+                                }
+                              />
                             </FormControl>
                             <FormMessage />
                           </div>

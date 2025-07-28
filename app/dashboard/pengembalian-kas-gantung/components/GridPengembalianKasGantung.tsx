@@ -71,6 +71,14 @@ import {
   PengembalianKasGantungHeaderInput,
   pengembalianKasGantungHeaderSchema
 } from '@/lib/validations/pengembaliankasgantung.validation';
+import {
+  getPengembalianKasGantungHeaderFn,
+  getPengembalianKasGantungReportFn
+} from '@/lib/apis/pengembaliankasgantung.api';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 
 interface Filter {
   page: number;
@@ -1379,10 +1387,11 @@ const GridPengembalianKasGantung = () => {
 
   const handleReport = async () => {
     const { page, limit, ...filtersWithoutLimit } = filters;
-    const response = await getMenuFn(filtersWithoutLimit);
+    const response =
+      await getPengembalianKasGantungReportFn(filtersWithoutLimit);
     const reportRows = response.data.map((row) => ({
       ...row,
-      judullaporan: 'Laporan Menu',
+      judullaporan: 'Laporan Pengembalian Kas Gantung',
       usercetak: user.username,
       tglcetak: new Date().toLocaleDateString(),
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1409,7 +1418,7 @@ const GridPengembalianKasGantung = () => {
         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
         // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanMenu.mrt');
+        report.loadFile('/reports/ReportPenerimaanKasGantung.mrt');
         report.dictionary.dataSources.clear();
         dataSet.readJson({ data: reportRows });
         report.regData(dataSet.dataSetName, '', dataSet);
@@ -1428,7 +1437,7 @@ const GridPengembalianKasGantung = () => {
             sessionStorage.setItem('pdfUrl', pdfUrl);
 
             // Navigate to the report page
-            window.open('/reports/menu', '_blank');
+            window.open('/reports/pengembaliankasgantung', '_blank');
           }, Stimulsoft.Report.StiExportFormat.Pdf);
         });
       })
@@ -1436,7 +1445,43 @@ const GridPengembalianKasGantung = () => {
         console.error('Failed to load Stimulsoft:', error);
       });
   };
+  // const handleReport = async () => {
+  //   const { page, limit, ...filtersWithoutLimit } = filters;
+  //   dispatch(setProcessing()); // Show loading overlay when the request starts
 
+  //   try {
+  //     const response =
+  //       await getPengembalianKasGantungReportFn(filtersWithoutLimit);
+
+  //     if (response.data === null || response.data.length === 0) {
+  //       alert({
+  //         title: 'DATA TIDAK TERSEDIA!',
+  //         variant: 'danger',
+  //         submitText: 'OK'
+  //       });
+  //     } else {
+  //       const reportRows = response.data.map((row) => ({
+  //         ...row,
+  //         judullaporan: 'Laporan Pengembalian Kas Gantung',
+  //         usercetak: user.username,
+  //         tglcetak: new Date().toLocaleDateString(),
+  //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //       }));
+  //       console.log('reportRows', reportRows);
+  //       dispatch(setReportData(reportRows));
+  //       window.open('/reports/pengembaliankasgantung', '_blank');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Terjadi kesalahan saat memuat data!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   } finally {
+  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
+  //   }
+  // };
   const handleReportBySelect = async () => {
     if (checkedRows.size === 0) {
       alert({
@@ -1833,15 +1878,6 @@ const GridPengembalianKasGantung = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            customActions={[
-              {
-                label: 'Resequence',
-                icon: <FaPlus />, // Custom icon
-                onClick: () => handleResequence(),
-                variant: 'success', // Optional styling variant
-                className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
-              }
-            ]}
             dropdownMenus={[
               {
                 label: 'Report',
