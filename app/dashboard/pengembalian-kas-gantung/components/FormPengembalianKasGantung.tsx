@@ -186,13 +186,13 @@ const FormPengembalianKasGantung = ({
     // Update the corresponding nominal value in the row
     setRows((prevRows) =>
       prevRows.map((row) =>
-        row.id === rowId ? { ...row, nominal: parsedNominal } : row
+        row.id === rowId ? { ...row, nominal: String(parsedNominal) } : row
       )
     );
 
     // Ensure the 'nominal' in 'details' field is also updated in the form
     const updatedDetails = forms.getValues('details') || []; // Get the current details
-    const updatedArray = updatedDetails.map((detail) =>
+    const updatedArray = updatedDetails.map((detail: any) =>
       detail.id === rowId
         ? { ...detail, nominal: parsedNominal } // Update only the correct detail
         : detail
@@ -249,13 +249,13 @@ const FormPengembalianKasGantung = ({
     // Update rows with the parsed value
     setRows((prevRows) =>
       prevRows.map((row) =>
-        row.id === rowId ? { ...row, nominal: parsedValue } : row
+        row.id === rowId ? { ...row, nominal: String(parsedValue) } : row
       )
     );
 
     // Ensure the 'nominal' field in 'details' is updated in the form
     const updatedDetails = forms.getValues('details') || []; // Get the current details
-    const updatedArray = updatedDetails.map((detail) =>
+    const updatedArray = updatedDetails.map((detail: any) =>
       detail.id === rowId
         ? { ...detail, nominal: formattedValue } // Update only the correct detail
         : detail
@@ -302,7 +302,50 @@ const FormPengembalianKasGantung = ({
       );
     });
   }, [rows, filters]);
+  function highlightText(
+    text: string | number | null | undefined,
+    search: string,
+    columnFilter: string = ''
+  ) {
+    const textValue = text != null ? String(text) : '';
+    if (!textValue) return '';
 
+    if (!search.trim() && !columnFilter.trim()) {
+      return textValue;
+    }
+
+    const combined = search + columnFilter;
+    if (!combined) {
+      return textValue;
+    }
+
+    // 1. Fungsi untuk escape regex‐meta chars
+    const escapeRegExp = (s: string) =>
+      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
+    const pattern = combined
+      .split('')
+      .map((ch) => escapeRegExp(ch))
+      .join('|');
+
+    // 3. Build regex-nya
+    const regex = new RegExp(`(${pattern})`, 'gi');
+
+    // 4. Replace dengan <span>
+    const highlighted = textValue.replace(
+      regex,
+      (m) =>
+        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+    );
+
+    return (
+      <span
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+    );
+  }
   const columns = useMemo((): Column<KasGantungHeader>[] => {
     return [
       {
@@ -395,9 +438,10 @@ const FormPengembalianKasGantung = ({
         ),
         name: 'NOMOR BUKTI',
         renderCell: (props: any) => {
+          const columnFilter = filters.nobukti || '';
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {props.row.nobukti}
+              {highlightText(props.row.nobukti || '', columnFilter)}
             </div>
           );
         }
@@ -439,7 +483,64 @@ const FormPengembalianKasGantung = ({
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {props.row.tglbukti}
+              {highlightText(props.row.tglbukti || '', filters.tglbukti)}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'sisa',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Sisa</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.sisa ? filters?.sisa?.toUpperCase() : ''}
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('sisa', value);
+                }}
+              />
+              {filters.sisa && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('sisa', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        name: 'sisa',
+        renderCell: (props: any) => {
+          const parsedNominal = parseCurrency(
+            editableValues.get(props.row.id) || props.row.nominal
+          );
+          const newSisa = props.row.sisa - (parsedNominal ? parsedNominal : 0);
+
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {/* {lookUpPropsRelasi.map((props, index) => (
+                <LookUp
+                  key={index}
+                  {...props}
+                  lookupValue={(id) => forms.setValue('relasi_id', Number(id))}
+                  inputLookupValue={forms.getValues('relasi_id')}
+                  lookupNama={forms.getValues('relasi_nama')}
+                />
+              ))} */}
+
+              {highlightText(formatCurrency(newSisa) || '', filters.sisa)}
             </div>
           );
         }
@@ -505,55 +606,18 @@ const FormPengembalianKasGantung = ({
                   onBlur={() => handleBlur(rowId)}
                 />
               ) : (
-                <p className="text-sm">{formatCurrency(props.row.nominal)}</p> // Menampilkan nilai jika tidak dalam mode edit
+                <p className="text-sm">
+                  {highlightText(
+                    formatCurrency(props.row.nominal) || '',
+                    filters.nominal
+                  )}
+                </p> // Menampilkan nilai jika tidak dalam mode edit
               )}
             </div>
           );
         }
       },
 
-      {
-        key: 'sisa',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>Sisa</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={filters.sisa ? filters?.sisa?.toUpperCase() : ''}
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('sisa', value);
-                }}
-              />
-              {filters.sisa && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('sisa', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        name: 'sisa',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {props.row.sisa}
-            </div>
-          );
-        }
-      },
       {
         key: 'keterangan',
         headerCellClass: 'column-headers',
@@ -764,7 +828,6 @@ const FormPengembalianKasGantung = ({
     setTglSampai(formattedDate); // Set nilai tglSampai
     forms.setValue('tglbukti', formattedDate); // Set nilai tglbukti di form
   }, [forms]); // Empty dependency array memastikan ini hanya dijalankan sekali saat komponen dimuat
-  console.log(forms.getValues());
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1114,6 +1177,7 @@ const FormPengembalianKasGantung = ({
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"
                       />
+
                       <div
                         className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
                         style={{

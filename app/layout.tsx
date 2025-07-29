@@ -20,6 +20,8 @@ import { useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { setLoaded, setLoading } from '../lib/store/loadingSlice/loadingSlice';
 import { useRouter } from 'next/navigation';
+import { pdfjs } from 'react-pdf';
+
 const roboto = Roboto({
   subsets: ['latin'],
   weight: ['400', '700'], // Pilih berat font sesuai kebutuhan
@@ -45,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const { alertOptions, handleClose, handleSubmit } = useAlert();
-
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
   return (
     <html lang="en" className={`${roboto.className}`} suppressHydrationWarning>
       <body className="overflow-hidden">

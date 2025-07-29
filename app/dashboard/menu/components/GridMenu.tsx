@@ -150,6 +150,7 @@ const GridMenu = () => {
     sortBy: 'title',
     sortDirection: 'asc'
   });
+  const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const { data: allMenu, isLoading: isLoadingMenu } = useGetMenu({
     ...filters,
@@ -161,32 +162,40 @@ const GridMenu = () => {
     colKey: keyof Filter['filters'],
     value: string
   ) => {
-    const columnIndex = columns.findIndex((col) => col.key === colKey);
+    // 1. cari index di array columns asli
+    const originalIndex = columns.findIndex((col) => col.key === colKey);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
+
+    // update filter seperti biasa…
     setFilters((prev) => ({
       ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
+      filters: { ...prev.filters, [colKey]: value },
       search: '',
       page: 1
     }));
     setInputValue('');
     setCheckedRows(new Set());
     setIsAllSelected(false);
+
+    // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: columnIndex });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
+
+    // 4. focus input filter
     setTimeout(() => {
       const ref = inputColRefs.current[colKey];
-      if (ref) {
-        ref.focus();
-      }
+      ref?.focus();
     }, 200);
+
     setSelectedRow(0);
   };
-
-  const gridRef = useRef<DataGridHandle>(null);
 
   function highlightText(
     text: string | number | null | undefined,

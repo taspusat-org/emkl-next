@@ -84,7 +84,7 @@ interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: PengembalianKasGantungHeader;
+  filters: typeof filterPengembalianKasGantung;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
@@ -116,6 +116,7 @@ const GridPengembalianKasGantung = () => {
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
+
   const [mode, setMode] = useState<string>('');
 
   const [dataGridKey, setDataGridKey] = useState(0);
@@ -151,6 +152,7 @@ const GridPengembalianKasGantung = () => {
       details: []
     }
   });
+  const gridRef = useRef<DataGridHandle>(null);
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -167,37 +169,44 @@ const GridPengembalianKasGantung = () => {
       page: currentPage
     });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
-    const columnIndex = columns.findIndex((col) => col.key === colKey);
+    // 1. cari index di array columns asli
+    const originalIndex = columns.findIndex((col) => col.key === colKey);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
+
+    // update filter seperti biasa…
     setFilters((prev) => ({
       ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
+      filters: { ...prev.filters, [colKey]: value },
       search: '',
       page: 1
     }));
     setInputValue('');
     setCheckedRows(new Set());
     setIsAllSelected(false);
+
+    // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: columnIndex });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
+
+    // 4. focus input filter
     setTimeout(() => {
       const ref = inputColRefs.current[colKey];
-      if (ref) {
-        ref.focus();
-      }
+      ref?.focus();
     }, 200);
+
     setSelectedRow(0);
   };
-
-  const gridRef = useRef<DataGridHandle>(null);
 
   function highlightText(
     text: string | number | null | undefined,
@@ -666,7 +675,7 @@ const GridPengembalianKasGantung = () => {
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
                   filters.filters.penerimaan_nobukti
-                    ? filters.filters.penerimaan_nobukti.toUpperCase()
+                    ? filters.filters.penerimaan_nobukti?.toUpperCase()
                     : ''
                 }
                 type="text"
@@ -745,7 +754,7 @@ const GridPengembalianKasGantung = () => {
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
                   filters.filters.coakasmasuk
-                    ? filters.filters.coakasmasuk.toUpperCase()
+                    ? filters.filters.coakasmasuk?.toUpperCase()
                     : ''
                 }
                 type="text"
@@ -1425,6 +1434,7 @@ const GridPengembalianKasGantung = () => {
         report.dictionary.synchronize();
 
         // Render the report asynchronously
+
         report.renderAsync(() => {
           // Export the report to PDF asynchronously
           report.exportDocumentAsync((pdfData: any) => {
@@ -1469,7 +1479,7 @@ const GridPengembalianKasGantung = () => {
   //       }));
   //       console.log('reportRows', reportRows);
   //       dispatch(setReportData(reportRows));
-  //       window.open('/reports/pengembaliankasgantung', '_blank');
+  //       window.open('/reports/pengembaliankasgantung2', '_blank');
   //     }
   //   } catch (error) {
   //     console.error('Error generating report:', error);

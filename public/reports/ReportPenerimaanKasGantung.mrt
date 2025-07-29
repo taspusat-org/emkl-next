@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "90a3be89d36035b8e82b88d7d5586d07",
+  "ReportGuid": "9f0606bd2207118c79bb6ea645354416",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "/reports/ReportPenerimaanKasGantung.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1753669822000+0700)/",
+  "ReportChanged": "/Date(1753755546000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -254,9 +254,7 @@
           "0": "details"
         },
         "NameInSource": "penerimaanstokheader_details",
-        "Alias": "penerimaanstokheader",
-        "ParentSource": "penerimaanstokheader",
-        "ChildSource": "penerimaanstokheader_details"
+        "Alias": "penerimaanstokheader"
       },
       "1": {
         "Name": "penerimaanstokheader_user_roles",
@@ -267,9 +265,7 @@
           "0": "pivot"
         },
         "NameInSource": "penerimaanstokheader_user_roles_pivot",
-        "Alias": "penerimaanstokheader_user_roles",
-        "ParentSource": "penerimaanstokheader_user_roles",
-        "ChildSource": "penerimaanstokheader_user_roles_pivot"
+        "Alias": "penerimaanstokheader_user_roles"
       },
       "2": {
         "Name": "penerimaanstokheader_user",
@@ -280,9 +276,7 @@
           "0": "roles"
         },
         "NameInSource": "penerimaanstokheader_user_roles",
-        "Alias": "penerimaanstokheader_user",
-        "ParentSource": "penerimaanstokheader_user",
-        "ChildSource": "penerimaanstokheader_user_roles"
+        "Alias": "penerimaanstokheader_user"
       },
       "3": {
         "Name": "penerimaanstokheader",
@@ -293,9 +287,7 @@
           "0": "data"
         },
         "NameInSource": "penerimaanstokheader_user",
-        "Alias": "penerimaanstokheader",
-        "ParentSource": "penerimaanstokheader",
-        "ChildSource": "penerimaanstokheader_user"
+        "Alias": "penerimaanstokheader"
       },
       "4": {
         "Name": "penerimaanstokheader",
@@ -306,9 +298,7 @@
           "0": "combo"
         },
         "NameInSource": "penerimaanstokheader_combo",
-        "Alias": "penerimaanstokheader",
-        "ParentSource": "penerimaanstokheader",
-        "ChildSource": "penerimaanstokheader_combo"
+        "Alias": "penerimaanstokheader"
       },
       "5": {
         "Name": "data",
@@ -340,7 +330,7 @@
           "Ident": "StiPageHeaderBand",
           "Name": "PageHeaderBand1",
           "CanGrow": true,
-          "ClientRectangle": "0,4,204,27.5",
+          "ClientRectangle": "0,4,205,27.5",
           "ComponentPlacement": "ph.Page1",
           "Interaction": {
             "Ident": "StiInteraction"
@@ -362,7 +352,7 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;Bold;",
+              "Font": ";;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -385,7 +375,7 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;Bold;",
+              "Font": ";;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -408,7 +398,7 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;Bold;",
+              "Font": ";;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -431,7 +421,7 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;Bold;",
+              "Font": ";;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -454,7 +444,7 @@
               "Text": {
                 "Value": "{ToUpperCase(\"Bukti Koreksi Penerimaan Stok (KOR)\")}"
               },
-              "Font": "Arial;9;Bold;",
+              "Font": ";9;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -474,7 +464,7 @@
               "Text": {
                 "Value": "{data.judullaporan}"
               },
-              "Font": "Arial;9;Bold;",
+              "Font": ";9;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -493,7 +483,6 @@
                 "Value": "Tanggal"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -512,7 +501,6 @@
                 "Value": ":"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black"
@@ -532,7 +520,6 @@
                 "Value": "{data.nobukti}"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -558,7 +545,6 @@
                 "Value": "{data.tglbukti}"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -586,7 +572,6 @@
                 "Value": "No Bukti"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -605,7 +590,6 @@
                 "Value": ":"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black"
@@ -742,7 +726,7 @@
           "Guid": "3a42b72ca16552886f799c3dc3b6ba53",
           "PrintOn": "ExceptLastPage",
           "CanGrow": true,
-          "ClientRectangle": "0,117.5,204,3",
+          "ClientRectangle": "0,128,205,3",
           "ComponentPlacement": "pf.Page1",
           "Interaction": {
             "Ident": "StiInteraction"
@@ -766,7 +750,6 @@
                 "Value": "Hal:{PageNumber} dari {TotalPageCount}"
               },
               "HorAlignment": "Right",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -790,7 +773,7 @@
           "Ident": "StiDataBand",
           "Name": "DataBand1",
           "CanGrow": true,
-          "ClientRectangle": "0,39.5,204,3.4",
+          "ClientRectangle": "0,39.5,205,3.4",
           "ComponentPlacement": "d.Page1",
           "Expressions": {
             "0": {
@@ -818,7 +801,6 @@
                 "Value": "{data_details.nobukti}"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -845,7 +827,6 @@
               },
               "HorAlignment": "Right",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -876,7 +857,6 @@
                 "Value": "{data_details.keterangan}"
               },
               "HorAlignment": "Width",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -903,7 +883,6 @@
               },
               "HorAlignment": "Right",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -983,7 +962,7 @@
           "Ident": "StiReportSummaryBand",
           "Name": "ReportSummaryBand1",
           "CanGrow": true,
-          "ClientRectangle": "0,50.9,204,28",
+          "ClientRectangle": "0,50.9,205,28",
           "ComponentPlacement": "rs.Page1",
           "Interaction": {
             "Ident": "StiInteraction"
@@ -1006,7 +985,7 @@
                 "Value": "Total"
               },
               "VertAlignment": "Center",
-              "Font": "Arial;;Bold;",
+              "Font": ";;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1028,7 +1007,7 @@
               },
               "HorAlignment": "Right",
               "VertAlignment": "Center",
-              "Font": "Arial;;Bold;",
+              "Font": ";;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1054,7 +1033,6 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1074,7 +1052,6 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1094,7 +1071,6 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1114,7 +1090,6 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1136,7 +1111,6 @@
                 "Value": "Hal:{PageNumber} dari {TotalPageCount}"
               },
               "HorAlignment": "Right",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1156,7 +1130,6 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1176,7 +1149,6 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1197,7 +1169,7 @@
                 "Value": "{penerimaanstokheader_details.tglcetak}"
               },
               "HorAlignment": "Right",
-              "Font": "Arial;;Italic;",
+              "Font": ";;Italic;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1218,7 +1190,7 @@
                 "Value": "{penerimaanstokheader_details.usercetak}"
               },
               "HorAlignment": "Right",
-              "Font": "Arial;;Italic;",
+              "Font": ";;Italic;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1240,7 +1212,6 @@
                 "Value": "Revisi Ke :{penerimaanstokheader.jumlahcetak}"
               },
               "HorAlignment": "Right",
-              "Font": "Arial;;;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -1832,15 +1803,15 @@
           "EndCap": ";;;"
         }
       },
-      "PageWidth": 240,
+      "PageWidth": 216,
       "PageHeight": 139,
       "Watermark": {
         "TextBrush": "solid:50,0,0,0"
       },
       "Margins": {
-        "Left": 13,
-        "Right": 23,
-        "Top": 15.5,
+        "Left": 1,
+        "Right": 10,
+        "Top": 5,
         "Bottom": 3
       }
     }
