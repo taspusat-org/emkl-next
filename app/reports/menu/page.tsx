@@ -1,76 +1,139 @@
 'use client';
-import { Button } from '@/components/ui/button';
-// pages/reports/menu.tsx
-import { useEffect, useState } from 'react';
-import { FaPrint } from 'react-icons/fa';
+import React, { ReactElement, useEffect, useState } from 'react';
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import { pdfjs } from 'react-pdf';
+
+import {
+  defaultLayoutPlugin,
+  ToolbarProps,
+  ToolbarSlot
+} from '@react-pdf-viewer/default-layout';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+
+import { printPlugin, RenderPrintProps } from '@react-pdf-viewer/print';
+import '@react-pdf-viewer/print/lib/styles/index.css';
+
+import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
+import '@react-pdf-viewer/zoom/lib/styles/index.css';
+import { MdOutlineZoomOut } from 'react-icons/md';
+import { FaDownload, FaPrint } from 'react-icons/fa';
 
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
+  // Print plugin
+  const printPluginInstance = printPlugin();
+  const { Print } = printPluginInstance;
+
+  // Zoom plugin
+  const zoomPluginInstance = zoomPlugin();
+  const { ZoomPopover } = zoomPluginInstance;
+
+  // Default layout with custom toolbar
+  const layoutPluginInstance = defaultLayoutPlugin({
+    sidebarTabs: (defaultTabs) => [defaultTabs[0]],
+    renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
+      <Toolbar>
+        {(slots: ToolbarSlot) => {
+          const {
+            GoToFirstPage,
+            GoToPreviousPage,
+            GoToNextPage,
+            GoToLastPage,
+            ZoomOut: DefaultZoomOut,
+            ZoomIn: DefaultZoomIn,
+            CurrentScale,
+            CurrentPageInput,
+            Download,
+            SwitchTheme,
+            EnterFullScreen
+          } = slots;
+          return (
+            <div className="relative grid w-full grid-cols-3 items-center gap-4 overflow-visible bg-white px-4 py-2 shadow dark:bg-red-500">
+              {/* Column 1: page navigation */}
+              <div className="flex items-center justify-start gap-2">
+                <GoToFirstPage />
+                <GoToPreviousPage />
+                <CurrentPageInput />
+                <GoToNextPage />
+                <GoToLastPage />
+              </div>
+
+              {/* Column 2: zoom controls */}
+              <div className="relative flex items-center justify-center gap-2 text-black">
+                <DefaultZoomOut />
+                <ZoomPopover />
+                <DefaultZoomIn />
+                {/* Zoom popover from zoom plugin */}
+              </div>
+
+              {/* Column 3: download, print, theme, fullscreen */}
+              <div className="flex items-center justify-end gap-2">
+                <Download>
+                  {(props) => (
+                    <button
+                      onClick={props.onClick}
+                      className="flex flex-row items-center gap-2 rounded bg-green-600 px-3 py-1 text-white hover:bg-green-800"
+                    >
+                      <FaDownload /> Download
+                    </button>
+                  )}
+                </Download>
+
+                <Print>
+                  {(props: RenderPrintProps) => (
+                    <button
+                      onClick={props.onClick}
+                      className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
+                    >
+                      <FaPrint /> Print
+                    </button>
+                  )}
+                </Print>
+
+                <EnterFullScreen />
+              </div>
+            </div>
+          );
+        }}
+      </Toolbar>
+    )
+  });
+
   useEffect(() => {
-    // Retrieve the PDF URL from sessionStorage
-    const storedPdfUrl = sessionStorage.getItem('pdfUrl');
-    if (storedPdfUrl) {
-      setPdfUrl(storedPdfUrl + '#toolbar=0&navpanes=0&scrollbar=0'); // Set the URL in the state
+    const stored = sessionStorage.getItem('pdfUrl');
+    if (stored) setPdfUrl(stored);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
     }
   }, []);
 
-  // Function to handle the PDF printing
-  const handlePrint = () => {
-    const iframe = document.getElementById('pdfIframe') as HTMLIFrameElement;
-    if (iframe) {
-      iframe.contentWindow?.print();
-    }
-  };
-
   return (
-    <div
-      style={{
-        width: '100%',
-        height: '100vh',
-        margin: 0,
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      {/* Top content (buttons for download and print) */}
-      <div className="flex flex-row items-center justify-end gap-2 px-4 py-2">
-        <Button
-          onClick={() => {
-            const link = document.createElement('a');
-            link.href = pdfUrl || '';
-            link.download = 'report.pdf'; // Download filename
-            link.click();
-          }}
-          className="flex cursor-pointer flex-row items-center gap-1 rounded-sm border-none bg-[#4CAF50] px-2 py-1 text-sm text-white hover:bg-[#54cd58]"
-        >
-          <FaPrint />
-          <p className="text-sm">Download</p>
-        </Button>
-        <Button
-          onClick={handlePrint}
-          className="flex cursor-pointer flex-row items-center gap-1 rounded-sm border-none bg-[#008CBA] px-2 py-1 text-sm text-white"
-        >
-          <FaPrint />
-          <p className="text-sm">Print</p>
-        </Button>
-      </div>
-
-      {/* Scrollable content area */}
-      <div style={{ flexGrow: 1, overflowY: 'auto' }}>
+    <div className="flex h-screen w-screen flex-col">
+      <main className="flex-1 overflow-hidden">
         {pdfUrl ? (
-          <iframe
-            id="pdfIframe"
-            src={pdfUrl}
-            width="100%" // Fill the available width
-            height="100%" // Fill the available height
-            style={{ border: 'none' }}
-            title="PDF Report"
-          />
+          <Worker workerUrl="/pdf.worker.min.js">
+            <Viewer
+              fileUrl={pdfUrl}
+              defaultScale={1}
+              plugins={[
+                printPluginInstance,
+                layoutPluginInstance,
+                zoomPluginInstance
+              ]}
+              theme="light"
+            />
+          </Worker>
         ) : (
-          <p>Loading PDF...</p>
+          <div className="flex h-full items-center justify-center text-gray-500">
+            Loading PDF…
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

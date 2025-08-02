@@ -258,17 +258,38 @@ table {
   outline: 0px;
   font-family: 'DejaVu', sans-serif;
   letter-spacing: 0.9px; /* Tambahkan jarak antar huruf */
-  border-top: none;
-  border-left: none;
+
   border-right: 1px solid #9fc3fd;
-  border-bottom: 1px solid #9fc3fd;
+  border-bottom:  1px solid #9fc3fd;
+}
+.rdg > .rdg-row > .rdg-cell:last-child {
+  border-right: 1px solid #9fc3fd;
+}
+.rdg-summary-row .rdg-cell {
+  border-top: 1px solid  #9fc3fd; /* Border atas khusus untuk summary row */
+}
+.rnvodz57-0-0-beta-47::before {
+  grid-column: auto; /* Menonaktifkan grid-column dengan mengubahnya menjadi auto */
+  grid-row: 1 / -1; /* Tetap pertahankan grid-row */
+}
+
+/* Menghilangkan border bawah pada baris terakhir */
+.rdg > .rdg-row:last-child .rdg-cell {
+  border-bottom: none;
 }
 .rdg {
   overflow-y: scroll;
   /* overscroll-behavior: contain; */
+  border-collapse: collapse;
 }
 .rdg-row-odd {
   background-color: #f0f0f0;
+}
+.rdg-bottom-summary-row{
+  border-top: 1px solid #9fc3fd !important;
+}
+.rdg-summary-row{
+  border-top: 1px solid #9fc3fd !important;
 }
 .headers-cell {
   display: flex;

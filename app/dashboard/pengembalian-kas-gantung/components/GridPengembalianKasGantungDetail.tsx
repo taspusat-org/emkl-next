@@ -463,7 +463,13 @@ const GridPengembalianKasGantungDetail = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col border border-blue-500 bg-white">
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
+        <div
+          className="flex h-[38px] w-full flex-row items-center border-b border-blue-500 px-2"
+          style={{
+            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+          }}
+        ></div>
         <DataGrid
           key={dataGridKey}
           ref={gridRef}
@@ -502,18 +508,6 @@ const GridPengembalianKasGantungDetail = () => {
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          <ActionButton
-            // onEdit={handleEdit}
-            customActions={[
-              {
-                label: 'Edit All',
-                icon: <FaPen />, // Custom icon
-                onClick: handleEditTable,
-                variant: 'success', // Optional styling variant
-                className: 'bg-purple-700 hover:bg-purple-800 gap-2' // Additional styling
-              }
-            ]}
-          />
           {isLoading ? <LoadRowsRenderer /> : null}
         </div>
       </div>

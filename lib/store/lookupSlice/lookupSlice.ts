@@ -3,17 +3,19 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface AcosState {
   data: Record<string, any>; // Data akan disimpan berdasarkan key yang dinamis
   type: Record<string, string>;
+  isdefault: Record<string, string>;
   openName: string; // Menambahkan openName ke dalam state
 }
 
 const initialState: AcosState = {
   data: {}, // Default kosong, akan menyimpan data berdasarkan key
   type: {}, // Default type kosong
+  isdefault: {}, // Default type kosong
   openName: '' // Default openName kosong
 };
 
-const acosSlice = createSlice({
-  name: 'acos',
+const lookupSlice = createSlice({
+  name: 'lookupData',
   initialState,
   reducers: {
     setData(state, action: PayloadAction<{ key: string; data: any }>) {
@@ -24,6 +26,13 @@ const acosSlice = createSlice({
       const { key, type } = action.payload;
       state.type[key] = type; // Stores the type dynamically by key
     },
+    setDefault(
+      state,
+      action: PayloadAction<{ key: string; isdefault: string }>
+    ) {
+      const { key, isdefault } = action.payload;
+      state.isdefault[key] = isdefault; // Stores the type dynamically by key
+    },
     setOpenName(state, action: PayloadAction<string>) {
       state.openName = action.payload;
     },
@@ -33,7 +42,7 @@ const acosSlice = createSlice({
   }
 });
 
-export const { setData, setType, setOpenName, clearOpenName } =
-  acosSlice.actions;
+export const { setData, setType, setDefault, setOpenName, clearOpenName } =
+  lookupSlice.actions;
 
-export default acosSlice.reducer;
+export default lookupSlice.reducer;

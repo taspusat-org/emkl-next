@@ -128,7 +128,6 @@ const FormPengembalianKasGantung = ({
         // Update the 'details' array in the form
         forms.setValue('details', currentDetails);
       } else {
-        console.log('Item with the same ID already exists in details');
       }
 
       setIsAllSelected(updated.size === rows.length);
@@ -147,9 +146,9 @@ const FormPengembalianKasGantung = ({
   };
 
   const parseCurrency = (value: string): number => {
-    if (value.trim() === '') return NaN;
-    const cleaned = value.replace(/\./g, '').replace(',', '.');
-    return parseFloat(cleaned);
+    if (!value || value.trim() === '') return 0; // Return 0 if the value is empty or invalid
+    const cleaned = value.replace(/\./g, '').replace(',', '.'); // Remove thousands separator and replace comma with a decimal point
+    return parseFloat(cleaned) || 0; // Return parsed number or 0 if the result is NaN
   };
 
   // Fungsi untuk memformat nilai menjadi format currency IDR dengan 2 desimal
@@ -165,9 +164,12 @@ const FormPengembalianKasGantung = ({
 
   // Fungsi untuk menangani double click (memulai mode edit dengan nilai yang diformat)
   const handleDoubleClick = (rowId: number, initialValue: string | number) => {
-    // Simpan nilai asli (tanpa formatting) agar saat diedit tidak kacau
+    // Check if the row is selected (checked)
+    if (!checkedRows.has(rowId)) {
+      return; // Don't proceed if the row is not selected
+    }
 
-    console.log('initialValue', initialValue, typeof initialValue);
+    // Save the original value (without formatting) so that when editing, the raw value is used
     const raw =
       typeof initialValue === 'number' ? initialValue.toString() : initialValue;
     setEditableValues((prev) => new Map(prev).set(rowId, raw));
@@ -346,6 +348,37 @@ const FormPengembalianKasGantung = ({
       />
     );
   }
+
+  interface SummaryRow {
+    id: number;
+    totalSisa: string;
+    totalNominal: string;
+  }
+
+  const summaryRows = useMemo((): readonly SummaryRow[] => {
+    // Recalculate totalSisa and totalNominal
+    const totalSisa = filteredRows.reduce(
+      (acc, row) =>
+        acc +
+        (row.sisa
+          ? parseCurrency(String(row.sisa)) - parseCurrency(row.nominal)
+          : 0),
+      0
+    );
+
+    const totalNominal = filteredRows.reduce(
+      (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
+      0
+    );
+    return [
+      {
+        id: 0, // Format the total to string as currency
+        totalSisa: formatCurrency(totalSisa), // Format the total to string as currency
+        totalNominal: formatCurrency(totalNominal) // Format the total to string as currency
+      }
+    ];
+  }, [filteredRows]); // Dependency on filteredRows, so it updates when filteredRows change
+
   const columns = useMemo((): Column<KasGantungHeader>[] => {
     return [
       {
@@ -543,6 +576,13 @@ const FormPengembalianKasGantung = ({
               {highlightText(formatCurrency(newSisa) || '', filters.sisa)}
             </div>
           );
+        },
+        renderSummaryCell: () => {
+          return (
+            <div className="text-sm font-semibold">
+              {summaryRows[0]?.totalSisa}
+            </div>
+          );
         }
       },
       {
@@ -602,7 +642,7 @@ const FormPengembalianKasGantung = ({
                   value={value ?? ''}
                   beforeMaskedValueChange={beforeMaskedValueChange}
                   autoFocus
-                  onChange={(e) => handleChange(rowId, e)}
+                  onChange={(e: any) => handleChange(rowId, e)}
                   onBlur={() => handleBlur(rowId)}
                 />
               ) : (
@@ -613,6 +653,13 @@ const FormPengembalianKasGantung = ({
                   )}
                 </p> // Menampilkan nilai jika tidak dalam mode edit
               )}
+            </div>
+          );
+        },
+        renderSummaryCell: () => {
+          return (
+            <div className="text-sm font-semibold">
+              {summaryRows[0]?.totalNominal}
             </div>
           );
         }
@@ -663,7 +710,14 @@ const FormPengembalianKasGantung = ({
         }
       }
     ];
-  }, [rows, checkedRows, editingRowId, editableValues, filteredRows]);
+  }, [
+    rows,
+    checkedRows,
+    editingRowId,
+    editableValues,
+    filteredRows,
+    summaryRows
+  ]);
   const lookUpPropsRelasi = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
@@ -828,6 +882,9 @@ const FormPengembalianKasGantung = ({
     setTglSampai(formattedDate); // Set nilai tglSampai
     forms.setValue('tglbukti', formattedDate); // Set nilai tglbukti di form
   }, [forms]); // Empty dependency array memastikan ini hanya dijalankan sekali saat komponen dimuat
+
+  // Calculate the total sums of `sisa` and `nominal` dynamically
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1169,6 +1226,7 @@ const FormPengembalianKasGantung = ({
                         columns={columns}
                         onCellClick={handleCellClick}
                         rows={filteredRows}
+                        bottomSummaryRows={summaryRows}
                         onSelectedCellChange={(args) => {
                           handleCellClick({ row: args.row });
                         }}
@@ -1177,7 +1235,22 @@ const FormPengembalianKasGantung = ({
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"
                       />
-
+                      {/* <div
+                        className="flex flex-row border border-b-0 border-l-0 border-blue-500 p-2"
+                        style={{ gridColumn: '1/-1' }}
+                      >
+                        <div className="flex w-full flex-row items-center justify-between">
+                          <p className="text-sm font-semibold">Total</p>
+                          <div className="flex flex-row gap-3">
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(totalSisa)}
+                            </p>
+                            <p className="text-sm font-semibold">
+                              {formatCurrency(totalNominal)}
+                            </p>
+                          </div>
+                        </div>
+                      </div> */}
                       <div
                         className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
                         style={{

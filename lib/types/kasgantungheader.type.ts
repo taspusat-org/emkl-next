@@ -10,7 +10,7 @@ export interface KasGantungHeader {
   coakaskeluar: string | null;
   nominal: string | null;
   dibayarke: string | null;
-  alatbayar_id: number | null;
+  sisa: string | null;
   nowarkat: string | null;
   tgljatuhtempo: string | null; // Nullable date field
   gantungorderan_nobukti: string | null;

@@ -19,7 +19,7 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaPrint } from 'react-icons/fa';
 
-const ReportMenuPage: React.FC = () => {
+const ReportPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   // Print plugin
@@ -138,4 +138,4 @@ const ReportMenuPage: React.FC = () => {
   );
 };
 
-export default ReportMenuPage;
+export default ReportPage;

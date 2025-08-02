@@ -52,6 +52,8 @@ interface LookUpProps {
   disabled?: boolean; // New prop for disabling the input/button
   selectedRequired?: boolean;
   required?: boolean;
+  linkTo?: boolean;
+  linkValue?: string | string[] | number[] | null;
 }
 interface Filter {
   page: number;
@@ -87,7 +89,9 @@ export default function LookUp({
   postData,
   disabled = false, // Default to false if not provided
   filterby,
-  allowedFilterShowAllFirst = false
+  allowedFilterShowAllFirst = false,
+  linkTo = false,
+  linkValue
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
@@ -118,8 +122,9 @@ export default function LookUp({
   const data = useSelector(
     (state: RootState) => state.lookup.data[label || '']
   );
-  console.log(data);
-  console.log(type);
+  const isdefault = useSelector(
+    (state: RootState) => state.lookup.isdefault[label || '']
+  );
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const collapse = useSelector((state: RootState) => state.collapse.value);
@@ -890,16 +895,30 @@ export default function LookUp({
 
       fetchData();
     } else {
-      console.log('masuk2');
-      // If type is 'local', use the local data from Redux
-      console.log('data', data);
-      console.log('label', label);
-      const filteredRows =
-        data?.filter((row: Row) =>
+      let filteredRows = data ? data : null;
+      if (linkTo && linkValue != null) {
+        filteredRows = data?.filter((row: Row) => row.type === linkValue);
+      }
+
+      filteredRows =
+        filteredRows?.filter((row: Row) =>
           Object.values(row).some((value) =>
             String(value).toLowerCase().includes(filters.search.toLowerCase())
           )
         ) || [];
+
+      if (isdefault && !lookupNama) {
+        if (isdefault === 'YA') {
+          const defaultRow = filteredRows.find(
+            (row: any) => row.default === 'YA'
+          );
+          setInputValue(defaultRow.text);
+          if (lookupValue) {
+            lookupValue(defaultRow.id);
+          }
+        }
+      }
+
       setRows(filteredRows);
       setIsLoading(false); // Set loading to false if it's local data
     }
@@ -912,6 +931,8 @@ export default function LookUp({
     endpoint,
     data,
     label,
+    linkTo,
+    linkValue,
     dispatch
   ]);
 
@@ -982,7 +1003,6 @@ export default function LookUp({
   useEffect(() => {
     // Check if search is not empty and if we're not clicking outside
     if (filters.search.trim() !== '' && !clickedOutside && filtering) {
-      console.log('maaasuuukkk1');
       setOpen(true); // Open the lookup grid if there's search value and not clicking outside
       setSelectedRow(0); // Select the first row
     } else if (
@@ -991,12 +1011,10 @@ export default function LookUp({
       filtering &&
       filters.filters
     ) {
-      console.log('maaasuuukkk2');
       // Keep the lookup open if search is empty but we're still filtering
       setOpen(true);
       setSelectedRow(0); // Select the first row
     } else {
-      console.log('maaasuuukkk3');
       setOpen(false); // Close the lookup grid when no search and no filtering
     }
 
@@ -1089,13 +1107,14 @@ export default function LookUp({
   return (
     <Popover open={open} onOpenChange={() => ({})}>
       <PopoverTrigger asChild>
-        <div className="flex flex-col">
+        <div className="flex w-full flex-col">
           <div
             className="relative flex w-full flex-row items-center"
             ref={popoverRef}
           >
             <Input
               ref={inputRef}
+              autoFocus
               className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
                 showOnButton ? 'rounded-r-none border-r-0' : ''
               } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
@@ -1126,7 +1145,7 @@ export default function LookUp({
               <Button
                 type="button"
                 variant="outline"
-                className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f]"
+                className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
                 onClick={handleButtonClick}
                 disabled={disabled}
               >

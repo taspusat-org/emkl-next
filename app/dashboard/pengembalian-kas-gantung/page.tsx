@@ -12,7 +12,11 @@ import GridPengembalianKasGantungDetail from './components/GridPengembalianKasGa
 import { getRelasiFn } from '@/lib/apis/relasi.api';
 import { getBankFn } from '@/lib/apis/bank.api';
 import { getAlatBayarFn } from '@/lib/apis/alatbayar.api';
-import { setData, setType } from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setData,
+  setDefault,
+  setType
+} from '@/lib/store/lookupSlice/lookupSlice';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -38,18 +42,39 @@ const Page = () => {
         // Handle BANK data
         if (dataBank.type === 'local') {
           dispatch(setData({ key: 'BANK', data: dataBank.data }));
+          const defaultValue =
+            dataBank.data
+              .map((item) => item.default)
+              .find((val) => val !== null) || '';
+
+          // Dispatch the default data
+          dispatch(setDefault({ key: 'BANK', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'BANK', type: dataBank.type }));
 
         // Handle ALAT BAYAR data
         if (dataAlatBayar.type === 'local') {
           dispatch(setData({ key: 'ALAT BAYAR', data: dataAlatBayar.data }));
+          const defaultValue =
+            dataAlatBayar.data
+              .map((item) => item.default)
+              .find((val) => val !== null) || '';
+
+          // Dispatch the default data
+          dispatch(setDefault({ key: 'ALAT BAYAR', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'ALAT BAYAR', type: dataAlatBayar.type }));
 
         // Handle RELASI data
         if (dataRelasi.type === 'local') {
           dispatch(setData({ key: 'RELASI', data: dataRelasi.data }));
+          const defaultValue =
+            dataRelasi.data
+              .map((item) => item.default)
+              .find((val) => val !== null) || '';
+
+          // Dispatch the default data
+          dispatch(setDefault({ key: 'RELASI', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'RELASI', type: dataRelasi.type }));
 

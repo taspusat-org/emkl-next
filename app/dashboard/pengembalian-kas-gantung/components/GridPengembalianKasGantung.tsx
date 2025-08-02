@@ -79,6 +79,7 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 
 interface Filter {
   page: number;
@@ -1181,8 +1182,10 @@ const GridPengembalianKasGantung = () => {
   function handleCellClick(args: CellClickArgs<PengembalianKasGantungHeader>) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    if (rowIndex !== -1) {
+    const foundRow = rows.find((r) => r.id === clickedRow?.id);
+    if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
+      dispatch(setHeaderData(foundRow));
     }
   }
   async function handleKeyDown(
@@ -1241,7 +1244,9 @@ const GridPengembalianKasGantung = () => {
       setIsFetchingManually(true);
       setRows([]);
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/menus-allItems`);
+        const response = await api2.get(
+          `/redis/get/pengembaliankasgantungheader-allItems`
+        );
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1717,6 +1722,7 @@ const GridPengembalianKasGantung = () => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+      dispatch(setHeaderData(rows[0]));
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
@@ -1878,7 +1884,7 @@ const GridPengembalianKasGantung = () => {
           }}
         />
         <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+          className="mt-1 flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}

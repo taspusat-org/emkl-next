@@ -1155,7 +1155,7 @@ const GridMenu = () => {
       .then((module) => {
         const { Stimulsoft } = module;
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/arial.ttf',
+          '/fonts/tahoma.ttf',
           'Arial'
         );
         Stimulsoft.Base.StiLicense.Key =
