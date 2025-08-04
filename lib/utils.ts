@@ -110,3 +110,32 @@ export function isLeapYear(year: any) {
 export function dynamicRequiredMessage(fieldName: string) {
   return `${fieldName.toUpperCase()} ${REQUIRED_FIELD}`;
 }
+export const parseCurrency = (value: string): number => {
+  console.log('value in parseCurrency', value);
+  if (!value || value.trim() === '') return 0; // Return 0 if the value is empty or invalid
+
+  // Hapus titik (untuk ribuan) dan ganti koma jadi titik desimal
+  const cleaned = value.replace(/\./g, '').replace(',', '.');
+  console.log('cleaned', cleaned);
+
+  // Parse ke angka dan kembalikan
+  const parsed = parseFloat(cleaned);
+  console.log('parsed value', parsed);
+
+  return isNaN(parsed) ? 0 : parsed; // Pastikan angka valid
+};
+
+export const formatCurrency = (value: number | string): string => {
+  if (typeof value === 'string' && value.trim() === '') return ''; // Handle empty input
+  console.log('value to format', value);
+
+  const number = typeof value === 'string' ? parseCurrency(value) : value;
+
+  if (isNaN(number)) return ''; // Return empty if it's not a valid number
+
+  // Formatkan angka sebagai currency dengan ribuan dan dua desimal
+  return number.toLocaleString('id-ID', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};

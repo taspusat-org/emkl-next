@@ -21,7 +21,44 @@ export interface KasGantungHeader {
   created_at: string;
   updated_at: string;
 }
+export interface KasGantungDetail {
+  id: number;
+  kasgantung_id: string;
+  nobukti: string;
+  keterangan: string | null;
+  nominal: string | null;
+  info: string | null;
+  modifiedby: string | null;
+  editing_by: string | null;
+  editing_at: string | null; // Nullable datetime field
+  created_at: string;
+  updated_at: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
 export interface IAllKasGantungHeader {
   data: KasGantungHeader[];
   pagination: IMeta;
 }
+export interface IAllKasGantungDetail {
+  data: KasGantungDetail[];
+  pagination: IMeta;
+}
+export const filterKasGantung = {
+  nobukti: '',
+  tglbukti: '',
+  bank_nama: '',
+  relasi_nama: '',
+  keterangan: null,
+  bank_id: null,
+  pengeluaran_nobukti: '',
+  coakaskeluar: '',
+  relasi_id: null,
+  nominal: '',
+  dibayarke: '',
+  nowarkat: '',
+  tgljatuhtempo: '',
+  gantungorderan_nobukti: '',
+  modifiedby: null,
+  created_at: '',
+  updated_at: ''
+};

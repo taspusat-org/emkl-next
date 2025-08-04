@@ -272,7 +272,9 @@ table {
   grid-column: auto; /* Menonaktifkan grid-column dengan mengubahnya menjadi auto */
   grid-row: 1 / -1; /* Tetap pertahankan grid-row */
 }
-
+.rdg-row-odd:not(:has(.form-input)) {
+  background-color: #f0f0f0;
+}
 /* Menghilangkan border bawah pada baris terakhir */
 .rdg > .rdg-row:last-child .rdg-cell {
   border-bottom: none;
@@ -281,9 +283,6 @@ table {
   overflow-y: scroll;
   /* overscroll-behavior: contain; */
   border-collapse: collapse;
-}
-.rdg-row-odd {
-  background-color: #f0f0f0;
 }
 .rdg-bottom-summary-row{
   border-top: 1px solid #9fc3fd !important;
@@ -358,14 +357,6 @@ table {
 }
 .data-grid-row {
   background-color: white; /* Background default */
-}
-.rdg-row[aria-selected='true'] {
-  background-color: red; /* Warna untuk baris yang dipilih */
-}
-
-.rdg-cell[aria-selected='true'],
-.rdg-cell[tabindex='0'] {
-  background-color: #e0f7fa; /* Warna untuk row yang dipilih */
 }
 .rdg-row .rdg-cell[tabindex='0'] {
   background-color: #e2f5f7; /* Warna untuk row yang dipilih */

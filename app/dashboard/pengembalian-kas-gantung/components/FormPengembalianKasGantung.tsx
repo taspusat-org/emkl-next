@@ -24,9 +24,11 @@ import DataGrid, {
   DataGridHandle
 } from 'react-data-grid';
 import {
+  formatCurrency,
   formatDateCalendar,
   formatDateToDDMMYYYY,
   isLeapYear,
+  parseCurrency,
   parseDateFromDDMMYYYY
 } from '@/lib/utils';
 import {
@@ -143,23 +145,6 @@ const FormPengembalianKasGantung = ({
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
-  };
-
-  const parseCurrency = (value: string): number => {
-    if (!value || value.trim() === '') return 0; // Return 0 if the value is empty or invalid
-    const cleaned = value.replace(/\./g, '').replace(',', '.'); // Remove thousands separator and replace comma with a decimal point
-    return parseFloat(cleaned) || 0; // Return parsed number or 0 if the result is NaN
-  };
-
-  // Fungsi untuk memformat nilai menjadi format currency IDR dengan 2 desimal
-  const formatCurrency = (value: number | string): string => {
-    if (typeof value === 'string' && value.trim() === '') return '';
-    const number = typeof value === 'string' ? parseCurrency(value) : value;
-    if (isNaN(number)) return '';
-    return number.toLocaleString('id-ID', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
   };
 
   // Fungsi untuk menangani double click (memulai mode edit dengan nilai yang diformat)
@@ -1163,24 +1148,47 @@ const FormPengembalianKasGantung = ({
                   </Button>
                   <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
                     <p className="text-sm text-black">POSTING PENERIMAAN</p>
-                    <div className="flex w-full flex-col lg:flex-row lg:items-center">
-                      <div className="w-full lg:w-[15%]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
-                          KAS/BANK
-                        </FormLabel>
+                    <div className="flex flex-row lg:gap-3">
+                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <div className="w-full lg:w-[15%]">
+                          <FormLabel className="text-sm font-semibold text-gray-700">
+                            KAS/BANK
+                          </FormLabel>
+                        </div>
+                        <div className="w-full lg:w-[70%]">
+                          {lookUpPropsBank.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('bank_id', Number(id))
+                              }
+                              inputLookupValue={forms.getValues('bank_id')}
+                              lookupNama={forms.getValues('bank_nama')}
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <div className="w-full lg:w-[35%]">
-                        {lookUpPropsBank.map((props, index) => (
-                          <LookUp
-                            key={index}
-                            {...props}
-                            lookupValue={(id) =>
-                              forms.setValue('bank_id', Number(id))
-                            }
-                            inputLookupValue={forms.getValues('bank_id')}
-                            lookupNama={forms.getValues('bank_nama')}
-                          />
-                        ))}
+                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <div className="w-full lg:w-[15%]">
+                          <FormLabel className="text-sm font-semibold text-gray-700">
+                            ALAT BAYAR
+                          </FormLabel>
+                        </div>
+                        <div className="w-full lg:w-[70%]">
+                          {lookUpPropsAlatBayar.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('relasi_id', Number(id))
+                              }
+                              linkValue={forms.getValues('bank_nama')}
+                              inputLookupValue={forms.getValues('relasi_id')}
+                              lookupNama={forms.getValues('relasi_nama')}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div>

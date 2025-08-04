@@ -1,27 +1,15 @@
+import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from 'react-query';
-import {
-  getKasGantungDetailFn,
-  getKasGantungHeaderFn
-} from '../apis/kasgantungheader.api';
+import { useDispatch } from 'react-redux';
+import { getPengembalianKasGantungHeaderFn } from '../apis/pengembaliankasgantung.api';
 import {
   setProcessed,
   setProcessing
 } from '../store/loadingSlice/loadingSlice';
-import { useToast } from '@/hooks/use-toast';
-import { useDispatch } from 'react-redux';
 
-export const useGetKasGantungHeader = (
+export const useGetPengembalianKasGantung = (
   filters: {
-    filters?: {
-      nobukti?: string;
-      tglbukti?: string;
-      keterangan?: string | null;
-      bank_id?: number | null;
-      pengeluaran_nobukti?: string | null;
-      coakaskeluar?: string | null;
-      tglDari?: string | null;
-      tglSampai?: string | null;
-    };
+    filters?: {};
     page?: number;
     sortBy?: string;
     sortDirection?: string;
@@ -34,7 +22,7 @@ export const useGetKasGantungHeader = (
   const queryClient = useQueryClient();
 
   return useQuery(
-    ['kasgantungheader', filters],
+    ['pengembaliankasgantungheader', filters],
     async () => {
       // Only trigger processing if the page is 1
       if (filters.page === 1) {
@@ -42,7 +30,7 @@ export const useGetKasGantungHeader = (
       }
 
       try {
-        const data = await getKasGantungHeaderFn(filters);
+        const data = await getPengembalianKasGantungHeaderFn(filters);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -65,15 +53,6 @@ export const useGetKasGantungHeader = (
           dispatch(setProcessed());
         }
       }
-    }
-  );
-};
-export const useGetKasGantungDetail = (id?: number) => {
-  return useQuery(
-    ['kasgantungdetail', id],
-    async () => await getKasGantungDetailFn(id!),
-    {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
   );
 };
