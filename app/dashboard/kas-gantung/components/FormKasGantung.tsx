@@ -139,56 +139,82 @@ const FormKasGantung = ({
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
-  const beforeMaskedValueChange = (
-    nextState: any,
-    oldState: { value: string },
-    userInput: string | null
-  ) => {
+  const formatThousands = (raw: string): string => {
+    // ambil cuma digit
+    const digits = raw.replace(/\D/g, '');
+    if (!digits) return '';
+    // parse integer, lalu format otomatis dengan koma (en-US)
+    return parseInt(digits, 10).toLocaleString('en-US');
+  };
+
+  const beforeMaskedStateChange = ({
+    previousState,
+    currentState,
+    nextState
+  }: {
+    previousState: { value: string; selection: any };
+    currentState: { value: string; selection: any };
+    nextState: { value: string; selection: any };
+  }) => {
     const nextVal = nextState.value || '';
+    // a) ambil hanya digit & titik
+    const raw = nextVal.replace(/[^0-9.]/g, '');
+    // b) split integer & decimal (hanya 1 dot pertama)
+    const [intPart, ...rest] = raw.split('.');
+    const decPart = rest.join(''); // kalau user ngetik lebih dari 1 dot, kita gabung sisanya
 
-    // 1. Ambil hanya digit (hapus semua karakter non-numerik selain koma)
-    let raw = nextVal.replace(/[^0-9,]/g, '');
+    // c) format integer part dengan koma sebagai ribuan
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-    // 2. Jika ada input yang dihapus dan tidak ada digit lagi, kosongkan
-    if (
-      (userInput === null || userInput === '') &&
-      raw.replace(/,/g, '').length === 0
-    ) {
-      return { value: '', selection: { start: 0, end: 0 } };
+    // d) kalau ada decimal part, re‐attach
+    const formatted =
+      decPart.length > 0 ? `${formattedInt}.${decPart}` : formattedInt;
+
+    // e) cursor selalu di akhir
+    const pos = formatted.length;
+    return {
+      value: formatted,
+      selection: { start: pos, end: pos }
+    };
+  };
+
+  // 2) onChangeRaw: simpan string yang sudah diformat ke state
+  const formatWithCommas = (val: string): string => {
+    // ambil cuma digit
+    const digits = val.replace(/\D/g, '');
+    // sisipkan koma setiap 3 digit dari kanan
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  };
+
+  // 2) handler onChange: format langsung & simpan ke state
+  const handleCurrencyChange = (rowIdx: number, rawInput: string) => {
+    const formatted = formatWithCommas(rawInput);
+    handleInputChange(rowIdx, 'nominal', formatted);
+  };
+
+  const handleCurrencyBlur = (formattedStr: string, rowId: number) => {
+    // Cek apakah value sudah diformat dengan benar (misalnya "10,000.00")
+    if (!formattedStr.includes(',')) {
+      // Jika belum ada koma (misal inputan baru), jangan lakukan apapun
+      return;
     }
 
-    // 3. Pisahkan integer part dan decimal part jika ada
-    const [intPart, decPart] = raw.split(',');
-
-    // 4. Format integer part dengan titik sebagai pemisah ribuan (gunakan ',' jika mau)
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    // 5. Gabungkan integer part dan decimal part jika ada (pastikan hanya satu koma)
-    const formatted = decPart ? `${formattedInt},${decPart}` : formattedInt;
-    console.log('formatted', formatted);
-    // 6. Kembalikan nilai yang sudah diformat
-    return { value: formatted, selection: nextVal.selection };
+    // jika sudah diformat, periksa apakah ada dua digit desimal
+    if (!formattedStr.includes('.')) {
+      // Tambahkan .00 jika tidak ada desimal
+      const finalValue = formattedStr + '.00';
+      setRows((rs) =>
+        rs.map((r) => (r.id === rowId ? { ...r, nominal: finalValue } : r))
+      );
+    } else {
+      // Jika sudah ada dua desimal, pastikan format tidak berubah
+      setRows((rs) =>
+        rs.map((r) => (r.id === rowId ? { ...r, nominal: formattedStr } : r))
+      );
+    }
   };
 
-  const handleBlur = (value: string | number, rowId: number) => {
-    console.log('blur value before', value);
-
-    // Pastikan nilai adalah string
-    let newValue = String(value);
-
-    // Parse nilai mentah (angka) dan kembalikan dengan pemformatan ribuan dan dua desimal
-    const parsedValue = parseCurrency(newValue);
-    const formattedValue = formatCurrency(parsedValue);
-    console.log('formattedValue', formattedValue);
-    // Update value in rows
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === rowId ? { ...row, nominal: formattedValue } : row
-      )
-    );
-
-    return formattedValue; // Kembalikan nilai yang diformat dengan pemisah ribuan dan dua angka desimal
-  };
+  console.log('rows', rows);
   const columns = useMemo((): Column<KasGantungDetail>[] => {
     return [
       {
@@ -364,30 +390,30 @@ const FormKasGantung = ({
         renderCell: (props: any) => {
           const rowId = props.row.id;
           let value = props.row.nominal ?? ''; // Ambil nilai nominal
-
-          // Jika nominal adalah angka, format ke string
-          if (typeof value === 'number') {
-            value = formatCurrency(String(value));
-          }
-
+          const raw = props.row.nominal ?? '';
+          const displayValue =
+            typeof props.row.nominal === 'number'
+              ? props.row.nominal.toLocaleString('en-US', {
+                  minimumFractionDigits: 2
+                })
+              : props.row.nominal;
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
                 ''
               ) : (
                 <InputMask
-                  mask="999999999999" // Mask tanpa pemisah ribuan otomatis
+                  mask="" // biar kita yang atur formatting
                   maskPlaceholder={null}
                   className="h-7 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
-                  maskChar={null}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
-                  value={String(props.row.nominal)} // Display value (formatted)
-                  beforeMaskedStateChange={beforeMaskedValueChange}
+                  value={String(raw)}
+                  beforeMaskedStateChange={beforeMaskedStateChange}
                   onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'nominal', e.target.value)
+                    handleCurrencyChange(props.rowIdx, e.target.value)
                   }
-                  onBlur={() => handleBlur(props.row.nominal, rowId)}
+                  onBlur={() => handleCurrencyBlur(props.row.nominal, rowId)}
                 />
               )}
             </div>

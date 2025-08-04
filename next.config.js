@@ -1,21 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async redirects() {
-    return [
-      {
-        source: '/dashboard',
-        has: [
-          {
-            type: 'cookie',
-            key: 'next-auth.session-token',
-            value: 'undefined' // No token
-          }
-        ],
-        destination: '/auth/signin',
-        permanent: false
-      }
-    ];
-  },
+  // async redirects() {
+  //   return [
+  //     {
+  //       source: '/dashboard',
+  //       has: [
+  //         {
+  //           type: 'cookie',
+  //           key: 'next-auth.session-token',
+  //           value: 'undefined' // No token
+  //         }
+  //       ],
+  //       destination: '/auth/signin',
+  //       permanent: false
+  //     }
+  //   ];
+  // },
   swcMinify: false,
   images: {
     remotePatterns: [
