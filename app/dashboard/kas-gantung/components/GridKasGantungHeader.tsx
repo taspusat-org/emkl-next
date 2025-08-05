@@ -71,11 +71,18 @@ import {
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import FormKasGantung from './FormKasGantung';
-import { useGetKasGantungHeader } from '@/lib/server/useKasGantungHeader';
 import {
   filterKasGantung,
   KasGantungHeader
 } from '@/lib/types/kasgantungheader.type';
+import {
+  KasGantungHeaderInput,
+  kasgantungHeaderSchema
+} from '@/lib/validations/kasgantung.validation';
+import {
+  useCreateKasGantung,
+  useGetKasGantungHeader
+} from '@/lib/server/useKasGantung';
 
 interface Filter {
   page: number;
@@ -97,10 +104,8 @@ const GridKasGantungHeader = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const {
-    mutateAsync: createPengembalianKasgantungHeader,
-    isLoading: isLoadingCreate
-  } = useCreatePengembalianKasGantung();
+  const { mutateAsync: createKasGantung, isLoading: isLoadingCreate } =
+    useCreateKasGantung();
   const { mutateAsync: updateMenu, isLoading: isLoadingUpdate } =
     useUpdateMenu();
   const [currentPage, setCurrentPage] = useState(1);
@@ -135,16 +140,16 @@ const GridKasGantungHeader = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<PengembalianKasGantungHeaderInput>({
-    resolver: zodResolver(pengembalianKasGantungHeaderSchema),
+  const forms = useForm<KasGantungHeaderInput>({
+    resolver: zodResolver(kasgantungHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
       nobukti: '',
       tglbukti: '',
       keterangan: null,
       bank_id: null,
-      penerimaan_nobukti: null,
-      coakasmasuk: null,
+      pengeluaran_nobukti: '',
+      coakaskeluar: '',
       relasi_id: null,
       details: []
     }
@@ -940,7 +945,7 @@ const GridKasGantungHeader = () => {
         }
       },
       {
-        key: 'alatbayar_text',
+        key: 'alatbayar_nama',
         name: 'Alat Bayar',
         resizable: true,
         draggable: true,
@@ -951,11 +956,11 @@ const GridKasGantungHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onContextMenu={handleContextMenu}
-              onClick={() => handleSort('alatbayar_text')}
+              onClick={() => handleSort('alatbayar_nama')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'alatbayar_text'
+                  filters.sortBy === 'alatbayar_nama'
                     ? 'font-bold'
                     : 'font-normal'
                 }`}
@@ -963,10 +968,10 @@ const GridKasGantungHeader = () => {
                 Alat Bayar
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'alatbayar_text' &&
+                {filters.sortBy === 'alatbayar_nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'alatbayar_text' &&
+                ) : filters.sortBy === 'alatbayar_nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -978,19 +983,19 @@ const GridKasGantungHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['alatbayar_text'] = el;
+                  inputColRefs.current['alatbayar_nama'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.alatbayar_text || ''}
+                value={filters.filters.alatbayar_nama || ''}
                 onChange={(e) => {
                   const value = e.target.value;
-                  handleColumnFilterChange('alatbayar_text', value);
+                  handleColumnFilterChange('alatbayar_nama', value);
                 }}
               />
-              {filters.filters.alatbayar_text && (
+              {filters.filters.alatbayar_nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('alatbayar_text', '')}
+                  onClick={() => handleColumnFilterChange('alatbayar_nama', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -1000,11 +1005,11 @@ const GridKasGantungHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.alatbayar_text || '';
+          const columnFilter = filters.filters.alatbayar_nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.alatbayar_text || '',
+                props.row.alatbayar_nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -1630,7 +1635,7 @@ const GridKasGantungHeader = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: PengembalianKasGantungHeaderInput) => {
+  const onSubmit = async (values: KasGantungHeaderInput) => {
     const selectedRowId = rows[selectedRow]?.id;
 
     if (mode === 'delete') {
@@ -1654,7 +1659,7 @@ const GridKasGantungHeader = () => {
       return;
     }
     if (mode === 'add') {
-      const newOrder = await createPengembalianKasgantungHeader(
+      const newOrder = await createKasGantung(
         {
           ...values,
           details: values.details.map((detail: any) => ({
@@ -2164,10 +2169,10 @@ const GridKasGantungHeader = () => {
 
       forms.setValue('nobukti', row.nobukti);
       forms.setValue('tglbukti', row.tglbukti);
-      forms.setValue('keterangan', row.keterangan ?? null);
+      forms.setValue('keterangan', row.keterangan ?? '');
       forms.setValue('bank_id', row.bank_id ?? null);
-      forms.setValue('penerimaan_nobukti', row.penerimaan_nobukti ?? null);
-      forms.setValue('coakasmasuk', row.coakasmasuk ?? null);
+      forms.setValue('pengeluaran_nobukti', row.pengeluaran_nobukti ?? '');
+      forms.setValue('coakaskeluar', row.coakaskeluar ?? '');
       forms.setValue('relasi_id', row.relasi_id ?? null);
       forms.setValue('bank_nama', row.bank_nama);
       forms.setValue('relasi_nama', row.relasi_nama);
@@ -2177,6 +2182,9 @@ const GridKasGantungHeader = () => {
       // Clear or set defaults when adding a new record
       forms.setValue('bank_nama', '');
       forms.setValue('relasi_nama', '');
+      forms.setValue('alatbayar_nama', '');
+      forms.setValue('pengeluaran_nobukti', '');
+      forms.setValue('coakaskeluar', '');
     }
   }, [forms, selectedRow, rows, mode]);
 
@@ -2189,6 +2197,7 @@ const GridKasGantungHeader = () => {
     });
   }, []);
 
+  console.log('forms.getValues()', forms.getValues());
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

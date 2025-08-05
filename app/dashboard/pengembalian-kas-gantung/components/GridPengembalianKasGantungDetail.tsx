@@ -16,6 +16,7 @@ import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
 import { useGetPengembalianKasGantungDetail } from '@/lib/server/usePengembalianKasGantung';
 import { IPengembalianKasGantungDetail } from '@/lib/types/pengembaliankasgantung.type';
+import { formatCurrency } from '@/lib/utils';
 
 interface GridConfig {
   columnsOrder: number[];
@@ -135,7 +136,7 @@ const GridPengembalianKasGantungDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.nominal}
+              {formatCurrency(props.row.nominal)}
             </div>
           );
         }

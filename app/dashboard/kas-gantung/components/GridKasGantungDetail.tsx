@@ -15,7 +15,8 @@ import { FaPen } from 'react-icons/fa';
 import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
 import { IPengembalianKasGantungDetail } from '@/lib/types/pengembaliankasgantung.type';
-import { useGetKasGantungDetail } from '@/lib/server/useKasGantungHeader';
+import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
+import { formatCurrency } from '@/lib/utils';
 
 interface GridConfig {
   columnsOrder: number[];
@@ -135,7 +136,7 @@ const GridKasGantungDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.nominal}
+              {formatCurrency(props.row.nominal)}
             </div>
           );
         }

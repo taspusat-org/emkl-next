@@ -6,7 +6,10 @@ import {
 import { buildQueryParams } from '../utils';
 import { api2 } from '../utils/AxiosInstance';
 import { PengembalianKasGantungHeaderInput } from '../validations/pengembaliankasgantung.validation';
-
+interface UpdateParams {
+  id: string;
+  fields: PengembalianKasGantungHeaderInput;
+}
 export const getPengembalianKasGantungHeaderFn = async (
   filters: GetParams = {}
 ): Promise<IAllPengembalianKasGantung> => {
@@ -54,5 +57,15 @@ export const getPengembalianKasGantungDetailFn = async (
 ): Promise<IAllPengembalianKasGantungDetail> => {
   const response = await api2.get(`/pengembaliankasgantungdetail/${id}`);
 
+  return response.data;
+};
+export const updatePengembalianKasGantungFn = async ({
+  id,
+  fields
+}: UpdateParams) => {
+  const response = await api2.put(
+    `/pengembaliankasgantungheader/${id}`,
+    fields
+  );
   return response.data;
 };

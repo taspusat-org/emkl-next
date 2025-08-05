@@ -1,10 +1,11 @@
 import { clearCredentials } from '@/lib/store/authSlice/authSlice';
 import { RootState } from '@/lib/store/store';
+import { deleteCookie } from '@/lib/utils/cookie-actions';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-const IDLE_TIMEOUT = 30 * 60 * 1000; // 5 menit dalam milidetik
+const IDLE_TIMEOUT = 60 * 30 * 1000; // 30 detik
 
 export const useIdleTimer = () => {
   const router = useRouter();
@@ -21,7 +22,8 @@ export const useIdleTimer = () => {
       if (Date.now() - autoLogoutExpires > IDLE_TIMEOUT) {
         dispatch(clearCredentials()); // Auto logout jika sudah idle lebih dari 5 menit
         clearInterval(checkIdle);
-        router.push('/auth/signin');
+        deleteCookie(); // Hapus cookie
+        router.refresh();
       }
     }, 1000); // Cek setiap detik
 

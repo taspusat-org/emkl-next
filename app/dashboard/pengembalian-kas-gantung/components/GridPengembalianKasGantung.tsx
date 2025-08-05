@@ -61,7 +61,8 @@ import ReportDesignerMenu from '@/app/reports/menu/page';
 import FormPengembalianKasGantung from './FormPengembalianKasGantung';
 import {
   useCreatePengembalianKasGantung,
-  useGetPengembalianKasGantung
+  useGetPengembalianKasGantung,
+  useUpdatePengembalianKasGantung
 } from '@/lib/server/usePengembalianKasGantung';
 import {
   filterPengembalianKasGantung,
@@ -80,6 +81,7 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
+import { formatDateToDDMMYYYY } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -105,14 +107,15 @@ const GridPengembalianKasGantung = () => {
     mutateAsync: createPengembalianKasgantungHeader,
     isLoading: isLoadingCreate
   } = useCreatePengembalianKasGantung();
-  const { mutateAsync: updateMenu, isLoading: isLoadingUpdate } =
-    useUpdateMenu();
+  const { mutateAsync: update, isLoading: isLoadingUpdate } =
+    useUpdatePengembalianKasGantung();
+  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
+    useDeleteMenu();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
-    useDeleteMenu();
+
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -147,8 +150,8 @@ const GridPengembalianKasGantung = () => {
       tglbukti: '',
       keterangan: null,
       bank_id: null,
-      penerimaan_nobukti: null,
-      coakasmasuk: null,
+      penerimaan_nobukti: '',
+      coakasmasuk: '',
       relasi_id: null,
       details: []
     }
@@ -1315,14 +1318,13 @@ const GridPengembalianKasGantung = () => {
     }
 
     if (selectedRowId && mode === 'edit') {
-      await updateMenu(
+      await update(
         {
           id: selectedRowId as unknown as string,
           fields: { ...values, ...filters }
         },
         { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
       );
-      queryClient.invalidateQueries('menus');
     }
   };
 
@@ -1725,7 +1727,13 @@ const GridPengembalianKasGantung = () => {
       dispatch(setHeaderData(rows[0]));
       setIsFirstLoad(false);
     }
-  }, [rows, isFirstLoad]);
+  }, [rows, isFirstLoad, dispatch]);
+  useEffect(() => {
+    if (rows.length > 0 && selectedRow !== null) {
+      const selectedRowData = rows[selectedRow];
+      dispatch(setHeaderData(selectedRowData));
+    }
+  }, [rows, selectedRow, dispatch]);
   useEffect(() => {
     if (!allData || isFetchingManually || isDataUpdated) return;
 
@@ -1802,7 +1810,6 @@ const GridPengembalianKasGantung = () => {
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
-
       forms.setValue('nobukti', row.nobukti);
       forms.setValue('tglbukti', row.tglbukti);
       forms.setValue('keterangan', row.keterangan ?? null);
@@ -1816,8 +1823,10 @@ const GridPengembalianKasGantung = () => {
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
       // Clear or set defaults when adding a new record
+      const currentDate = new Date(); // Dapatkan tanggal sekarang
       forms.setValue('bank_nama', '');
       forms.setValue('relasi_nama', '');
+      forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
     }
   }, [forms, selectedRow, rows, mode]);
 
@@ -1829,7 +1838,7 @@ const GridPengembalianKasGantung = () => {
       }
     });
   }, []);
-
+  console.log('getValues', forms.getValues());
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

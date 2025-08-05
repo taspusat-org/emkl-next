@@ -39,15 +39,12 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { parse } from 'date-fns';
-import {
-  useGetKasGantungDetail,
-  useGetKasGantungHeader
-} from '@/lib/server/useKasGantungHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import { KasGantungDetail } from '@/lib/types/kasgantungheader.type';
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
+import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 const FormKasGantung = ({
   popOver,
   setPopOver,
@@ -99,7 +96,6 @@ const FormKasGantung = ({
   const addRow = () => {
     const newRow: Partial<KasGantungDetail> & { isNew: boolean } = {
       id: 0, // Placeholder ID
-      kasgantung_id: headerData?.id ?? 0,
       nobukti: '',
       keterangan: '',
       nominal: '',
@@ -192,42 +188,60 @@ const FormKasGantung = ({
     handleInputChange(rowIdx, 'nominal', formatted);
   };
 
-  const handleCurrencyBlur = (formattedStr: string, rowId: number) => {
-    // Cek apakah value sudah diformat dengan benar (misalnya "10,000.00")
+  const handleCurrencyBlur = (formattedStr: string, rowIdx: number) => {
     if (!formattedStr.includes(',')) {
-      // Jika belum ada koma (misal inputan baru), jangan lakukan apapun
       return;
     }
 
-    // jika sudah diformat, periksa apakah ada dua digit desimal
     if (!formattedStr.includes('.')) {
-      // Tambahkan .00 jika tidak ada desimal
       const finalValue = formattedStr + '.00';
       setRows((rs) =>
-        rs.map((r) => (r.id === rowId ? { ...r, nominal: finalValue } : r))
+        rs.map((r, idx) => (idx === rowIdx ? { ...r, nominal: finalValue } : r))
       );
     } else {
-      // Jika sudah ada dua desimal, pastikan format tidak berubah
       setRows((rs) =>
-        rs.map((r) => (r.id === rowId ? { ...r, nominal: formattedStr } : r))
+        rs.map((r, idx) =>
+          idx === rowIdx ? { ...r, nominal: formattedStr } : r
+        )
       );
     }
   };
+  const handleFocus = (rowIdx: number) => {
+    setRows((prevRows) => {
+      return prevRows.map((row, idx) => {
+        if (idx === rowIdx) {
+          // Ensure isNew is always a boolean
+          const updatedNominal = row.nominal?.endsWith('.00')
+            ? row.nominal.slice(0, -3)
+            : row.nominal;
 
-  console.log('rows', rows);
+          return {
+            ...row,
+            nominal: updatedNominal, // Update nominal value
+            isNew: row.isNew === true ? true : false // Explicitly ensure isNew is a boolean
+          };
+        }
+        return row;
+      });
+    });
+  };
+  const totalNominal = rows.reduce(
+    (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
+    0
+  );
   const columns = useMemo((): Column<KasGantungDetail>[] => {
     return [
       {
-        key: 'action',
+        key: 'aksi',
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
         renderHeaderCell: () => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
-            <p className="text-sm font-normal">Actions</p>
+            <p className="text-sm font-normal">aksi</p>
           </div>
         ),
-        name: 'Actions',
+        name: 'aksi',
 
         renderCell: (props: any) => {
           // If this row is the "Add Row" row, display the Add Row button
@@ -268,7 +282,7 @@ const FormKasGantung = ({
         colSpan: (args) => {
           // If it's the "Add Row" row, span across multiple columns
           if (args.type === 'ROW' && args.row.isAddRow) {
-            return 5; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 4; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
@@ -287,7 +301,7 @@ const FormKasGantung = ({
         renderCell: (props: any) => {
           return (
             <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
-              {props.row.isAddRow ? '' : props.rowIdx + 1}
+              {props.row.isAddRow ? 'TOTAL' : props.rowIdx + 1}
             </div>
           );
         }
@@ -317,6 +331,8 @@ const FormKasGantung = ({
               ) : (
                 <Input
                   type="text"
+                  disabled
+                  readOnly
                   value={props.row.nomorbukti}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
@@ -356,65 +372,22 @@ const FormKasGantung = ({
               {props.row.isAddRow ? (
                 ''
               ) : (
-                <Input
-                  type="text"
-                  value={props.row.tglbukti}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'tglbukti', e.target.value)
-                  }
-                  className="w-full rounded border border-gray-300 px-2 py-1"
-                />
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'nominal',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>Nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
-          </div>
-        ),
-        name: 'nominal',
-        renderCell: (props: any) => {
-          const rowId = props.row.id;
-          let value = props.row.nominal ?? ''; // Ambil nilai nominal
-          const raw = props.row.nominal ?? '';
-          const displayValue =
-            typeof props.row.nominal === 'number'
-              ? props.row.nominal.toLocaleString('en-US', {
-                  minimumFractionDigits: 2
-                })
-              : props.row.nominal;
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <InputMask
-                  mask="" // biar kita yang atur formatting
-                  maskPlaceholder={null}
-                  className="h-7 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  value={String(raw)}
-                  beforeMaskedStateChange={beforeMaskedStateChange}
-                  onChange={(e) =>
-                    handleCurrencyChange(props.rowIdx, e.target.value)
-                  }
-                  onBlur={() => handleCurrencyBlur(props.row.nominal, rowId)}
-                />
+                <>
+                  <InputDatePicker
+                    value={props.row.tglbukti}
+                    onChange={(e) =>
+                      handleInputChange(
+                        props.rowIdx,
+                        'tglbukti',
+                        e.target.value
+                      )
+                    }
+                    showCalendar
+                    onSelect={(date) =>
+                      handleInputChange(props.rowIdx, 'tglbukti', date)
+                    }
+                  />
+                </>
               )}
             </div>
           );
@@ -455,6 +428,49 @@ const FormKasGantung = ({
                     )
                   }
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Nominal</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'nominal',
+        renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          const raw = props.row.nominal ?? '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                <div>{formatCurrency(totalNominal)}</div>
+              ) : (
+                <InputMask
+                  mask="" // biar kita yang atur formatting
+                  maskPlaceholder={null}
+                  className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e: any) => e.stopPropagation()}
+                  value={String(raw)}
+                  beforeMaskedStateChange={beforeMaskedStateChange}
+                  onChange={(e: any) =>
+                    handleCurrencyChange(rowIdx, e.target.value)
+                  }
+                  onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
+                  onFocus={() => handleFocus(rowIdx)}
                 />
               )}
             </div>
@@ -593,10 +609,9 @@ const FormKasGantung = ({
   useEffect(() => {
     if (allData && popOver) {
       // If there is data, add the data rows and the "Add Row" button row at the end
-      if (allData?.data?.length > 0) {
+      if (allData?.data?.length > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
-          kasgantung_id: headerData?.id ?? 0,
           nobukti: item.nobukti ?? '',
           nominal: item.nominal ?? '',
           keterangan: item.keterangan ?? '',
@@ -610,7 +625,6 @@ const FormKasGantung = ({
         setRows([
           {
             id: 0,
-            kasgantung_id: headerData?.id ?? 0,
             nobukti: '',
             nominal: '',
             keterangan: '',
@@ -620,7 +634,18 @@ const FormKasGantung = ({
         ]);
       }
     }
-  }, [allData, headerData?.id, popOver]);
+  }, [allData, headerData?.id, popOver, mode]);
+  useEffect(() => {
+    if (rows) {
+      // Filter out the `isNew` field and any object with `id: "add_row"`
+      const filteredRows = rows
+        .filter((row) => row.id !== 'add_row') // Exclude rows with id "add_row"
+        .map(({ isNew, ...rest }) => rest); // Remove `isNew` field from each row
+
+      forms.setValue('details', filteredRows);
+    }
+  }, [rows]);
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -744,24 +769,48 @@ const FormKasGantung = ({
                   </div>
                   <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
                     <p className="text-sm text-black">POSTING PENERIMAAN</p>
-                    <div className="flex w-full flex-col lg:flex-row lg:items-center">
-                      <div className="w-full lg:w-[15%]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
-                          KAS/BANK
-                        </FormLabel>
+
+                    <div className="flex flex-row lg:gap-3">
+                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <div className="w-full lg:w-[15%]">
+                          <FormLabel className="text-sm font-semibold text-gray-700">
+                            KAS/BANK
+                          </FormLabel>
+                        </div>
+                        <div className="w-full lg:w-[70%]">
+                          {lookUpPropsBank.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('bank_id', Number(id))
+                              }
+                              inputLookupValue={forms.getValues('bank_id')}
+                              lookupNama={forms.getValues('bank_nama')}
+                            />
+                          ))}
+                        </div>
                       </div>
-                      <div className="w-full lg:w-[35%]">
-                        {lookUpPropsBank.map((props, index) => (
-                          <LookUp
-                            key={index}
-                            {...props}
-                            lookupValue={(id) =>
-                              forms.setValue('bank_id', Number(id))
-                            }
-                            inputLookupValue={forms.getValues('bank_id')}
-                            lookupNama={forms.getValues('bank_nama')}
-                          />
-                        ))}
+                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <div className="w-full lg:w-[15%]">
+                          <FormLabel className="text-sm font-semibold text-gray-700">
+                            ALAT BAYAR
+                          </FormLabel>
+                        </div>
+                        <div className="w-full lg:w-[70%]">
+                          {lookUpPropsAlatBayar.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('alatbayar_id', Number(id))
+                              }
+                              linkValue={forms.getValues('bank_nama')}
+                              inputLookupValue={forms.getValues('alatbayar_id')}
+                              lookupNama={forms.getValues('alatbayar_nama')}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -771,7 +820,7 @@ const FormKasGantung = ({
                         render={({ field }) => (
                           <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
                             <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                              NO BUKTI KAS GANTUNG
+                              NO BUKTI KAS KELUAR
                             </FormLabel>
                             <div className="flex flex-col lg:w-[35%]">
                               <FormControl>

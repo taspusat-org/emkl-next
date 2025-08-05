@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
   getPengembalianKasGantungDetailFn,
   getPengembalianKasGantungHeaderFn,
-  storePengembalianKasGantungFn
+  storePengembalianKasGantungFn,
+  updatePengembalianKasGantungFn
 } from '../apis/pengembaliankasgantung.api';
 import { useToast } from '@/hooks/use-toast';
 import { useAlert } from '../store/client/useAlert';
@@ -39,7 +40,7 @@ export const useGetPengembalianKasGantung = (
   const queryClient = useQueryClient();
 
   return useQuery(
-    ['pengembaliankasgantungheader', filters],
+    ['pengembaliankasgantung', filters],
     async () => {
       // Only trigger processing if the page is 1
       if (filters.page === 1) {
@@ -85,7 +86,7 @@ export const useCreatePengembalianKasGantung = () => {
     },
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
-      void queryClient.invalidateQueries(['pengembaliankasgantungheader']);
+      void queryClient.invalidateQueries(['pengembaliankasgantung']);
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -110,10 +111,34 @@ export const useCreatePengembalianKasGantung = () => {
 };
 export const useGetPengembalianKasGantungDetail = (id?: number) => {
   return useQuery(
-    ['pengembaliankasgantungdetail', id],
+    ['pengembaliankasgantung', id],
     async () => await getPengembalianKasGantungDetailFn(id!),
     {
       enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
   );
+};
+export const useUpdatePengembalianKasGantung = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(updatePengembalianKasGantungFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('pengembaliankasgantung');
+      toast({
+        title: 'Proses Berhasil.',
+        description: 'Data Berhasil Diubah.'
+      });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
+    }
+  });
 };

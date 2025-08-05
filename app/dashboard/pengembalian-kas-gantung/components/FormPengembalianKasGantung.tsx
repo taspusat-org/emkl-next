@@ -40,9 +40,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon } from 'lucide-react';
 import { parse } from 'date-fns';
 import { KasGantungHeader } from '@/lib/types/kasgantungheader.type';
-import { useGetKasGantungHeader } from '@/lib/server/useKasGantungHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
+import {
+  useGetKasGantungHeader,
+  useGetKasGantungHeaderPengembalian
+} from '@/lib/server/useKasGantung';
 const FormPengembalianKasGantung = ({
   popOver,
   setPopOver,
@@ -60,9 +63,6 @@ const FormPengembalianKasGantung = ({
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
   const [popOverTglSampai, setPopOverTglSampai] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
-  const [editableValues, setEditableValues] = useState<Map<number, string>>(
-    new Map()
-  ); // Nilai yang sedang diedit untuk setiap baris
   const [tglDari, setTglDari] = useState<string>('');
   const [tglSampai, setTglSampai] = useState<string>('');
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
@@ -82,13 +82,9 @@ const FormPengembalianKasGantung = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetKasGantungHeader({
-    filters: {
-      tglDari: tglDari,
-      tglSampai: tglSampai
-    }
-    // ...filters,
-    // page: currentPage
+  } = useGetKasGantungHeaderPengembalian({
+    dari: tglDari,
+    sampai: tglSampai
   });
 
   const [rows, setRows] = useState<KasGantungHeader[]>([]);
@@ -149,16 +145,17 @@ const FormPengembalianKasGantung = ({
 
   // Fungsi untuk menangani double click (memulai mode edit dengan nilai yang diformat)
   const handleDoubleClick = (rowId: number, initialValue: string | number) => {
-    // Check if the row is selected (checked)
     if (!checkedRows.has(rowId)) {
       return; // Don't proceed if the row is not selected
     }
 
-    // Save the original value (without formatting) so that when editing, the raw value is used
-    const raw =
-      typeof initialValue === 'number' ? initialValue.toString() : initialValue;
-    setEditableValues((prev) => new Map(prev).set(rowId, raw));
     setEditingRowId(rowId);
+  };
+  const formatWithCommas = (val: string): string => {
+    // ambil cuma digit
+    const digits = val.replace(/\D/g, '');
+    // sisipkan koma setiap 3 digit dari kanan
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
   // Fungsi untuk menangani perubahan input
@@ -167,13 +164,12 @@ const FormPengembalianKasGantung = ({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const newValue = e.target.value;
-    setEditableValues((prev) => new Map(prev).set(rowId, newValue)); // Update the raw input value
-    const parsedNominal = parseCurrency(newValue); // Parse raw value to number
+    const formatted = formatWithCommas(newValue);
 
     // Update the corresponding nominal value in the row
     setRows((prevRows) =>
       prevRows.map((row) =>
-        row.id === rowId ? { ...row, nominal: String(parsedNominal) } : row
+        row.id === rowId ? { ...row, nominal: String(formatted) } : row
       )
     );
 
@@ -181,7 +177,7 @@ const FormPengembalianKasGantung = ({
     const updatedDetails = forms.getValues('details') || []; // Get the current details
     const updatedArray = updatedDetails.map((detail: any) =>
       detail.id === rowId
-        ? { ...detail, nominal: parsedNominal } // Update only the correct detail
+        ? { ...detail, nominal: formatted } // Update only the correct detail
         : detail
     );
 
@@ -189,76 +185,86 @@ const FormPengembalianKasGantung = ({
     forms.setValue('details', updatedArray);
   };
 
-  const beforeMaskedValueChange = (
-    newState: { value: string; selection: { start: number; end: number } },
-    oldState: { value: string },
-    userInput: string | null
-  ) => {
-    let { value, selection } = newState;
+  const beforeMaskedStateChange = ({
+    previousState,
+    currentState,
+    nextState
+  }: {
+    previousState: { value: string; selection: any };
+    currentState: { value: string; selection: any };
+    nextState: { value: string; selection: any };
+  }) => {
+    const nextVal = nextState.value || '';
+    // a) ambil hanya digit & titik
+    const raw = nextVal.replace(/[^0-9.]/g, '');
+    // b) split integer & decimal (hanya 1 dot pertama)
+    const [intPart, ...rest] = raw.split('.');
+    const decPart = rest.join(''); // kalau user ngetik lebih dari 1 dot, kita gabung sisanya
 
-    // 1. Ambil hanya digit & koma
-    let raw = value.replace(/[^0-9,]/g, '');
+    // c) format integer part dengan koma sebagai ribuan
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-    // 2. Jika operasi delete/backspace atau select-all+delete,
-    //    dan setelah itu tidak ada digit sama sekali → kosongkan
-    if (
-      (userInput === null || userInput === '') &&
-      raw.replace(/,/g, '').length === 0
-    ) {
-      return { value: '', selection: { start: 0, end: 0 } };
+    // d) kalau ada decimal part, re‐attach
+    const formatted =
+      decPart.length > 0 ? `${formattedInt}.${decPart}` : formattedInt;
+
+    // e) cursor selalu di akhir
+    const pos = formatted.length;
+    return {
+      value: formatted,
+      selection: { start: pos, end: pos }
+    };
+  };
+  const handleBlur = (formattedStr: string, rowId: number) => {
+    if (!formattedStr.includes(',')) {
+      return;
     }
 
-    // 3. Hanya keep satu koma pertama (seluruh sisanya dianggap desimal)
-    const [intPart, ...decParts] = raw.split(',');
-    const decPart = decParts.join('');
-
-    // 4. Format ribuan di integer part
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    // 5. Satukan lagi dengan koma jika ada decimal
-    const formatted = decPart ? `${formattedInt},${decPart}` : formattedInt;
-
-    return { value: formatted, selection };
-  };
-
-  const handleBlur = (rowId: number) => {
     setEditingRowId(null);
 
-    const newEditableValues = new Map(editableValues);
-    let newValue = newEditableValues.get(rowId) || '';
+    const finalValue = formattedStr + '.00';
 
-    // Parse the raw value from the input
-    const parsedValue = parseCurrency(newValue);
-
-    // Format the value back to currency for display
-    const formattedValue = formatCurrency(parsedValue);
-
-    // Update rows with the parsed value
-    setRows((prevRows) =>
-      prevRows.map((row) =>
-        row.id === rowId ? { ...row, nominal: String(parsedValue) } : row
-      )
-    );
+    if (!formattedStr.includes('.')) {
+      setRows((prevRows) =>
+        prevRows.map((row) =>
+          row.id === rowId ? { ...row, nominal: String(finalValue) } : row
+        )
+      );
+    } else {
+      setRows((rs) =>
+        rs.map((r) => (r.id === rowId ? { ...r, nominal: formattedStr } : r))
+      );
+    }
 
     // Ensure the 'nominal' field in 'details' is updated in the form
     const updatedDetails = forms.getValues('details') || []; // Get the current details
     const updatedArray = updatedDetails.map((detail: any) =>
       detail.id === rowId
-        ? { ...detail, nominal: formattedValue } // Update only the correct detail
+        ? { ...detail, nominal: finalValue } // Update only the correct detail
         : detail
     );
 
     // Set updated array to 'details'
     forms.setValue('details', updatedArray);
+  };
+  const handleFocus = (rowIdx: number) => {
+    setRows((prevRows) => {
+      return prevRows.map((row, idx) => {
+        if (idx === rowIdx) {
+          // Ensure isNew is always a boolean
+          const updatedNominal = row.nominal?.endsWith('.00')
+            ? row.nominal.slice(0, -3)
+            : row.nominal;
 
-    // Reset editableValues after editing
-    setEditableValues((prev) => {
-      const updated = new Map(prev);
-      updated.delete(rowId);
-      return updated;
+          return {
+            ...row,
+            nominal: updatedNominal // Update nominal value
+          };
+        }
+        return row;
+      });
     });
   };
-
   const handleColumnFilterChange = (
     colKey: keyof typeof filters,
     value: string
@@ -541,11 +547,9 @@ const FormPengembalianKasGantung = ({
         ),
         name: 'sisa',
         renderCell: (props: any) => {
-          const parsedNominal = parseCurrency(
-            editableValues.get(props.row.id) || props.row.nominal
-          );
-          const newSisa = props.row.sisa - (parsedNominal ? parsedNominal : 0);
-
+          const parsedNominal = parseCurrency(props.row.nominal);
+          const newSisa =
+            parseCurrency(props.row.sisa) - (parsedNominal ? parsedNominal : 0);
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {/* {lookUpPropsRelasi.map((props, index) => (
@@ -570,86 +574,6 @@ const FormPengembalianKasGantung = ({
           );
         }
       },
-      {
-        key: 'nominal',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>Nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={filters.nominal ? filters?.nominal?.toUpperCase() : ''}
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nominal', value);
-                }}
-              />
-              {filters.nominal && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nominal', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        name: 'nominal',
-        renderCell: (props: any) => {
-          const rowId = props.row.id;
-
-          // Pengecekan apakah baris dalam mode edit dan baris ini dicentang
-          const isEditing = rowId === editingRowId;
-          const value = isEditing
-            ? editableValues.get(rowId) ?? '' // saat edit, gunakan raw
-            : formatCurrency(props.row.nominal); // saat display, format
-
-          return (
-            <div
-              className="m-0 flex h-full w-full cursor-pointer items-center py-2 text-sm "
-              onDoubleClick={() => handleDoubleClick(rowId, props.row.nominal)} // Menambahkan event double click
-            >
-              {isEditing ? (
-                <InputMask
-                  mask="999.999.999.999,99" // Mask untuk format currency IDR
-                  maskPlaceholder={null}
-                  className={`h-7 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0`}
-                  maskChar={null}
-                  value={value ?? ''}
-                  beforeMaskedValueChange={beforeMaskedValueChange}
-                  autoFocus
-                  onChange={(e: any) => handleChange(rowId, e)}
-                  onBlur={() => handleBlur(rowId)}
-                />
-              ) : (
-                <p className="text-sm">
-                  {highlightText(
-                    formatCurrency(props.row.nominal) || '',
-                    filters.nominal
-                  )}
-                </p> // Menampilkan nilai jika tidak dalam mode edit
-              )}
-            </div>
-          );
-        },
-        renderSummaryCell: () => {
-          return (
-            <div className="text-sm font-semibold">
-              {summaryRows[0]?.totalNominal}
-            </div>
-          );
-        }
-      },
-
       {
         key: 'keterangan',
         headerCellClass: 'column-headers',
@@ -693,16 +617,87 @@ const FormPengembalianKasGantung = ({
             </div>
           );
         }
+      },
+      {
+        key: 'nominal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>Nominal</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.nominal ? filters?.nominal?.toUpperCase() : ''}
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('nominal', value);
+                }}
+              />
+              {filters.nominal && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('nominal', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        name: 'nominal',
+        renderCell: (props: any) => {
+          const rowId = props.row.id;
+          const rowIdx = props.rowIdx;
+
+          // Pengecekan apakah baris dalam mode edit dan baris ini dicentang
+          const isEditing = rowId === editingRowId;
+          const raw = props.row.nominal ?? '';
+          return (
+            <div
+              className="m-0 flex h-full w-full cursor-pointer items-center py-2 text-sm "
+              onDoubleClick={() => handleDoubleClick(rowId, props.row.nominal)} // Menambahkan event double click
+            >
+              {isEditing ? (
+                <InputMask
+                  mask=""
+                  maskPlaceholder={null}
+                  className={`h-7 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0`}
+                  maskChar={null}
+                  value={String(raw) ?? ''}
+                  beforeMaskedStateChange={beforeMaskedStateChange}
+                  autoFocus
+                  onChange={(e: any) => handleChange(rowId, e)}
+                  onBlur={() => handleBlur(props.row.nominal, rowId)}
+                  onFocus={() => handleFocus(rowIdx)}
+                />
+              ) : (
+                <p className="text-sm">
+                  {highlightText(
+                    formatCurrency(props.row.nominal) || '',
+                    filters.nominal
+                  )}
+                </p> // Menampilkan nilai jika tidak dalam mode edit
+              )}
+            </div>
+          );
+        },
+        renderSummaryCell: () => {
+          return (
+            <div className="text-sm font-semibold">
+              {summaryRows[0]?.totalNominal}
+            </div>
+          );
+        }
       }
     ];
-  }, [
-    rows,
-    checkedRows,
-    editingRowId,
-    editableValues,
-    filteredRows,
-    summaryRows
-  ]);
+  }, [rows, checkedRows, editingRowId, filteredRows, summaryRows]);
   const lookUpPropsRelasi = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
@@ -851,8 +846,9 @@ const FormPengembalianKasGantung = ({
     // Hanya mengupdate rows jika isReload bernilai true
     if (isReload && allData) {
       const newRows =
-        allData?.data.map((row: KasGantungHeader) => ({
+        allData?.map((row: KasGantungHeader) => ({
           ...row,
+          id: Number(row.id),
           nominal: row.nominal ?? '' // Jika nominal tidak ada, set default ke ""
         })) || [];
       setRows(newRows);
@@ -862,11 +858,28 @@ const FormPengembalianKasGantung = ({
 
   useEffect(() => {
     const currentDate = new Date(); // Dapatkan tanggal sekarang
-    const formattedDate = formatDateToDDMMYYYY(currentDate); // Format ke DD-MM-YYYY
-    setTglDari(formattedDate); // Set nilai tglDari
-    setTglSampai(formattedDate); // Set nilai tglSampai
-    forms.setValue('tglbukti', formattedDate); // Set nilai tglbukti di form
-  }, [forms]); // Empty dependency array memastikan ini hanya dijalankan sekali saat komponen dimuat
+
+    // Set tglDari to the first day of the current month
+    const firstDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    );
+    const formattedTglDari = formatDateToDDMMYYYY(firstDayOfMonth); // Format ke DD-MM-YYYY
+    setTglDari(formattedTglDari); // Set nilai tglDari
+
+    // Set tglSampai to the last day of the current month
+    const lastDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0
+    );
+    const formattedTglSampai = formatDateToDDMMYYYY(lastDayOfMonth); // Format ke DD-MM-YYYY
+    setTglSampai(formattedTglSampai); // Set nilai tglSampai
+
+    // Set tglbukti di form
+    forms.setValue('tglbukti', formattedTglSampai); // Or you can use formattedTglDari depending on your use case
+  }, [forms]); // Dependency array ensures it runs only once when the component is mounted
 
   // Calculate the total sums of `sisa` and `nominal` dynamically
 

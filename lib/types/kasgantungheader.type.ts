@@ -6,7 +6,12 @@ export interface KasGantungHeader {
   tglbukti: string | null; // Nullable date field
   keterangan: string | null;
   bank_id: number | null;
+  relasi_id: number | null;
+  alatbayar_id: number | null;
   pengeluaran_nobukti: string | null;
+  relasi_nama: string | null;
+  alatbayar_nama: string | null;
+  bank_nama: string | null;
   coakaskeluar: string | null;
   nominal: string | null;
   dibayarke: string | null;
@@ -48,6 +53,7 @@ export const filterKasGantung = {
   tglbukti: '',
   bank_nama: '',
   relasi_nama: '',
+  alatbayar_nama: '',
   keterangan: null,
   bank_id: null,
   pengeluaran_nobukti: '',
