@@ -34,6 +34,7 @@ export interface DateInputProps
   toYear?: number;
   /** Additional CSS classes for wrapper */
   className?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -47,6 +48,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
   fromYear = 1960,
   toYear = 2030,
   className = '',
+  disabled = false,
   ...rest
 }) => {
   const [open, setOpen] = useState(false);
@@ -69,7 +71,9 @@ const InputDatePicker: React.FC<DateInputProps> = ({
       <InputMask
         mask={dateMask}
         {...rest}
-        className="h-9 w-full rounded-sm px-3 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
+        className={`h-9 w-full rounded-sm px-3 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 
+          ${disabled ? 'cursor-not-allowed bg-gray-100 text-gray-500' : ''}
+        `}
         maskPlaceholder="DD-MM-YYYY"
         placeholder="DD-MM-YYYY"
         alwaysShowMask
@@ -146,7 +150,13 @@ const InputDatePicker: React.FC<DateInputProps> = ({
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="flex h-9 w-9 cursor-pointer items-center justify-center border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#abcbfd]"
+              disabled={disabled}
+              className={`flex h-9 w-9 items-center justify-center border 
+                ${
+                  disabled
+                    ? 'cursor-not-allowed bg-gray-200 text-gray-400'
+                    : 'cursor-pointer border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#abcbfd]'
+                }`}
             >
               <FaCalendarAlt className="h-4 w-4 text-[#0e2d5f]" />
             </button>

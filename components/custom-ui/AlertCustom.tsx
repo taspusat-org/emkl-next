@@ -144,7 +144,7 @@ export default function Alert({
           )}
 
           <div className="mt-1 text-center">
-            <h3 className="text-title text-base font-medium uppercase leading-6 text-zinc-900 md:text-3xl lg:text-xs">
+            <h3 className="text-title text-base font-medium uppercase leading-6 text-zinc-900 md:text-xs lg:text-xs">
               {title}
             </h3>
           </div>

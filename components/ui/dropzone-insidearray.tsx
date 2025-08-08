@@ -18,7 +18,6 @@ const ImageDropzoneArray: React.FC<ImageDropzoneProps> = ({
   const [isModalOpen, setModalOpen] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0); // Index for the active image
   useEffect(() => {
-    console.log('value', value);
     if (value) {
       if (Array.isArray(value)) {
         setFiles(value as File[]);
@@ -56,7 +55,6 @@ const ImageDropzoneArray: React.FC<ImageDropzoneProps> = ({
     accept: { 'image/*': [], 'application/pdf': [] }, // Terima file gambar dan PDF
     onDrop
   });
-  console.log('files', files);
 
   return (
     <div className="w-auto">

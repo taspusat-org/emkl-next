@@ -21,7 +21,7 @@ export const pengembalianKasGantungHeaderSchema = z.object({
   coakasmasuk: z.string().nullable(),
   relasi_id: z.number().nullable(),
   relasi_nama: z.string().nullable(),
-  details: z.array(pengembalianKasGantungDetailSchema).min(1)
+  details: z.array(pengembalianKasGantungDetailSchema).optional().nullable()
 });
 export type PengembalianKasGantungHeaderInput = z.infer<
   typeof pengembalianKasGantungHeaderSchema

@@ -28,6 +28,7 @@ import headerReducer from './headerSlice/headerSlice';
 import filterReducer from './filterSlice/filterSlice';
 import loadingReducer from './loadingSlice/loadingSlice';
 import tabReducer from './tabSlice/tabSlice';
+import selectLookupReducer from './selectLookupSlice/selectLookupSlice';
 
 const persistConfig = {
   key: 'root',
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
   report: reportReducer,
   loading: loadingReducer,
   header: headerReducer,
+  selectLookup: selectLookupReducer,
   tab: tabReducer
 });
 

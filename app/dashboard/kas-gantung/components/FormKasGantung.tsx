@@ -70,7 +70,6 @@ const FormKasGantung = ({
 
   const [filters, setFilters] = useState({
     nobukti: '',
-    tglbukti: '',
     keterangan: '',
     sisa: '',
     nominal: ''
@@ -189,12 +188,13 @@ const FormKasGantung = ({
   };
 
   const handleCurrencyBlur = (formattedStr: string, rowIdx: number) => {
-    if (!formattedStr.includes(',')) {
+    console.log(formattedStr);
+    if (!String(formattedStr).includes(',')) {
       return;
     }
 
-    if (!formattedStr.includes('.')) {
-      const finalValue = formattedStr + '.00';
+    if (!String(formattedStr).includes('.')) {
+      const finalValue = String(formattedStr) + '.00';
       setRows((rs) =>
         rs.map((r, idx) => (idx === rowIdx ? { ...r, nominal: finalValue } : r))
       );
@@ -206,29 +206,34 @@ const FormKasGantung = ({
       );
     }
   };
-  const handleFocus = (rowIdx: number) => {
+  const handleFocus = (rowIdx: number, raw: any) => {
     setRows((prevRows) => {
       return prevRows.map((row, idx) => {
         if (idx === rowIdx) {
-          // Ensure isNew is always a boolean
-          const updatedNominal = row.nominal?.endsWith('.00')
-            ? row.nominal.slice(0, -3)
-            : row.nominal;
+          // Pengecekan apakah nominal berformat dengan desimal '.00'
+          console.log(raw); // Menampilkan raw value yang dikirim
+
+          const updatedNominal =
+            raw && String(raw).includes('.00')
+              ? raw.toString().slice(0, -3) // Menghapus '.00' jika ada
+              : raw; // Jika tidak ada '.00', tetap seperti semula
 
           return {
             ...row,
-            nominal: updatedNominal, // Update nominal value
-            isNew: row.isNew === true ? true : false // Explicitly ensure isNew is a boolean
+            nominal: updatedNominal, // Update nilai nominal
+            isNew: row.isNew === true ? true : false // Memastikan isNew adalah boolean
           };
         }
         return row;
       });
     });
   };
+
   const totalNominal = rows.reduce(
     (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
     0
   );
+
   const columns = useMemo((): Column<KasGantungDetail>[] => {
     return [
       {
@@ -249,6 +254,7 @@ const FormKasGantung = ({
             return (
               <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
                 <button
+                  type="button"
                   className="items-center justify-center rounded bg-transparent text-[#076fde]"
                   onClick={addRow}
                 >
@@ -263,6 +269,7 @@ const FormKasGantung = ({
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
               <button
+                type="button"
                 className="rounded bg-transparent text-xs text-red-500"
                 onClick={() => deleteRow(rowIndex)}
               >
@@ -332,62 +339,9 @@ const FormKasGantung = ({
                 <Input
                   type="text"
                   disabled
-                  readOnly
-                  value={props.row.nomorbukti}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'nomorbukti',
-                      e.target.value
-                    )
-                  }
+                  value={props.row.nobukti}
                   className="w-full rounded border border-gray-300 px-2 py-1"
                 />
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'tglbukti',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>TGL Bukti</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
-          </div>
-        ),
-        name: 'TGL BUKTI',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <>
-                  <InputDatePicker
-                    value={props.row.tglbukti}
-                    onChange={(e) =>
-                      handleInputChange(
-                        props.rowIdx,
-                        'tglbukti',
-                        e.target.value
-                      )
-                    }
-                    showCalendar
-                    onSelect={(date) =>
-                      handleInputChange(props.rowIdx, 'tglbukti', date)
-                    }
-                  />
-                </>
               )}
             </div>
           );
@@ -452,7 +406,18 @@ const FormKasGantung = ({
         name: 'nominal',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          const raw = props.row.nominal ?? '';
+          let raw = props.row.nominal ?? ''; // Nilai nominal awal
+
+          // Cek jika raw belum diformat dengan tanda koma, kemudian format
+          if (typeof raw === 'number') {
+            raw = raw.toString(); // Mengonversi nominal menjadi string
+          }
+
+          // Jika raw tidak mengandung tanda koma, format sebagai currency
+          if (!raw.includes(',')) {
+            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+          }
+
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
@@ -464,13 +429,13 @@ const FormKasGantung = ({
                   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
                   onKeyDown={inputStopPropagation}
                   onClick={(e: any) => e.stopPropagation()}
-                  value={String(raw)}
+                  value={String(raw)} // Menampilkan nilai setelah diformat
                   beforeMaskedStateChange={beforeMaskedStateChange}
                   onChange={(e: any) =>
                     handleCurrencyChange(rowIdx, e.target.value)
                   }
                   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
-                  onFocus={() => handleFocus(rowIdx)}
+                  onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
                 />
               )}
             </div>
@@ -493,14 +458,14 @@ const FormKasGantung = ({
   ];
   const lookUpPropsBank = [
     {
-      columns: [{ key: 'nama_bank', name: 'NAMA' }],
+      columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       label: 'BANK',
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
-      postData: 'nama_bank'
+      postData: 'nama'
     }
   ];
   const lookUpPropsAlatBayar = [
@@ -508,6 +473,7 @@ const FormKasGantung = ({
       columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
+
       label: 'ALAT BAYAR',
       singleColumn: false,
       pageSize: 20,
@@ -635,12 +601,16 @@ const FormKasGantung = ({
       }
     }
   }, [allData, headerData?.id, popOver, mode]);
+
   useEffect(() => {
     if (rows) {
       // Filter out the `isNew` field and any object with `id: "add_row"`
       const filteredRows = rows
         .filter((row) => row.id !== 'add_row') // Exclude rows with id "add_row"
-        .map(({ isNew, ...rest }) => rest); // Remove `isNew` field from each row
+        .map(({ isNew, nominal, ...rest }) => ({
+          ...rest,
+          nominal: nominal ? String(nominal) : '' // Convert nominal to string (empty string if null or undefined)
+        }));
 
       forms.setValue('details', filteredRows);
     }

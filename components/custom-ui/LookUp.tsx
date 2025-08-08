@@ -30,8 +30,9 @@ import { FormLabel } from '../ui/form';
 import IcClose from '@/public/image/x.svg';
 import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
+import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
 interface LookUpProps {
-  columns: { key: string; name: string }[];
+  columns: { key: string; name: string; width: number }[];
   endpoint?: string;
   label?: string;
   labelLookup?: string;
@@ -52,7 +53,7 @@ interface LookUpProps {
   disabled?: boolean; // New prop for disabling the input/button
   selectedRequired?: boolean;
   required?: boolean;
-  linkTo?: boolean;
+  linkTo?: string;
   linkValue?: string | string[] | number[] | null;
 }
 interface Filter {
@@ -90,7 +91,7 @@ export default function LookUp({
   disabled = false, // Default to false if not provided
   filterby,
   allowedFilterShowAllFirst = false,
-  linkTo = false,
+  linkTo,
   linkValue
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -107,6 +108,9 @@ export default function LookUp({
   const gridLookUpRef = useRef<HTMLDivElement | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [filtering, setFiltering] = useState(false);
+  const [clicked, setClicked] = useState(false);
+  const [deleteClicked, setDeleteClicked] = useState(false);
+
   const [showError, setShowError] = useState({
     label: label,
     status: false
@@ -125,6 +129,7 @@ export default function LookUp({
   const isdefault = useSelector(
     (state: RootState) => state.lookup.isdefault[label || '']
   );
+
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const collapse = useSelector((state: RootState) => state.collapse.value);
@@ -151,7 +156,7 @@ export default function LookUp({
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      if (type === 'json' && endpoint) {
+      if (type !== 'local' && endpoint) {
         // Handle the case for fetching from API
         setFilters((prev) => ({
           ...prev,
@@ -201,32 +206,50 @@ export default function LookUp({
     value: string
   ) => {
     if (disabled) return; // Prevent filter change if disabled
+
+    // Set initial filter value and reset pagination
     setInputValue('');
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current); // Clear previous debounce timeout
-    }
     setFilters((prev) => ({
       ...prev,
       filters: {
         ...prev.filters,
         [colKey]: value
       },
-      search: '',
+      search: '', // Ensure search is cleared when column filter is applied
       page: 1
     }));
     setFiltering(true);
-    if (rows.length > 0) {
-      setSelectedRow(0); // Pilih baris pertama
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 }); // Pilih sel pertama dalam baris pertama
+
+    // Handle the debounce logic for API or local filtering
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current); // Clear previous debounce timeout
     }
-    // setTimeout(
-    //   () => {
-    //     if (columnInputRefs.current[colKey]) {
-    //       columnInputRefs.current[colKey]?.focus();
-    //     }
-    //   },
-    //   type === 'json' ? 260 : 100
-    // );
+
+    debounceTimerRef.current = setTimeout(() => {
+      // Handle the case for fetching from API if 'json' type
+      if (type === 'json' && endpoint) {
+        setRows([]); // Optionally clear rows before making API request
+
+        // Fetch data from API (you can add specific API call here)
+        setTimeout(() => {
+          dispatch(setOpenName(label || '')); // Update Redux state
+        }, 100);
+      } else {
+        // Handle the case for local data filtering
+        const filteredRows =
+          data?.filter((row: Row) =>
+            String(row[colKey]).toLowerCase().includes(value.toLowerCase())
+          ) || [];
+
+        setRows(filteredRows); // Set filtered rows based on local data
+      }
+
+      // Focus logic for better UX
+      setTimeout(() => {
+        setSelectedRow(0); // Select the first row
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 }); // Select the first cell in the first row
+      }, 250);
+    }, 300); // Debounce delay of 300ms after the last keystroke
   };
 
   const gridRef = useRef<DataGridHandle | null>(null);
@@ -300,6 +323,7 @@ export default function LookUp({
     if (lookupValue) {
       lookupValue(null);
     }
+    setDeleteClicked(true);
     dispatch(setSearchTerm(''));
     dispatch(clearOpenName()); // Clear openName ketika input dibersihkan
     setOpen(false);
@@ -331,9 +355,10 @@ export default function LookUp({
     return rawColumns.map((col, index) => ({
       ...col,
       key: col.key,
+
       headerCellClass: 'column-headers',
       // Set width to 100% if singleColumn is true, else use the default width
-      width: singleColumn ? '100%' : 250,
+      width: singleColumn ? '100%' : col.width ?? 250, // Default width if not specified
       resizable: true,
       renderHeaderCell: () => (
         <div
@@ -434,31 +459,22 @@ export default function LookUp({
 
     if (isAtBottom(event)) {
       const nextPage = findUnfetchedPage(1);
-      console.log('masuk bottom', nextPage);
-      console.log('totalPages', totalPages);
       if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
-        console.log('masuk nextpage');
         setCurrentPage(nextPage);
       }
     }
-
-    if (isAtTop(event)) {
-      const prevPage = findUnfetchedPage(-1);
-      if (prevPage && !fetchedPages.has(prevPage)) {
-        setCurrentPage(prevPage);
-      }
-    }
   }
-  console.log('fetchedPages', fetchedPages);
-  console.log('currentPage', currentPage);
 
   function handleCellClick(args: any) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const classValue = clickedRow[postData as string];
+    setClicked(true);
     setFilters({ ...filters, search: classValue || '' });
     setInputValue(classValue);
+
     dispatch(setLookUpValue(clickedRow || ''));
+    dispatch(setSelectLookup({ key: label, data: clickedRow }));
     setFiltering(false);
     setOpen(false);
     if (rowIndex !== -1) {
@@ -605,6 +621,12 @@ export default function LookUp({
         });
       }
 
+      // Jika filterby ada, tambahkan key dan value ke dalam filters.filters
+      if (filterby) {
+        Object.entries(filterby).forEach(([key, value]) => {
+          params[key] = value; // Menambahkan nilai filterby ke dalam params
+        });
+      }
       const response = await api2.get(`/${endpoint}`, { params });
       if (response.data.pagination.totalPages) {
         setTotalPages(response.data.pagination.totalPages);
@@ -854,15 +876,7 @@ export default function LookUp({
   }, [rows, isFirstLoad]);
   useEffect(() => {
     setIsLoading(true);
-
-    // Ensure type is set to 'json' if endpoint exists and it's an API fetch
-    if (endpoint && type !== 'json') {
-      // If we're working with an API endpoint, set type to 'json' in Redux
-      dispatch(setType({ key: label || '', type: 'json' }));
-    }
-
-    // Fetch data if the type is 'json' and endpoint is provided
-    if (type === 'json' && endpoint) {
+    if (type !== 'local' && endpoint) {
       async function fetchData() {
         try {
           // Fetch the data from the API
@@ -896,10 +910,11 @@ export default function LookUp({
       fetchData();
     } else {
       let filteredRows = data ? data : null;
-      if (linkTo && linkValue != null) {
-        filteredRows = data?.filter((row: Row) => row.type === linkValue);
+      if (linkTo && linkValue) {
+        filteredRows = data?.filter(
+          (row: Row) => String(row[linkTo]) === String(linkValue)
+        );
       }
-
       filteredRows =
         filteredRows?.filter((row: Row) =>
           Object.values(row).some((value) =>
@@ -907,12 +922,15 @@ export default function LookUp({
           )
         ) || [];
 
-      if (isdefault && !lookupNama) {
+      if (isdefault && !lookupNama && !deleteClicked) {
         if (isdefault === 'YA') {
-          const defaultRow = filteredRows.find(
-            (row: any) => row.default === 'YA'
-          );
-          setInputValue(defaultRow.text);
+          const defaultRow = data.find((row: any) => row.default === 'YA');
+          if (defaultRow && !clicked) {
+            setInputValue(defaultRow.text);
+          } else {
+            const rowData = rows[selectedRow];
+            setInputValue(rowData.text);
+          }
           if (lookupValue) {
             lookupValue(defaultRow.id);
           }
@@ -922,19 +940,8 @@ export default function LookUp({
       setRows(filteredRows);
       setIsLoading(false); // Set loading to false if it's local data
     }
-  }, [
-    filters,
-    currentPage,
-    type,
-    allowedFilterShowAllFirst,
-    filterby,
-    endpoint,
-    data,
-    label,
-    linkTo,
-    linkValue,
-    dispatch
-  ]);
+    // Fetch data if the type is 'json' and endpoint is provided
+  }, [filters, currentPage, type, data, linkTo, linkValue]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1114,7 +1121,7 @@ export default function LookUp({
           >
             <Input
               ref={inputRef}
-              autoFocus
+              // autoFocus
               className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
                 showOnButton ? 'rounded-r-none border-r-0' : ''
               } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
@@ -1205,7 +1212,18 @@ export default function LookUp({
                       noRowsFallback: <EmptyRowsRenderer />
                     }}
                   />
-                  <div>{isLoading ? <LoadRowsRenderer /> : null}</div>
+                  {isLoading ? (
+                    <div
+                      className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
+                      style={{
+                        background:
+                          'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                      }}
+                    >
+                      <LoadRowsRenderer />
+                      <p className="text-sm text-zinc-600">Loading...</p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
