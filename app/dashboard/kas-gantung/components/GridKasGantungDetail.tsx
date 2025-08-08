@@ -73,29 +73,6 @@ const GridKasGantungDetail = () => {
         }
       },
       {
-        key: 'kasgantung_nobukti',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        renderHeaderCell: () => (
-          <div
-            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
-            onContextMenu={handleContextMenu}
-          >
-            <p className="text-sm font-normal">NO BUKTI KAS GANTUNG</p>
-          </div>
-        ),
-        name: 'NO BUKTI KAS GANTUNG',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.kasgantung_nobukti}
-            </div>
-          );
-        }
-      },
-      {
         key: 'keterangan',
         headerCellClass: 'column-headers',
         resizable: true,
@@ -459,6 +436,11 @@ const GridKasGantungDetail = () => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
+  useEffect(() => {
+    if (headerData) {
+      refetch();
+    }
+  }, [headerData]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>

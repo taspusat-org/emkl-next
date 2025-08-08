@@ -388,7 +388,6 @@ const GridCabang = () => {
     // Panggil parameterData untuk mengambil data dan mengupdate state
     parameterData(params);
   }, []); // kosongkan dependency array untuk menjalankan hanya sekali ketika komponen mount
-  console.log('rows', rows);
   const columns = useMemo((): Column<Row>[] => {
     return [
       {

@@ -61,6 +61,7 @@ import ReportDesignerMenu from '@/app/reports/menu/page';
 import FormPengembalianKasGantung from './FormPengembalianKasGantung';
 import {
   useCreatePengembalianKasGantung,
+  useDeletePengembalianKasGantung,
   useGetPengembalianKasGantung,
   useUpdatePengembalianKasGantung
 } from '@/lib/server/usePengembalianKasGantung';
@@ -82,6 +83,7 @@ import {
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
+import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 
 interface Filter {
   page: number;
@@ -109,8 +111,8 @@ const GridPengembalianKasGantung = () => {
   } = useCreatePengembalianKasGantung();
   const { mutateAsync: update, isLoading: isLoadingUpdate } =
     useUpdatePengembalianKasGantung();
-  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
-    useDeleteMenu();
+  const { mutateAsync: deleteData, isLoading: isLoadingDelete } =
+    useDeletePengembalianKasGantung();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -1279,7 +1281,7 @@ const GridPengembalianKasGantung = () => {
 
     if (mode === 'delete') {
       if (selectedRowId) {
-        await deleteMenu(selectedRowId as unknown as string, {
+        await deleteData(selectedRowId as unknown as string, {
           onSuccess: () => {
             setPopOver(false);
             setRows((prevRows) =>
@@ -1318,12 +1320,23 @@ const GridPengembalianKasGantung = () => {
     }
 
     if (selectedRowId && mode === 'edit') {
+      console.log('values', values);
+      const cleanedDetails = (values.details as any[]).map(
+        ({ coadetail, kasgantungheader_id, ...rest }) => rest
+      );
+
       await update(
         {
           id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
+          fields: {
+            ...values,
+            details: cleanedDetails,
+            ...filters
+          }
         },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        {
+          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+        }
       );
     }
   };
@@ -1331,6 +1344,7 @@ const GridPengembalianKasGantung = () => {
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
+
       setPopOver(true);
       setMode('edit');
     }
@@ -1838,7 +1852,24 @@ const GridPengembalianKasGantung = () => {
       }
     });
   }, []);
-  console.log('getValues', forms.getValues());
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
+
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

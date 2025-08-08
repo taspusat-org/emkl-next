@@ -113,7 +113,6 @@ const GridMenu = () => {
   } | null>(null);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
-  const [isFetchingManually, setIsFetchingManually] = useState(false);
   const [rows, setRows] = useState<IMenu[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
@@ -987,7 +986,6 @@ const GridMenu = () => {
     try {
       forms.reset();
       setPopOver(false);
-      setIsFetchingManually(true);
       setRows([]);
       if (mode !== 'delete') {
         const response = await api2.get(`/redis/get/menus-allItems`);
@@ -1007,11 +1005,9 @@ const GridMenu = () => {
         }
       }
 
-      setIsFetchingManually(false);
       setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
-      setIsFetchingManually(false);
       setIsDataUpdated(false);
     }
   };
@@ -1428,8 +1424,9 @@ const GridMenu = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
+  console.log('isDataUpdated', isDataUpdated);
   useEffect(() => {
-    if (!allMenu || isFetchingManually || isDataUpdated) return;
+    if (!allMenu || isDataUpdated) return;
 
     const newRows = allMenu.data || [];
 
@@ -1456,7 +1453,7 @@ const GridMenu = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allMenu, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allMenu, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');

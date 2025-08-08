@@ -81,8 +81,11 @@ import {
 } from '@/lib/validations/kasgantung.validation';
 import {
   useCreateKasGantung,
-  useGetKasGantungHeader
+  useDeleteKasGantung,
+  useGetKasGantungHeader,
+  useUpdatePengembalianKasGantung
 } from '@/lib/server/useKasGantung';
+import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 
 interface Filter {
   page: number;
@@ -106,14 +109,14 @@ const GridKasGantungHeader = () => {
   const [popOver, setPopOver] = useState<boolean>(false);
   const { mutateAsync: createKasGantung, isLoading: isLoadingCreate } =
     useCreateKasGantung();
-  const { mutateAsync: updateMenu, isLoading: isLoadingUpdate } =
-    useUpdateMenu();
+  const { mutateAsync: updateKasGantung, isLoading: isLoadingUpdate } =
+    useUpdatePengembalianKasGantung();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
-    useDeleteMenu();
+  const { mutateAsync: deleteKasGantung, isLoading: isLoadingDelete } =
+    useDeleteKasGantung();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -1608,9 +1611,7 @@ const GridKasGantungHeader = () => {
       setIsFetchingManually(true);
       setRows([]);
       if (mode !== 'delete') {
-        const response = await api2.get(
-          `/redis/get/pengembaliankasgantungheader-allItems`
-        );
+        const response = await api2.get(`/redis/get/kasgantungheader-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1640,7 +1641,7 @@ const GridKasGantungHeader = () => {
 
     if (mode === 'delete') {
       if (selectedRowId) {
-        await deleteMenu(selectedRowId as unknown as string, {
+        await deleteKasGantung(selectedRowId as unknown as string, {
           onSuccess: () => {
             setPopOver(false);
             setRows((prevRows) =>
@@ -1679,7 +1680,7 @@ const GridKasGantungHeader = () => {
     }
 
     if (selectedRowId && mode === 'edit') {
-      await updateMenu(
+      await updateKasGantung(
         {
           id: selectedRowId as unknown as string,
           fields: { ...values, ...filters }
@@ -2174,8 +2175,10 @@ const GridKasGantungHeader = () => {
       forms.setValue('pengeluaran_nobukti', row.pengeluaran_nobukti ?? '');
       forms.setValue('coakaskeluar', row.coakaskeluar ?? '');
       forms.setValue('relasi_id', row.relasi_id ?? null);
+      forms.setValue('alatbayar_id', row.alatbayar_id ?? null);
       forms.setValue('bank_nama', row.bank_nama);
       forms.setValue('relasi_nama', row.relasi_nama);
+      forms.setValue('alatbayar_nama', row.alatbayar_nama);
       // Saat form pertama kali di-render
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
@@ -2187,7 +2190,6 @@ const GridKasGantungHeader = () => {
       forms.setValue('coakaskeluar', '');
     }
   }, [forms, selectedRow, rows, mode]);
-
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -2196,8 +2198,24 @@ const GridKasGantungHeader = () => {
       }
     });
   }, []);
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
 
-  console.log('forms.getValues()', forms.getValues());
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -2262,42 +2280,6 @@ const GridKasGantungHeader = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            dropdownMenus={[
-              {
-                label: 'Report',
-                icon: <FaPrint />,
-                className: 'bg-cyan-500 hover:bg-cyan-700',
-                actions: [
-                  {
-                    label: 'REPORT ALL',
-                    onClick: () => handleReport(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  },
-                  {
-                    label: 'REPORT BY SELECT',
-                    onClick: () => handleReportBySelect(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  }
-                ]
-              },
-              {
-                label: 'Export',
-                icon: <FaFileExport />,
-                className: 'bg-green-600 hover:bg-green-700',
-                actions: [
-                  {
-                    label: 'EXPORT ALL',
-                    onClick: () => handleExport(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  },
-                  {
-                    label: 'EXPORT BY SELECT',
-                    onClick: () => handleExportBySelect(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  }
-                ]
-              }
-            ]}
           />
           {isLoadingData ? <LoadRowsRenderer /> : null}
           {contextMenu && (

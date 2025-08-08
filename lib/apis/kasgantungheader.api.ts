@@ -42,13 +42,10 @@ export const updateKasGantungFn = async ({ id, fields }: UpdateParams) => {
   const response = await api2.put(`/kasgantungheader/${id}`, fields);
   return response.data;
 };
-export const getKasgantungPengembalianFn = async (
-  dari: string,
-  sampai: string
-) => {
+export const getKasgantungListFn = async (dari: string, sampai: string) => {
   try {
     // Construct the URL with query params
-    const url = `/kasgantungheader/pengembalian?dari=${dari}&sampai=${sampai}`;
+    const url = `/kasgantungheader/list?dari=${dari}&sampai=${sampai}`;
 
     // Using GET request with the full URL
     const response = await api2.get(url);
@@ -57,5 +54,32 @@ export const getKasgantungPengembalianFn = async (
   } catch (error) {
     console.error('Error fetching rekap kehadiran:', error);
     throw new Error('Failed to fetch rekap kehadiran');
+  }
+};
+export const getKasgantungPengembalianFn = async (
+  id: string,
+  dari: string,
+  sampai: string
+) => {
+  try {
+    // Construct the URL with query params
+    const url = `/kasgantungheader/pengembalian?dari=${dari}&sampai=${sampai}&id=${id}`;
+
+    // Using GET request with the full URL
+    const response = await api2.get(url);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching rekap kehadiran:', error);
+    throw new Error('Failed to fetch rekap kehadiran');
+  }
+};
+export const deleteKasGantungFn = async (id: string) => {
+  try {
+    const response = await api2.delete(`/kasgantungheader/${id}`);
+    return response.data; // Optionally return response data if needed
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };

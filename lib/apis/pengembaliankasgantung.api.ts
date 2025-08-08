@@ -69,3 +69,12 @@ export const updatePengembalianKasGantungFn = async ({
   );
   return response.data;
 };
+export const deletePengembalianKasGantung = async (id: string) => {
+  try {
+    const response = await api2.delete(`/pengembaliankasgantungheader/${id}`);
+    return response.data; // Optionally return response data if needed
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error; // Re-throw the error if you want to handle it in the calling function
+  }
+};

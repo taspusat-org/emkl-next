@@ -1,0 +1,83 @@
+import React, { useState } from 'react';
+import InputMask from '@mona-health/react-input-mask';
+
+type CurrencyInputProps = {
+  value?: string;
+  onValueChange?: (val: string) => void;
+  icon?: React.ReactNode;
+  className?: string;
+  autoFocus?: boolean;
+  placeholder?: string;
+};
+
+const InputCurrency: React.FC<CurrencyInputProps> = ({
+  value = '',
+  onValueChange,
+  icon,
+  className = '',
+  autoFocus = false,
+  placeholder = ''
+}) => {
+  const [inputValue, setInputValue] = useState(value);
+
+  const formatCurrency = (rawValue: string) => {
+    const raw = rawValue.replace(/[^0-9.]/g, '');
+    const [intPart, ...rest] = raw.split('.');
+    const decPart = rest.join('');
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return decPart.length > 0 ? `${formattedInt}.${decPart}` : formattedInt;
+  };
+
+  const beforeMaskedStateChange = ({ nextState }: any) => {
+    const formatted = formatCurrency(nextState.value || '');
+    return {
+      value: formatted,
+      selection: { start: formatted.length, end: formatted.length }
+    };
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    const formatted = formatCurrency(raw);
+    setInputValue(formatted);
+    onValueChange?.(formatted);
+  };
+
+  const handleBlur = (formattedStr: string) => {
+    // Jika sudah ada desimal, jangan tambahkan .00 lagi
+    if (formattedStr.includes('.')) {
+      setInputValue(formattedStr);
+    } else {
+      setInputValue(formattedStr + '.00');
+    }
+  };
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Select all text when focused
+    e.target.select();
+  };
+  return (
+    <div className="relative w-full">
+      <InputMask
+        mask=""
+        maskPlaceholder={null}
+        maskChar={null}
+        value={inputValue}
+        beforeMaskedStateChange={beforeMaskedStateChange}
+        onChange={handleChange}
+        autoFocus={autoFocus}
+        onFocus={handleFocus}
+        onBlur={() => handleBlur(inputValue)}
+        placeholder={placeholder}
+        className={`h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-right text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className}`}
+      />
+      {icon && (
+        <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">
+          {icon}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default InputCurrency;

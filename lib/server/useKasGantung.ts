@@ -1,9 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
+  deleteKasGantungFn,
   getKasGantungDetailFn,
   getKasGantungHeaderFn,
+  getKasgantungListFn,
   getKasgantungPengembalianFn,
-  storeKasGantungFn
+  storeKasGantungFn,
+  updateKasGantungFn
 } from '../apis/kasgantungheader.api';
 import {
   setProcessed,
@@ -38,7 +41,7 @@ export const useGetKasGantungHeader = (
   const queryClient = useQueryClient();
 
   return useQuery(
-    ['kasgantungheader', filters],
+    ['kasgantung', filters],
     async () => {
       // Only trigger processing if the page is 1
       if (filters.page === 1) {
@@ -74,7 +77,7 @@ export const useGetKasGantungHeader = (
 };
 export const useGetKasGantungDetail = (id?: number) => {
   return useQuery(
-    ['kasgantungdetail', id],
+    ['kasgantung', id],
     async () => await getKasGantungDetailFn(id!),
     {
       enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
@@ -93,7 +96,7 @@ export const useCreateKasGantung = () => {
     },
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
-      void queryClient.invalidateQueries(['kasgantungheader']);
+      void queryClient.invalidateQueries(['kasgantung']);
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -116,27 +119,115 @@ export const useCreateKasGantung = () => {
     // }
   });
 };
-export const useGetKasGantungHeaderPengembalian = (
-  params: { dari: string; sampai: string } = { dari: '', sampai: '' }
+export const useGetKasGantungHeaderList = (
+  params: { dari: string; sampai: string } = { dari: '', sampai: '' },
+  popOver: boolean
 ) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  return useQuery(['kasgantungheader', params], async () => {
-    try {
-      const data = await getKasgantungPengembalianFn(
-        params.dari,
-        params.sampai
-      );
-      return data;
-    } catch (error) {
-      // Show error toast
+  return useQuery(
+    ['kasgantungheaderlist', params],
+    async () => {
+      try {
+        const data = await getKasgantungListFn(params.dari, params.sampai);
+        return data;
+      } catch (error) {
+        // Show error toast
+        toast({
+          variant: 'destructive',
+          title: 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+        throw error; // Re-throw to ensure the query is marked as failed
+      }
+    },
+    {
+      enabled: popOver && params.id !== '' // Fetch hanya jika popOver true dan id tidak kosong
+    }
+  );
+};
+export const useGetKasGantungHeaderPengembalian = (
+  params: { dari: string; sampai: string; id: string } = {
+    dari: '',
+    sampai: '',
+    id: ''
+  },
+  popOver: boolean // Menambahkan argumen popOver untuk kontrol kondisi fetch
+) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useQuery(
+    ['kasgantungheaderpengembalian', params],
+    async () => {
+      try {
+        const data = await getKasgantungPengembalianFn(
+          params.id,
+          params.dari,
+          params.sampai
+        );
+        return data;
+      } catch (error) {
+        // Show error toast
+        toast({
+          variant: 'destructive',
+          title: 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+        throw error; // Re-throw to ensure the query is marked as failed
+      }
+    },
+    {
+      enabled: popOver && params.id !== '' // Fetch hanya jika popOver true dan id tidak kosong
+    }
+  );
+};
+export const useUpdatePengembalianKasGantung = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(updateKasGantungFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('kasgantung');
       toast({
-        variant: 'destructive',
-        title: 'Gagal',
-        description: 'Terjadi masalah dengan permintaan Anda.'
+        title: 'Proses Berhasil.',
+        description: 'Data Berhasil Diubah.'
       });
-      throw error; // Re-throw to ensure the query is marked as failed
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
+    }
+  });
+};
+export const useDeleteKasGantung = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(deleteKasGantungFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('kasgantung');
+      toast({
+        title: 'Proses Berhasil.',
+        description: 'Data Berhasil Dihapus.'
+      });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
     }
   });
 };

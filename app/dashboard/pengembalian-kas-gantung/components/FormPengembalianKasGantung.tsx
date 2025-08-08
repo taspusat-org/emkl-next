@@ -44,8 +44,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import {
   useGetKasGantungHeader,
+  useGetKasGantungHeaderList,
   useGetKasGantungHeaderPengembalian
 } from '@/lib/server/useKasGantung';
+import { useGetPengembalianKasGantungDetail } from '@/lib/server/usePengembalianKasGantung';
 const FormPengembalianKasGantung = ({
   popOver,
   setPopOver,
@@ -57,9 +59,14 @@ const FormPengembalianKasGantung = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const headerData = useSelector((state: RootState) => state.header.headerData);
+  const {
+    data: detail,
+    isLoading,
+    refetch: refetchDetail
+  } = useGetPengembalianKasGantungDetail(headerData?.id ?? 0);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [isReload, setIsReload] = useState<boolean>(false);
-  const [popOverTglBukti, setPopOverTglBukti] = useState<boolean>(false);
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
   const [popOverTglSampai, setPopOverTglSampai] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
@@ -67,8 +74,11 @@ const FormPengembalianKasGantung = ({
   const [tglSampai, setTglSampai] = useState<string>('');
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
-
   const [dataGridKey, setDataGridKey] = useState(0);
+  const openName = useSelector((state: RootState) => state.lookup.openName);
+  const selectLookup = useSelector(
+    (state: RootState) => state.selectLookup.selectLookup['BANK']
+  );
 
   const [filters, setFilters] = useState({
     nobukti: '',
@@ -82,11 +92,25 @@ const FormPengembalianKasGantung = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetKasGantungHeaderPengembalian({
-    dari: tglDari,
-    sampai: tglSampai
-  });
-
+  } = useGetKasGantungHeaderList(
+    {
+      dari: tglDari,
+      sampai: tglSampai
+    },
+    popOver
+  );
+  const {
+    data: dataDetail,
+    isLoading: isLoadingDataDetail,
+    refetch: refetchListDetail
+  } = useGetKasGantungHeaderPengembalian(
+    {
+      id: headerData.id ?? '',
+      dari: tglDari,
+      sampai: tglSampai
+    },
+    popOver // Mengoper popOver ke dalam hook
+  );
   const [rows, setRows] = useState<KasGantungHeader[]>([]);
   function handleCellClick(args: { row: KasGantungHeader }) {
     const clickedRow = args.row;
@@ -95,37 +119,13 @@ const FormPengembalianKasGantung = ({
       setSelectedRow(rowIndex);
     }
   }
-  const handleRowSelect = (rowId: number, row: any) => {
+  const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
       if (updated.has(rowId)) {
         updated.delete(rowId);
       } else {
         updated.add(rowId);
-      }
-
-      // Extract the required fields from the row
-      const { id, nobukti, kasgantung_nobukti, keterangan, nominal } = row;
-
-      // Get the current 'details' from the form
-      const currentDetails = forms.getValues('details') || [];
-
-      // Check if the item with the same id already exists in 'details'
-      const isItemExists = currentDetails.some((item) => item.id === id);
-
-      if (!isItemExists) {
-        // If the item doesn't exist, push the new item to the array
-        currentDetails.push({
-          id,
-          nobukti: '',
-          kasgantung_nobukti: nobukti,
-          keterangan,
-          nominal: formatCurrency(nominal)
-        });
-
-        // Update the 'details' array in the form
-        forms.setValue('details', currentDetails);
-      } else {
       }
 
       setIsAllSelected(updated.size === rows.length);
@@ -562,7 +562,12 @@ const FormPengembalianKasGantung = ({
                 />
               ))} */}
 
-              {highlightText(formatCurrency(newSisa) || '', filters.sisa)}
+              {highlightText(
+                mode !== 'add'
+                  ? formatCurrency(props.row.sisa)
+                  : formatCurrency(newSisa) || '',
+                filters.sisa
+              )}
             </div>
           );
         },
@@ -712,22 +717,25 @@ const FormPengembalianKasGantung = ({
   ];
   const lookUpPropsBank = [
     {
-      columns: [{ key: 'nama_bank', name: 'NAMA' }],
+      columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       label: 'BANK',
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
-      postData: 'nama_bank'
+      postData: 'nama'
     }
   ];
   const lookUpPropsAlatBayar = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
+      endpoint: 'alatbayar',
+      filterby: { statuslangsungcair: 1, statusdefault: 1 },
       selectedRequired: false,
       label: 'ALAT BAYAR',
+
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
@@ -735,7 +743,6 @@ const FormPengembalianKasGantung = ({
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
-  const openName = useSelector((state: RootState) => state.lookup.openName);
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -817,6 +824,8 @@ const FormPengembalianKasGantung = ({
 
   const onReload = () => {
     setIsReload(true);
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
     refetch();
   };
   const dateMask = [
@@ -844,18 +853,28 @@ const FormPengembalianKasGantung = ({
   }
   useEffect(() => {
     // Hanya mengupdate rows jika isReload bernilai true
-    if (isReload && allData) {
-      const newRows =
-        allData?.map((row: KasGantungHeader) => ({
-          ...row,
-          id: Number(row.id),
-          nominal: row.nominal ?? '' // Jika nominal tidak ada, set default ke ""
-        })) || [];
-      setRows(newRows);
-      setIsReload(false); // Setelah data di-set, set kembali isReload ke false
+    if (mode && popOver) {
+      if (dataDetail && mode !== 'add') {
+        const newRows =
+          dataDetail?.map((row: KasGantungHeader) => ({
+            ...row,
+            id: Number(row.id),
+            nominal: row.nominal ?? '' // Jika nominal tidak ada, set default ke ""
+          })) || [];
+        setRows(newRows);
+        setIsReload(false); // Setelah data di-set, set kembali isReload ke false
+      } else if (isReload && allData && mode === 'add') {
+        const newRows =
+          allData?.map((row: KasGantungHeader) => ({
+            ...row,
+            id: Number(row.id),
+            nominal: row.nominal ?? '' // Jika nominal tidak ada, set default ke ""
+          })) || [];
+        setRows(newRows);
+        setIsReload(false); // Setelah data di-set, set kembali isReload ke false
+      }
     }
-  }, [allData, isReload]);
-
+  }, [allData, isReload, dataDetail, mode, popOver]);
   useEffect(() => {
     const currentDate = new Date(); // Dapatkan tanggal sekarang
 
@@ -880,8 +899,47 @@ const FormPengembalianKasGantung = ({
     // Set tglbukti di form
     forms.setValue('tglbukti', formattedTglSampai); // Or you can use formattedTglDari depending on your use case
   }, [forms]); // Dependency array ensures it runs only once when the component is mounted
+  useEffect(() => {
+    if (!popOver) {
+      setRows([]);
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      lastInitializedDetailKey.current = ''; // Reset key cache
+    }
+  }, [popOver]);
 
   // Calculate the total sums of `sisa` and `nominal` dynamically
+  const lastInitializedDetailKey = useRef<string>('');
+
+  // Ini akan dijalankan setiap kali popOver buka DAN detail berubah
+  useEffect(() => {
+    if (popOver && detail && mode !== 'add' && rows.length > 0) {
+      const detailKey = JSON.stringify(
+        detail.data.map((item: any) => item.kasgantung_nobukti).sort()
+      );
+
+      if (detailKey !== lastInitializedDetailKey.current) {
+        lastInitializedDetailKey.current = detailKey;
+
+        const detailNoBuktiSet = new Set(
+          detail.data.map((item: any) => item.kasgantung_nobukti)
+        );
+
+        const matchedRows = rows.filter((row) =>
+          detailNoBuktiSet.has(row.nobukti)
+        );
+        const matchedRowIds = matchedRows.map((row) => row.id);
+
+        setCheckedRows(new Set(matchedRowIds));
+        forms.setValue('details', matchedRows, { shouldDirty: true });
+      }
+    }
+  }, [popOver, detail, mode, rows]);
+
+  useEffect(() => {
+    const updatedDetail = rows.filter((row) => checkedRows.has(row.id));
+    forms.setValue('details', updatedDetail, { shouldDirty: true });
+  }, [checkedRows, rows, forms]);
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
@@ -998,6 +1056,7 @@ const FormPengembalianKasGantung = ({
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
                           }
+                          onSelectRow={}
                           inputLookupValue={forms.getValues('relasi_id')}
                           lookupNama={forms.getValues('relasi_nama')}
                         />
@@ -1174,7 +1233,7 @@ const FormPengembalianKasGantung = ({
                               key={index}
                               {...props}
                               lookupValue={(id) =>
-                                forms.setValue('bank_id', Number(id))
+                                forms.setValue('statusbank', Number(id))
                               }
                               inputLookupValue={forms.getValues('bank_id')}
                               lookupNama={forms.getValues('bank_nama')}
@@ -1193,10 +1252,11 @@ const FormPengembalianKasGantung = ({
                             <LookUp
                               key={index}
                               {...props}
+                              linkTo="statusbank"
+                              linkValue={selectLookup?.statusbank}
                               lookupValue={(id) =>
                                 forms.setValue('relasi_id', Number(id))
                               }
-                              linkValue={forms.getValues('bank_nama')}
                               inputLookupValue={forms.getValues('relasi_id')}
                               lookupNama={forms.getValues('relasi_nama')}
                             />
@@ -1231,7 +1291,7 @@ const FormPengembalianKasGantung = ({
                       />
                     </div>
                   </div>
-                  <div className="h-[400px] min-h-[400px]">
+                  <div className="h-[400px] min-h-[550px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div
                         className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"

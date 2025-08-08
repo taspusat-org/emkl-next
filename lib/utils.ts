@@ -78,7 +78,6 @@ export const formatDateCalendar = (date: Date) => {
   return format(date, 'dd-MM-yyyy'); // Mengubah format menjadi yyyy-mm-dd
 };
 export function parseDateFromDDMMYYYY(str: string) {
-  console.log('str', str);
   // str = "dd-mm-yyyy"
   const [day, month, year] = str.split('-');
   return new Date(`${year}-${month}-${day}`); // Mengubah ke format yyyy-mm-dd
@@ -111,15 +110,16 @@ export function dynamicRequiredMessage(fieldName: string) {
   return `${fieldName.toUpperCase()} ${REQUIRED_FIELD}`;
 }
 export const parseCurrency = (value: string): number => {
-  console.log('value in parseCurrency', value);
-  if (!value || value.trim() === '') return 0; // Return 0 if the value is empty or invalid
+  // Convert value to string and trim any whitespace before processing
+  const stringValue = String(value).trim();
 
-  return parseFloat(value.replace(/,/g, '')) || 0;
+  if (!stringValue || stringValue === '') return 0; // Return 0 if the value is empty or invalid
+
+  return parseFloat(stringValue.replace(/,/g, '')) || 0;
 };
 
 export const formatCurrency = (value: number | string): string => {
   if (typeof value === 'string' && value.trim() === '') return ''; // Handle empty input
-  console.log('value to format', value);
 
   const number = typeof value === 'string' ? parseCurrency(value) : value;
 
