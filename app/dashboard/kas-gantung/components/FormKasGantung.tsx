@@ -45,6 +45,7 @@ import { KasGantungDetail } from '@/lib/types/kasgantungheader.type';
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
 import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
+import InputCurrency from '@/components/custom-ui/InputCurrency';
 const FormKasGantung = ({
   popOver,
   setPopOver,
@@ -423,19 +424,23 @@ const FormKasGantung = ({
               {props.row.isAddRow ? (
                 <div>{formatCurrency(totalNominal)}</div>
               ) : (
-                <InputMask
-                  mask="" // biar kita yang atur formatting
-                  maskPlaceholder={null}
-                  className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e: any) => e.stopPropagation()}
-                  value={String(raw)} // Menampilkan nilai setelah diformat
-                  beforeMaskedStateChange={beforeMaskedStateChange}
-                  onChange={(e: any) =>
-                    handleCurrencyChange(rowIdx, e.target.value)
-                  }
-                  onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
-                  onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
+                // <InputMask
+                //   mask="" // biar kita yang atur formatting
+                //   maskPlaceholder={null}
+                //   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
+                //   onKeyDown={inputStopPropagation}
+                //   onClick={(e: any) => e.stopPropagation()}
+                //   value={String(raw)} // Menampilkan nilai setelah diformat
+                //   beforeMaskedStateChange={beforeMaskedStateChange}
+                //   onChange={(e: any) =>
+                //     handleCurrencyChange(rowIdx, e.target.value)
+                //   }
+                //   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
+                //   onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
+                // />
+                <InputCurrency
+                  value={String(raw)}
+                  onValueChange={(value) => handleCurrencyChange(rowIdx, value)}
                 />
               )}
             </div>
@@ -585,7 +590,10 @@ const FormKasGantung = ({
         }));
 
         // Always add the "Add Row" button row at the end
-        setRows([...formattedRows, { isAddRow: true, id: 'add_row' }]);
+        setRows([
+          ...formattedRows,
+          { isAddRow: true, id: 'add_row', isNew: false }
+        ]);
       } else {
         // If no data, add one editable row and the "Add Row" button row at the end
         setRows([
@@ -596,7 +604,7 @@ const FormKasGantung = ({
             keterangan: '',
             isNew: true
           },
-          { isAddRow: true, id: 'add_row' } // Row for the "Add Row" button
+          { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
         ]);
       }
     }
@@ -823,7 +831,7 @@ const FormKasGantung = ({
                       <DataGrid
                         key={dataGridKey}
                         ref={gridRef}
-                        columns={columns}
+                        columns={columns as any[]}
                         defaultColumnOptions={{
                           sortable: true,
                           resizable: true

@@ -1056,7 +1056,6 @@ const FormPengembalianKasGantung = ({
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
                           }
-                          onSelectRow={}
                           inputLookupValue={forms.getValues('relasi_id')}
                           lookupNama={forms.getValues('relasi_nama')}
                         />

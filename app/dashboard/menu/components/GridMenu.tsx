@@ -1025,9 +1025,12 @@ const GridMenu = () => {
             if (selectedRow === 0) {
               setSelectedRow(selectedRow);
               gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
+            } else if (selectedRow === rows.length - 1) {
               setSelectedRow(selectedRow - 1);
               gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+            } else {
+              setSelectedRow(selectedRow);
+              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
             }
           }
         });

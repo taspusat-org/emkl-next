@@ -27,7 +27,7 @@ export interface KasGantungHeader {
   updated_at: string;
 }
 export interface KasGantungDetail {
-  id: number;
+  id: number | string;
   kasgantung_id: string;
   nobukti: string;
   keterangan: string | null;

@@ -44,10 +44,16 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   };
 
   const handleBlur = (formattedStr: string) => {
+    // Jika nilai kosong, langsung set tanpa menambahkan .00
+    if (!formattedStr) {
+      setInputValue('');
+    }
     // Jika sudah ada desimal, jangan tambahkan .00 lagi
-    if (formattedStr.includes('.')) {
+    else if (formattedStr.includes('.')) {
       setInputValue(formattedStr);
-    } else {
+    }
+    // Jika tidak ada desimal, tambahkan .00
+    else {
       setInputValue(formattedStr + '.00');
     }
   };
@@ -55,6 +61,9 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     // Select all text when focused
     e.target.select();
+  };
+  const inputStopPropagation = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
   };
   return (
     <div className="relative w-full">
@@ -66,6 +75,8 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         beforeMaskedStateChange={beforeMaskedStateChange}
         onChange={handleChange}
         autoFocus={autoFocus}
+        onKeyDown={inputStopPropagation}
+        onClick={(e: any) => e.stopPropagation()}
         onFocus={handleFocus}
         onBlur={() => handleBlur(inputValue)}
         placeholder={placeholder}

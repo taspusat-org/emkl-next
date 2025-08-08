@@ -32,7 +32,7 @@ import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
 interface LookUpProps {
-  columns: { key: string; name: string; width: number }[];
+  columns: { key: string; name: string; width?: number }[];
   endpoint?: string;
   label?: string;
   labelLookup?: string;
@@ -474,7 +474,7 @@ export default function LookUp({
     setInputValue(classValue);
 
     dispatch(setLookUpValue(clickedRow || ''));
-    dispatch(setSelectLookup({ key: label, data: clickedRow }));
+    dispatch(setSelectLookup({ key: label ?? '', data: clickedRow }));
     setFiltering(false);
     setOpen(false);
     if (rowIndex !== -1) {
