@@ -86,6 +86,7 @@ import {
   useUpdatePengembalianKasGantung
 } from '@/lib/server/useKasGantung';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
+import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 
 interface Filter {
   page: number;
@@ -1552,6 +1553,7 @@ const GridKasGantungHeader = () => {
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
     if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
+      console.log('masuk');
       dispatch(setHeaderData(foundRow));
     }
   }
@@ -1650,9 +1652,12 @@ const GridKasGantungHeader = () => {
             if (selectedRow === 0) {
               setSelectedRow(selectedRow);
               gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
+            } else if (selectedRow === rows.length - 1) {
               setSelectedRow(selectedRow - 1);
               gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+            } else {
+              setSelectedRow(selectedRow);
+              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
             }
           }
         });
@@ -1698,12 +1703,46 @@ const GridKasGantungHeader = () => {
       setMode('edit');
     }
   };
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedRow !== null) {
-      setMode('delete');
-      setPopOver(true);
+      const rowData = rows[selectedRow];
+      const checks = [
+        {
+          id: rowData.nobukti,
+          tableName: 'pengembaliankasgantungdetail',
+          fieldName: 'kasgantung_nobukti'
+        }
+      ];
+
+      try {
+        // Mengirim request untuk validasi beberapa kombinasi
+        const result = await checkBeforeDeleteFn(checks);
+
+        console.log(result); // Hasil validasi yang dikembalikan dari API NestJS
+
+        // Memeriksa hasil validasi, jika ada status 'failed', tampilkan alert
+        const failedValidation = result.data.find(
+          (item: any) => item.status === 'failed'
+        );
+
+        if (failedValidation) {
+          // Menampilkan alert jika ada yang gagal
+          alert({
+            title: failedValidation.message,
+            variant: 'danger',
+            submitText: 'OK'
+          });
+        } else {
+          // Jika semua validasi berhasil, lanjutkan proses penghapusan atau operasi lain
+          setMode('delete');
+          setPopOver(true);
+        }
+      } catch (error) {
+        console.error('Error during delete validation:', error);
+      }
     }
   };
+
   const handleView = () => {
     if (selectedRow !== null) {
       setMode('view');
@@ -2086,6 +2125,7 @@ const GridKasGantungHeader = () => {
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
+      console.log('masuk2');
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
       dispatch(setHeaderData(rows[0]));
       setIsFirstLoad(false);
@@ -2120,7 +2160,12 @@ const GridKasGantungHeader = () => {
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
   }, [allData, currentPage, filters, isFetchingManually, isDataUpdated]);
-
+  useEffect(() => {
+    if (rows.length > 0 && selectedRow !== null) {
+      const selectedRowData = rows[selectedRow];
+      dispatch(setHeaderData(selectedRowData)); // Pastikan data sudah benar
+    }
+  }, [rows, selectedRow, dispatch]);
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
