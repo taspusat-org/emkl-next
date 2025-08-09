@@ -1711,6 +1711,11 @@ const GridKasGantungHeader = () => {
           id: rowData.nobukti,
           tableName: 'pengembaliankasgantungdetail',
           fieldName: 'kasgantung_nobukti'
+        },
+        {
+          id: rowData.nobukti,
+          tableName: 'kasgantungheader',
+          fieldName: 'nobukti'
         }
       ];
 
