@@ -57,6 +57,7 @@ export async function middleware(req: NextRequest) {
   const expiresAt = session?.accessTokenExpires
     ? new Date(session.accessTokenExpires).getTime()
     : 0;
+  console.log('session', session);
 
   // 4) Kalau sudah expired → opsi A: langsung redirect ke signin
   // (mencegah forced refresh loop kalau refreshToken juga invalid)
