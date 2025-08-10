@@ -10,6 +10,10 @@ interface UpdateParams {
   id: string;
   fields: KasGantungHeaderInput;
 }
+interface validationFields {
+  aksi: string;
+  value: string;
+}
 export const getKasGantungHeaderFn = async (
   filters: GetParams = {}
 ): Promise<IAllKasGantungHeader> => {
@@ -82,4 +86,11 @@ export const deleteKasGantungFn = async (id: string) => {
     console.error('Error deleting order:', error);
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
+};
+export const checkValidationKasGantungFn = async (fields: validationFields) => {
+  const response = await api2.post(
+    `/kasgantungheader/check-validation`,
+    fields
+  );
+  return response.data;
 };

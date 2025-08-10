@@ -87,6 +87,7 @@ import {
 } from '@/lib/server/useKasGantung';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
+import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
 
 interface Filter {
   page: number;
@@ -1696,9 +1697,14 @@ const GridKasGantungHeader = () => {
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
+      const result = await checkValidationKasGantungFn({
+        aksi: 'EDIT',
+        value: rowData.nobukti
+      });
+      console.log('result', result);
       setPopOver(true);
       setMode('edit');
     }
