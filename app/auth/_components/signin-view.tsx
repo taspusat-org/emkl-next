@@ -363,7 +363,6 @@ export default function SignInViewPage() {
                   <Button
                     type="submit"
                     className="mt-2 w-fit justify-end px-10 text-white"
-                    loading={loadings}
                   >
                     Login
                   </Button>

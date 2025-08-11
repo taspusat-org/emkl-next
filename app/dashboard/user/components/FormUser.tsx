@@ -331,30 +331,6 @@ const FormUser = ({
                     />
                     <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[15%]">
-                        <FormLabel
-                          required={true}
-                          className="text-sm font-semibold text-gray-700"
-                        >
-                          KARYAWAN
-                        </FormLabel>
-                      </div>
-                      <div className="w-full lg:w-[85%]">
-                        {lookUpPropsKaryawan.map((props, index) => (
-                          <LookUp
-                            key={index}
-                            {...props}
-                            lookupValue={(id: any) => {
-                              forms.setValue('karyawan_id', id);
-                            }}
-                            disabled={mode === 'delete' || mode === 'view'}
-                            inputLookupValue={forms.getValues('karyawan_id')}
-                            lookupNama={forms.getValues('namakaryawan')}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                      <div className="w-full lg:w-[15%]">
                         <FormLabel className="text-sm font-semibold text-gray-700">
                           Status Aktif
                         </FormLabel>
@@ -414,7 +390,6 @@ const FormUser = ({
             }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">

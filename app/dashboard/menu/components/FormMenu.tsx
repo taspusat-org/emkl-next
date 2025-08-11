@@ -297,7 +297,6 @@ const FormMenu = ({
             onClick={onSubmit}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">

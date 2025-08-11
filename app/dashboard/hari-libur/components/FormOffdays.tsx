@@ -510,7 +510,6 @@ const FormOffdays = ({
               }, 2000); // 2000ms = 2 detik
             }}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>

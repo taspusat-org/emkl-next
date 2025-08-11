@@ -31,6 +31,11 @@ import IcClose from '@/public/image/x.svg';
 import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
+
+interface LinkFilter {
+  linkTo: string;
+  linkValue: string | number | Array<string | number>;
+}
 interface LookUpProps {
   columns: { key: string; name: string; width?: number }[];
   endpoint?: string;
@@ -55,6 +60,7 @@ interface LookUpProps {
   required?: boolean;
   linkTo?: string;
   linkValue?: string | string[] | number[] | null;
+  links?: LinkFilter[];
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
   onClear?: () => void;
 }
@@ -95,6 +101,7 @@ export default function LookUp({
   allowedFilterShowAllFirst = false,
   linkTo,
   linkValue,
+  links,
   onSelectRow,
   onClear
 }: LookUpProps) {
@@ -334,6 +341,7 @@ export default function LookUp({
     if (onClear) {
       onClear(); // Trigger the passed onClear function
     }
+    onSelectRow?.(); // panggil tanpa argumen dengan aman
   };
 
   const handleSort = (column: string) => {
@@ -487,15 +495,10 @@ export default function LookUp({
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-    if (lookupValue) {
-      lookupValue(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
-    }
-    if (onSelectRow) {
-      onSelectRow(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
-    } else {
-      // Optionally call onSelectRow without value if you need to trigger something else
-      onSelectRow?.(undefined); // Can call it without value if needed
-    }
+    const value = dataToPost ? clickedRow[dataToPost as any] : clickedRow.id;
+
+    lookupValue?.(value);
+    onSelectRow?.(value); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
@@ -595,15 +598,9 @@ export default function LookUp({
     } else if (event.key === 'Enter') {
       dispatch(clearOpenName());
       setInputValue(classValue);
-      if (lookupValue) {
-        lookupValue(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
-      }
-      if (onSelectRow) {
-        onSelectRow(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
-      } else {
-        // Optionally call onSelectRow without value if you need to trigger something else
-        onSelectRow?.(undefined); // Can call it without value if needed
-      }
+      const value = dataToPost ? clickedRow[dataToPost] : clickedRow.id;
+      lookupValue?.(value);
+      onSelectRow?.(value); // cukup satu kali, tanpa else
       setOpen(false);
     }
   };
@@ -656,15 +653,9 @@ export default function LookUp({
         if (item?.default && !lookupNama) {
           if (item.default === 'YA') {
             setInputValue(item.text);
-            if (lookupValue) {
-              lookupValue(item.id);
-            }
-            if (onSelectRow) {
-              onSelectRow(item.id); // Pass the clickedRow.id to the parent component's form
-            } else {
-              // Optionally call onSelectRow without value if you need to trigger something else
-              onSelectRow?.(undefined); // Can call it without value if needed
-            }
+            const value = item.id;
+            lookupValue?.(value);
+            onSelectRow?.(value);
           }
         }
         for (const [key, value] of Object.entries(item)) {
@@ -715,15 +706,9 @@ export default function LookUp({
     if (event.key === 'Enter') {
       dispatch(clearOpenName());
       setInputValue(rowData[postData as string]);
-      if (lookupValue) {
-        lookupValue(dataToPost ? rowData[dataToPost] : rowData.id); // Pass the clickedRow.id to the parent component's form
-      }
-      if (onSelectRow) {
-        onSelectRow(dataToPost ? rowData[dataToPost] : rowData.id); // Pass the clickedRow.id to the parent component's form
-      } else {
-        // Optionally call onSelectRow without value if you need to trigger something else
-        onSelectRow?.(undefined); // Can call it without value if needed
-      }
+      const value = dataToPost ? rowData[dataToPost] : rowData.id;
+      lookupValue?.(value);
+      onSelectRow?.(value); // cukup satu kali, tanpa else
       setOpen(false);
     }
     if (event.key === 'ArrowDown') {
@@ -941,11 +926,21 @@ export default function LookUp({
       fetchData();
     } else {
       let filteredRows = data ? data : null;
-      if (linkTo && linkValue) {
-        filteredRows = data?.filter(
-          (row: Row) => String(row[linkTo]) === String(linkValue)
+      if (filterby && Array.isArray(filterby)) {
+        filteredRows = data?.filter((row: Row) =>
+          filterby.every((filter) =>
+            Object.entries(filter).every(
+              ([key, value]) => String(row[key]) === String(value)
+            )
+          )
         );
       }
+
+      // if (linkTo && linkValue) {
+      //   filteredRows = data?.filter(
+      //     (row: Row) => String(row[linkTo]) === String(linkValue)
+      //   );
+      // }
       filteredRows =
         filteredRows?.filter((row: Row) =>
           Object.values(row).some((value) =>
@@ -962,15 +957,9 @@ export default function LookUp({
             const rowData = rows[selectedRow];
             setInputValue(rowData.text);
           }
-          if (lookupValue) {
-            lookupValue(defaultRow.id);
-          }
-          if (onSelectRow) {
-            onSelectRow(defaultRow.id); // Pass the clickedRow.id to the parent component's form
-          } else {
-            // Optionally call onSelectRow without value if you need to trigger something else
-            onSelectRow?.(undefined); // Can call it without value if needed
-          }
+          const value = defaultRow.id;
+          lookupValue?.(value);
+          onSelectRow?.(value);
         }
       }
 
@@ -978,7 +967,7 @@ export default function LookUp({
       setIsLoading(false); // Set loading to false if it's local data
     }
     // Fetch data if the type is 'json' and endpoint is provided
-  }, [filters, currentPage, type, data, linkTo, linkValue]);
+  }, [filters, currentPage, type, data, linkTo, linkValue, filterby]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1025,15 +1014,9 @@ export default function LookUp({
             search: rows[0][postData as string] || ''
           });
           setInputValue(rows[0][postData as string] || '');
-          if (lookupValue) {
-            lookupValue(rows[0][dataToPost as string] || ''); // Pass the clickedRow.id to the parent component's form
-          }
-          if (onSelectRow) {
-            onSelectRow(rows[0][dataToPost as string] || ''); // Pass the clickedRow.id to the parent component's form
-          } else {
-            // Optionally call onSelectRow without value if you need to trigger something else
-            onSelectRow?.(undefined); // Can call it without value if needed
-          }
+          const value = rows[0][dataToPost as string] || '';
+          lookupValue?.(value);
+          onSelectRow?.(value); // cukup satu kali, tanpa else
         }
       }
       if (rows.length === 0) {

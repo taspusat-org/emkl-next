@@ -1554,7 +1554,6 @@ const GridKasGantungHeader = () => {
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
     if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
-      console.log('masuk');
       dispatch(setHeaderData(foundRow));
     }
   }
@@ -1702,44 +1701,35 @@ const GridKasGantungHeader = () => {
       const rowData = rows[selectedRow];
       const result = await checkValidationKasGantungFn({
         aksi: 'EDIT',
-        value: rowData.nobukti
+        value: rowData.id
       });
-      console.log('result', result);
-      setPopOver(true);
-      setMode('edit');
+      if (result.status == 'failed') {
+        alert({
+          title: result.message,
+          variant: 'danger',
+          submitText: 'OK'
+        });
+      } else {
+        setPopOver(true);
+        setMode('edit');
+      }
     }
   };
   const handleDelete = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      const checks = [
-        {
-          id: rowData.nobukti,
-          tableName: 'pengembaliankasgantungdetail',
-          fieldName: 'kasgantung_nobukti'
-        },
-        {
-          id: rowData.nobukti,
-          tableName: 'kasgantungheader',
-          fieldName: 'nobukti'
-        }
-      ];
 
       try {
         // Mengirim request untuk validasi beberapa kombinasi
-        const result = await checkBeforeDeleteFn(checks);
+        const result = await checkValidationKasGantungFn({
+          aksi: 'DELETE',
+          value: rowData.nobukti
+        });
 
-        console.log(result); // Hasil validasi yang dikembalikan dari API NestJS
-
-        // Memeriksa hasil validasi, jika ada status 'failed', tampilkan alert
-        const failedValidation = result.data.find(
-          (item: any) => item.status === 'failed'
-        );
-
-        if (failedValidation) {
+        if (result.status == 'failed') {
           // Menampilkan alert jika ada yang gagal
           alert({
-            title: failedValidation.message,
+            title: result.message,
             variant: 'danger',
             submitText: 'OK'
           });

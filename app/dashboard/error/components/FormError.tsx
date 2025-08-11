@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { FaRegPlusSquare, FaSave, FaTrashAlt } from 'react-icons/fa';
 import { useFormContext } from 'react-hook-form';
-import LookUp from '@/components/custom-ui/LookUp';
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import { IoMdClose } from 'react-icons/io';
+import LookUp from '@/components/custom-ui/LookUp';
 interface RowData {
   key: string;
   value: string;
@@ -175,7 +175,6 @@ const FormError = ({
             onClick={onSubmit}
             disabled={viewMode}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>

@@ -701,7 +701,6 @@ const FormUserAcl = ({
             type="submit"
             onClick={onSubmit}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate}
           >
             <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>

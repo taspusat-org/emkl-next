@@ -75,23 +75,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         className={cn(
           buttonVariants({ variant, size, className }),
-          loading &&
-            'pointer-events-none flex items-center text-sm disabled:text-transparent'
+          loading && 'pointer-events-none flex items-center text-sm'
         )}
         disabled={props.disabled || loading}
         ref={ref}
         {...props}
       >
-        {loading ? (
-          <div className={cn(loadingVariants({ variant }))}>
-            <ImSpinner2 className="mx-2 animate-spin" />
-          </div>
-        ) : (
-          <>
-            {variant === 'save' && <FaSave className="mr-1" />}
-            {children}
-          </>
-        )}
+        <>
+          {variant === 'save' && <FaSave className="mr-1" />}
+          {children}
+        </>
       </Comp>
     );
   }

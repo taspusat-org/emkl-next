@@ -1251,8 +1251,9 @@ const FormPengembalianKasGantung = ({
                             <LookUp
                               key={index}
                               {...props}
-                              linkTo="statusbank"
-                              linkValue={selectLookup?.statusbank}
+                              filterby={[
+                                { statusbank: selectLookup?.statusbank }
+                              ]}
                               lookupValue={(id) =>
                                 forms.setValue('relasi_id', Number(id))
                               }
@@ -1351,7 +1352,6 @@ const FormPengembalianKasGantung = ({
             onClick={onSubmit}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">

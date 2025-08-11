@@ -273,7 +273,6 @@ const FormRole = ({
             onClick={onSubmit}
             disabled={viewMode}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>

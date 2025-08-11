@@ -133,7 +133,6 @@ const FormAkuntansi = ({
             <Form {...forms}>
               <form onSubmit={onSubmit} className="flex h-full flex-col gap-6">
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-
                   <FormField
                     name="nama"
                     control={forms.control}
@@ -200,7 +199,6 @@ const FormAkuntansi = ({
                       ))}
                     </div>
                   </div>
-                  
                 </div>
               </form>
             </Form>
@@ -222,7 +220,6 @@ const FormAkuntansi = ({
             }}
             disabled={viewMode}
             className="flex w-fit items-center gap-1 text-sm"
-            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>
