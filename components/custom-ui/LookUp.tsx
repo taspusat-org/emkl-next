@@ -55,6 +55,8 @@ interface LookUpProps {
   required?: boolean;
   linkTo?: string;
   linkValue?: string | string[] | number[] | null;
+  onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
+  onClear?: () => void;
 }
 interface Filter {
   page: number;
@@ -92,7 +94,9 @@ export default function LookUp({
   filterby,
   allowedFilterShowAllFirst = false,
   linkTo,
-  linkValue
+  linkValue,
+  onSelectRow,
+  onClear
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
@@ -327,6 +331,9 @@ export default function LookUp({
     dispatch(setSearchTerm(''));
     dispatch(clearOpenName()); // Clear openName ketika input dibersihkan
     setOpen(false);
+    if (onClear) {
+      onClear(); // Trigger the passed onClear function
+    }
   };
 
   const handleSort = (column: string) => {
@@ -483,6 +490,12 @@ export default function LookUp({
     if (lookupValue) {
       lookupValue(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
     }
+    if (onSelectRow) {
+      onSelectRow(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
+    } else {
+      // Optionally call onSelectRow without value if you need to trigger something else
+      onSelectRow?.(undefined); // Can call it without value if needed
+    }
     dispatch(clearOpenName());
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
@@ -585,6 +598,12 @@ export default function LookUp({
       if (lookupValue) {
         lookupValue(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
       }
+      if (onSelectRow) {
+        onSelectRow(dataToPost ? clickedRow[dataToPost] : clickedRow.id); // Pass the clickedRow.id to the parent component's form
+      } else {
+        // Optionally call onSelectRow without value if you need to trigger something else
+        onSelectRow?.(undefined); // Can call it without value if needed
+      }
       setOpen(false);
     }
   };
@@ -640,6 +659,12 @@ export default function LookUp({
             if (lookupValue) {
               lookupValue(item.id);
             }
+            if (onSelectRow) {
+              onSelectRow(item.id); // Pass the clickedRow.id to the parent component's form
+            } else {
+              // Optionally call onSelectRow without value if you need to trigger something else
+              onSelectRow?.(undefined); // Can call it without value if needed
+            }
           }
         }
         for (const [key, value] of Object.entries(item)) {
@@ -692,6 +717,12 @@ export default function LookUp({
       setInputValue(rowData[postData as string]);
       if (lookupValue) {
         lookupValue(dataToPost ? rowData[dataToPost] : rowData.id); // Pass the clickedRow.id to the parent component's form
+      }
+      if (onSelectRow) {
+        onSelectRow(dataToPost ? rowData[dataToPost] : rowData.id); // Pass the clickedRow.id to the parent component's form
+      } else {
+        // Optionally call onSelectRow without value if you need to trigger something else
+        onSelectRow?.(undefined); // Can call it without value if needed
       }
       setOpen(false);
     }
@@ -934,6 +965,12 @@ export default function LookUp({
           if (lookupValue) {
             lookupValue(defaultRow.id);
           }
+          if (onSelectRow) {
+            onSelectRow(defaultRow.id); // Pass the clickedRow.id to the parent component's form
+          } else {
+            // Optionally call onSelectRow without value if you need to trigger something else
+            onSelectRow?.(undefined); // Can call it without value if needed
+          }
         }
       }
 
@@ -990,6 +1027,12 @@ export default function LookUp({
           setInputValue(rows[0][postData as string] || '');
           if (lookupValue) {
             lookupValue(rows[0][dataToPost as string] || ''); // Pass the clickedRow.id to the parent component's form
+          }
+          if (onSelectRow) {
+            onSelectRow(rows[0][dataToPost as string] || ''); // Pass the clickedRow.id to the parent component's form
+          } else {
+            // Optionally call onSelectRow without value if you need to trigger something else
+            onSelectRow?.(undefined); // Can call it without value if needed
           }
         }
       }
