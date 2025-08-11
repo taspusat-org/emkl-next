@@ -259,7 +259,7 @@ const GridContainer = () => {
         icon: '',
         created_at: '',
         updated_at: '',
-        text: 'AKTIF',
+        text: '',
         statusaktif: ''
       },
       search: searchValue,
