@@ -1267,10 +1267,10 @@ const GridPelayaran = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', rowData.statusaktif || 1);
-      forms.setValue('statusaktif_text', rowData.statusaktif_text || '');
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', rowData?.statusaktif || 1);
+      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
