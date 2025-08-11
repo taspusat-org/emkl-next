@@ -12,7 +12,7 @@ interface UpdateParams {
 }
 interface validationFields {
   aksi: string;
-  value: string;
+  value: number | string;
 }
 export const getKasGantungHeaderFn = async (
   filters: GetParams = {}

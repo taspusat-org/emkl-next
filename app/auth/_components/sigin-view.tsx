@@ -192,7 +192,6 @@ export default function SignInViewPage() {
                 <Button
                   type="submit"
                   className="mt-2 w-fit justify-end bg-[#7f4f24] px-10 text-white hover:bg-[#582f0e]"
-                  loading={loading}
                 >
                   Login
                 </Button>

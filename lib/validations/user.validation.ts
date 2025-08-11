@@ -23,7 +23,7 @@ export const userSchema = z.object({
   email: z.string().nullable().optional(),
 
   statusaktif: z.number().min(1, `${REQUIRED_FIELD}`),
-  karyawan_id: z.number().min(1, `${REQUIRED_FIELD}`),
+  karyawan_id: z.number().nullable().optional(),
   namakaryawan: z.string().nullable().optional(),
   userId: z.string().nullable().optional(),
   statusaktif_text: z.string().nullable().optional()
