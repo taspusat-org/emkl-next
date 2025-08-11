@@ -178,7 +178,7 @@ const GridAkuntansi = () => {
 
     // 4. focus input filter
     setTimeout(() => {
-      const ref = inputColRefs[colKey as keyof typeof inputColRefs]?.current;
+      const ref = inputColRefs.current[colKey];
       ref?.focus();
     }, 200);
 
@@ -645,8 +645,8 @@ const GridAkuntansi = () => {
           }
       
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-              }
-            },
+        }
+      },
       {
         key: 'created_at',
         name: 'Created At',
@@ -761,7 +761,7 @@ const GridAkuntansi = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
+                  inputColRefs.current['updated_at'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
