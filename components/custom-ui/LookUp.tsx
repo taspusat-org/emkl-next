@@ -217,7 +217,7 @@ export default function LookUp({
     value: string
   ) => {
     if (disabled) return; // Prevent filter change if disabled
-
+    console.log('masuk1');
     // Set initial filter value and reset pagination
     setInputValue('');
     setFilters((prev) => ({
@@ -330,6 +330,7 @@ export default function LookUp({
   const handleClearInput = () => {
     if (disabled) return; // Prevent input clear if disabled
     setFilters({ ...filters, search: '', filters: {} });
+    console.log('masuk2');
     setInputValue('');
     if (lookupValue) {
       lookupValue(null);
@@ -1219,7 +1220,13 @@ export default function LookUp({
                   <p className="text-[12px]">{labelLookup}</p>
                 </div>
                 <div
-                  className={`${rows.length > 0 ? `h-[290px]` : 'h-[30px]'}`}
+                  className={`${
+                    rows.length > 0
+                      ? `h-[290px]`
+                      : singleColumn && rows.length <= 0
+                      ? 'h-[30px]'
+                      : 'h-[100px]'
+                  }`}
                 >
                   <DataGrid
                     ref={gridRef}
@@ -1230,7 +1237,7 @@ export default function LookUp({
                     rowClass={getRowClass}
                     onCellClick={handleCellClick}
                     rowHeight={30}
-                    headerRowHeight={singleColumn || rows.length <= 0 ? 0 : 70}
+                    headerRowHeight={singleColumn ? 0 : 70}
                     className="rdg-light fill-grid"
                     onColumnsReorder={onColumnsReorder}
                     onCellKeyDown={handleKeyDown}
