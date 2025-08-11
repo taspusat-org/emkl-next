@@ -1,6 +1,7 @@
 import { IMeta } from './error.type';
 export interface IAllAkuntansi {
   data: IAkuntansi[];
+  type: string;
   pagination: IMeta;
 }
 export interface IAkuntansi {
