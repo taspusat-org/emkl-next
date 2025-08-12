@@ -1,6 +1,7 @@
 import { IMeta } from './error.type';
 export interface IAllCabang {
   data: ICabang[];
+  type: string;
   pagination: IMeta;
 }
 export interface ICabang {

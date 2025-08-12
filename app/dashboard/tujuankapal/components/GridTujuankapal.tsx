@@ -12,19 +12,19 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormMenu from './FormContainer';
+import FormMenu from './FormTujuankapal';
 import { useQueryClient } from 'react-query';
 import {
-  ContainerInput,
-  containerSchema
-} from '@/lib/validations/container.validation';
+  TujuankapalInput,
+  tujuankapalSchema
+} from '@/lib/validations/tujuankapal.validation';
 
 import {
-  useCreateContainer,
-  useDeleteContainer,
-  useGetContainer,
-  useUpdateContainer
-} from '@/lib/server/useContainer';
+  useCreateTujuankapal,
+  useDeleteTujuankapal,
+  useGetTujuankapal,
+  useUpdateTujuankapal
+} from '@/lib/server/useTujuankapal';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -49,12 +49,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {
-  exportMenuBySelectFn,
-  exportMenuFn,
-  getMenuFn,
-  reportMenuBySelectFn
-} from '@/lib/apis/menu.api';
+
 import { HiDocument } from 'react-icons/hi2';
 import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
@@ -64,12 +59,12 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { IContainer } from '@/lib/types/container.type';
+import { ITujuanKapal } from '@/lib/types/tujuankapal.type';
 import { number } from 'zod';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import {
-  setProcessing,
-  setProcessed
+  setProcessed,
+  setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 
 interface Filter {
@@ -83,6 +78,8 @@ interface Filter {
     created_at: string;
     updated_at: string;
     statusaktif: string;
+    namacabang: string;
+    cabang_id: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -92,23 +89,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridContainer = () => {
+const GridTujuankapal = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createContainer, isLoading: isLoadingCreate } =
-    useCreateContainer();
-  const { mutateAsync: updateContainer, isLoading: isLoadingUpdate } =
-    useUpdateContainer();
+  const { mutateAsync: createTujuankapal, isLoading: isLoadingCreate } =
+    useCreateTujuankapal();
+  const { mutateAsync: updateTujuankapal, isLoading: isLoadingUpdate } =
+    useUpdateTujuankapal();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteContainer, isLoading: isLoadingDelete } =
-    useDeleteContainer();
+  const { mutateAsync: deleteTujuankapal, isLoading: isLoadingDelete } =
+    useDeleteTujuankapal();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -125,7 +122,7 @@ const GridContainer = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IContainer[]>([]);
+  const [rows, setRows] = useState<ITujuanKapal[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -134,13 +131,14 @@ const GridContainer = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<ContainerInput>({
-    resolver: zodResolver(containerSchema),
+  const forms = useForm<TujuankapalInput>({
+    resolver: zodResolver(tujuankapalSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 0,
+      cabang_id: 1
     }
   });
   const router = useRouter();
@@ -152,6 +150,8 @@ const GridContainer = () => {
       keterangan: '',
       created_at: '',
       updated_at: '',
+      namacabang: '',
+      cabang_id: '',
       text: '',
       statusaktif: ''
     },
@@ -161,12 +161,11 @@ const GridContainer = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allContainer, isLoading: isLoadingContainer } = useGetContainer(
-    {
+  const { data: allTujuankapal, isLoading: isLoadingTujuankapal } =
+    useGetTujuankapal({
       ...filters,
       page: currentPage
-    }
-  );
+    });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleColumnFilterChange = (
@@ -264,6 +263,8 @@ const GridContainer = () => {
         icon: '',
         created_at: '',
         updated_at: '',
+        namacabang: '',
+        cabang_id: '',
         text: '',
         statusaktif: ''
       },
@@ -307,24 +308,7 @@ const GridContainer = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
 
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -358,7 +342,7 @@ const GridContainer = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IContainer>[] => {
+  const columns = useMemo((): Column<ITujuanKapal>[] => {
     return [
       {
         key: 'nomor',
@@ -385,7 +369,9 @@ const GridContainer = () => {
                     text: '',
                     created_at: '',
                     updated_at: '',
-                    statusaktif: ''
+                    statusaktif: '',
+                    namacabang: '',
+                    cabang_id: ''
                   }
                 }),
                   setInputValue('');
@@ -425,7 +411,7 @@ const GridContainer = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IContainer }) => (
+        renderCell: ({ row }: { row: ITujuanKapal }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -502,6 +488,83 @@ const GridContainer = () => {
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.nama || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'cabang',
+        name: 'Nama Cabang',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('namacabang')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'namacabang'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Nama Cabang
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'namacabang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'namacabang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['namacabang'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.namacabang
+                    ? filters.filters.namacabang.toUpperCase()
+                    : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('namacabang', value);
+                }}
+              />
+              {filters.filters.namacabang && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('namacabang', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.namacabang || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.namacabang || '',
                 filters.search,
                 columnFilter
               )}
@@ -847,7 +910,12 @@ const GridContainer = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridContainer', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        user.id,
+        'GridTujuankapal',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -862,7 +930,7 @@ const GridContainer = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridContainer', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridTujuankapal', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -879,7 +947,7 @@ const GridContainer = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingContainer || !hasMore || rows.length === 0) return;
+    if (isLoadingTujuankapal || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -906,7 +974,7 @@ const GridContainer = () => {
     }
   }
 
-  function handleCellClick(args: { row: IContainer }) {
+  function handleCellClick(args: { row: ITujuanKapal }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -914,7 +982,7 @@ const GridContainer = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IContainer>,
+    args: CellKeyDownArgs<ITujuanKapal>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -969,7 +1037,7 @@ const GridContainer = () => {
       setIsFetchingManually(true);
       setRows([]);
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/container-allItems`);
+        const response = await api2.get(`/redis/get/tujuankapal-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -995,13 +1063,13 @@ const GridContainer = () => {
     }
   };
   console.log(forms.getValues());
-  const onSubmit = async (values: ContainerInput) => {
+  const onSubmit = async (values: TujuankapalInput) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteContainer(selectedRowId as unknown as string, {
+          await deleteTujuankapal(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1023,7 +1091,7 @@ const GridContainer = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createContainer(
+        const newOrder = await createTujuankapal(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1038,14 +1106,14 @@ const GridContainer = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateContainer(
+        await updateTujuankapal(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('container');
+        queryClient.invalidateQueries('tujuankapal');
       }
     } catch (error) {
       console.error(error);
@@ -1223,12 +1291,12 @@ const GridContainer = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IContainer) {
+  function getRowClass(row: ITujuanKapal) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IContainer) {
+  function rowKeyGetter(row: ITujuanKapal) {
     return row.id;
   }
 
@@ -1320,12 +1388,31 @@ const GridContainer = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridContainer',
+        'GridTujuankapal',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
     }
   };
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
+
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
 
   const loadGridConfig = async (userId: string, gridName: string) => {
     try {
@@ -1405,7 +1492,7 @@ const GridContainer = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridContainer');
+    loadGridConfig(user.id, 'GridTujuankapal');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1419,9 +1506,9 @@ const GridContainer = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allContainer || isFetchingManually || isDataUpdated) return;
+    if (!allTujuankapal || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allContainer.data || [];
+    const newRows = allTujuankapal.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1439,14 +1526,14 @@ const GridContainer = () => {
       return prevRows;
     });
 
-    if (allContainer.pagination.totalPages) {
-      setTotalPages(allContainer.pagination.totalPages);
+    if (allTujuankapal.pagination.totalPages) {
+      setTotalPages(allTujuankapal.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allContainer, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allTujuankapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1501,11 +1588,13 @@ const GridContainer = () => {
     ) {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('cabang_id', Number(rowData.cabang_id));
+      forms.setValue('namacabang', rowData.namacabang);
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_nama', rowData?.text || '');
+      forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1628,7 +1717,7 @@ const GridContainer = () => {
             //   }
             // ]}
           />
-          {isLoadingContainer ? <LoadRowsRenderer /> : null}
+          {isLoadingTujuankapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1665,4 +1754,4 @@ const GridContainer = () => {
   );
 };
 
-export default GridContainer;
+export default GridTujuankapal;
