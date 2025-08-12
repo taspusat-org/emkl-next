@@ -187,11 +187,11 @@ const FormMenu = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Textarea
+                            <Input
                               {...field}
                               value={field.value ?? ''}
-                              disabled={mode === 'view' || mode === 'delete'}
-                              rows={3}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
