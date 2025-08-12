@@ -9,9 +9,9 @@ interface UpdateTypeAkuntansiParams {
   fields: TypeakuntansiInput;
 }
 
-interface searchTypeAkuntansiParams {
-  id?: string;
-  search?: string;
+interface validationFields {
+  aksi: string;
+  value: number | string;
 }
 
 export const getAllTypeAkuntansiFn = async (
@@ -52,4 +52,12 @@ export const deleteTypeAkuntansiFn = async (id: string) => {
     console.error('Error deleting order:', error);
     throw error;
   }
+};
+
+export const checkValidationTypeAkuntansiFn = async (
+  fields: validationFields
+) => {
+  const response = await api2.post(`/type-akuntansi/check-validation`, fields);
+
+  return response;
 };

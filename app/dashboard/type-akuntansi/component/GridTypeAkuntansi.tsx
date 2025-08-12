@@ -22,6 +22,7 @@ import ActionButton from '@/components/custom-ui/ActionButton';
 import { ITypeAkuntansi } from '@/lib/types/typeakuntansi.type';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import { checkValidationTypeAkuntansiFn } from '@/lib/apis/typeakuntansi.api';
 import {
   TypeakuntansiInput,
   typeakuntansiSchema
@@ -47,20 +48,6 @@ import {
   useCreateTypeAkuntansi,
   useUpdateTypeAkuntansi
 } from '@/lib/server/useTypeAkuntansi';
-
-// interface Row {
-//     id: number;
-//     nama: string;
-//     order: number;
-//     keterangan: string;
-//     statusaktif: number;
-//     statusaktif_text?: string | null;
-//     akuntansi_id: number;
-//     akuntansi: string | null;
-//     modifiedby: string;
-//     created_at: string;
-//     updated_at: string;
-// }
 
 interface Filter {
   page: number;
@@ -158,17 +145,6 @@ const GridTypeAkuntansi = () => {
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
 
-  // const inputColRefs = {
-  //     nama: useRef<HTMLInputElement>(null),
-  //     order: useRef<HTMLInputElement>(null),
-  //     keterangan: useRef<HTMLInputElement>(null),
-  //     statusaktif_text: useRef<HTMLInputElement>(null),
-  //     // akuntansi: useRef<HTMLInputElement>(null),
-  //     akuntansi_id: useRef<HTMLInputElement>(null),
-  //     modifiedby: useRef<HTMLInputElement>(null),
-  //     created_at: useRef<HTMLInputElement>(null),
-  //     updated_at: useRef<HTMLInputElement>(null)
-  // }
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const forms = useForm<TypeakuntansiInput>({
@@ -183,7 +159,7 @@ const GridTypeAkuntansi = () => {
       statusaktif: 1
     }
   });
-  console.log(forms.getValues());
+  // console.log(forms.getValues());
 
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
@@ -192,8 +168,7 @@ const GridTypeAkuntansi = () => {
     // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
 
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
@@ -1049,67 +1024,57 @@ const GridTypeAkuntansi = () => {
   }, [filters, rows, filters.filters, checkedRows]);
 
   const handleAdd = async () => {
-    // try {
-    // Jalankan API sinkronisasi
-    // const syncResponse = await syncAcosFn();;
-    // setAddMode(true);
     setPopOver(true);
     setMode('add');
-    // setEditMode(false);
-    // setDeleteMode(false);
     forms.reset();
-    // } catch (error) {
-    // console.error('Error syncing ACOS:', error);
-    // }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (selectedRow !== null) {
-      // const rowData = rows[selectedRow];
-      setPopOver(true);
-      setMode('edit');
+      const rowData = rows[selectedRow];
+      const result = await checkValidationTypeAkuntansiFn({
+        aksi: 'EDIT',
+        value: rowData.id
+      });
+      console.log('result force edit', result);
+
+      if (result.data.status == 'failed') {
+        alert({
+          title: result.data.message,
+          variant: 'danger',
+          submitText: 'OK'
+        });
+      } else {
+        setPopOver(true);
+        setMode('edit');
+      }
     }
   };
 
   const handleDelete = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      setMode('delete');
-      setPopOver(true);
+
+      try {
+        const result = await checkValidationTypeAkuntansiFn({
+          aksi: 'DELETE',
+          value: rowData.id
+        });
+
+        if (result.data.status == 'failed') {
+          alert({
+            title: result.data.message,
+            variant: 'danger',
+            submitText: 'OK'
+          });
+        } else {
+          setMode('delete');
+          setPopOver(true);
+        }
+      } catch (error) {
+        console.error('Error during delete validation:', error);
+      }
     }
-
-    // if (selectedRow !== null) {
-    //     const rowData = rows[selectedRow];
-    //     const checks = [
-    //         {
-    //             id: rowData.id,
-    //             tableName: 'akunpusat',
-    //             fieldName: 'type_id'
-    //         }
-    //     ];
-
-    //     try {
-    //         const result = await checkBeforeDeleteFn(checks)    // Mengirim request untuk validasi beberapa kombinasi
-    //         console.log(result, 'ini result');
-
-    //         const failedValidation = result.data.find(
-    //             (item: any) => item.status === 'failed'
-    //         )
-
-    //         if (failedValidation) {
-    //             alert({
-    //                 title: failedValidation.message,
-    //                 variant: 'danger',
-    //                 submitText: 'OK'
-    //             })
-    //         } else {
-    //             setMode('delete');
-    //             setPopOver(true);
-    //         }
-    //     } catch (error) {
-    //         console.error('Error during delete validation:', error, error.message);
-    //     }
-    // }
   };
 
   const handleView = () => {
@@ -1146,8 +1111,6 @@ const GridTypeAkuntansi = () => {
           const response = await api2.get(`/redis/get/typeakuntansi-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            console.log('indexOnPage', indexOnPage);
-
             setRows(response.data);
             setIsDataUpdated(true);
             setCurrentPage(pageNumber);
