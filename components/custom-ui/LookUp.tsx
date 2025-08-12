@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback
+} from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -23,7 +29,9 @@ import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
   clearOpenName,
+  setClearLookup,
   setOpenName,
+  setSubmitClicked,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
 import { FormLabel } from '../ui/form';
@@ -85,7 +93,6 @@ export default function LookUp({
   labelLookup,
   dataSortBy,
   dataSortDirection,
-  inputLookupValue,
   lookupNama,
   required,
   dataToPost,
@@ -98,10 +105,6 @@ export default function LookUp({
   postData,
   disabled = false, // Default to false if not provided
   filterby,
-  allowedFilterShowAllFirst = false,
-  linkTo,
-  linkValue,
-  links,
   onSelectRow,
   onClear
 }: LookUpProps) {
@@ -121,7 +124,6 @@ export default function LookUp({
   const [filtering, setFiltering] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [deleteClicked, setDeleteClicked] = useState(false);
-
   const [showError, setShowError] = useState({
     label: label,
     status: false
@@ -142,6 +144,12 @@ export default function LookUp({
   );
 
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const clearLookup = useSelector(
+    (state: RootState) => state.lookup.clearLookup
+  );
+  const submitClicked = useSelector(
+    (state: RootState) => state.lookup.submitClicked
+  );
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const collapse = useSelector((state: RootState) => state.collapse.value);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -156,60 +164,87 @@ export default function LookUp({
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef(0);
+
+  // Shallow compare sederhana untuk objek flat (filters, sort, dll)
+  function shallowEqual(a: Record<string, any>, b: Record<string, any>) {
+    if (a === b) return true;
+    const ka = Object.keys(a),
+      kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    for (const k of ka) if (a[k] !== b[k]) return false;
+    return true;
+  }
+
+  // Gabung params dari state & props
+  const buildParams = useCallback(() => {
+    const params: Record<string, any> = {
+      page: currentPage,
+      limit: filters.limit,
+      search: filters.search || '',
+      sortBy: filters.sortBy,
+      sortDirection: filters.sortDirection
+    };
+
+    if (filters.filters) {
+      for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
+    }
+    if (filterby && !Array.isArray(filterby)) {
+      for (const [k, v] of Object.entries(filterby)) params[k] = v;
+    }
+    return params;
+  }, [currentPage, filters, filterby]);
+
+  // Mapping API → Row[]
+  const mapApiToRows = useCallback(
+    (payload: any[]): Row[] => {
+      return payload.map((item: any) => {
+        const row: Row = { id: item.id };
+        if (item?.default && !lookupNama && item.default === 'YA') {
+          setInputValue(item.text);
+          const value = item.id;
+          lookupValue?.(value);
+          onSelectRow?.(value);
+        }
+        for (const [k, v] of Object.entries(item)) if (k !== 'id') row[k] = v;
+        return row;
+      });
+    },
+    [lookupNama, lookupValue, onSelectRow, setInputValue]
+  );
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled) return; // Prevent input change if disabled
+    if (disabled) return;
     const searchValue = e.target.value;
     setInputValue(searchValue);
-
-    // Debounce logic for filter update
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current); // Clear previous debounce timeout
-    }
+    setCurrentPage(1);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
     debounceTimerRef.current = setTimeout(() => {
-      if (type !== 'local' && endpoint) {
-        // Handle the case for fetching from API
-        setFilters((prev) => ({
-          ...prev,
-          filters: {}, // Clear previous filters (optional)
-          search: searchValue, // Set the search term for API data
-          page: 1
-        }));
-        dispatch(setOpenName(label || '')); // Update the open name in Redux
-        setFiltering(true);
-      } else {
-        // Handle the case for local data
-        setFilters((prev) => ({
-          ...prev,
-          search: searchValue, // Set search term for local data filtering
-          filters: {}, // Clear filters if necessary
-          page: 1 // Optionally reset pagination
-        }));
-        dispatch(setOpenName(label || '')); // Update the open name in Redux
-        setFiltering(true);
+      // Batalkan request yang sedang berjalan
+      abortRef.current?.abort('New filter applied');
 
-        // Filter the local data based on the search term
-        const filteredRows =
-          data?.filter((row: Row) =>
-            Object.values(row).some((value) =>
-              String(value).toLowerCase().includes(searchValue.toLowerCase())
-            )
-          ) || [];
-        setRows(filteredRows); // Set filtered rows based on local data
-      }
+      const next = {
+        ...filters,
+        filters: {}, // optional reset kolom filter
+        search: searchValue,
+        page: 1
+      };
 
-      // Focus logic for better UX
+      setFilters(next);
+      dispatch(setOpenName(label || ''));
+      setFiltering(true);
+
+      // UX focus
       setTimeout(() => {
-        setSelectedRow(0); // Select the first row
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 }); // Select the first cell in the first row
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
       }, 250);
-
       setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
+        inputRef.current?.focus();
       }, 350);
-    }, 300); // Delay for debounce (e.g., 300ms after the last keystroke)
+    }, 300);
   };
 
   const handleColumnFilterChange = (
@@ -217,7 +252,8 @@ export default function LookUp({
     value: string
   ) => {
     if (disabled) return; // Prevent filter change if disabled
-    console.log('masuk1');
+    setCurrentPage(1);
+
     // Set initial filter value and reset pagination
     setInputValue('');
     setFilters((prev) => ({
@@ -237,29 +273,18 @@ export default function LookUp({
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      // Handle the case for fetching from API if 'json' type
-      if (type === 'json' && endpoint) {
-        setRows([]); // Optionally clear rows before making API request
-
-        // Fetch data from API (you can add specific API call here)
+      if (type !== 'local' && endpoint) {
         setTimeout(() => {
           dispatch(setOpenName(label || '')); // Update Redux state
         }, 100);
       } else {
-        // Handle the case for local data filtering
+        // Apply local filtering
         const filteredRows =
           data?.filter((row: Row) =>
             String(row[colKey]).toLowerCase().includes(value.toLowerCase())
           ) || [];
-
         setRows(filteredRows); // Set filtered rows based on local data
       }
-
-      // Focus logic for better UX
-      setTimeout(() => {
-        setSelectedRow(0); // Select the first row
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 }); // Select the first cell in the first row
-      }, 250);
     }, 300); // Debounce delay of 300ms after the last keystroke
   };
 
@@ -269,35 +294,43 @@ export default function LookUp({
     search: string,
     columnFilter: string = ''
   ) {
-    const textValue = text !== null && text !== undefined ? String(text) : ''; // Ensure 0 is not treated as falsy
-    if (!textValue) return textValue; // If the text is empty, return it as is
+    const textValue = text != null ? String(text) : '';
+    if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) return textValue; // If no search or filter, return text as is
+    if (!search.trim() && !columnFilter.trim()) {
+      return textValue;
+    }
 
-    const combinedSearch = search + columnFilter; // Combine search and column filter
+    const combined = search + columnFilter;
+    if (!combined) {
+      return textValue;
+    }
 
-    // Create a case-insensitive regex to match the search and filter terms
-    const regex = new RegExp(`(${combinedSearch})`, 'gi');
+    // 1. Fungsi untuk escape regex‐meta chars
+    const escapeRegExp = (s: string) =>
+      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    // Split the text into an array of segments, where each segment is either the match or the rest of the text
-    const segments = textValue.split(regex);
+    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
+    const pattern = combined
+      .split('')
+      .map((ch) => escapeRegExp(ch))
+      .join('|');
 
-    // Map over each segment and wrap the matched segments with a span for highlighting
+    // 3. Build regex-nya
+    const regex = new RegExp(`(${pattern})`, 'gi');
+
+    // 4. Replace dengan <span>
+    const highlighted = textValue.replace(
+      regex,
+      (m) =>
+        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+    );
+
     return (
-      <span className="text-xs">
-        {segments.map((segment, index) =>
-          regex.test(segment) ? (
-            <span
-              key={index}
-              style={{ backgroundColor: 'yellow', fontSize: '11px' }}
-            >
-              {segment}
-            </span>
-          ) : (
-            segment
-          )
-        )}
-      </span>
+      <span
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
     );
   }
 
@@ -323,14 +356,13 @@ export default function LookUp({
           inputRef.current.focus();
         }
       },
-      type === 'json' ? 300 : 150
+      type !== 'local' ? 300 : 150
     );
   };
 
   const handleClearInput = () => {
     if (disabled) return; // Prevent input clear if disabled
     setFilters({ ...filters, search: '', filters: {} });
-    console.log('masuk2');
     setInputValue('');
     if (lookupValue) {
       lookupValue(null);
@@ -560,7 +592,7 @@ export default function LookUp({
       //       inputRef.current.focus();
       //     }
       //   },
-      //   type === 'json' ? 300 : 150
+      //   type !== 'local' ? 300 : 150
       // );
     } else if (event.key === 'ArrowUp') {
       setSelectedRow((prev) => {
@@ -574,7 +606,7 @@ export default function LookUp({
       //       inputRef.current.focus();
       //     }
       //   },
-      //   type === 'json' ? 300 : 150
+      //   type !== 'local' ? 300 : 150
       // );
     } else if (event.key === 'ArrowRight') {
       setSelectedCol((prev) => {
@@ -621,57 +653,26 @@ export default function LookUp({
     });
   }
 
-  async function fetchRows(): Promise<Row[]> {
+  async function fetchRows(signal?: AbortSignal): Promise<Row[]> {
     try {
-      const params: any = {
-        page: currentPage,
-        limit: filters.limit,
-        search: filters.search || '',
-        sortBy: filters.sortBy,
-        sortDirection: filters.sortDirection
-      };
-
-      // Menambahkan filter tambahan (misalnya grp) dalam format query string terpisah
-      if (filters.filters) {
-        Object.entries(filters.filters).forEach(([key, value]) => {
-          params[key] = value;
-        });
-      }
-
-      // Jika filterby ada, tambahkan key dan value ke dalam filters.filters
-      if (filterby) {
-        Object.entries(filterby).forEach(([key, value]) => {
-          params[key] = value; // Menambahkan nilai filterby ke dalam params
-        });
-      }
-      const response = await api2.get(`/${endpoint}`, { params });
-      if (response.data.pagination.totalPages) {
-        setTotalPages(response.data.pagination.totalPages);
-      }
-      return response.data.data.map((item: any) => {
-        // Inisialisasi row dengan id yang diambil dari item
-        const row: Row = { id: item.id }; // Menambahkan id yang wajib ada
-        if (item?.default && !lookupNama) {
-          if (item.default === 'YA') {
-            setInputValue(item.text);
-            const value = item.id;
-            lookupValue?.(value);
-            onSelectRow?.(value);
-          }
-        }
-        for (const [key, value] of Object.entries(item)) {
-          // Mengisi kolom lainnya
-          if (key !== 'id') {
-            row[key] = value;
-          }
-        }
-        return row;
+      const response = await api2.get(`/${endpoint}`, {
+        params: buildParams(),
+        signal
       });
-    } catch (error) {
+
+      const { data, pagination } = response.data || {};
+      if (pagination?.totalPages) setTotalPages(pagination.totalPages);
+
+      return Array.isArray(data) ? mapApiToRows(data) : [];
+    } catch (error: any) {
+      if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+        return [];
+      }
       console.error('Failed to fetch rows', error);
       return [];
     }
   }
+
   function getRowClass(row: Row) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
@@ -726,7 +727,7 @@ export default function LookUp({
               inputRef.current.focus();
             }
           },
-          type === 'json' ? 300 : 150
+          type !== 'local' ? 300 : 150
         );
       }
     } else if (event.key === 'ArrowUp') {
@@ -742,7 +743,7 @@ export default function LookUp({
               inputRef.current.focus();
             }
           },
-          type === 'json' ? 300 : 150
+          type !== 'local' ? 300 : 150
         );
       }
     } else if (event.key === 'PageDown') {
@@ -763,7 +764,7 @@ export default function LookUp({
             inputRef.current.focus();
           }
         },
-        type === 'json' ? 300 : 150
+        type !== 'local' ? 300 : 150
       );
     } else if (event.key === 'PageUp') {
       setSelectedRow((prev) => {
@@ -783,7 +784,7 @@ export default function LookUp({
             inputRef.current.focus();
           }
         },
-        type === 'json' ? 300 : 150
+        type !== 'local' ? 300 : 150
       );
     }
   };
@@ -834,7 +835,7 @@ export default function LookUp({
   //             columnInputRefs.current[colKey].focus();
   //           }
   //         },
-  //         type === 'json' ? 300 : 150
+  //         type !== 'local' ? 300 : 150
   //       );
   //     }
   //   } else if (event.key === 'PageDown') {
@@ -855,7 +856,7 @@ export default function LookUp({
   //           columnInputRefs.current[colKey].focus();
   //         }
   //       },
-  //       type === 'json' ? 300 : 150
+  //       type !== 'local' ? 300 : 150
   //     );
   //   } else if (event.key === 'PageUp') {
   //     setSelectedRow((prev) => {
@@ -875,7 +876,7 @@ export default function LookUp({
   //           columnInputRefs.current[colKey].focus();
   //         }
   //       },
-  //       type === 'json' ? 300 : 150
+  //       type !== 'local' ? 300 : 150
   //     );
   //   }
   // };
@@ -891,84 +892,108 @@ export default function LookUp({
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  useEffect(() => {
-    setIsLoading(true);
-    if (type !== 'local' && endpoint) {
-      async function fetchData() {
-        try {
-          // Fetch the data from the API
-          const newRows = await fetchRows();
+  const applyFilters = useCallback(
+    (rows: Row[]) => {
+      let filtered = rows;
 
-          setRows((prevRows) => {
-            // Reset rows if any filter changes (including pagination to page 1)
-            if (currentPage === 1 || filters !== prevFilters) {
-              setCurrentPage(1); // Reset currentPage to 1
-              setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-              return newRows; // Use the fetched new rows directly
-            }
-
-            // Add new rows at the bottom for infinite scroll if the current page wasn't fetched before
-            if (!fetchedPages.has(currentPage)) {
-              return [...prevRows, ...newRows];
-            }
-
-            return prevRows;
-          });
-          setPrevFilters(filters); // Update the previous filters for comparison
-          setIsFirstLoad(false); // Set the first load state to false
-        } catch (error) {
-          console.error('Failed to fetch rows', error);
-          setRows([]); // Clear the rows if an error occurs
-        } finally {
-          setIsLoading(false); // Turn off the loading state
-        }
-      }
-
-      fetchData();
-    } else {
-      let filteredRows = data ? data : null;
-      if (filterby && Array.isArray(filterby)) {
-        filteredRows = data?.filter((row: Row) =>
-          filterby.every((filter) =>
-            Object.entries(filter).every(
-              ([key, value]) => String(row[key]) === String(value)
-            )
+      // filterby array (local only)
+      if (Array.isArray(filterby) && filterby.length) {
+        filtered = filtered.filter((row: Row) =>
+          filterby.every((f) =>
+            Object.entries(f).every(([k, v]) => String(row[k]) === String(v))
           )
         );
       }
 
-      // if (linkTo && linkValue) {
-      //   filteredRows = data?.filter(
-      //     (row: Row) => String(row[linkTo]) === String(linkValue)
-      //   );
-      // }
-      filteredRows =
-        filteredRows?.filter((row: Row) =>
-          Object.values(row).some((value) =>
-            String(value).toLowerCase().includes(filters.search.toLowerCase())
-          )
-        ) || [];
-
-      if (isdefault && !lookupNama && !deleteClicked) {
-        if (isdefault === 'YA') {
-          const defaultRow = data.find((row: any) => row.default === 'YA');
-          if (defaultRow && !clicked) {
-            setInputValue(defaultRow.text);
-          } else {
-            const rowData = rows[selectedRow];
-            setInputValue(rowData.text);
-          }
-          const value = defaultRow.id;
-          lookupValue?.(value);
-          onSelectRow?.(value);
-        }
+      // column filters
+      for (const [colKey, filterValue] of Object.entries(
+        filters.filters || {}
+      )) {
+        const fv = String(filterValue).toLowerCase();
+        filtered = filtered.filter((row: Row) =>
+          String(row[colKey as keyof Row])
+            .toLowerCase()
+            .includes(fv)
+        );
       }
 
-      setRows(filteredRows);
-      setIsLoading(false); // Set loading to false if it's local data
+      // global search
+      const q = (filters.search || '').toLowerCase();
+      if (q) {
+        filtered = filtered.filter((row: Row) =>
+          Object.values(row).some((v) => String(v).toLowerCase().includes(q))
+        );
+      }
+
+      return filtered;
+    },
+    [filterby, filters]
+  );
+
+  const [isFetching, setIsFetching] = useState(false); // Mengontrol fetching status
+  const hasFetchedRef = useRef(false); // Menandakan apakah sudah pernah fetch
+
+  useEffect(() => {
+    // Jangan lakukan fetch jika lookup tidak terbuka
+    if (!open && !openName) return;
+
+    // Reset hasFetched ketika filter berubah
+    if (hasFetchedRef.current && !shallowEqual(filters, prevFilters)) {
+      hasFetchedRef.current = false;
     }
-    // Fetch data if the type is 'json' and endpoint is provided
-  }, [filters, currentPage, type, data, linkTo, linkValue, filterby]);
+
+    if (!hasFetchedRef.current) {
+      if (type !== 'local' && endpoint) {
+        setIsLoading(true); // Mulai loading sebelum fetch
+        abortRef.current?.abort('Effect re-run'); // Batalkan request sebelumnya
+        const controller = new AbortController();
+        abortRef.current = controller;
+
+        const myRequestId = ++requestIdRef.current; // Track request ID
+
+        (async () => {
+          try {
+            const newRows = await fetchRows(controller.signal); // Fetch data dari API
+
+            // Hanya update rows jika request ID masih sesuai (menghindari double-fetch)
+            if (myRequestId !== requestIdRef.current) return;
+            setRows(applyFilters(newRows));
+            setPrevFilters(filters); // Update prevFilters agar tidak terjadi loop
+            setIsFirstLoad(false); // Tandai fetch pertama selesai
+            hasFetchedRef.current = true; // Tandai fetch sudah dilakukan
+          } catch (error) {
+            console.error('Failed to fetch rows', error); // Log error jika terjadi masalah
+          } finally {
+            // Pastikan setIsLoading(false) hanya dipanggil setelah fetching selesai
+            if (myRequestId === requestIdRef.current) {
+              setIsLoading(false); // Akhiri loading
+              setIsFetching(false); // Mengindikasikan bahwa fetch selesai
+            }
+          }
+        })();
+
+        return () => controller.abort(); // Cleanup: Batalkan fetch jika effect dihentikan
+      } else {
+        // Filter data lokal jika tidak menggunakan API
+        const filteredRows = data ? applyFilters(data) : [];
+        setRows(filteredRows); // Set filtered rows
+        setIsLoading(false); // Selesaikan loading
+        hasFetchedRef.current = true; // Tandai fetch sudah selesai
+      }
+    }
+  }, [
+    open,
+    openName,
+    filters, // Memastikan effect dipicu ketika filters berubah
+    currentPage,
+    fetchedPages,
+    type,
+    endpoint,
+    data,
+    applyFilters,
+    prevFilters,
+    hasFetchedRef.current // Tidak gunakan state, cukup gunakan ref
+  ]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -1014,17 +1039,9 @@ export default function LookUp({
             ...filters,
             search: rows[0][postData as string] || ''
           });
-          setInputValue(rows[0][postData as string] || '');
           const value = rows[0][dataToPost as string] || '';
           lookupValue?.(value);
           onSelectRow?.(value); // cukup satu kali, tanpa else
-        }
-      }
-      if (rows.length === 0) {
-        setInputValue('');
-        setFilters({ ...filters, search: '', filters: {} });
-        if (lookupValue) {
-          lookupValue('');
         }
       }
     };
@@ -1074,6 +1091,14 @@ export default function LookUp({
     }
   }, [lookupNama]);
   useEffect(() => {
+    if (clearLookup) {
+      setInputValue(''); // Assuming "text" is the display column
+      dispatch(setClearLookup(false)); // Reset clearLookup state in Redux
+      setFilters({ ...filters, search: '', filters: {} });
+    }
+  }, [clearLookup, dispatch]);
+  console.log(lookupNama, inputValue, 'lookupNama'); // Debugging line to check lookupNama value
+  useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       if (event.key === 'ArrowUp') {
         event.preventDefault(); // Mencegah scroll pada tombol space
@@ -1114,21 +1139,26 @@ export default function LookUp({
   }, [inputRef]);
   useEffect(() => {
     // Cek apakah inputValue atau lookupNama kosong untuk label yang sama
-    if (isSubmitClicked && required) {
+    if (submitClicked && required) {
       if (
-        (showError.label?.toLowerCase() == label?.toLowerCase() &&
-          (inputValue == '' || inputValue == null)) ||
-        (showError.label?.toLowerCase() == label?.toLowerCase() &&
-          (lookupNama == '' || inputValue == undefined))
+        showError.label?.toLowerCase() === label?.toLowerCase() &&
+        (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
-        // Jika kosong, set error menjadi true
+        console.log(
+          'showError.label',
+          label,
+          showError.label,
+          inputValue,
+          lookupNama
+        );
         setShowError({ label: label ?? '', status: true });
       } else {
         // Jika ada nilai, set error menjadi false
         setShowError({ label: label ?? '', status: false });
       }
     }
-  }, [required, isSubmitClicked, inputValue, lookupNama, label]);
+    dispatch(setSubmitClicked(false));
+  }, [required, submitClicked, inputValue, lookupNama, label, dispatch]);
 
   useEffect(() => {
     if (
@@ -1138,6 +1168,7 @@ export default function LookUp({
       setShowError({ label: label ?? '', status: false });
     }
   }, [lookupNama, inputValue, label, showError.label]);
+
   return (
     <Popover open={open} onOpenChange={() => ({})}>
       <PopoverTrigger asChild>

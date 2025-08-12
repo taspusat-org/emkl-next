@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import InputMask from '@mona-health/react-input-mask';
 
 type CurrencyInputProps = {
@@ -7,6 +7,7 @@ type CurrencyInputProps = {
   icon?: React.ReactNode;
   className?: string;
   autoFocus?: boolean;
+  readOnly?: boolean;
   placeholder?: string;
 };
 
@@ -16,6 +17,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   icon,
   className = '',
   autoFocus = false,
+  readOnly = false,
   placeholder = ''
 }) => {
   const [inputValue, setInputValue] = useState(value);
@@ -65,6 +67,14 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
+  useEffect(() => {
+    console.log('value', value);
+    if (!value.includes('.') || !value.includes(',')) {
+      console.log('masuk');
+      const formatted = formatCurrency(value);
+      setInputValue(formatted + '.00');
+    }
+  }, [value]);
   return (
     <div className="relative w-full">
       <InputMask
@@ -72,6 +82,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         maskPlaceholder={null}
         maskChar={null}
         value={inputValue}
+        readOnly={readOnly}
         beforeMaskedStateChange={beforeMaskedStateChange}
         onChange={handleChange}
         autoFocus={autoFocus}
@@ -80,7 +91,9 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         onFocus={handleFocus}
         onBlur={() => handleBlur(inputValue)}
         placeholder={placeholder}
-        className={`h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-right text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className}`}
+        className={`h-9 w-full rounded-sm border border-zinc-300 px-1 py-1 text-right text-sm focus:border-blue-500 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className} ${
+          readOnly ? 'text-zinc-400' : 'text-zinc-900'
+        }`}
       />
       {icon && (
         <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center">

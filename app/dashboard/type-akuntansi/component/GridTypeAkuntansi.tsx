@@ -20,7 +20,10 @@ import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { ITypeAkuntansi } from '@/lib/types/typeakuntansi.type';
-import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { checkValidationTypeAkuntansiFn } from '@/lib/apis/typeakuntansi.api';
 import {
@@ -92,7 +95,6 @@ const GridTypeAkuntansi = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
-  const [isFetchingManually, setIsFetchingManually] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
@@ -1095,9 +1097,8 @@ const GridTypeAkuntansi = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
+    dispatch(setClearLookup(true));
     try {
-      console.log('hereee lagii', keepOpenModal, mode);
-
       if (keepOpenModal) {
         forms.reset();
         setPopOver(true);
@@ -1105,7 +1106,6 @@ const GridTypeAkuntansi = () => {
         forms.reset();
         setPopOver(false);
 
-        setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
           const response = await api2.get(`/redis/get/typeakuntansi-allItems`);
@@ -1125,12 +1125,13 @@ const GridTypeAkuntansi = () => {
           }
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {
       console.error('Error during onSuccess:', error);
-      setIsFetchingManually(false);
+      setIsDataUpdated(false);
+    } finally {
+      // dispatch(setClearLookup(false));
       setIsDataUpdated(false);
     }
   };
@@ -1502,7 +1503,7 @@ const GridTypeAkuntansi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allTypeAkuntansi || isFetchingManually || isDataUpdated) return;
+    if (!allTypeAkuntansi || isDataUpdated) return;
 
     const newRows = allTypeAkuntansi.data || [];
 
@@ -1529,13 +1530,7 @@ const GridTypeAkuntansi = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [
-    allTypeAkuntansi,
-    currentPage,
-    filters,
-    isFetchingManually,
-    isDataUpdated
-  ]);
+  }, [allTypeAkuntansi, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1585,12 +1580,8 @@ const GridTypeAkuntansi = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    console.log('rowData', rowData, mode, selectedRow, rows.length);
 
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      // Only fill the form if not in addMode
-      console.log('masuk sini?');
-
       forms.setValue('nama', rowData?.nama);
       forms.setValue('order', rowData?.order ? Number(rowData.order) : 0);
       forms.setValue('keterangan', rowData?.keterangan);
@@ -1599,8 +1590,6 @@ const GridTypeAkuntansi = () => {
       forms.setValue('statusaktif', rowData?.statusaktif || 1);
       forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
-      console.log('atau sini?', mode, selectedRow, rows.length);
-
       // If in addMode, ensure the form values are cleared
       // forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
       // forms.setValue('akuntansi_nama', '');
@@ -1634,7 +1623,6 @@ const GridTypeAkuntansi = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
-
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

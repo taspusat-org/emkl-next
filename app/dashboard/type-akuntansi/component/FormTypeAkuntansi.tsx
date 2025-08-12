@@ -16,6 +16,9 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { useDispatch } from 'react-redux';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import InputNumeric from '@/components/custom-ui/InputNumeric';
 
 const FormTypeAkuntansi = ({
   forms,
@@ -47,7 +50,7 @@ const FormTypeAkuntansi = ({
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
       labelLookup: 'AKUNTANSI LOOKUP',
-      required: true,
+
       selectedRequired: false,
       endpoint: 'akuntansi',
       label: 'AKUNTANSI',
@@ -60,6 +63,7 @@ const FormTypeAkuntansi = ({
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -205,12 +209,10 @@ const FormTypeAkuntansi = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Input
-                              {...field}
-                              value={Number(field.value) ?? ''}
-                              type="number"
-                              onChange={(e: any) =>
-                                forms.setValue('order', Number(e.target.value))
+                            <InputNumeric
+                              value={field.value ?? ''}
+                              onValueChange={(value: any) =>
+                                forms.setValue('order', Number(value))
                               }
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -264,6 +266,7 @@ const FormTypeAkuntansi = ({
                           lookupValue={(id) =>
                             forms.setValue('akuntansi_id', Number(id))
                           }
+                          required={true}
                           inputLookupValue={forms.getValues('akuntansi_id')}
                           lookupNama={forms.getValues('akuntansi_nama')}
                         />
@@ -306,6 +309,7 @@ const FormTypeAkuntansi = ({
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);
+              dispatch(setSubmitClicked(true));
             }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
@@ -326,6 +330,7 @@ const FormTypeAkuntansi = ({
                 onClick={(e) => {
                   e.preventDefault();
                   onSubmit(true);
+                  dispatch(setSubmitClicked(true));
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"
