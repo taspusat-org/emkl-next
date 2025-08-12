@@ -1,5 +1,5 @@
 import React from 'react';
-import { GiCargoShip } from 'react-icons/gi';
+import { GiCargoCrate, GiCargoShip } from 'react-icons/gi';
 import {
   BsFillGearFill,
   BsFillBox2Fill,
@@ -80,7 +80,8 @@ const iconMap: Record<string, IconComponent> = {
   MONEY: BsCurrencyDollar,
   SHIP: FaShip,
   ACCOUNTING: MdAccountBalance,
-  CARGO: GiCargoShip
+  CARGO: GiCargoShip,
+  CARGOCONTAINER: GiCargoCrate
 };
 
 type IconsProps = {
