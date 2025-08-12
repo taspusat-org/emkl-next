@@ -38,7 +38,7 @@ const FormMenu = ({
       required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=status+aktif',
-      label: 'status aktif',
+      label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
@@ -131,7 +131,7 @@ const FormMenu = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Form
+            Container Form
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -182,7 +182,7 @@ const FormMenu = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="text-sm font-semibold text-gray-700 lg:w-[15%]">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
                           Keterangan
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
