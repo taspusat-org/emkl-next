@@ -1,4 +1,5 @@
 import React from 'react';
+import { GiCargoShip } from 'react-icons/gi';
 import {
   BsFillGearFill,
   BsFillBox2Fill,
@@ -33,9 +34,11 @@ import {
   FaUserCheck,
   FaPencilAlt,
   FaPrint,
-  FaVoicemail
+  FaVoicemail,
+  FaShip
 } from 'react-icons/fa';
 import { FaBuildingUser } from 'react-icons/fa6';
+import { MdAccountBalance } from 'react-icons/md';
 export type IconComponent = React.ComponentType<{
   className?: string;
   size?: string;
@@ -74,7 +77,10 @@ const iconMap: Record<string, IconComponent> = {
   NOTE: FaPencilAlt,
   CABANG: FaBuildingUser,
   EMAIL: FaVoicemail,
-  MONEY: BsCurrencyDollar
+  MONEY: BsCurrencyDollar,
+  SHIP: FaShip,
+  ACCOUNTING: MdAccountBalance,
+  CARGO: GiCargoShip
 };
 
 type IconsProps = {
