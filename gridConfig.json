@@ -60,11 +60,12 @@
     }
   },
   "GridContainer-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
       "nama": 300,
+      "cabang": 300,
       "keterangan": 150,
       "statusaktif": 150,
       "created_at": 250,
