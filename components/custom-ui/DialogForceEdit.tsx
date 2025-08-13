@@ -19,10 +19,13 @@ import {
 import { useDispatch } from 'react-redux';
 import { useToast } from '@/hooks/use-toast';
 import { verifyForceEditFn } from '@/lib/apis/global.api';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
 
 interface LoginDialogProps {
   open: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   onSubmit: (username: string, password: string) => void;
   value?: string | number;
   tableNameForceEdit?: string;
@@ -32,9 +35,12 @@ const DialogForceEdit: React.FC<LoginDialogProps> = ({
   open,
   onClose,
   value,
+  onSuccess,
   tableNameForceEdit
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const { forceedit } = useSelector((state: RootState) => state.forceedit);
+
   const dispatch = useDispatch();
   const { toast } = useToast();
   const forms = useForm<LoginInput>({
@@ -45,14 +51,14 @@ const DialogForceEdit: React.FC<LoginDialogProps> = ({
       password: ''
     }
   });
-
+  console.log('forceedit', forceedit);
   const onSubmit = async (values: LoginInput) => {
     dispatch(setProcessing());
 
     // Log the payload to check
     const payload = {
       ...values,
-      tableName: tableNameForceEdit,
+      tableName: forceedit,
       fieldValue: value
     };
 

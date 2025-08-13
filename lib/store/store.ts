@@ -29,6 +29,7 @@ import filterReducer from './filterSlice/filterSlice';
 import loadingReducer from './loadingSlice/loadingSlice';
 import tabReducer from './tabSlice/tabSlice';
 import selectLookupReducer from './selectLookupSlice/selectLookupSlice';
+import forceEditReducer from './forceEditSlice/forceEditSlice';
 
 const persistConfig = {
   key: 'root',
@@ -52,7 +53,8 @@ const rootReducer = combineReducers({
   loading: loadingReducer,
   header: headerReducer,
   selectLookup: selectLookupReducer,
-  tab: tabReducer
+  tab: tabReducer,
+  forceedit: forceEditReducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
