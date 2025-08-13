@@ -1,6 +1,20 @@
 {
   "GridCutiApprovalCuti-1665": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -18,7 +32,17 @@
     }
   },
   "GridUser-1541": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -32,7 +56,19 @@
     }
   },
   "GridPengembalianKasGantung-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -48,19 +84,38 @@
     }
   },
   "GridMenu-1": {
-    "columnsOrder": [0, 1, 6, 2, 3, 4, 5],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
-      "nama": 300,
-      "keterangan": 150,
+      "title": 300,
+      "parentId": 150,
       "statusaktif": 150,
+      "icon": 150,
       "created_at": 250,
       "updated_at": 250
     }
   },
   "GridContainer-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -68,6 +123,26 @@
       "cabang": 300,
       "keterangan": 150,
       "statusaktif": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridOpenLocks-1": {
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "editing_by": 300,
+      "editing_at": 357,
+      "table": 150,
       "created_at": 250,
       "updated_at": 250
     }

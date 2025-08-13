@@ -5,6 +5,9 @@ import * as React from 'react';
 import useDisableBodyScroll from '@/lib/hooks/useDisableBodyScroll';
 import { FaTimes } from 'react-icons/fa';
 import DialogForceEdit from './DialogForceEdit';
+import { useDispatch } from 'react-redux';
+import { setForceEdit } from '@/lib/store/forceEditSlice/forceEditSlice';
+import { useForceEditDialog } from '@/lib/store/client/useForceEdit';
 
 export interface AlertOptions {
   title: string;
@@ -37,15 +40,25 @@ export default function Alert({
   ...rest
 }: BaseAlertProps) {
   const [isDialogOpen, setDialogOpen] = React.useState(false);
-
+  const dispatch = useDispatch();
   const { title, variant, submitText } = rest;
-
+  const { openDialog } = useForceEditDialog();
   const handleTextClick = () => {
     if (isForceEdit) {
-      setDialogOpen(true); // Open the dialog
+      // 1) Buka dialog GLOBAL dengan data yang dibutuhkan
+      openDialog({
+        tableName: tableNameForceEdit!, // pastikan tidak undefined
+        value: valueForceEdit!
+        // onSuccess: () => { ... } // opsional
+      });
+      onTextClick?.();
+      // 2) Tutup Alert TANPA khawatir dialog ikut unmount
+      onClose();
+      return;
     }
-    onTextClick?.(); // Call onTextClick prop if defined
-    onClose(); // Close the alert
+
+    onTextClick?.();
+    onClose();
   };
 
   const handleDialogClose = () => {
@@ -57,8 +70,15 @@ export default function Alert({
     // Here you can handle the actual login logic (API calls, validation, etc.)
     handleDialogClose(); // Close the dialog after successful login
   };
-  console.log(tableNameForceEdit, valueForceEdit);
   useDisableBodyScroll(open);
+  React.useEffect(() => {
+    dispatch(
+      setForceEdit({
+        tableName: String(tableNameForceEdit),
+        tableValue: String(valueForceEdit)
+      })
+    ); // Dispatch action to set force edit state
+  }, [dispatch, tableNameForceEdit, valueForceEdit]);
 
   return (
     <>
@@ -101,14 +121,14 @@ export default function Alert({
               <h3 className="text-title text-base font-medium uppercase leading-6 text-zinc-900 md:text-xs lg:text-xs">
                 {title}
               </h3>
-              {clickableText && (
+              {/* {clickableText && (
                 <p
                   className="mt-2 cursor-pointer text-sm font-semibold text-blue-600 hover:underline"
                   onClick={handleTextClick}
                 >
                   {clickableText}
                 </p>
-              )}
+              )} */}
             </div>
           </div>
           {(variant === 'danger' || variant === 'success') && (
@@ -124,15 +144,6 @@ export default function Alert({
           )}
         </div>
       </div>
-
-      {/* Login Dialog */}
-      <DialogForceEdit
-        open={isDialogOpen}
-        value={valueForceEdit}
-        tableNameForceEdit={tableNameForceEdit}
-        onClose={handleDialogClose}
-        onSubmit={handleLoginSubmit}
-      />
     </>
   );
 }

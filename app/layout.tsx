@@ -21,6 +21,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { setLoaded, setLoading } from '../lib/store/loadingSlice/loadingSlice';
 import { useRouter } from 'next/navigation';
 import { pdfjs } from 'react-pdf';
+import ForceEditDialogHost from '@/components/custom-ui/ForceEditDialogHost';
 
 const roboto = Roboto({
   subsets: ['latin'],
@@ -59,6 +60,7 @@ export default function RootLayout({
               onClose={handleClose}
               {...(alertOptions as AlertOptions)}
             />
+            {/* <ForceEditDialogHost /> */}
             <PersistGate loading={null} persistor={persistor}>
               <NextTopLoader showSpinner={false} />
               <Providers>

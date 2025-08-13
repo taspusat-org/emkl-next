@@ -203,7 +203,7 @@ export default function LookUp({
         const row: Row = { id: item.id };
         if (item?.default && !lookupNama && item.default === 'YA') {
           setInputValue(item.text);
-          const value = item.id;
+          const value = item[dataToPost as string] || item.id;
           lookupValue?.(value);
           onSelectRow?.(value);
         }
@@ -528,7 +528,7 @@ export default function LookUp({
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-    const value = dataToPost ? clickedRow[dataToPost as any] : clickedRow.id;
+    const value = clickedRow[dataToPost as any];
 
     lookupValue?.(value);
     onSelectRow?.(value); // cukup satu kali, tanpa else
