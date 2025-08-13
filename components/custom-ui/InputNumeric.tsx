@@ -20,8 +20,10 @@ const InputNumeric: React.FC<NumericInputProps> = ({
   readOnly = false,
   placeholder = ''
 }) => {
-  const [inputValue, setInputValue] = useState(value);
+  const normalizeValue = (val: string | number) =>
+    typeof val === 'number' ? String(val) : val;
 
+  const [inputValue, setInputValue] = useState<string>(normalizeValue(value));
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     setInputValue(raw);
@@ -45,8 +47,8 @@ const InputNumeric: React.FC<NumericInputProps> = ({
         onKeyDown={inputStopPropagation}
         onClick={(e: any) => e.stopPropagation()}
         placeholder={placeholder}
-        className={`h-9 w-full rounded-sm border border-zinc-300 px-1 py-1 text-right text-sm text-zinc-900 focus:border-blue-500 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className} ${
-          readOnly ? 'text-zinc-400' : ''
+        className={`h-9 w-full rounded-sm border border-zinc-300 px-1 py-1 text-right text-sm focus:border-blue-500 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className} ${
+          readOnly ? 'text-zinc-400' : 'text-zinc-900'
         }`}
       />
       {icon && (

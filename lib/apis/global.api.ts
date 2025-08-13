@@ -24,3 +24,8 @@ export const checkBeforeDeleteFn = async (
     throw new Error('Validation failed');
   }
 };
+export const verifyForceEditFn = async (fields: any) => {
+  const response = await api2.post(`/global/open-forceedit`, fields);
+
+  return response.data;
+};

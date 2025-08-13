@@ -1707,7 +1707,11 @@ const GridKasGantungHeader = () => {
         alert({
           title: result.message,
           variant: 'danger',
-          submitText: 'OK'
+          submitText: 'OK',
+          isForceEdit: true,
+          valueForceEdit: rowData.id,
+          tableNameForceEdit: 'kasgantungheader',
+          clickableText: 'LANJUT EDIT'
         });
       } else {
         setPopOver(true);
