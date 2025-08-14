@@ -67,6 +67,7 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import { exportBankFn } from '@/lib/apis/bank.api';
 
 interface Filter {
   page: number;
@@ -1620,6 +1621,154 @@ const GridBank = () => {
             </div>
           );
         }
+      },
+      {
+        key: 'created_at',
+        name: 'Created At',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('created_at')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'created_at'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Created At
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'created_at' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'created_at' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['created_at'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.created_at.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('created_at', value);
+                }}
+              />
+              {filters.filters.created_at && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('created_at', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.created_at || '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.created_at || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'updated_at',
+        name: 'Updated At',
+        resizable: true,
+        draggable: true,
+
+        headerCellClass: 'column-headers',
+
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('updated_at')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'updated_at'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Updated At
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'updated_at' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'updated_at' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['created_at'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.updated_at.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('updated_at', value);
+                }}
+              />
+              {filters.filters.updated_at && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('updated_at', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.updated_at || '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.updated_at || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
       }
     ];
   }, [filters, checkedRows, isAllSelected, rows, getCoa]);
@@ -1879,25 +2028,25 @@ const GridBank = () => {
     }
   };
 
-  // const handleExport = async () => {
-  //   try {
-  //     const { page, limit, ...filtersWithoutLimit } = filters;
+  const handleExport = async () => {
+    try {
+      const { page, limit, ...filtersWithoutLimit } = filters;
 
-  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+      const response = await exportBankFn(filtersWithoutLimit); // Kirim data tanpa pagination
 
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
+      // Buat link untuk mendownload file
+      const link = document.createElement('a');
+      const url = window.URL.createObjectURL(response);
+      link.href = url;
+      link.download = `laporan_bank${Date.now()}.xlsx`; // Nama file yang diunduh
+      link.click(); // Trigger download
 
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting user data:', error);
-  //   }
-  // };
+      // Revoke URL setelah download
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting bank data:', error);
+    }
+  };
 
   // const handleExportBySelect = async () => {
   //   if (checkedRows.size === 0) {
@@ -2470,42 +2619,43 @@ const GridBank = () => {
             //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
             //   }
             // ]}
-            // dropdownMenus={[
-            //   {
-            //     label: 'Report',
-            //     icon: <FaPrint />,
-            //     className: 'bg-cyan-500 hover:bg-cyan-700',
-            //     actions: [
-            //       {
-            //         label: 'REPORT ALL',
-            //         onClick: () => handleReport(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       },
-            //       {
-            //         label: 'REPORT BY SELECT',
-            //         onClick: () => handleReportBySelect(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       }
-            //     ]
-            //   },
-            //   {
-            //     label: 'Export',
-            //     icon: <FaFileExport />,
-            //     className: 'bg-green-600 hover:bg-green-700',
-            //     actions: [
-            //       {
-            //         label: 'EXPORT ALL',
-            //         onClick: () => handleExport(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       },
-            //       {
-            //         label: 'EXPORT BY SELECT',
-            //         onClick: () => handleExportBySelect(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       }
-            //     ]
-            //   }
-            // ]}
+            dropdownMenus={[
+              // {
+              //   label: 'Report',
+              //   icon: <FaPrint />,
+              //   className: 'bg-cyan-500 hover:bg-cyan-700',
+              //   actions: [
+              //     {
+              //       label: 'REPORT ALL',
+              //       onClick: () => handleReport(),
+              //       className: 'bg-cyan-500 hover:bg-cyan-700'
+              //     },
+              //     {
+              //       label: 'REPORT BY SELECT',
+              //       onClick: () => handleReportBySelect(),
+              //       className: 'bg-cyan-500 hover:bg-cyan-700'
+              //     }
+              //   ]
+              // },
+              {
+                label: 'Export',
+                icon: <FaFileExport />,
+                className: 'bg-green-600 hover:bg-green-700',
+                actions: [
+                  {
+                    label: 'EXPORT ALL',
+                    onClick: () => handleExport(),
+                    className: 'bg-green-600 hover:bg-green-700'
+                  }
+                  // ,
+                  // {
+                  //   label: 'EXPORT BY SELECT',
+                  //   // onClick: () => handleExportBySelect(),
+                  //   className: 'bg-green-600 hover:bg-green-700'
+                  // }
+                ]
+              }
+            ]}
           />
           {isLoadingBank ? <LoadRowsRenderer /> : null}
           {contextMenu && (
