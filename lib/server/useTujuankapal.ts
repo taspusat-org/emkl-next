@@ -16,6 +16,7 @@ export const useGetTujuankapal = (
       nama?: string;
       keterangan?: string;
       namacabang?: string;
+      text?: string;
     };
     page?: number;
     sortBy?: string;

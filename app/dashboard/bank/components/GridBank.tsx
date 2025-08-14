@@ -12,19 +12,17 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormMenu from './FormTujuankapal';
+import FormBank from './FormBank';
 import { useQueryClient } from 'react-query';
-import {
-  TujuankapalInput,
-  tujuankapalSchema
-} from '@/lib/validations/tujuankapal.validation';
+import { BankInput, BankSchema } from '@/lib/validations/bank.validation';
+import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
 
 import {
-  useCreateTujuankapal,
-  useDeleteTujuankapal,
-  useGetTujuankapal,
-  useUpdateTujuankapal
-} from '@/lib/server/useTujuankapal';
+  useCreateBank,
+  useDeleteBank,
+  useGetBank,
+  useUpdateBank
+} from '@/lib/server/useBank';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -59,7 +57,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { ITujuanKapal } from '@/lib/types/tujuankapal.type';
+import { IBank } from '@/lib/types/bank.type';
 import { number } from 'zod';
 import {
   clearOpenName,
@@ -74,15 +72,48 @@ interface Filter {
   page: number;
   limit: number;
   search: string;
+
   filters: {
     nama: string;
     keterangan: string;
-    text: string;
     created_at: string;
     updated_at: string;
+
+    coa: string;
+    keterangancoa: string;
+
+    coagantung: string;
+    keterangancoagantung: string;
+
+    statusbank: string;
+    textbank: string;
+
     statusaktif: string;
-    namacabang: string;
-    cabang_id: string;
+    text: string;
+
+    statusdefault: string;
+    textdefault: string;
+
+    formatpenerimaan: string;
+    formatpenerimaantext: string;
+
+    formatpengeluaran: string;
+    formatpengeluarantext: string;
+
+    formatpenerimaangantung: string;
+    formatpenerimaangantungtext: string;
+
+    formatpengeluarangantung: string;
+    formatpengeluarangantungtext: string;
+
+    formatpencairan: string;
+    formatpencairantext: string;
+
+    formatrekappenerimaan: string;
+    formatrekappenerimaantext: string;
+
+    formatrekappengeluaran: string;
+    formatrekappengeluarantext: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -92,23 +123,24 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridTujuankapal = () => {
+
+const GridBank = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createTujuankapal, isLoading: isLoadingCreate } =
-    useCreateTujuankapal();
-  const { mutateAsync: updateTujuankapal, isLoading: isLoadingUpdate } =
-    useUpdateTujuankapal();
+  const { mutateAsync: createBank, isLoading: isLoadingCreate } =
+    useCreateBank();
+  const { mutateAsync: updateBank, isLoading: isLoadingUpdate } =
+    useUpdateBank();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteTujuankapal, isLoading: isLoadingDelete } =
-    useDeleteTujuankapal();
+  const { mutateAsync: deleteBank, isLoading: isLoadingDelete } =
+    useDeleteBank();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -125,7 +157,7 @@ const GridTujuankapal = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<ITujuanKapal[]>([]);
+  const [rows, setRows] = useState<IBank[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -134,41 +166,94 @@ const GridTujuankapal = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<TujuankapalInput>({
-    resolver: zodResolver(tujuankapalSchema),
+  const getCoa = useSelector((state: RootState) => state.lookup.data);
+  const forms = useForm<BankInput>({
+    resolver: zodResolver(BankSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
+
+      coa: 0,
+      keterangancoa: '',
+      coagantung: 0,
+      keterangancoagantung: '',
+
+      statusbank: 0,
+      textbank: '',
+
       statusaktif: 0,
-      cabang_id: 1
+      text: '',
+
+      statusdefault: 0,
+      textdefault: '',
+
+      formatpenerimaan: 0,
+      formatpenerimaantext: '',
+
+      formatpengeluaran: 0,
+      formatpengeluarantext: '',
+
+      formatpenerimaangantung: 0,
+      formatpenerimaangantungtext: '',
+
+      formatpengeluarangantung: 0,
+      formatpengeluarangantungtext: '',
+
+      formatpencairan: 0,
+      formatpencairantext: '',
+
+      formatrekappenerimaan: 0,
+      formatrekappenerimaantext: '',
+
+      formatrekappengeluaran: 0,
+      formatrekappengeluarantext: ''
     }
   });
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
+    search: '',
     filters: {
       nama: '',
       keterangan: '',
       created_at: '',
       updated_at: '',
-      namacabang: '',
-      cabang_id: '',
+      coa: '',
+      keterangancoa: '',
+      coagantung: '',
+      keterangancoagantung: '',
+      statusbank: '',
+      textbank: '',
+      statusaktif: '',
       text: '',
-      statusaktif: ''
+      statusdefault: '',
+      textdefault: '',
+      formatpenerimaan: '',
+      formatpenerimaantext: '',
+      formatpengeluaran: '',
+      formatpengeluarantext: '',
+      formatpenerimaangantung: '',
+      formatpenerimaangantungtext: '',
+      formatpengeluarangantung: '',
+      formatpengeluarangantungtext: '',
+      formatpencairan: '',
+      formatpencairantext: '',
+      formatrekappenerimaan: '',
+      formatrekappenerimaantext: '',
+      formatrekappengeluaran: '',
+      formatrekappengeluarantext: ''
     },
-    search: '',
     sortBy: 'nama',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allTujuankapal, isLoading: isLoadingTujuankapal } =
-    useGetTujuankapal({
-      ...filters,
-      page: currentPage
-    });
+  const { data: allBank, isLoading: isLoadingBank } = useGetBank({
+    ...filters,
+    page: currentPage
+  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleColumnFilterChange = (
@@ -207,6 +292,21 @@ const GridTujuankapal = () => {
       ref?.focus();
     }, 200);
 
+    setSelectedRow(0);
+  };
+  const handleDropdownFilterChange = (
+    colKey: keyof Filter['filters'],
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: value },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
     setSelectedRow(0);
   };
 
@@ -263,17 +363,37 @@ const GridTujuankapal = () => {
       filters: {
         nama: '',
         keterangan: '',
-        icon: '',
         created_at: '',
         updated_at: '',
-        namacabang: '',
-        cabang_id: '',
+        coa: '',
+        keterangancoa: '',
+        coagantung: '',
+        keterangancoagantung: '',
+        statusbank: '',
+        textbank: '',
+        statusaktif: '',
         text: '',
-        statusaktif: ''
+        statusdefault: '',
+        textdefault: '',
+        formatpenerimaan: '',
+        formatpenerimaantext: '',
+        formatpengeluaran: '',
+        formatpengeluarantext: '',
+        formatpenerimaangantung: '',
+        formatpenerimaangantungtext: '',
+        formatpengeluarangantung: '',
+        formatpengeluarangantungtext: '',
+        formatpencairan: '',
+        formatpencairantext: '',
+        formatrekappenerimaan: '',
+        formatrekappenerimaantext: '',
+        formatrekappengeluaran: '',
+        formatrekappengeluarantext: ''
       },
       search: searchValue,
       page: 1
     }));
+
     setCheckedRows(new Set());
     setIsAllSelected(false);
     setTimeout(() => {
@@ -345,7 +465,8 @@ const GridTujuankapal = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<ITujuanKapal>[] => {
+
+  const columns = useMemo((): Column<IBank>[] => {
     return [
       {
         key: 'nomor',
@@ -369,12 +490,32 @@ const GridTujuankapal = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    text: '',
                     created_at: '',
                     updated_at: '',
+                    coa: '',
+                    keterangancoa: '',
+                    coagantung: '',
+                    keterangancoagantung: '',
+                    statusbank: '',
+                    textbank: '',
                     statusaktif: '',
-                    namacabang: '',
-                    cabang_id: ''
+                    text: '',
+                    statusdefault: '',
+                    textdefault: '',
+                    formatpenerimaan: '',
+                    formatpenerimaantext: '',
+                    formatpengeluaran: '',
+                    formatpengeluarantext: '',
+                    formatpenerimaangantung: '',
+                    formatpenerimaangantungtext: '',
+                    formatpengeluarangantung: '',
+                    formatpengeluarangantungtext: '',
+                    formatpencairan: '',
+                    formatpencairantext: '',
+                    formatrekappenerimaan: '',
+                    formatrekappenerimaantext: '',
+                    formatrekappengeluaran: '',
+                    formatrekappengeluarantext: ''
                   }
                 }),
                   setInputValue('');
@@ -414,7 +555,7 @@ const GridTujuankapal = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: ITujuanKapal }) => (
+        renderCell: ({ row }: { row: IBank }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -469,7 +610,7 @@ const GridTujuankapal = () => {
                 }
                 type="text"
                 onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('nama', value);
                 }}
               />
@@ -499,93 +640,16 @@ const GridTujuankapal = () => {
         }
       },
       {
-        key: 'cabang',
-        name: 'Nama Cabang',
+        key: 'keterangan',
+        name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('namacabang')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'namacabang'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Nama Cabang
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'namacabang' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'namacabang' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['namacabang'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.namacabang
-                    ? filters.filters.namacabang.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('namacabang', value);
-                }}
-              />
-              {filters.filters.namacabang && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('namacabang', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.namacabang || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.namacabang || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'keterangan',
-        name: 'Keterangan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
               onContextMenu={handleContextMenu}
             >
@@ -610,14 +674,18 @@ const GridTujuankapal = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.keterangan
+                    ? filters.filters.keterangan.toUpperCase()
+                    : ''
+                }
+                type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('keterangan', value);
@@ -640,10 +708,7 @@ const GridTujuankapal = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
-                  : '',
+                props.row.keterangan || '',
                 filters.search,
                 columnFilter
               )}
@@ -652,8 +717,157 @@ const GridTujuankapal = () => {
         }
       },
       {
-        key: 'statusaktif',
-        name: 'STATUS AKTIF',
+        key: 'keterangancoa',
+        name: 'COA',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('keterangancoa')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangancoa'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                COA
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'keterangancoa' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'keterangancoa' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('keterangancoa', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['KETERANGANCOA']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">
+                          {item.keterangancoa}
+                        </p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.keterangancoa || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'coagantung',
+        name: 'COA GANTUNG',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('keterangancoagantung')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangancoagantung'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                COA GANTUNG
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'keterangancoagantung' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'keterangancoagantung' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('keterangancoagantung', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['KETERANGANCOA']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">
+                          {item.keterangancoa}
+                        </p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.keterangancoagantung || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.keterangancoagantung || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'statusbank',
+        name: 'Status Bank',
         resizable: true,
         draggable: true,
         width: 150,
@@ -661,9 +875,81 @@ const GridTujuankapal = () => {
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusbank')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusbank'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Status Bank
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusbank' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'statusbank' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('textbank', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['STATUS BANK']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.textbank || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.textbank || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'statusaktif',
+        name: 'Status Aktif',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -698,21 +984,18 @@ const GridTujuankapal = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
+                    <SelectItem className="cursor-pointer text-xs" value="">
                       <p className="text-sm font-normal">all</p>
                     </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="NON AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
+                    {getCoa['STATUS AKTIF']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -741,39 +1024,36 @@ const GridTujuankapal = () => {
               </div>
             );
           }
-
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-
       {
-        key: 'created_at',
-        name: 'Created At',
+        key: 'statusdefault',
+        name: 'Status Default',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusdefault')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
+                  filters.sortBy === 'statusdefault'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                Created At
+                Status Default
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'created_at' &&
+                {filters.sortBy === 'statusdefault' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'created_at' &&
+                ) : filters.sortBy === 'statusdefault' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -781,74 +1061,71 @@ const GridTujuankapal = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('textdefault', value);
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.created_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('created_at', value);
-                }}
-              />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['STATUS NILAI']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.textdefault || ''}
             </div>
           );
         }
       },
       {
-        key: 'updated_at',
-        name: 'Updated At',
+        key: 'formatpenerimaan',
+        name: 'Format Penerimaan',
         resizable: true,
         draggable: true,
-
+        width: 150,
         headerCellClass: 'column-headers',
-
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatpenerimaan')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
+                  filters.sortBy === 'formatpenerimaan'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                Updated At
+                Format Penerimaan
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'updated_at' &&
+                {filters.sortBy === 'formatpenerimaan' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'updated_at' &&
+                ) : filters.sortBy === 'formatpenerimaan' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -856,46 +1133,496 @@ const GridTujuankapal = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('formatpenerimaantext', value);
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.updated_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('updated_at', value);
-                }}
-              />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['PENERIMAAN']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.updated_at || '';
+          const columnFilter = filters.filters.formatpenerimaantext || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatpenerimaantext || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'formatpengeluaran',
+        name: 'Format Pengeluaran',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatpengeluaran')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'formatpengeluaran'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Format Pengeluaran
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'formatpengeluaran' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'formatpengeluaran' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('formatpengeluarantext', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['PENGELUARAN']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.formatpengeluarantext || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatpengeluarantext || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'formatpenerimaangantung',
+        name: 'Format Penerimaan Gantung',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatpenerimaangantung')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'formatpenerimaangantung'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Format Penerimaan Gantung
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'formatpenerimaangantung' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'formatpenerimaangantung' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange(
+                    'formatpenerimaangantungtext',
+                    value
+                  );
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['PENERIMAAN GANTUNG']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter =
+            filters.filters.formatpenerimaangantungtext || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatpenerimaangantungtext || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'formatpengeluarangantung',
+        name: 'Format Pengeluaran Gantung',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatpengeluarangantung')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'formatpengeluarangantung'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Format Pengeluaran Gantung
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'formatpengeluarangantung' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'formatpengeluarangantung' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange(
+                    'formatpengeluarangantungtext',
+                    value
+                  );
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['PENGELUARAN GANTUNG']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter =
+            filters.filters.formatpengeluarangantungtext || '';
+
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatpengeluarangantungtext || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'formatpencairan',
+        name: 'Format Pencairan',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatpencairan')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'formatpencairan'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Format Pencairan
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'formatpencairan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'formatpencairan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('formatpencairantext', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['PENCAIRAN']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.formatpencairantext || '';
+
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatpencairantext || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'formatrekappenerimaan',
+        name: 'Format Rekap Penerimaan',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatrekappenerimaan')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'formatrekappenerimaan'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Format Rekap Penerimaan
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'formatrekappenerimaan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'formatrekappenerimaan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('formatrekappenerimaantext', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['REKAP PENERIMAAN']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.formatrekappenerimaantext || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatrekappenerimaantext || ''}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'formatrekappengeluaran',
+        name: 'Format Rekap Pengeluaran',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('formatrekappengeluaran')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'formatrekappengeluaran'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Format Rekap Pengeluaran
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'formatrekappengeluaran' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'formatrekappengeluaran' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('formatrekappengeluarantext', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="cursor-pointer text-xs" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    {getCoa['REKAP PENGELUARAN']?.map((item: any) => (
+                      <SelectItem
+                        key={item.id}
+                        className="cursor-pointer text-xs"
+                        value={item.id}
+                      >
+                        <p className="text-sm font-normal">{item.text}</p>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.formatrekappengeluarantext || '';
+
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.formatrekappengeluarantext || ''}
             </div>
           );
         }
       }
     ];
-  }, [filters, rows, checkedRows]);
+  }, [filters, checkedRows, isAllSelected, rows, getCoa]);
 
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
@@ -913,12 +1640,7 @@ const GridTujuankapal = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridTujuankapal',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridBank', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -933,7 +1655,7 @@ const GridTujuankapal = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridTujuankapal', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridBank', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -950,7 +1672,7 @@ const GridTujuankapal = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingTujuankapal || !hasMore || rows.length === 0) return;
+    if (isLoadingBank || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -977,7 +1699,7 @@ const GridTujuankapal = () => {
     }
   }
 
-  function handleCellClick(args: { row: ITujuanKapal }) {
+  function handleCellClick(args: { row: IBank }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -985,7 +1707,7 @@ const GridTujuankapal = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<ITujuanKapal>,
+    args: CellKeyDownArgs<IBank>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1049,7 +1771,7 @@ const GridTujuankapal = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/tujuankapal-allItems`);
+          const response = await api2.get(`/redis/get/bank-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1075,13 +1797,13 @@ const GridTujuankapal = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: TujuankapalInput, keepOpenModal = false) => {
+  const onSubmit = async (values: BankInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteTujuankapal(selectedRowId as unknown as string, {
+          await deleteBank(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1103,7 +1825,7 @@ const GridTujuankapal = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createTujuankapal(
+        const newOrder = await createBank(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1119,14 +1841,16 @@ const GridTujuankapal = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateTujuankapal(
+        await updateBank(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
-          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+          {
+            onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
+          }
         );
-        queryClient.invalidateQueries('tujuankapal');
+        queryClient.invalidateQueries('bank');
       }
     } catch (error) {
       console.error(error);
@@ -1304,12 +2028,12 @@ const GridTujuankapal = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: ITujuanKapal) {
+  function getRowClass(row: IBank) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: ITujuanKapal) {
+  function rowKeyGetter(row: IBank) {
     return row.id;
   }
 
@@ -1401,7 +2125,7 @@ const GridTujuankapal = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridTujuankapal',
+        'GridBank',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1505,7 +2229,7 @@ const GridTujuankapal = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridTujuankapal');
+    loadGridConfig(user.id, 'GridBank');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1519,9 +2243,9 @@ const GridTujuankapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allTujuankapal || isFetchingManually || isDataUpdated) return;
+    if (!allBank || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allTujuankapal.data || [];
+    const newRows = allBank.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1539,14 +2263,14 @@ const GridTujuankapal = () => {
       return prevRows;
     });
 
-    if (allTujuankapal.pagination.totalPages) {
-      setTotalPages(allTujuankapal.pagination.totalPages);
+    if (allBank.pagination.totalPages) {
+      setTotalPages(allBank.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allTujuankapal, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allBank, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1594,23 +2318,75 @@ const GridTujuankapal = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    console.log(rowData);
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' // Only fill the form if not in addMode
-    ) {
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('cabang_id', Number(rowData.cabang_id));
-      forms.setValue('namacabang', rowData.namacabang);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+
+      forms.setValue('coa', Number(rowData.coa));
+      forms.setValue('keterangancoa', rowData.keterangancoa);
+
+      forms.setValue('coagantung', Number(rowData.coagantung));
+      forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
+
+      forms.setValue('statusbank', Number(rowData.statusbank));
+      forms.setValue('textbank', rowData.textbank);
+
+      forms.setValue('statusaktif', Number(rowData.statusaktif));
+      forms.setValue('text', rowData.text);
+
+      forms.setValue('statusdefault', Number(rowData.statusdefault));
+      forms.setValue('textdefault', rowData.textdefault);
+
+      forms.setValue('formatpenerimaan', Number(rowData.formatpenerimaan));
+      forms.setValue('formatpenerimaantext', rowData.formatpenerimaantext);
+
+      forms.setValue('formatpengeluaran', Number(rowData.formatpengeluaran));
+      forms.setValue('formatpengeluarantext', rowData.formatpengeluarantext);
+
+      forms.setValue(
+        'formatpenerimaangantung',
+        Number(rowData.formatpenerimaangantung)
+      );
+      forms.setValue(
+        'formatpenerimaangantungtext',
+        rowData.formatpenerimaangantungtext
+      );
+
+      forms.setValue(
+        'formatpengeluarangantung',
+        Number(rowData.formatpengeluarangantung)
+      );
+      forms.setValue(
+        'formatpengeluarangantungtext',
+        rowData.formatpengeluarangantungtext
+      );
+
+      forms.setValue('formatpencairan', Number(rowData.formatpencairan));
+      forms.setValue('formatpencairantext', rowData.formatpencairantext);
+
+      forms.setValue(
+        'formatrekappenerimaan',
+        Number(rowData.formatrekappenerimaan)
+      );
+      forms.setValue(
+        'formatrekappenerimaantext',
+        rowData.formatrekappenerimaantext
+      );
+
+      forms.setValue(
+        'formatrekappengeluaran',
+        Number(rowData.formatrekappengeluaran)
+      );
+      forms.setValue(
+        'formatrekappengeluarantext',
+        rowData.formatrekappengeluarantext
+      );
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
+  console.log(forms.getValues());
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -1731,7 +2507,7 @@ const GridTujuankapal = () => {
             //   }
             // ]}
           />
-          {isLoadingTujuankapal ? <LoadRowsRenderer /> : null}
+          {isLoadingBank ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1753,14 +2529,14 @@ const GridTujuankapal = () => {
           )}
         </div>
       </div>
-      <FormMenu
+      <FormBank
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
         forms={forms}
-        mode={mode}
+        mode={mode as any}
         onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
@@ -1768,4 +2544,4 @@ const GridTujuankapal = () => {
   );
 };
 
-export default GridTujuankapal;
+export default GridBank;

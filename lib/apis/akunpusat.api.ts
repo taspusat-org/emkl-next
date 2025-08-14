@@ -1,42 +1,44 @@
 import { GetParams } from '../types/all.type';
-import { IAllBank, IBank } from '../types/bank.type';
+import { IAllAkunpusat, IAkunpusat } from '../types/akunpusat.type';
 import { buildQueryParams } from '../utils';
 import { api, api2 } from '../utils/AxiosInstance';
-import { BankInput } from '../validations/bank.validation';
+import { AkunpusatInput } from '../validations/akunpusat.validation';
 
 interface UpdateMenuParams {
   id: string;
-  fields: BankInput;
+  fields: AkunpusatInput;
 }
 
-export const getBankFn = async (filters: GetParams = {}): Promise<IAllBank> => {
+export const getAkunpusatFn = async (
+  filters: GetParams = {}
+): Promise<IAllAkunpusat> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/bank', { params: queryParams });
+    const response = await api2.get('/akunpusat', { params: queryParams });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    throw new Error('Failed to fetch menus');
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
-export const deleteBankFn = async (id: string) => {
+export const deleteAkunpusatFn = async (id: string) => {
   try {
-    const response = await api2.delete(`/bank/${id}`);
+    const response = await api2.delete(`/akunpusat/${id}`);
     return response.data; // Optionally return response data if needed
   } catch (error) {
     console.error('Error deleting order:', error);
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
-export const updateBankFn = async ({ id, fields }: UpdateMenuParams) => {
-  const response = await api2.put(`/bank/update/${id}`, fields);
+export const updateAkunpusatFn = async ({ id, fields }: UpdateMenuParams) => {
+  const response = await api2.put(`/akunpusat/update/${id}`, fields);
   return response.data;
 };
 
-export const storeBankFn = async (fields: BankInput) => {
-  const response = await api2.post(`/bank`, fields);
+export const storeAkunpusatFn = async (fields: AkunpusatInput) => {
+  const response = await api2.post(`/akunpusat`, fields);
 
   return response.data;
 };

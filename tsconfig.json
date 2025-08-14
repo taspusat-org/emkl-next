@@ -28,7 +28,8 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "pdfjs-dist.d.ts"
+    "pdfjs-dist.d.ts",
+    "app/dashboard/bank/components/FormBank.tsx"
   ],
   "exclude": ["node_modules"]
 }

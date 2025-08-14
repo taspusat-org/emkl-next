@@ -1719,7 +1719,7 @@ const GridTypeAkuntansi = () => {
         popOver={popOver}
         setPopOver={setPopOver}
         handleClose={handleClose}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
