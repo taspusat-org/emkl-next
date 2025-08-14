@@ -16,6 +16,8 @@ import LookUp from '@/components/custom-ui/LookUp';
 import { Input } from '@/components/ui/input';
 import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
+import { useDispatch } from 'react-redux';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
 const FormPelayaran = ({
   popOver,
@@ -45,6 +47,7 @@ const FormPelayaran = ({
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -218,7 +221,12 @@ const FormPelayaran = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={onSubmit}
+            // onClick={onSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              onSubmit(false);
+              dispatch(setSubmitClicked(true));
+            }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
           >
@@ -227,6 +235,30 @@ const FormPelayaran = ({
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
           </Button>
+
+          {mode === 'add' && (
+            <div>
+              <Button
+                type="submit"
+                variant="success"
+                // onClick={onSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSubmit(true);
+                  dispatch(setSubmitClicked(true));
+                }}
+                disabled={mode === 'view'}
+                className="flex w-fit items-center gap-1 text-sm"
+                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+              >
+                <FaSave />
+                <p className="text-center">
+                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
+                </p>
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             variant="secondary"
