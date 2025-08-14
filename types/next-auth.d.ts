@@ -6,7 +6,8 @@ declare module 'next-auth' {
     refreshToken?: string;
     username?: string;
     twoFASecret?: string;
-    accessTokenExpires?: string;
+    accessTokenExpires?: string | number;
+    refreshTokenExpires?: string | number;
     cabang_id?: string;
     expiresAt?: number;
     users: {};
@@ -21,6 +22,7 @@ declare module 'next-auth' {
     error?: string;
     twoFASecret?: string;
     accessTokenExpires?: string;
+    refreshTokenExpires?: string;
     cabang_id?: string;
     user: {
       id?: string;

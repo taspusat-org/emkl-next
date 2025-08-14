@@ -66,5 +66,7 @@ export const filterKasGantung = {
   gantungorderan_nobukti: '',
   modifiedby: null,
   created_at: '',
-  updated_at: ''
+  updated_at: '',
+  tglDari: '',
+  tglSampai: ''
 };

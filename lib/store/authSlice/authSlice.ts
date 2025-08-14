@@ -17,8 +17,10 @@ interface AuthState {
   id: string | null;
   cabang_id: string | null;
   token: string | null;
+  isRefreshing?: boolean;
   refreshToken: string | null;
   accessTokenExpires: string | undefined; // Gunakan number untuk mempermudah perbandingan waktu
+  refreshTokenExpires?: string | undefined; // Gunakan number untuk mempermudah perbandingan waktu
   autoLogoutExpires?: number | null; // Waktu kedaluwarsa untuk auto logout
 }
 
@@ -40,7 +42,9 @@ const initialState: AuthState = {
   token: null,
   refreshToken: null,
   cabang_id: null,
+  isRefreshing: false,
   accessTokenExpires: undefined, // Inisialisasi dengan null
+  refreshTokenExpires: undefined, // Inisialisasi dengan null
   autoLogoutExpires: null // Inisialisasi dengan null
 };
 
@@ -54,8 +58,8 @@ const authSlice = createSlice({
         id,
         token,
         refreshToken,
-
         accessTokenExpires,
+        refreshTokenExpires,
         cabang_id,
         autoLogoutExpires
       } = action.payload;
@@ -66,7 +70,11 @@ const authSlice = createSlice({
       state.token = token;
       state.refreshToken = refreshToken;
       state.accessTokenExpires = accessTokenExpires;
+      state.refreshTokenExpires = refreshTokenExpires;
       state.autoLogoutExpires = autoLogoutExpires;
+    },
+    setIsRefreshing(state, action: PayloadAction<boolean>) {
+      state.isRefreshing = action.payload; // Set status refresh token
     },
     clearCredentials: (state) => {
       state.user = {
@@ -86,11 +94,14 @@ const authSlice = createSlice({
       state.token = null;
       state.refreshToken = null;
       state.cabang_id = null;
+      state.isRefreshing = false;
       state.accessTokenExpires = undefined;
+      state.refreshTokenExpires = undefined;
       state.autoLogoutExpires = null;
     }
   }
 });
 
-export const { setCredentials, clearCredentials } = authSlice.actions;
+export const { setCredentials, clearCredentials, setIsRefreshing } =
+  authSlice.actions;
 export default authSlice.reducer;

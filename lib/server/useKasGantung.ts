@@ -143,7 +143,7 @@ export const useGetKasGantungHeaderList = (
       }
     },
     {
-      enabled: popOver && params.id !== '' // Fetch hanya jika popOver true dan id tidak kosong
+      enabled: popOver // Fetch hanya jika popOver true dan id tidak kosong
     }
   );
 };

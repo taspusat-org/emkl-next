@@ -83,7 +83,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
           previousState,
           currentState,
           nextState
-        }) => {
+        }: any) => {
           const nextVal = nextState.value || '';
           const parts = nextVal.split('-');
 
@@ -170,6 +170,11 @@ const InputDatePicker: React.FC<DateInputProps> = ({
               captionLayout="dropdown-buttons"
               fromYear={fromYear}
               toYear={toYear}
+              defaultMonth={
+                value && value !== 'DD-MM-YYYY'
+                  ? parse(value, 'dd-MM-yyyy', new Date())
+                  : new Date()
+              }
               selected={
                 value ? parse(value, 'dd-MM-yyyy', new Date()) : undefined
               }
@@ -177,7 +182,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
                 if (date) {
                   const formatted = formatDateCalendar(date);
                   onChange?.({ target: { value: formatted } } as any);
-                  onSelect?.(formatted);
+                  onSelect?.(formatted as unknown as Date);
                   setOpen(false);
                 }
               }}
