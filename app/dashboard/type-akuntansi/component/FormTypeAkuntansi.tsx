@@ -42,7 +42,8 @@ const FormTypeAkuntansi = ({
       singleColumn: true,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text'
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
 
@@ -57,7 +58,8 @@ const FormTypeAkuntansi = ({
       singleColumn: true,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'nama'
+      postData: 'nama',
+      dataToPost: 'id'
     }
   ];
 

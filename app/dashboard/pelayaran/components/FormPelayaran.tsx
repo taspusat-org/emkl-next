@@ -42,7 +42,9 @@ const FormPelayaran = ({
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text'
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id' //untuk pilih kolom yg mau diambil valuenya, bisa selain id
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
