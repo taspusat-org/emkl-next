@@ -18,6 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
+import { useDispatch } from 'react-redux';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
 const FormMenu = ({
   popOver,
@@ -47,6 +49,7 @@ const FormMenu = ({
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -97,7 +100,6 @@ const FormMenu = ({
         nextElement.focus();
       }
     };
-
     // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
     const getNextFocusableElement = (
       inputs: HTMLElement[],
@@ -131,7 +133,13 @@ const FormMenu = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Container Form
+            {mode === 'add'
+              ? 'Tambah Container Form'
+              : mode === 'edit'
+              ? 'Edit Container Form'
+              : mode === 'delete'
+              ? 'Delete Container Form'
+              : 'View Container Form'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -182,7 +190,10 @@ const FormMenu = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
                           Keterangan
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -201,7 +212,10 @@ const FormMenu = ({
                   />
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
                         Status Aktif
                       </FormLabel>
                     </div>
@@ -228,7 +242,12 @@ const FormMenu = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={onSubmit}
+            // onClick={onSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              onSubmit(false);
+              dispatch(setSubmitClicked(true));
+            }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
@@ -238,6 +257,30 @@ const FormMenu = ({
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
           </Button>
+
+          {mode === 'add' && (
+            <div>
+              <Button
+                type="submit"
+                variant="success"
+                // onClick={onSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSubmit(true);
+                  dispatch(setSubmitClicked(true));
+                }}
+                disabled={mode === 'view'}
+                className="flex w-fit items-center gap-1 text-sm"
+                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+              >
+                <FaSave />
+                <p className="text-center">
+                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
+                </p>
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             variant="secondary"

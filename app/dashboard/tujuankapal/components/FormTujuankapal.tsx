@@ -10,13 +10,14 @@ import {
 } from '@/components/ui/form';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import LookUp from '@/components/custom-ui/LookUp';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
 const FormMenu = ({
   popOver,
@@ -34,7 +35,6 @@ const FormMenu = ({
       columns: [{ key: 'namacabang', name: 'NAMACABANG' }],
       // filterby: { class: 'system', method: 'get' },
       labelLookup: 'CABANG LOOKUP',
-      required: true,
       selectedRequired: false,
       endpoint: 'cabang',
       label: 'CABANG',
@@ -61,7 +61,7 @@ const FormMenu = ({
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
-
+  const dispatch = useDispatch();
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -145,7 +145,13 @@ const FormMenu = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Tujuan Kapal Form
+            {mode === 'add'
+              ? 'Tambah Tujuan Kapal Form'
+              : mode === 'edit'
+              ? 'Edit Tujuan Kapal Form'
+              : mode === 'delete'
+              ? 'Delete Tujuan Kapal Form'
+              : 'View Tujuan Kapal Form'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -236,7 +242,10 @@ const FormMenu = ({
                   </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
                         Status Aktif
                       </FormLabel>
                     </div>
@@ -263,7 +272,12 @@ const FormMenu = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={onSubmit}
+            // onClick={onSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              onSubmit(false);
+              dispatch(setSubmitClicked(true));
+            }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
@@ -273,6 +287,30 @@ const FormMenu = ({
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
           </Button>
+
+          {mode === 'add' && (
+            <div>
+              <Button
+                type="submit"
+                variant="success"
+                // onClick={onSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSubmit(true);
+                  dispatch(setSubmitClicked(true));
+                }}
+                disabled={mode === 'view'}
+                className="flex w-fit items-center gap-1 text-sm"
+                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+              >
+                <FaSave />
+                <p className="text-center">
+                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
+                </p>
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             variant="secondary"

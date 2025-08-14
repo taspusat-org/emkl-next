@@ -1218,7 +1218,7 @@ export default function LookUp({
               </Button>
             )}
           </div>
-          <p className="text-xs text-destructive">
+          <p className="text-[0.8rem] text-destructive">
             {showError.status === true && label === showError.label
               ? `${label} ${REQUIRED_FIELD}`
               : null}

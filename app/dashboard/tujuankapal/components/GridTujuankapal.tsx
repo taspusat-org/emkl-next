@@ -61,7 +61,10 @@ import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
 import { ITujuanKapal } from '@/lib/types/tujuankapal.type';
 import { number } from 'zod';
-import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
 import {
   setProcessed,
   setProcessing
@@ -706,7 +709,7 @@ const GridTujuankapal = () => {
                     </SelectItem>
                     <SelectItem
                       className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
+                      value="NON AKTIF"
                     >
                       <p className="text-sm font-normal">TIDAK AKTIF</p>
                     </SelectItem>
@@ -1030,40 +1033,49 @@ const GridTujuankapal = () => {
       }
     }
   }
-  const onSuccess = async (indexOnPage: any, pageNumber: any) => {
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
     try {
-      forms.reset();
-      setPopOver(false);
-      setIsFetchingManually(true);
-      setRows([]);
-      if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/tujuankapal-allItems`);
-        // Set the rows only if the data has changed
-        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-          setRows(response.data);
-          setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
-          setSelectedRow(indexOnPage);
-          setTimeout(() => {
-            gridRef?.current?.selectCell({
-              rowIdx: indexOnPage,
-              idx: 1
-            });
-          }, 200);
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/tujuankapal-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
         }
-      }
 
-      setIsFetchingManually(false);
-      setIsDataUpdated(false);
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
       setIsDataUpdated(false);
     }
   };
-  console.log(forms.getValues());
-  const onSubmit = async (values: TujuankapalInput) => {
+  const onSubmit = async (values: TujuankapalInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1097,7 +1109,8 @@ const GridTujuankapal = () => {
             ...filters // Kirim filter ke body/payload
           },
           {
-            onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
           }
         );
 
@@ -1581,6 +1594,7 @@ const GridTujuankapal = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
+    console.log(rowData);
     if (
       selectedRow !== null &&
       rows.length > 0 &&
@@ -1747,7 +1761,7 @@ const GridTujuankapal = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>

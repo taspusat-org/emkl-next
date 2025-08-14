@@ -3,18 +3,19 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteContainerFn,
-  getContainerFn,
-  storeContainerFn,
-  updateContainerFn
-} from '../apis/container.api';
+  deleteBankFn,
+  getBankFn,
+  storeBankFn,
+  updateBankFn
+} from '../apis/bank.api';
 import { useAlert } from '../store/client/useAlert';
 
-export const useGetContainer = (
+export const useGetBank = (
   filters: {
     filters?: {
       nama?: string;
       keterangan?: string;
+      keterangancoa?: string;
       text?: string;
     };
     page?: number;
@@ -24,20 +25,17 @@ export const useGetContainer = (
     search?: string; // Kata kunci pencarian
   } = {}
 ) => {
-  return useQuery(
-    ['container', filters],
-    async () => await getContainerFn(filters)
-  );
+  return useQuery(['bank', filters], async () => await getBankFn(filters));
 };
 
-export const useCreateContainer = () => {
+export const useCreateBank = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeContainerFn, {
+  return useMutation(storeBankFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('container');
+      void queryClient.invalidateQueries('bank');
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -57,13 +55,13 @@ export const useCreateContainer = () => {
   });
 };
 
-export const useDeleteContainer = () => {
+export const useDeleteBank = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteContainerFn, {
+  return useMutation(deleteBankFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('container');
+      void queryClient.invalidateQueries('bank');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'
@@ -81,13 +79,13 @@ export const useDeleteContainer = () => {
     }
   });
 };
-export const useUpdateContainer = () => {
+export const useUpdateBank = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateContainerFn, {
+  return useMutation(updateBankFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('container');
+      void queryClient.invalidateQueries('bank');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'
