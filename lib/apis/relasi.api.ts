@@ -13,7 +13,7 @@ export const getRelasiFn = async (
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    throw new Error('Failed to fetch menus');
+    console.error('Error fetching relasi:', error);
+    throw new Error('Failed to fetch relasi');
   }
 };

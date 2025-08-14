@@ -43,7 +43,6 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import { IPelayaran } from '@/lib/types/pelayaran.type';
 import {
   PelayaranInput,
   pelayaranSchema
@@ -54,11 +53,8 @@ import {
   useGetPelayaran,
   useUpdatePelayaran
 } from '@/lib/server/usePelayaran';
-import FormPelayaran from './FormPelayaran';
-import {
-  clearOpenName,
-  setClearLookup
-} from '@/lib/store/lookupSlice/lookupSlice';
+import { useGetRelasi } from '@/lib/server/useRelasi';
+import { IRelasi } from '@/lib/types/relasi.type';
 
 interface Filter {
   page: number;
@@ -66,10 +62,20 @@ interface Filter {
   search: string;
   filters: {
     nama: string;
-    keterangan: string;
+    statusrelasi_text: string;
+    coagiro: string;
+    coapiutang: string;
+    coahutang: string;
+    statustitip_text: string;
+    titipcabang: string;
+    alamat: string;
+    npwp: string;
+    namapajak: string;
+    alamatpajak: string;
+    statusaktif_text: string;
+    modifiedby: string;
     created_at: string;
     updated_at: string;
-    text: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -79,22 +85,17 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridPelayaran = () => {
+const GridRelasi = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createPelayaran, isLoading: isLoadingCreate } =
-    useCreatePelayaran();
-  const { mutateAsync: updatePelayaran, isLoading: isLoadingUpdate } =
-    useUpdatePelayaran();
-  const { mutateAsync: deletePelayaran, isLoading: isLoadingDelete } =
-    useDeletePelayaran();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
+  const [rows, setRows] = useState<IRelasi[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
@@ -112,7 +113,6 @@ const GridPelayaran = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IPelayaran[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -121,25 +121,27 @@ const GridPelayaran = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<PelayaranInput>({
-    resolver: zodResolver(pelayaranSchema),
-    mode: 'onSubmit',
-    defaultValues: {
-      nama: '',
-      keterangan: ''
-    }
-  });
-  console.log(forms.getValues());
+
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
     filters: {
       nama: '',
-      keterangan: '',
+      statusrelasi_text: '',
+      coagiro: '',
+      coapiutang: '',
+      coahutang: '',
+      statustitip_text: '',
+      titipcabang: '',
+      alamat: '',
+      npwp: '',
+      namapajak: '',
+      alamatpajak: '',
+      statusaktif_text: '',
+      modifiedby: '',
       created_at: '',
-      updated_at: '',
-      text: ''
+      updated_at: ''
     },
     search: '',
     sortBy: 'nama',
@@ -147,12 +149,10 @@ const GridPelayaran = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allPelayaran, isLoading: isLoadingPelayaran } = useGetPelayaran(
-    {
-      ...filters,
-      page: currentPage
-    }
-  );
+  const { data: allRelasi, isLoading: isLoadingRelasi } = useGetRelasi({
+    ...filters,
+    page: currentPage
+  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleColumnFilterChange = (
@@ -239,10 +239,20 @@ const GridPelayaran = () => {
       ...prev,
       filters: {
         nama: '',
-        keterangan: '',
+        statusrelasi_text: '',
+        coagiro: '',
+        coapiutang: '',
+        coahutang: '',
+        statustitip_text: '',
+        titipcabang: '',
+        alamat: '',
+        npwp: '',
+        namapajak: '',
+        alamatpajak: '',
+        statusaktif_text: '',
+        modifiedby: '',
         created_at: '',
-        updated_at: '',
-        text: 'AKTIF'
+        updated_at: ''
       },
       search: searchValue,
       page: 1
@@ -318,7 +328,7 @@ const GridPelayaran = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IPelayaran>[] => {
+  const columns = useMemo((): Column<IRelasi>[] => {
     return [
       {
         key: 'nomor',
@@ -341,10 +351,20 @@ const GridPelayaran = () => {
                   search: '',
                   filters: {
                     nama: '',
-                    keterangan: '',
+                    statusrelasi_text: '',
+                    coagiro: '',
+                    coapiutang: '',
+                    coahutang: '',
+                    statustitip_text: '',
+                    titipcabang: '',
+                    alamat: '',
+                    npwp: '',
+                    namapajak: '',
+                    alamatpajak: '',
+                    statusaktif_text: '',
+                    modifiedby: '',
                     created_at: '',
-                    updated_at: '',
-                    text: ''
+                    updated_at: ''
                   }
                 }),
                   setInputValue('');
@@ -384,7 +404,7 @@ const GridPelayaran = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IPelayaran }) => (
+        renderCell: ({ row }: { row: IRelasi }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -469,8 +489,8 @@ const GridPelayaran = () => {
         }
       },
       {
-        key: 'keterangan',
-        name: 'Keterangan',
+        key: 'statusrelasi',
+        name: 'STATUS RELASI',
         resizable: true,
         draggable: true,
         width: 150,
@@ -479,23 +499,107 @@ const GridPelayaran = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('keterangan')}
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">Status Relasi</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('statusrelasi_text', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="text=xs cursor-pointer" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    <SelectItem className="text=xs cursor-pointer" value="EMKL">
+                      <p className="text-sm font-normal">EMKL</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="SHIPPER"
+                    >
+                      <p className="text-sm font-normal">SHIPPER</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="SUPPLIER"
+                    >
+                      <p className="text-sm font-normal">SUPPLIER</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="PELAYARAN"
+                    >
+                      <p className="text-sm font-normal">PELAYARAN</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusrelasi_memo
+            ? JSON.parse(props.row.statusrelasi_memo)
+            : null;
+
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+
+      {
+        key: 'coagiro',
+        name: 'COA GIRO',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('coagiro')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'coagiro' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Keterangan
+                COA GIRO
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'keterangan' &&
+                {filters.sortBy === 'coagiro' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'keterangan' &&
+                ) : filters.sortBy === 'coagiro' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -507,19 +611,19 @@ const GridPelayaran = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['keterangan'] = el;
+                  inputColRefs.current['coagiro'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
+                value={filters.filters.coagiro.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
+                  handleColumnFilterChange('coagiro', value);
                 }}
               />
-              {filters.filters.keterangan && (
+              {filters.filters.coagiro && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
+                  onClick={() => handleColumnFilterChange('coagiro', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -529,13 +633,611 @@ const GridPelayaran = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangan || '';
+          const columnFilter = filters.filters.coagiro || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
+                props.row.coagiro !== null && props.row.coagiro !== undefined
+                  ? props.row.coagiro
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'coapiutang',
+        name: 'COA PIUTANG',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('coapiutang')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'coapiutang'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                COA PIUTANG
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'coapiutang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'coapiutang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coapiutang'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coapiutang.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coapiutang', value);
+                }}
+              />
+              {filters.filters.coapiutang && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('coapiutang', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.coapiutang || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.coapiutang !== null &&
+                  props.row.coapiutang !== undefined
+                  ? props.row.coapiutang
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'coahutang',
+        name: 'COA HUTANG',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('coahutang')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'coahutang'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                COA HUTANG
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'coahutang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'coahutang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coahutang'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coahutang.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coahutang', value);
+                }}
+              />
+              {filters.filters.coahutang && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('coahutang', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.coahutang || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.coahutang !== null &&
+                  props.row.coahutang !== undefined
+                  ? props.row.coahutang
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'statustitip',
+        name: 'STATUS TITIP',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">Status Titip</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('statustitip_text', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="text=xs cursor-pointer" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    <SelectItem className="text=xs cursor-pointer" value="YA">
+                      <p className="text-sm font-normal">YA</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="TIDAK"
+                    >
+                      <p className="text-sm font-normal">TIDAK</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statustitip_memo
+            ? JSON.parse(props.row.statustitip_memo)
+            : null;
+
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'titipcabang',
+        name: 'TITIP CABANG',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('titipcabang')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'titipcabang'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                TITIP CABANG
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'titipcabang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'titipcabang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['titipcabang'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.titipcabang.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('titipcabang', value);
+                }}
+              />
+              {filters.filters.titipcabang && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('titipcabang', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.titipcabang || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.titipcabang !== null &&
+                  props.row.titipcabang !== undefined
+                  ? props.row.titipcabang
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'alamat',
+        name: 'ALAMAT',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('alamat')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'alamat' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                ALAMAT
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'alamat' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'alamat' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['alamat'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.alamat.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('alamat', value);
+                }}
+              />
+              {filters.filters.alamat && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('alamat', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.alamat || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.alamat !== null && props.row.alamat !== undefined
+                  ? props.row.alamat
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'npwp',
+        name: 'NPWP',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('npwp')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'npwp' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                NPWP
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'npwp' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'npwp' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['npwp'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.npwp.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('npwp', value);
+                }}
+              />
+              {filters.filters.npwp && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('npwp', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.npwp || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.npwp !== null && props.row.npwp !== undefined
+                  ? props.row.npwp
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'namapajak',
+        name: 'NAMA PAJAK',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('namapajak')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'namapajak'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                NAMA PAJAK
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'namapajak' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'namapajak' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['namapajak'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.namapajak.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('namapajak', value);
+                }}
+              />
+              {filters.filters.namapajak && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('namapajak', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.namapajak || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.namapajak !== null &&
+                  props.row.namapajak !== undefined
+                  ? props.row.namapajak
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'alamatpajak',
+        name: 'ALAMAT PAJAK',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('alamatpajak')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'alamatpajak'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                ALAMAT PAJAK
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'alamatpajak' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'alamatpajak' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['alamatpajak'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.alamatpajak.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('alamatpajak', value);
+                }}
+              />
+              {filters.filters.alamatpajak && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('alamatpajak', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.alamatpajak || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.alamatpajak !== null &&
+                  props.row.alamatpajak !== undefined
+                  ? props.row.alamatpajak
                   : '',
                 filters.search,
                 columnFilter
@@ -563,7 +1265,7 @@ const GridPelayaran = () => {
               <Select
                 defaultValue=""
                 onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
+                  handleColumnFilterChange('statusaktif_text', value);
                 }}
               >
                 <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
@@ -582,9 +1284,9 @@ const GridPelayaran = () => {
                     </SelectItem>
                     <SelectItem
                       className="text=xs cursor-pointer"
-                      value="NON AKTIF"
+                      value="TIDAK AKTIF"
                     >
-                      <p className="text-sm font-normal">NON AKTIF</p>
+                      <p className="text-sm font-normal">TIDAK AKTIF</p>
                     </SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -593,7 +1295,9 @@ const GridPelayaran = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
+          const memoData = props.row.statusaktif_memo
+            ? JSON.parse(props.row.statusaktif_memo)
+            : null;
 
           if (memoData) {
             return (
@@ -616,6 +1320,82 @@ const GridPelayaran = () => {
           }
 
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'modifiedby',
+        name: 'MODIFIED BY',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('modifiedby')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                MODIFIED BY
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'modifiedby' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'modifiedby' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['modifiedby'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.modifiedby.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('modifiedby', value);
+                }}
+              />
+              {filters.filters.modifiedby && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('modifiedby', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.modifiedby || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.modifiedby !== null &&
+                  props.row.modifiedby !== undefined
+                  ? props.row.modifiedby
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
         }
       },
       {
@@ -732,7 +1512,7 @@ const GridPelayaran = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['updated_at'] = el;
+                  inputColRefs.current['created_at'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
@@ -785,7 +1565,7 @@ const GridPelayaran = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridPelayaran', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridRelasi', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -800,7 +1580,7 @@ const GridPelayaran = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridPelayaran', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridRelasi', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -817,7 +1597,7 @@ const GridPelayaran = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingPelayaran || !hasMore || rows.length === 0) return;
+    if (isLoadingRelasi || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -844,7 +1624,7 @@ const GridPelayaran = () => {
     }
   }
 
-  function handleCellClick(args: { row: IPelayaran }) {
+  function handleCellClick(args: { row: IRelasi }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -852,7 +1632,7 @@ const GridPelayaran = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IPelayaran>,
+    args: CellKeyDownArgs<IRelasi>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -900,132 +1680,16 @@ const GridPelayaran = () => {
       }
     }
   }
-  const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
-  ) => {
-    dispatch(setClearLookup(true));
-    try {
-      if (keepOpenModal) {
-        forms.reset();
-        setPopOver(true);
-      } else {
-        forms.reset();
-        setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/pelayaran-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
-      }
-    } catch (error) {
-      console.error('Error during onSuccess:', error);
-      setIsFetchingManually(false);
-      setIsDataUpdated(false);
-    } finally {
-      // dispatch(setClearLookup(false));
-      setIsDataUpdated(false);
-    }
-  };
-  const onSubmit = async (values: PelayaranInput, keepOpenModal = false) => {
-    const selectedRowId = rows[selectedRow]?.id;
-    console.log('dasdads');
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deletePelayaran(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
-            }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createPelayaran(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
-        }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
-      }
-      return;
-    }
-
-    if (selectedRowId && mode === 'edit') {
-      await updatePelayaran(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('menus');
-    }
-  };
-
-  const handleEdit = () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-      setPopOver(true);
-      setMode('edit');
-    }
-  };
-  const handleDelete = () => {
-    if (selectedRow !== null) {
-      setMode('delete');
-      setPopOver(true);
-    }
-  };
-  const handleView = () => {
-    if (selectedRow !== null) {
-      setMode('view');
-      setPopOver(true);
-    }
-  };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IPelayaran) {
+  function getRowClass(row: IRelasi) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IPelayaran) {
+  function rowKeyGetter(row: IRelasi) {
     return row.id;
   }
 
@@ -1046,19 +1710,6 @@ const GridPelayaran = () => {
       </div>
     );
   }
-  const handleClose = () => {
-    setPopOver(false);
-    setMode('');
-
-    forms.reset();
-  };
-  const handleAdd = async () => {
-    setMode('add');
-
-    setPopOver(true);
-
-    forms.reset();
-  };
   const saveGridConfig = async (
     userId: string, // userId sebagai identifier
     gridName: string,
@@ -1108,7 +1759,7 @@ const GridPelayaran = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridPelayaran',
+        'GridRelasi',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1193,7 +1844,7 @@ const GridPelayaran = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPelayaran');
+    loadGridConfig(user.id, 'GridRelasi');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1206,9 +1857,9 @@ const GridPelayaran = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allPelayaran || isFetchingManually || isDataUpdated) return;
+    if (!allRelasi || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allPelayaran.data || [];
+    const newRows = allRelasi.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1226,14 +1877,14 @@ const GridPelayaran = () => {
       return prevRows;
     });
 
-    if (allPelayaran.pagination.totalPages) {
-      setTotalPages(allPelayaran.pagination.totalPages);
+    if (allRelasi.pagination.totalPages) {
+      setTotalPages(allRelasi.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allPelayaran, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allRelasi, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1279,24 +1930,6 @@ const GridPelayaran = () => {
     };
   }, []);
   useEffect(() => {
-    const rowData = rows[selectedRow];
-
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' // Only fill the form if not in addMode
-    ) {
-      console.log('rowData', rowData);
-      forms.setValue('nama', rowData?.nama);
-      forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
-      // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-    }
-  }, [forms, selectedRow, rows, mode]);
-  useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
       if (!inputColRefs.current[col.key]) {
@@ -1304,25 +1937,6 @@ const GridPelayaran = () => {
       }
     });
   }, []);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -1385,13 +1999,7 @@ const GridPelayaran = () => {
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          <ActionButton
-            onAdd={handleAdd}
-            onDelete={handleDelete}
-            onView={handleView}
-            onEdit={handleEdit}
-          />
-          {isLoadingPelayaran ? <LoadRowsRenderer /> : null}
+          {isLoadingRelasi ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1413,19 +2021,8 @@ const GridPelayaran = () => {
           )}
         </div>
       </div>
-      <FormPelayaran
-        popOver={popOver}
-        handleClose={handleClose}
-        setPopOver={setPopOver}
-        isLoadingUpdate={isLoadingUpdate}
-        isLoadingDelete={isLoadingDelete}
-        forms={forms}
-        mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
-        isLoadingCreate={isLoadingCreate}
-      />
     </div>
   );
 };
 
-export default GridPelayaran;
+export default GridRelasi;

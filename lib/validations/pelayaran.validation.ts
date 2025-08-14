@@ -1,9 +1,10 @@
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { z } from 'zod';
+import { dynamicRequiredMessage } from '../utils';
 
 export const pelayaranSchema = z.object({
-  nama: z.string(),
-  keterangan: z.string(),
+  nama: z.string().nonempty({ message: dynamicRequiredMessage('JUDUL') }),
+  keterangan: z.string().optional(),
   statusaktif: z.number().min(1, `${REQUIRED_FIELD}`),
   statusaktif_text: z.string().optional()
 });
