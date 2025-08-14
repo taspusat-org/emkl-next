@@ -8,7 +8,6 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { useGetMenu } from '@/lib/server/useMenu';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -18,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
 
-const FormMenu = ({
+const FormDaftarBank = ({
   popOver,
   setPopOver,
   forms,
@@ -29,37 +28,6 @@ const FormMenu = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const lookUpProps = [
-    {
-      columns: [
-        { key: 'method', name: 'METHOD' },
-        { key: 'nama', name: 'NAMA' }
-      ],
-      // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
-      endpoint: 'acos/get-all',
-      label: 'ACOS',
-      singleColumn: false,
-      pageSize: 20,
-      dataToPost: 'id',
-      showOnButton: true,
-      postData: 'nama'
-    }
-  ];
-  const lookUpPropsMenu = [
-    {
-      columns: [{ key: 'title', name: 'Judul' }],
-      // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
-      endpoint: 'menu',
-      label: 'MENU PARENT',
-      singleColumn: true,
-      pageSize: 20,
-      dataToPost: 'id',
-      showOnButton: true,
-      postData: 'title'
-    }
-  ];
   const lookUpPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
@@ -71,7 +39,6 @@ const FormMenu = ({
       label: 'status aktif',
       singleColumn: true,
       pageSize: 20,
-      dataToPost: 'id',
       showOnButton: true,
       postData: 'text'
     }
@@ -101,14 +68,6 @@ const FormMenu = ({
       ) as HTMLElement[]; // Ambil semua input dalam form kecuali button dan readonly inputs
 
       const focusedElement = document.activeElement as HTMLElement;
-
-      // Cek apakah elemen yang difokuskan adalah dropzone
-      const isImageDropzone =
-        document.querySelector('input#image-dropzone') === focusedElement;
-      const isFileInput =
-        document.querySelector('input#file-input') === focusedElement;
-
-      if (isImageDropzone || isFileInput) return; // Jangan pindah fokus jika elemen fokus adalah dropzone atau input file
 
       let nextElement: HTMLElement | null = null;
 
@@ -162,7 +121,7 @@ const FormMenu = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Form
+            Daftar Bank Form
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -184,7 +143,7 @@ const FormMenu = ({
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
                   <FormField
-                    name="title"
+                    name="nama"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
@@ -192,7 +151,7 @@ const FormMenu = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          TITLE
+                          NAMA
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -208,34 +167,14 @@ const FormMenu = ({
                       </FormItem>
                     )}
                   />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Acos
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpProps.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('aco_id', Number(id))
-                          }
-                          inputLookupValue={forms.getValues('aco_id')}
-                          lookupNama={forms.getValues('acos_nama')}
-                        />
-                      ))}
-                    </div>
-                  </div>
 
                   <FormField
-                    name="icon"
+                    name="keterangan"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                          Icon
+                          Keterangan
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -251,24 +190,6 @@ const FormMenu = ({
                       </FormItem>
                     )}
                   />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Menu Parent
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsMenu.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) => forms.setValue('parentId', id)}
-                          inputLookupValue={forms.getValues('parentId')}
-                          lookupNama={forms.getValues('parent_nama')}
-                        />
-                      ))}
-                    </div>
-                  </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel className="text-sm font-semibold text-gray-700">
@@ -284,7 +205,7 @@ const FormMenu = ({
                             forms.setValue('statusaktif', id)
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
-                          lookupNama={forms.getValues('statusaktif_nama')}
+                          lookupNama={forms.getValues('statusaktif_text')}
                         />
                       ))}
                     </div>
@@ -300,6 +221,7 @@ const FormMenu = ({
             onClick={onSubmit}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
+            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">
@@ -320,4 +242,4 @@ const FormMenu = ({
   );
 };
 
-export default FormMenu;
+export default FormDaftarBank;
