@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-const IDLE_TIMEOUT = 30 * 1000; // 1 jam
+const IDLE_TIMEOUT = 60 * 60 * 1000; // 1 jam
 
 export const useIdleTimer = () => {
   const router = useRouter();
