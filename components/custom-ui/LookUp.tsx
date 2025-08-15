@@ -935,13 +935,13 @@ export default function LookUp({
 
   useEffect(() => {
     // Jangan lakukan fetch jika lookup tidak terbuka
-    if (!open && !openName) return;
 
     // Reset hasFetched ketika filter berubah
     if (hasFetchedRef.current && !shallowEqual(filters, prevFilters)) {
+      console.log('masul');
       hasFetchedRef.current = false;
     }
-
+    console.log('hasFetchedRef.current', hasFetchedRef.current);
     if (!hasFetchedRef.current) {
       if (type !== 'local' && endpoint) {
         setIsLoading(true); // Mulai loading sebelum fetch
@@ -976,6 +976,19 @@ export default function LookUp({
       } else {
         // Filter data lokal jika tidak menggunakan API
         const filteredRows = data ? applyFilters(data) : [];
+        console.log('isDefault', isdefault);
+        if (isdefault && !lookupNama) {
+          if (isdefault === 'YA') {
+            const defaultRow = filteredRows.find(
+              (row: any) => row.default === 'YA'
+            );
+            setInputValue(defaultRow?.text);
+            if (lookupValue) {
+              lookupValue(defaultRow[dataToPost as string] || defaultRow?.id);
+            }
+          }
+        }
+
         setRows(filteredRows); // Set filtered rows
         setIsLoading(false); // Selesaikan loading
         hasFetchedRef.current = true; // Tandai fetch sudah selesai
