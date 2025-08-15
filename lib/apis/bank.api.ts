@@ -44,7 +44,7 @@ export const storeBankFn = async (fields: BankInput) => {
 export const exportBankFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/bank/export', {
+    const response = await api2.get('/laporanbank', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
