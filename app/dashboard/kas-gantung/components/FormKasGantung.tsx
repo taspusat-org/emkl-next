@@ -837,10 +837,6 @@ const FormKasGantung = ({
                         key={dataGridKey}
                         ref={gridRef}
                         columns={columns as any[]}
-                        defaultColumnOptions={{
-                          sortable: true,
-                          resizable: true
-                        }}
                         rows={rows}
                         headerRowHeight={70}
                         rowHeight={40}
