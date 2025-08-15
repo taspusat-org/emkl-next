@@ -47,17 +47,6 @@ function Calendar({
     return isSunday || isHoliday;
   };
 
-  const formatDateToLocal = (date: Date) => {
-    const options = {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    } as const;
-    const [day, month, year] = date
-      .toLocaleDateString('id-ID', options)
-      .split('/');
-    return `${year}-${month}-${day}`;
-  };
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}

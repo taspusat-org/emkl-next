@@ -144,7 +144,9 @@ const GridKasGantungHeader = () => {
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
-  const { user, cabang_id } = useSelector((state: RootState) => state.auth);
+  const { user, cabang_id, token } = useSelector(
+    (state: RootState) => state.auth
+  );
   const forms = useForm<KasGantungHeaderInput>({
     resolver: zodResolver(kasgantungHeaderSchema),
     mode: 'onSubmit',
@@ -161,16 +163,29 @@ const GridKasGantungHeader = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const router = useRouter();
+  const { selectedDate, selectedDate2, onReload } = useSelector(
+    (state: RootState) => state.filter
+  );
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
-    filters: filterKasGantung,
+    filters: {
+      ...filterKasGantung,
+      tglDari: selectedDate,
+      tglSampai: selectedDate2
+    },
     search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
+
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allData, isLoading: isLoadingData } = useGetKasGantungHeader({
+
+  const {
+    data: allData,
+    isLoading: isLoadingData,
+    refetch
+  } = useGetKasGantungHeader({
     ...filters,
     page: currentPage
   });
@@ -2137,6 +2152,40 @@ const GridKasGantungHeader = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
+    // Cek jika ini pertama kali load dan update filter dengan tanggal yang dipilih
+    if (isFirstLoad) {
+      if (
+        selectedDate !== filters.filters.tglDari ||
+        selectedDate2 !== filters.filters.tglSampai
+      ) {
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          filters: {
+            ...prevFilters.filters,
+            tglDari: selectedDate,
+            tglSampai: selectedDate2
+          }
+        }));
+      }
+    }
+    // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
+    else if (
+      (selectedDate !== filters.filters.tglDari ||
+        selectedDate2 !== filters.filters.tglSampai) &&
+      onReload &&
+      !isFirstLoad
+    ) {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        filters: {
+          ...prevFilters.filters,
+          tglDari: selectedDate,
+          tglSampai: selectedDate2
+        }
+      }));
+    }
+  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
+  useEffect(() => {
     if (!allData || isFetchingManually || isDataUpdated) return;
 
     const newRows = allData.data || [];
@@ -2266,6 +2315,13 @@ const GridKasGantungHeader = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
+    if (filters !== prevFilters) {
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
+    }
+  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

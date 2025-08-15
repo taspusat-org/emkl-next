@@ -38,7 +38,8 @@ export const authOptions: AuthOptions = {
               accessToken: response.data.accessToken,
               refreshToken: response.data.refreshToken,
               cabang_id: response.data.cabang_id,
-              accessTokenExpires: response.data.accessTokenExpires
+              accessTokenExpires: response.data.accessTokenExpires,
+              refreshTokenExpires: response.data.refreshTokenExpires
             };
           } else {
             throw new Error('Invalid username or password');
@@ -69,6 +70,7 @@ export const authOptions: AuthOptions = {
         token.refreshToken = user.refreshToken;
         token.cabang_id = user.cabang_id;
         token.accessTokenExpires = user.accessTokenExpires;
+        token.refreshTokenExpires = user.refreshTokenExpires;
       }
       if (
         token.accessTokenExpires &&
@@ -86,6 +88,7 @@ export const authOptions: AuthOptions = {
         session.token = token.accessToken as string;
         session.refreshToken = token.refreshToken as string;
         session.accessTokenExpires = token.accessTokenExpires as string;
+        session.refreshTokenExpires = token.refreshTokenExpires as string;
         session.user = token.users as any;
         session.cabang_id = token.cabang_id as string;
       }

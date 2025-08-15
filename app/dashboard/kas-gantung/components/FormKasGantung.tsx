@@ -290,14 +290,14 @@ const FormKasGantung = ({
         colSpan: (args) => {
           // If it's the "Add Row" row, span across multiple columns
           if (args.type === 'ROW' && args.row.isAddRow) {
-            return 4; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 3; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
+            <div className="headers-cell h-[50%] items-center justify-center text-center font-normal">
               <p className="text-sm">No.</p>
             </div>
 
@@ -308,8 +308,8 @@ const FormKasGantung = ({
         ),
         renderCell: (props: any) => {
           return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
-              {props.row.isAddRow ? 'TOTAL' : props.rowIdx + 1}
+            <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-normal">
+              {props.row.isAddRow ? 'TOTAL :' : props.rowIdx + 1}
             </div>
           );
         }
@@ -325,7 +325,7 @@ const FormKasGantung = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>Nomor Bukti</p>
+              <p className={`text-sm font-normal`}>Nomor Bukti</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
@@ -358,7 +358,7 @@ const FormKasGantung = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>Keterangan</p>
+              <p className={`text-sm font-normal`}>Keterangan</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
@@ -399,7 +399,7 @@ const FormKasGantung = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>Nominal</p>
+              <p className={`text-sm font-normal`}>Nominal</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
@@ -422,7 +422,9 @@ const FormKasGantung = ({
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
-                <div>{formatCurrency(totalNominal)}</div>
+                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+                  {formatCurrency(totalNominal)}
+                </div>
               ) : (
                 // <InputMask
                 //   mask="" // biar kita yang atur formatting
@@ -455,6 +457,7 @@ const FormKasGantung = ({
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       label: 'RELASI',
+      dataToPost: 'id',
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
@@ -468,6 +471,7 @@ const FormKasGantung = ({
       selectedRequired: false,
       label: 'BANK',
       singleColumn: false,
+      dataToPost: 'id',
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
@@ -480,6 +484,7 @@ const FormKasGantung = ({
       selectedRequired: false,
 
       label: 'ALAT BAYAR',
+      dataToPost: 'id',
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,

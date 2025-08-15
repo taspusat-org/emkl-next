@@ -11,7 +11,7 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { signIn, useSession } from 'next-auth/react';
+import { getSession, signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -35,6 +35,7 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import { truncateSync } from 'fs';
 export const metadata: Metadata = {
   title: 'Authentication',
   description: 'Authentication forms built using the components.'
@@ -128,7 +129,9 @@ export default function SignInViewPage() {
         username: values.username,
         password: values.password
       });
+
       setLoadings(false);
+
       if (result?.error) {
         alert({
           title: result.error,
@@ -140,7 +143,17 @@ export default function SignInViewPage() {
           title: 'Login Success',
           description: 'You have successfully logged in.'
         });
-        router.push('/dashboard');
+
+        // Gunakan getSession untuk mendapatkan session setelah login
+        const session = await getSession();
+
+        if (session) {
+          // Jika sesi sudah ada, arahkan ke dashboard
+          router.replace('/dashboard'); // Menggunakan replace agar tidak menambah riwayat
+        } else {
+          // Jika sesi gagal diinisialisasi, kembali ke halaman login
+          router.push('/auth/signin');
+        }
       }
     } catch (error) {
       console.error(error);
@@ -149,6 +162,7 @@ export default function SignInViewPage() {
       setLoadings(false);
     }
   };
+
   const options = {
     animationData: LoginAnimation,
     loop: true
@@ -165,11 +179,14 @@ export default function SignInViewPage() {
           refreshToken: session.refreshToken ?? null,
           cabang_id: session.cabang_id ?? null,
           accessTokenExpires: session?.accessTokenExpires ?? undefined,
+          refreshTokenExpires: session?.refreshTokenExpires ?? undefined,
           autoLogoutExpires: Date.now()
         })
       );
+      // Jika sesi sudah diupdate, arahkan ke dashboard
+      router.replace('/dashboard');
     }
-  }, [session, dispatch]);
+  }, [session, dispatch, router]);
 
   useEffect(() => {
     const navigationEntries = performance.getEntriesByType('navigation');

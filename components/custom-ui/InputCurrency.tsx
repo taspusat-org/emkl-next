@@ -67,14 +67,6 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
-  useEffect(() => {
-    console.log('value', value);
-    if (!value.includes('.') || !value.includes(',')) {
-      console.log('masuk');
-      const formatted = formatCurrency(value);
-      setInputValue(formatted + '.00');
-    }
-  }, [value]);
   return (
     <div className="relative w-full">
       <InputMask

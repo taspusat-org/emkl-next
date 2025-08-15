@@ -49,25 +49,23 @@ export async function middleware(req: NextRequest) {
     req,
     secret: process.env.NEXTAUTH_SECRET
   })) as JWT & {
-    accessTokenExpires?: string;
+    refreshTokenExpires?: string;
     refreshToken?: string;
     users?: { id: string };
   };
 
-  const expiresAt = session?.accessTokenExpires
-    ? new Date(session.accessTokenExpires).getTime()
+  const expiresAt = session?.refreshTokenExpires
+    ? new Date(session.refreshTokenExpires).getTime()
     : 0;
-  console.log('session', session);
 
   // 4) Kalau sudah expired → opsi A: langsung redirect ke signin
   // (mencegah forced refresh loop kalau refreshToken juga invalid)
   if (Date.now() >= expiresAt) {
     // Kalau Anda **tidak** ingin auto-refresh sama sekali, langsung pakai blok ini:
-    store.dispatch(clearCredentials());
-    const resp = NextResponse.redirect(new URL('/auth/signin', req.url));
-    resp.cookies.delete('next-auth.session-token');
-    return resp;
-
+    // store.dispatch(clearCredentials());
+    // const resp = NextResponse.redirect(new URL('/auth/signin', req.url));
+    // resp.cookies.delete('next-auth.session-token');
+    // return resp;
     /* ———— Kalau mau AUTO-REFRESH, ganti blok di atas menjadi blok di bawah ini ————
     if (!session.refreshToken) {
       // gak punya refreshToken, langsung masuk signin

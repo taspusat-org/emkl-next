@@ -160,10 +160,17 @@ const GridPengembalianKasGantung = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const router = useRouter();
+  const { selectedDate, selectedDate2, onReload } = useSelector(
+    (state: RootState) => state.filter
+  );
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
-    filters: filterPengembalianKasGantung,
+    filters: {
+      ...filterPengembalianKasGantung,
+      tglDari: selectedDate,
+      tglSampai: selectedDate2
+    },
     search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
@@ -1821,6 +1828,40 @@ const GridPengembalianKasGantung = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  useEffect(() => {
+    // Cek jika ini pertama kali load dan update filter dengan tanggal yang dipilih
+    if (isFirstLoad) {
+      if (
+        selectedDate !== filters.filters.tglDari ||
+        selectedDate2 !== filters.filters.tglSampai
+      ) {
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          filters: {
+            ...prevFilters.filters,
+            tglDari: selectedDate,
+            tglSampai: selectedDate2
+          }
+        }));
+      }
+    }
+    // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
+    else if (
+      (selectedDate !== filters.filters.tglDari ||
+        selectedDate2 !== filters.filters.tglSampai) &&
+      onReload &&
+      !isFirstLoad
+    ) {
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        filters: {
+          ...prevFilters.filters,
+          tglDari: selectedDate,
+          tglSampai: selectedDate2
+        }
+      }));
+    }
+  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];

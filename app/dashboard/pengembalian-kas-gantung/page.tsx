@@ -17,6 +17,7 @@ import {
   setDefault,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
+import FilterGrid from './components/FilterGrid';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -44,8 +45,8 @@ const Page = () => {
           dispatch(setData({ key: 'BANK', data: dataBank.data }));
           const defaultValue =
             dataBank.data
-              .map((item) => item.default)
-              .find((val) => val !== null) || '';
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
 
           // Dispatch the default data
           dispatch(setDefault({ key: 'BANK', isdefault: defaultValue }));
@@ -57,8 +58,8 @@ const Page = () => {
           dispatch(setData({ key: 'ALAT BAYAR', data: dataAlatBayar.data }));
           const defaultValue =
             dataAlatBayar.data
-              .map((item) => item.default)
-              .find((val) => val !== null) || '';
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
 
           // Dispatch the default data
           dispatch(setDefault({ key: 'ALAT BAYAR', isdefault: defaultValue }));
@@ -70,8 +71,8 @@ const Page = () => {
           dispatch(setData({ key: 'RELASI', data: dataRelasi.data }));
           const defaultValue =
             dataRelasi.data
-              .map((item) => item.default)
-              .find((val) => val !== null) || '';
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
 
           // Dispatch the default data
           dispatch(setDefault({ key: 'RELASI', isdefault: defaultValue }));
@@ -90,6 +91,9 @@ const Page = () => {
   return (
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-10 border">
+          <FilterGrid />
+        </div>
         <div className="col-span-10 h-[500px]">
           <GridPengembalianKasGantung />
         </div>

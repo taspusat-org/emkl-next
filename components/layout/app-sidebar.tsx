@@ -118,12 +118,14 @@ export default function AppSidebar({
   }, [filters, allMenu]);
 
   React.useEffect(() => {
-    api2
-      .get(`/menu/sidebar?userId=${user.id}`)
-      .then((response) => {
-        setMenuData(response.data);
-      })
-      .catch((error) => console.error('Failed to fetch menu data:', error));
+    if (user.id) {
+      api2
+        .get(`/menu/sidebar?userId=${user.id}`)
+        .then((response) => {
+          setMenuData(response.data);
+        })
+        .catch((error) => console.error('Failed to fetch menu data:', error));
+    }
   }, [user.id]);
   React.useEffect(() => {
     const interval = setInterval(() => {
