@@ -154,7 +154,7 @@ const GridTypeAkuntansi = () => {
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
-      // order: undefined,
+      order: undefined,
       keterangan: '',
       akuntansi_id: null,
       akuntansi_nama: '',
@@ -1577,7 +1577,7 @@ const GridTypeAkuntansi = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
+  console.log(forms.getValues());
   useEffect(() => {
     const rowData = rows[selectedRow];
 

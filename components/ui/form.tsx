@@ -12,6 +12,7 @@ import {
 
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 interface FormLabelProps
   extends React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> {
   required?: boolean;
@@ -157,8 +158,15 @@ const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message) : children;
+  const { errors } = useFormError(); // Mengakses errors dari context global
+
+  // Mengambil field name secara otomatis dari parent form
+  const { name } = useFormField();
+
+  // Mendapatkan error berdasarkan field name
+  const errorMessage = errors[name];
+
+  const body = errorMessage ? String(errorMessage) : children;
 
   if (!body) {
     return null;
@@ -167,7 +175,7 @@ const FormMessage = React.forwardRef<
   return (
     <p
       ref={ref}
-      id={formMessageId}
+      id={props.id}
       className={cn('text-[0.8rem] font-medium text-destructive', className)}
       {...props}
     >
@@ -175,6 +183,7 @@ const FormMessage = React.forwardRef<
     </p>
   );
 });
+
 FormMessage.displayName = 'FormMessage';
 
 export {
