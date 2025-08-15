@@ -18,6 +18,7 @@ import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
+import { exportTujuankapalFn } from '@/lib/apis/tujuankapal.api';
 
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -31,6 +32,53 @@ const ReportMenuPage: React.FC = () => {
   const { ZoomPopover } = zoomPluginInstance;
 
   // Default layout with custom toolbar
+  const [filters, setFilters] = useState({
+    page: 1,
+    limit: 30,
+    filters: {
+      nama: '',
+      keterangan: '',
+      created_at: '',
+      updated_at: '',
+      namacabang: '',
+      cabang_id: '',
+      text: '',
+      statusaktif: ''
+    },
+    search: '',
+    sortBy: 'nama',
+    sortDirection: 'asc'
+  });
+
+  const handleExport = async () => {
+    try {
+      const { page, limit, filters: nestedFilters, ...rest } = filters;
+
+      // Gabungkan search, sort, dan filters
+      const exportPayload = {
+        ...rest,
+        ...nestedFilters
+      };
+
+      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const response = await exportTujuankapalFn(exportPayload);
+
+      // Buat link download dari Blob
+      const url = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `laporan_tujuankapal_${Date.now()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Bersihkan URL object
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error exporting tujuankapal data:', error);
+    }
+  };
+
   const layoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [defaultTabs[0]],
     renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
@@ -91,6 +139,12 @@ const ReportMenuPage: React.FC = () => {
                     </button>
                   )}
                 </Print>
+                <button
+                  onClick={() => handleExport()}
+                  className="flex flex-row items-center gap-2 rounded bg-orange-500 px-3 py-1 text-white hover:bg-cyan-700"
+                >
+                  <FaFileExport /> Export
+                </button>
 
                 <EnterFullScreen />
               </div>

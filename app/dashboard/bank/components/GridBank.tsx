@@ -67,7 +67,7 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-import { exportBankFn } from '@/lib/apis/bank.api';
+import { exportBankFn, getBankFn } from '@/lib/apis/bank.api';
 
 interface Filter {
   page: number;
@@ -2082,65 +2082,67 @@ const GridBank = () => {
   //   }
   // };
 
-  // const handleReport = async () => {
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   const response = await getMenuFn(filtersWithoutLimit);
-  //   const reportRows = response.data.map((row) => ({
-  //     ...row,
-  //     judullaporan: 'Laporan Menu',
-  //     usercetak: user.username,
-  //     tglcetak: new Date().toLocaleDateString(),
-  //     judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //   }));
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
+    const response = await getBankFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Bank',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
 
-  //   // Dynamically import Stimulsoft and generate the PDF report
-  //   import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-  //     .then((module) => {
-  //       const { Stimulsoft } = module;
-  //       Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-  //         '/fonts/tahoma.ttf',
-  //         'Arial'
-  //       );
-  //       Stimulsoft.Base.StiLicense.Key =
-  //         '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-  //         '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-  //         'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-  //         'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-  //         '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-  //         'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-  //         'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+    // localStorage.setItem('reportData', JSON.stringify(reportRows));
+    // window.open('/reports/bank', '_blank');
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-  //       const report = new Stimulsoft.Report.StiReport();
-  //       const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-  //       // Load the report template (MRT file)
-  //       report.loadFile('/reports/LaporanMenu.mrt');
-  //       report.dictionary.dataSources.clear();
-  //       dataSet.readJson({ data: reportRows });
-  //       report.regData(dataSet.dataSetName, '', dataSet);
-  //       report.dictionary.synchronize();
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanBank.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
 
-  //       // Render the report asynchronously
-  //       report.renderAsync(() => {
-  //         // Export the report to PDF asynchronously
-  //         report.exportDocumentAsync((pdfData: any) => {
-  //           const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-  //             type: 'application/pdf'
-  //           });
-  //           const pdfUrl = URL.createObjectURL(pdfBlob);
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  //           // Store the Blob URL in sessionStorage
-  //           sessionStorage.setItem('pdfUrl', pdfUrl);
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
 
-  //           // Navigate to the report page
-  //           window.open('/reports/menu', '_blank');
-  //         }, Stimulsoft.Report.StiExportFormat.Pdf);
-  //       });
-  //     })
-  //     .catch((error) => {
-  //       console.error('Failed to load Stimulsoft:', error);
-  //     });
-  // };
+            // Navigate to the report page
+            window.open('/reports/bank', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
+  };
 
   // const handleReportBySelect = async () => {
   //   if (checkedRows.size === 0) {
@@ -2620,23 +2622,24 @@ const GridBank = () => {
             //   }
             // ]}
             dropdownMenus={[
-              // {
-              //   label: 'Report',
-              //   icon: <FaPrint />,
-              //   className: 'bg-cyan-500 hover:bg-cyan-700',
-              //   actions: [
-              //     {
-              //       label: 'REPORT ALL',
-              //       onClick: () => handleReport(),
-              //       className: 'bg-cyan-500 hover:bg-cyan-700'
-              //     },
-              //     {
-              //       label: 'REPORT BY SELECT',
-              //       onClick: () => handleReportBySelect(),
-              //       className: 'bg-cyan-500 hover:bg-cyan-700'
-              //     }
-              //   ]
-              // },
+              {
+                label: 'Report',
+                icon: <FaPrint />,
+                className: 'bg-cyan-500 hover:bg-cyan-700',
+                actions: [
+                  {
+                    label: 'REPORT ALL',
+                    onClick: () => handleReport(),
+                    className: 'bg-cyan-500 hover:bg-cyan-700'
+                  }
+                  // ,
+                  // {
+                  //   label: 'REPORT BY SELECT',
+                  //   onClick: () => handleReportBySelect(),
+                  //   className: 'bg-cyan-500 hover:bg-cyan-700'
+                  // }
+                ]
+              },
               {
                 label: 'Export',
                 icon: <FaFileExport />,

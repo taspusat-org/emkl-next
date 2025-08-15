@@ -44,6 +44,21 @@ export const storeContainerFn = async (fields: ContainerInput) => {
   return response.data;
 };
 
+export const exportContainerFn = async (filters: any): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/laporancontainer', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
+  }
+};
+
 // export const exportMenuFn = async (filters: any): Promise<any> => {
 //   try {
 //     const queryParams = buildQueryParams(filters);

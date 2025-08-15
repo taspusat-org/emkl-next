@@ -43,6 +43,21 @@ export const storeTujuankapalFn = async (fields: TujuankapalInput) => {
   return response.data;
 };
 
+export const exportTujuankapalFn = async (filters: any): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/laporantujuankapal', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
+  }
+};
+
 // export const exportMenuFn = async (filters: any): Promise<any> => {
 //   try {
 //     const queryParams = buildQueryParams(filters);
