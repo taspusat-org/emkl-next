@@ -17,7 +17,7 @@ import '@react-pdf-viewer/print/lib/styles/index.css';
 import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
-import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
+import { FaDownload, FaPrint } from 'react-icons/fa';
 
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
