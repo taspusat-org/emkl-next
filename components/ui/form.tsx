@@ -161,10 +161,14 @@ const FormMessage = React.forwardRef<
   const { errors } = useFormError(); // Mengakses errors dari context global
 
   // Mengambil field name secara otomatis dari parent form
-  const { name } = useFormField();
+  const { name, error, formMessageId } = useFormField();
 
   // Mendapatkan error berdasarkan field name
-  const errorMessage = errors[name];
+  const errorMessage = error
+    ? String(error?.message)
+    : errors
+    ? errors[name]
+    : children;
 
   const body = errorMessage ? String(errorMessage) : children;
 
@@ -175,7 +179,7 @@ const FormMessage = React.forwardRef<
   return (
     <p
       ref={ref}
-      id={props.id}
+      id={formMessageId}
       className={cn('text-[0.8rem] font-medium text-destructive', className)}
       {...props}
     >
