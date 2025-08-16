@@ -11,5 +11,6 @@ export interface IJenisOrderan {
 
 export interface IAllJenisOrderan {
   data: IJenisOrderan[];
+  type: string;
   pagination: IMeta;
 }

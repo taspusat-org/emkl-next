@@ -3,30 +3,23 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteBankFn,
-  getBankFn,
-  storeBankFn,
-  updateBankFn
-} from '../apis/bank.api';
+  deleteEmklFn,
+  getEmklFn,
+  storeEmklFn,
+  updateEmklFn
+} from '../apis/emkl.api';
 import { useAlert } from '../store/client/useAlert';
+import { get } from 'http';
 
-export const useGetBank = (
+export const useGetEmkl = (
   filters: {
     filters?: {
-      nama?: string;
+      emkl_text?: string;
       keterangan?: string;
-      keterangancoa?: string;
-      keterangancoagantung?: string;
-      textbank?: string;
+      container_text?: string;
+      jenisorderan_text?: string;
+      nominal?: number;
       text?: string;
-      formatpenerimaantext?: string;
-      formatpenerimaangantungtext?: string;
-      formatpengeluarangantungtext?: string;
-      formatpencairantext?: string;
-      formatrekappenerimaantext?: string;
-      formatrekappengeluarantext?: string;
-      created_at?: string;
-      updated_at?: string;
     };
     page?: number;
     sortBy?: string;
@@ -35,17 +28,17 @@ export const useGetBank = (
     search?: string; // Kata kunci pencarian
   } = {}
 ) => {
-  return useQuery(['bank', filters], async () => await getBankFn(filters));
+  return useQuery(['emkl', filters], async () => await getEmklFn(filters));
 };
 
-export const useCreateBank = () => {
+export const useCreateEmkl = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeBankFn, {
+  return useMutation(storeEmklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('emkl');
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -65,13 +58,13 @@ export const useCreateBank = () => {
   });
 };
 
-export const useDeleteBank = () => {
+export const useDeleteEmkl = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteBankFn, {
+  return useMutation(deleteEmklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('emkl');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'
@@ -89,13 +82,13 @@ export const useDeleteBank = () => {
     }
   });
 };
-export const useUpdateBank = () => {
+export const useUpdateEmkl = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateBankFn, {
+  return useMutation(updateEmklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('emkl');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'

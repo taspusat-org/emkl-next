@@ -466,6 +466,7 @@ const GridBank = () => {
     }));
     setInputValue('');
   };
+  console.log(forms.getValues());
 
   const columns = useMemo((): Column<IBank>[] => {
     return [
