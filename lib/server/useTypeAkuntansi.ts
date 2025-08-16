@@ -9,6 +9,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useAlert } from '../store/client/useAlert';
 import { IErrorResponse } from '../types/typeakuntansi.type';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetAllTypeAkuntansi = (
   filters: {
@@ -36,9 +37,9 @@ export const useGetAllTypeAkuntansi = (
 };
 
 export const useCreateTypeAkuntansi = () => {
+  const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { alert } = useAlert();
 
   return useMutation(storeTypeAkuntansiFn, {
     onSuccess: () => {
@@ -50,13 +51,23 @@ export const useCreateTypeAkuntansi = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-
+      console.log('errorResponse', errorResponse);
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda'
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
+
+        // Iterasi error message dan set error di form
+        errorFields?.forEach((err: { path: string[]; message: string }) => {
+          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+          console.log('path', path);
+          setError(path, err.message); // Update error di context
         });
+
+        // toast({
+        //   variant: 'destructive',
+        //   title: errorResponse.message ?? 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda'
+        // });
       }
     }
   });

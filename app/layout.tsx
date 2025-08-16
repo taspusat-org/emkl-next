@@ -22,6 +22,7 @@ import { setLoaded, setLoading } from '../lib/store/loadingSlice/loadingSlice';
 import { useRouter } from 'next/navigation';
 import { pdfjs } from 'react-pdf';
 import ForceEditDialogHost from '@/components/custom-ui/ForceEditDialogHost';
+import { FormErrorProvider } from '@/lib/hooks/formErrorContext';
 
 const roboto = Roboto({
   subsets: ['latin'],
@@ -61,15 +62,17 @@ export default function RootLayout({
               {...(alertOptions as AlertOptions)}
             />
             {/* <ForceEditDialogHost /> */}
-            <PersistGate loading={null} persistor={persistor}>
-              <NextTopLoader showSpinner={false} />
-              <Providers>
-                <Toaster />
-                <QueryClientProvider client={queryClient}>
-                  <IdleTimerProvider>{children}</IdleTimerProvider>
-                </QueryClientProvider>
-              </Providers>
-            </PersistGate>
+            <FormErrorProvider>
+              <PersistGate loading={null} persistor={persistor}>
+                <NextTopLoader showSpinner={false} />
+                <Providers>
+                  <Toaster />
+                  <QueryClientProvider client={queryClient}>
+                    <IdleTimerProvider>{children}</IdleTimerProvider>
+                  </QueryClientProvider>
+                </Providers>
+              </PersistGate>
+            </FormErrorProvider>
           </Provider>
         </SidebarProvider>
       </body>

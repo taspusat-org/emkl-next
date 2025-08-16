@@ -19,6 +19,7 @@ import {
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 import InputNumeric from '@/components/custom-ui/InputNumeric';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 
 const FormTypeAkuntansi = ({
   forms,
@@ -31,6 +32,8 @@ const FormTypeAkuntansi = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const { errors, setError } = useFormError(); // Mengakses errors dan setError
+  console.log('errors', errors);
   const lookupPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
