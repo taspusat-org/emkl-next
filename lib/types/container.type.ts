@@ -12,5 +12,6 @@ export interface IContainer {
 }
 export interface IAllContainer {
   data: IContainer[];
+  type: string;
   pagination: IMeta;
 }

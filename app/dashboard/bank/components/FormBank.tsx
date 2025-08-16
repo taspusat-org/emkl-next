@@ -53,7 +53,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -106,7 +107,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -122,7 +124,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -138,7 +141,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -154,7 +158,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -170,7 +175,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -186,7 +192,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -202,7 +209,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -218,7 +226,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 
@@ -234,7 +243,8 @@ const FormBank = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true
+      useReduxStore: true,
+      dataToPost: 'id'
     }
   ];
 

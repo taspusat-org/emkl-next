@@ -3,30 +3,24 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteBankFn,
-  getBankFn,
-  storeBankFn,
-  updateBankFn
-} from '../apis/bank.api';
+  deleteHargatruckingFn,
+  getHargatruckingFn,
+  storeHargatruckingFn,
+  updateHargatruckingFn
+} from '../apis/hargatrucking.api';
 import { useAlert } from '../store/client/useAlert';
+import { get } from 'http';
 
-export const useGetBank = (
+export const useGetHargatrucking = (
   filters: {
     filters?: {
-      nama?: string;
+      tujuankapal_text?: string;
+      emkl_text?: string;
       keterangan?: string;
-      keterangancoa?: string;
-      keterangancoagantung?: string;
-      textbank?: string;
+      container_text?: string;
+      jenisorderan_text?: string;
+      nominal?: string;
       text?: string;
-      formatpenerimaantext?: string;
-      formatpenerimaangantungtext?: string;
-      formatpengeluarangantungtext?: string;
-      formatpencairantext?: string;
-      formatrekappenerimaantext?: string;
-      formatrekappengeluarantext?: string;
-      created_at?: string;
-      updated_at?: string;
     };
     page?: number;
     sortBy?: string;
@@ -35,17 +29,20 @@ export const useGetBank = (
     search?: string; // Kata kunci pencarian
   } = {}
 ) => {
-  return useQuery(['bank', filters], async () => await getBankFn(filters));
+  return useQuery(
+    ['hargatrucking', filters],
+    async () => await getHargatruckingFn(filters)
+  );
 };
 
-export const useCreateBank = () => {
+export const useCreateHargatrucking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeBankFn, {
+  return useMutation(storeHargatruckingFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('hargatrucking');
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -65,13 +62,13 @@ export const useCreateBank = () => {
   });
 };
 
-export const useDeleteBank = () => {
+export const useDeleteHargatrucking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteBankFn, {
+  return useMutation(deleteHargatruckingFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('hargatrucking');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'
@@ -89,13 +86,13 @@ export const useDeleteBank = () => {
     }
   });
 };
-export const useUpdateBank = () => {
+export const useUpdateHargatrucking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateBankFn, {
+  return useMutation(updateHargatruckingFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('hargatrucking');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'
