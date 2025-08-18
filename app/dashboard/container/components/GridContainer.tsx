@@ -171,7 +171,7 @@ const GridContainer = () => {
     }
   );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  console.log(forms.getValues());
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string

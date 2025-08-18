@@ -12,17 +12,20 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormBank from './FormBank';
+import FormBank from './FormAlatbayar';
 import { useQueryClient } from 'react-query';
-import { BankInput, BankSchema } from '@/lib/validations/bank.validation';
+import {
+  AlatbayarInput,
+  AlatbayarSchema
+} from '@/lib/validations/alatbayar.validation';
 import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
 
 import {
-  useCreateBank,
-  useDeleteBank,
-  useGetBank,
-  useUpdateBank
-} from '@/lib/server/useBank';
+  useCreateAlatbayar,
+  useDeleteAlatbayar,
+  useGetAlatbayar,
+  useUpdateAlatbayar
+} from '@/lib/server/useAlatbayar';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -57,7 +60,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { IBank } from '@/lib/types/bank.type';
+import { IAlatBayar } from '@/lib/types/alatbayar.type';
 import { number } from 'zod';
 import {
   clearOpenName,
@@ -67,7 +70,6 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-import { exportBankFn, getBankFn } from '@/lib/apis/bank.api';
 
 interface Filter {
   page: number;
@@ -80,41 +82,17 @@ interface Filter {
     created_at: string;
     updated_at: string;
 
-    coa: string;
-    keterangancoa: string;
+    statuslangsungcair?: string;
+    statuslangsungcair_text?: string;
 
-    coagantung: string;
-    keterangancoagantung: string;
+    statusdefault?: string;
+    statusdefault_text?: string;
 
-    statusbank: string;
-    textbank: string;
+    statusbank?: string;
+    statusbank_text?: string;
 
-    statusaktif: string;
-    text: string;
-
-    statusdefault: string;
-    textdefault: string;
-
-    formatpenerimaan: string;
-    formatpenerimaantext: string;
-
-    formatpengeluaran: string;
-    formatpengeluarantext: string;
-
-    formatpenerimaangantung: string;
-    formatpenerimaangantungtext: string;
-
-    formatpengeluarangantung: string;
-    formatpengeluarangantungtext: string;
-
-    formatpencairan: string;
-    formatpencairantext: string;
-
-    formatrekappenerimaan: string;
-    formatrekappenerimaantext: string;
-
-    formatrekappengeluaran: string;
-    formatrekappengeluarantext: string;
+    statusaktif?: string;
+    text?: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -125,23 +103,23 @@ interface GridConfig {
   columnsWidth: { [key: string]: number };
 }
 
-const GridBank = () => {
+const GridAlatbayar = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createBank, isLoading: isLoadingCreate } =
-    useCreateBank();
-  const { mutateAsync: updateBank, isLoading: isLoadingUpdate } =
-    useUpdateBank();
+  const { mutateAsync: createAlatbayar, isLoading: isLoadingCreate } =
+    useCreateAlatbayar();
+  const { mutateAsync: updateAlatbayar, isLoading: isLoadingUpdate } =
+    useUpdateAlatbayar();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteBank, isLoading: isLoadingDelete } =
-    useDeleteBank();
+  const { mutateAsync: deleteAlatbayar, isLoading: isLoadingDelete } =
+    useDeleteAlatbayar();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -158,7 +136,7 @@ const GridBank = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IBank[]>([]);
+  const [rows, setRows] = useState<IAlatBayar[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -167,48 +145,26 @@ const GridBank = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const getCoa = useSelector((state: RootState) => state.lookup.data);
-  const forms = useForm<BankInput>({
-    resolver: zodResolver(BankSchema),
+  const getLookup = useSelector((state: RootState) => state.lookup.data);
+
+  const forms = useForm<AlatbayarInput>({
+    resolver: zodResolver(AlatbayarSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
 
-      coa: 0,
-      keterangancoa: '',
-      coagantung: 0,
-      keterangancoagantung: '',
-
-      statusbank: 0,
-      textbank: '',
-
-      statusaktif: 0,
-      text: '',
+      statuslangsungcair: 0,
+      statuslangsungcair_text: '',
 
       statusdefault: 0,
-      textdefault: '',
+      statusdefault_text: '',
 
-      formatpenerimaan: 0,
-      formatpenerimaantext: '',
+      statusbank: 0,
+      statusbank_text: '',
 
-      formatpengeluaran: 0,
-      formatpengeluarantext: '',
-
-      formatpenerimaangantung: 0,
-      formatpenerimaangantungtext: '',
-
-      formatpengeluarangantung: 0,
-      formatpengeluarangantungtext: '',
-
-      formatpencairan: 0,
-      formatpencairantext: '',
-
-      formatrekappenerimaan: 0,
-      formatrekappenerimaantext: '',
-
-      formatrekappengeluaran: 0,
-      formatrekappengeluarantext: ''
+      statusaktif: 0,
+      text: ''
     }
   });
   const router = useRouter();
@@ -221,40 +177,26 @@ const GridBank = () => {
       keterangan: '',
       created_at: '',
       updated_at: '',
-      coa: '',
-      keterangancoa: '',
-      coagantung: '',
-      keterangancoagantung: '',
-      statusbank: '',
-      textbank: '',
-      statusaktif: '',
-      text: '',
+      statuslangsungcair: '',
+      statuslangsungcair_text: '',
       statusdefault: '',
-      textdefault: '',
-      formatpenerimaan: '',
-      formatpenerimaantext: '',
-      formatpengeluaran: '',
-      formatpengeluarantext: '',
-      formatpenerimaangantung: '',
-      formatpenerimaangantungtext: '',
-      formatpengeluarangantung: '',
-      formatpengeluarangantungtext: '',
-      formatpencairan: '',
-      formatpencairantext: '',
-      formatrekappenerimaan: '',
-      formatrekappenerimaantext: '',
-      formatrekappengeluaran: '',
-      formatrekappengeluarantext: ''
+      statusdefault_text: '',
+      statusbank: '',
+      statusbank_text: '',
+      statusaktif: '',
+      text: ''
     },
     sortBy: 'nama',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allBank, isLoading: isLoadingBank } = useGetBank({
-    ...filters,
-    page: currentPage
-  });
+  const { data: allAlatbayar, isLoading: isLoadingAlatbayar } = useGetAlatbayar(
+    {
+      ...filters,
+      page: currentPage
+    }
+  );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleColumnFilterChange = (
@@ -366,30 +308,14 @@ const GridBank = () => {
         keterangan: '',
         created_at: '',
         updated_at: '',
-        coa: '',
-        keterangancoa: '',
-        coagantung: '',
-        keterangancoagantung: '',
-        statusbank: '',
-        textbank: '',
-        statusaktif: '',
-        text: '',
+        statuslangsungcair: '',
+        statuslangsungcair_text: '',
         statusdefault: '',
-        textdefault: '',
-        formatpenerimaan: '',
-        formatpenerimaantext: '',
-        formatpengeluaran: '',
-        formatpengeluarantext: '',
-        formatpenerimaangantung: '',
-        formatpenerimaangantungtext: '',
-        formatpengeluarangantung: '',
-        formatpengeluarangantungtext: '',
-        formatpencairan: '',
-        formatpencairantext: '',
-        formatrekappenerimaan: '',
-        formatrekappenerimaantext: '',
-        formatrekappengeluaran: '',
-        formatrekappengeluarantext: ''
+        statusdefault_text: '',
+        statusbank: '',
+        statusbank_text: '',
+        statusaktif: '',
+        text: ''
       },
       search: searchValue,
       page: 1
@@ -466,9 +392,10 @@ const GridBank = () => {
     }));
     setInputValue('');
   };
-  console.log(forms.getValues());
+  // console.log(forms.getValues());
+  // console.log(getLookup);
 
-  const columns = useMemo((): Column<IBank>[] => {
+  const columns = useMemo((): Column<IAlatBayar>[] => {
     return [
       {
         key: 'nomor',
@@ -494,30 +421,14 @@ const GridBank = () => {
                     keterangan: '',
                     created_at: '',
                     updated_at: '',
-                    coa: '',
-                    keterangancoa: '',
-                    coagantung: '',
-                    keterangancoagantung: '',
-                    statusbank: '',
-                    textbank: '',
-                    statusaktif: '',
-                    text: '',
+                    statuslangsungcair: '',
+                    statuslangsungcair_text: '',
                     statusdefault: '',
-                    textdefault: '',
-                    formatpenerimaan: '',
-                    formatpenerimaantext: '',
-                    formatpengeluaran: '',
-                    formatpengeluarantext: '',
-                    formatpenerimaangantung: '',
-                    formatpenerimaangantungtext: '',
-                    formatpengeluarangantung: '',
-                    formatpengeluarangantungtext: '',
-                    formatpencairan: '',
-                    formatpencairantext: '',
-                    formatrekappenerimaan: '',
-                    formatrekappenerimaantext: '',
-                    formatrekappengeluaran: '',
-                    formatrekappengeluarantext: ''
+                    statusdefault_text: '',
+                    statusbank: '',
+                    statusbank_text: '',
+                    statusaktif: '',
+                    text: ''
                   }
                 }),
                   setInputValue('');
@@ -557,7 +468,7 @@ const GridBank = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IBank }) => (
+        renderCell: ({ row }: { row: IAlatBayar }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -719,32 +630,32 @@ const GridBank = () => {
         }
       },
       {
-        key: 'keterangancoa',
-        name: 'COA',
+        key: 'statuslangsungcair',
+        name: 'Status Langsung Cair',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('keterangancoa')}
+              onClick={() => handleSort('statuslangsungcair')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangancoa'
+                  filters.sortBy === 'statuslangsungcair'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                COA
+                Status Langsung Cair
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'keterangancoa' &&
+                {filters.sortBy === 'statuslangsungcair' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'keterangancoa' &&
+                ) : filters.sortBy === 'statuslangsungcair' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -756,7 +667,7 @@ const GridBank = () => {
               <Select
                 defaultValue=""
                 onValueChange={(value: any) => {
-                  handleColumnFilterChange('keterangancoa', value);
+                  handleColumnFilterChange('statuslangsungcair', value);
                 }}
               >
                 <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
@@ -767,15 +678,13 @@ const GridBank = () => {
                     <SelectItem className="cursor-pointer text-xs" value="">
                       <p className="text-sm font-normal">all</p>
                     </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
+                    {getLookup['STATUS NILAI']?.map((item: any) => (
                       <SelectItem
                         key={item.id}
                         className="cursor-pointer text-xs"
                         value={item.id}
                       >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
+                        <p className="text-sm font-normal">{item.text}</p>
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -787,38 +696,38 @@ const GridBank = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.keterangancoa || ''}
+              {props.row.statuslangsungcair_text || ''}
             </div>
           );
         }
       },
       {
-        key: 'coagantung',
-        name: 'COA GANTUNG',
+        key: 'statusdefault',
+        name: 'Status Default',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('keterangancoagantung')}
+              onClick={() => handleSort('statusdefault')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangancoagantung'
+                  filters.sortBy === 'statusdefault'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                COA GANTUNG
+                Status Default
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'keterangancoagantung' &&
+                {filters.sortBy === 'statusdefault' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'keterangancoagantung' &&
+                ) : filters.sortBy === 'statusdefault' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -830,7 +739,7 @@ const GridBank = () => {
               <Select
                 defaultValue=""
                 onValueChange={(value: any) => {
-                  handleColumnFilterChange('keterangancoagantung', value);
+                  handleColumnFilterChange('statusdefault', value);
                 }}
               >
                 <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
@@ -841,15 +750,13 @@ const GridBank = () => {
                     <SelectItem className="cursor-pointer text-xs" value="">
                       <p className="text-sm font-normal">all</p>
                     </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
+                    {getLookup['STATUS NILAI']?.map((item: any) => (
                       <SelectItem
                         key={item.id}
                         className="cursor-pointer text-xs"
                         value={item.id}
                       >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
+                        <p className="text-sm font-normal">{item.text}</p>
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -859,10 +766,9 @@ const GridBank = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangancoagantung || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.keterangancoagantung || ''}
+              {props.row.statusdefault_text || ''}
             </div>
           );
         }
@@ -905,7 +811,7 @@ const GridBank = () => {
               <Select
                 defaultValue=""
                 onValueChange={(value: any) => {
-                  handleColumnFilterChange('textbank', value);
+                  handleColumnFilterChange('statusbank', value);
                 }}
               >
                 <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
@@ -916,7 +822,7 @@ const GridBank = () => {
                     <SelectItem className="cursor-pointer text-xs" value="">
                       <p className="text-sm font-normal">all</p>
                     </SelectItem>
-                    {getCoa['STATUS BANK']?.map((item: any) => (
+                    {getLookup['STATUS BANK']?.map((item: any) => (
                       <SelectItem
                         key={item.id}
                         className="cursor-pointer text-xs"
@@ -932,10 +838,9 @@ const GridBank = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.textbank || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.textbank || ''}
+              {props.row.statusbank_text || ''}
             </div>
           );
         }
@@ -978,7 +883,7 @@ const GridBank = () => {
               <Select
                 defaultValue=""
                 onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
+                  handleColumnFilterChange('statusaktif', value);
                 }}
               >
                 <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
@@ -989,7 +894,7 @@ const GridBank = () => {
                     <SelectItem className="cursor-pointer text-xs" value="">
                       <p className="text-sm font-normal">all</p>
                     </SelectItem>
-                    {getCoa['STATUS AKTIF']?.map((item: any) => (
+                    {getLookup['STATUS AKTIF']?.map((item: any) => (
                       <SelectItem
                         key={item.id}
                         className="cursor-pointer text-xs"
@@ -1027,600 +932,6 @@ const GridBank = () => {
             );
           }
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'statusdefault',
-        name: 'Status Default',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('statusdefault')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'statusdefault'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Status Default
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'statusdefault' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'statusdefault' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('textdefault', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['STATUS NILAI']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.textdefault || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpenerimaan',
-        name: 'Format Penerimaan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpenerimaan')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpenerimaan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Penerimaan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpenerimaan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpenerimaan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('formatpenerimaantext', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['PENERIMAAN']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatpenerimaantext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpenerimaantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpengeluaran',
-        name: 'Format Pengeluaran',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpengeluaran')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpengeluaran'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Pengeluaran
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpengeluaran' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpengeluaran' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('formatpengeluarantext', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['PENGELUARAN']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatpengeluarantext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpengeluarantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpenerimaangantung',
-        name: 'Format Penerimaan Gantung',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpenerimaangantung')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpenerimaangantung'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Penerimaan Gantung
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpenerimaangantung' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpenerimaangantung' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange(
-                    'formatpenerimaangantungtext',
-                    value
-                  );
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['PENERIMAAN GANTUNG']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter =
-            filters.filters.formatpenerimaangantungtext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpenerimaangantungtext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpengeluarangantung',
-        name: 'Format Pengeluaran Gantung',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpengeluarangantung')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpengeluarangantung'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Pengeluaran Gantung
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpengeluarangantung' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpengeluarangantung' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange(
-                    'formatpengeluarangantungtext',
-                    value
-                  );
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['PENGELUARAN GANTUNG']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter =
-            filters.filters.formatpengeluarangantungtext || '';
-
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpengeluarangantungtext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpencairan',
-        name: 'Format Pencairan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpencairan')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpencairan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Pencairan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpencairan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpencairan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('formatpencairantext', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['PENCAIRAN']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatpencairantext || '';
-
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpencairantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatrekappenerimaan',
-        name: 'Format Rekap Penerimaan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatrekappenerimaan')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatrekappenerimaan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Rekap Penerimaan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatrekappenerimaan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatrekappenerimaan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('formatrekappenerimaantext', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['REKAP PENERIMAAN']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatrekappenerimaantext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatrekappenerimaantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatrekappengeluaran',
-        name: 'Format Rekap Pengeluaran',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatrekappengeluaran')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatrekappengeluaran'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Rekap Pengeluaran
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatrekappengeluaran' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatrekappengeluaran' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('formatrekappengeluarantext', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['REKAP PENGELUARAN']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatrekappengeluarantext || '';
-
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatrekappengeluarantext || ''}
-            </div>
-          );
         }
       },
       {
@@ -1772,7 +1083,7 @@ const GridBank = () => {
         }
       }
     ];
-  }, [filters, checkedRows, isAllSelected, rows, getCoa]);
+  }, [filters, checkedRows, isAllSelected, rows, getLookup]);
 
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
@@ -1790,7 +1101,7 @@ const GridBank = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridBank', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridAlatbayar', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1805,7 +1116,7 @@ const GridBank = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridBank', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridAlatbayar', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1822,7 +1133,7 @@ const GridBank = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingBank || !hasMore || rows.length === 0) return;
+    if (isLoadingAlatbayar || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1849,7 +1160,7 @@ const GridBank = () => {
     }
   }
 
-  function handleCellClick(args: { row: IBank }) {
+  function handleCellClick(args: { row: IAlatBayar }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1857,7 +1168,7 @@ const GridBank = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IBank>,
+    args: CellKeyDownArgs<IAlatBayar>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1921,7 +1232,7 @@ const GridBank = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/bank-allItems`);
+          const response = await api2.get(`/redis/get/alatbayar-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1947,13 +1258,13 @@ const GridBank = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: BankInput, keepOpenModal = false) => {
+  const onSubmit = async (values: AlatbayarInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteBank(selectedRowId as unknown as string, {
+          await deleteAlatbayar(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1975,7 +1286,7 @@ const GridBank = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createBank(
+        const newOrder = await createAlatbayar(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1991,7 +1302,7 @@ const GridBank = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateBank(
+        await updateAlatbayar(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
@@ -2000,7 +1311,7 @@ const GridBank = () => {
             onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
           }
         );
-        queryClient.invalidateQueries('bank');
+        queryClient.invalidateQueries('alatbayar');
       }
     } catch (error) {
       console.error(error);
@@ -2026,26 +1337,6 @@ const GridBank = () => {
     if (selectedRow !== null) {
       setMode('view');
       setPopOver(true);
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      const { page, limit, ...filtersWithoutLimit } = filters;
-
-      const response = await exportBankFn(filtersWithoutLimit); // Kirim data tanpa pagination
-
-      // Buat link untuk mendownload file
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(response);
-      link.href = url;
-      link.download = `laporan_bank${Date.now()}.xlsx`; // Nama file yang diunduh
-      link.click(); // Trigger download
-
-      // Revoke URL setelah download
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting bank data:', error);
     }
   };
 
@@ -2083,68 +1374,6 @@ const GridBank = () => {
   //   }
   // };
 
-  const handleReport = async () => {
-    const { page, limit, ...filtersWithoutLimit } = filters;
-    const response = await getBankFn(filtersWithoutLimit);
-    const reportRows = response.data.map((row) => ({
-      ...row,
-      judullaporan: 'Laporan Bank',
-      usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
-      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-    }));
-
-    // localStorage.setItem('reportData', JSON.stringify(reportRows));
-    // window.open('/reports/bank', '_blank');
-    // Dynamically import Stimulsoft and generate the PDF report
-    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-      .then((module) => {
-        const { Stimulsoft } = module;
-        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/tahoma.ttf',
-          'Arial'
-        );
-        Stimulsoft.Base.StiLicense.Key =
-          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-        const report = new Stimulsoft.Report.StiReport();
-        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-
-        // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanBank.mrt');
-        report.dictionary.dataSources.clear();
-        dataSet.readJson({ data: reportRows });
-        report.regData(dataSet.dataSetName, '', dataSet);
-        report.dictionary.synchronize();
-
-        // Render the report asynchronously
-        report.renderAsync(() => {
-          // Export the report to PDF asynchronously
-          report.exportDocumentAsync((pdfData: any) => {
-            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-              type: 'application/pdf'
-            });
-            const pdfUrl = URL.createObjectURL(pdfBlob);
-
-            // Store the Blob URL in sessionStorage
-            sessionStorage.setItem('pdfUrl', pdfUrl);
-
-            // Navigate to the report page
-            window.open('/reports/bank', '_blank');
-          }, Stimulsoft.Report.StiExportFormat.Pdf);
-        });
-      })
-      .catch((error) => {
-        console.error('Failed to load Stimulsoft:', error);
-      });
-  };
-
   // const handleReportBySelect = async () => {
   //   if (checkedRows.size === 0) {
   //     alert({
@@ -2180,12 +1409,12 @@ const GridBank = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IBank) {
+  function getRowClass(row: IAlatBayar) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IBank) {
+  function rowKeyGetter(row: IAlatBayar) {
     return row.id;
   }
 
@@ -2277,7 +1506,7 @@ const GridBank = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridBank',
+        'GridAlatbayar',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -2381,7 +1610,7 @@ const GridBank = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridBank');
+    loadGridConfig(user.id, 'GridAlatbayar');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -2395,11 +1624,11 @@ const GridBank = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBank || isFetchingManually || isDataUpdated) return;
+    if (!allAlatbayar || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allBank.data || [];
+    const newRows = allAlatbayar.data || [];
 
-    setRows((prevRows) => {
+    setRows((prevRows: any) => {
       // Reset data if filter changes (first page)
       if (currentPage === 1 || filters !== prevFilters) {
         setCurrentPage(1); // Reset currentPage to 1
@@ -2415,14 +1644,14 @@ const GridBank = () => {
       return prevRows;
     });
 
-    if (allBank.pagination.totalPages) {
-      setTotalPages(allBank.pagination.totalPages);
+    if (allAlatbayar.pagination.totalPages) {
+      setTotalPages(allAlatbayar.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allBank, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allAlatbayar, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -2474,71 +1703,27 @@ const GridBank = () => {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
-      forms.setValue('coa', Number(rowData.coa));
-      forms.setValue('keterangancoa', rowData.keterangancoa);
+      forms.setValue('statuslangsungcair', Number(rowData.statuslangsungcair));
+      forms.setValue(
+        'statuslangsungcair_text',
+        rowData.statuslangsungcair_text
+      );
 
-      forms.setValue('coagantung', Number(rowData.coagantung));
-      forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
+      forms.setValue('statusdefault', Number(rowData.statusdefault));
+      forms.setValue('statusdefault_text', rowData.statusdefault_text);
 
       forms.setValue('statusbank', Number(rowData.statusbank));
-      forms.setValue('textbank', rowData.textbank);
+      forms.setValue('statusbank_text', rowData.statusbank_text);
 
       forms.setValue('statusaktif', Number(rowData.statusaktif));
       forms.setValue('text', rowData.text);
-
-      forms.setValue('statusdefault', Number(rowData.statusdefault));
-      forms.setValue('textdefault', rowData.textdefault);
-
-      forms.setValue('formatpenerimaan', Number(rowData.formatpenerimaan));
-      forms.setValue('formatpenerimaantext', rowData.formatpenerimaantext);
-
-      forms.setValue('formatpengeluaran', Number(rowData.formatpengeluaran));
-      forms.setValue('formatpengeluarantext', rowData.formatpengeluarantext);
-
-      forms.setValue(
-        'formatpenerimaangantung',
-        Number(rowData.formatpenerimaangantung)
-      );
-      forms.setValue(
-        'formatpenerimaangantungtext',
-        rowData.formatpenerimaangantungtext
-      );
-
-      forms.setValue(
-        'formatpengeluarangantung',
-        Number(rowData.formatpengeluarangantung)
-      );
-      forms.setValue(
-        'formatpengeluarangantungtext',
-        rowData.formatpengeluarangantungtext
-      );
-
-      forms.setValue('formatpencairan', Number(rowData.formatpencairan));
-      forms.setValue('formatpencairantext', rowData.formatpencairantext);
-
-      forms.setValue(
-        'formatrekappenerimaan',
-        Number(rowData.formatrekappenerimaan)
-      );
-      forms.setValue(
-        'formatrekappenerimaantext',
-        rowData.formatrekappenerimaantext
-      );
-
-      forms.setValue(
-        'formatrekappengeluaran',
-        Number(rowData.formatrekappengeluaran)
-      );
-      forms.setValue(
-        'formatrekappengeluarantext',
-        rowData.formatrekappengeluarantext
-      );
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
   console.log(forms.getValues());
+  console.log(getLookup);
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -2622,46 +1807,8 @@ const GridBank = () => {
             //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
             //   }
             // ]}
-            // dropdownMenus={[
-            //   {
-            //     label: 'Report',
-            //     icon: <FaPrint />,
-            //     className: 'bg-cyan-500 hover:bg-cyan-700',
-            //     actions: [
-            //       {
-            //         label: 'REPORT ALL',
-            //         onClick: () => handleReport(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       }
-            //       // ,
-            //       // {
-            //       //   label: 'REPORT BY SELECT',
-            //       //   onClick: () => handleReportBySelect(),
-            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       // }
-            //     ]
-            //   },
-            //   {
-            //     label: 'Export',
-            //     icon: <FaFileExport />,
-            //     className: 'bg-green-600 hover:bg-green-700',
-            //     actions: [
-            //       {
-            //         label: 'EXPORT ALL',
-            //         onClick: () => handleExport(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       }
-            //       // ,
-            //       // {
-            //       //   label: 'EXPORT BY SELECT',
-            //       //   // onClick: () => handleExportBySelect(),
-            //       //   className: 'bg-green-600 hover:bg-green-700'
-            //       // }
-            //     ]
-            //   }
-            // ]}
           />
-          {isLoadingBank ? <LoadRowsRenderer /> : null}
+          {isLoadingAlatbayar ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -2698,4 +1845,4 @@ const GridBank = () => {
   );
 };
 
-export default GridBank;
+export default GridAlatbayar;

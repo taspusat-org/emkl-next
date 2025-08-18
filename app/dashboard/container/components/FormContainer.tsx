@@ -44,7 +44,8 @@ const FormMenu = ({
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text'
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form

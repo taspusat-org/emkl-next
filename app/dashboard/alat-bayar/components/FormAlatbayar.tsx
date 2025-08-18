@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
@@ -19,7 +18,19 @@ import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
-const FormMenu = ({
+interface FormBankProps {
+  popOver: boolean;
+  setPopOver: (value: boolean) => void;
+  forms: any;
+  onSubmit: any;
+  mode: any;
+  handleClose: () => void;
+  isLoadingCreate: boolean;
+  isLoadingUpdate: boolean;
+  isLoadingDelete: boolean;
+}
+
+const FormBank = ({
   popOver,
   setPopOver,
   forms,
@@ -29,51 +40,86 @@ const FormMenu = ({
   isLoadingCreate,
   isLoadingUpdate,
   isLoadingDelete
-}: any) => {
-  const lookUpPropsCabang = [
+}: FormBankProps) => {
+  const lookUpPropsStatusLangsungCair = [
     {
-      columns: [{ key: 'namacabang', name: 'NAMACABANG' }],
-      // filterby: { class: 'system', method: 'get' },
-      labelLookup: 'CABANG LOOKUP',
+      columns: [{ key: 'text', name: 'STATUS NILAI' }],
+      labelLookup: 'STATUS LANGSUNG CAIR LOOKUP',
+      required: true,
       selectedRequired: false,
-      endpoint: 'cabang',
-      label: 'CABANG',
+      endpoint: 'parameter?grp=status+nilai',
+      label: 'STATUS LANGSUNG CAIR',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'namacabang',
+      postData: 'text',
+      useReduxStore: true,
       dataToPost: 'id'
     }
   ];
+
+  const lookUpPropsStatusDefault = [
+    {
+      columns: [{ key: 'text', name: 'STATUS NILAI' }],
+      labelLookup: 'STATUS DEFAULT LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'STATUS NILAI',
+      label: 'STATUS NILAI',
+      singleColumn: true,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'text',
+      useReduxStore: true,
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookUpPropsStatusBank = [
+    {
+      columns: [{ key: 'text', name: 'STATUS BANK' }],
+      labelLookup: 'STATUS BANK LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'STATUS BANK',
+      label: 'STATUS BANK',
+      singleColumn: true,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'text',
+      useReduxStore: true,
+      dataToPost: 'id'
+    }
+  ];
+
   const lookUpPropsStatusAktif = [
     {
-      columns: [{ key: 'text', name: 'NAMA' }],
-      // filterby: { class: 'system', method: 'get' },
+      columns: [{ key: 'text', name: 'STATUS' }],
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'parameter?grp=status+aktif',
+      endpoint: 'STATUS AKTIF',
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
+      useReduxStore: true,
       dataToPost: 'id'
     }
   ];
-  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
+
+  const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
+
   useEffect(() => {
-    // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Jika popOverDate ada nilainya, jangan lakukan apa-apa
       if (openName) {
         return;
       }
 
       const form = formRef.current;
-
       if (!form) return;
 
       const inputs = Array.from(
@@ -82,25 +128,24 @@ const FormMenu = ({
         (element) =>
           element.id !== 'image-dropzone' &&
           element.tagName !== 'BUTTON' &&
-          !element.hasAttribute('readonly') // Pengecualian jika input readonly
-      ) as HTMLElement[]; // Ambil semua input dalam form kecuali button dan readonly inputs
+          !element.hasAttribute('readonly')
+      ) as HTMLElement[];
 
       const focusedElement = document.activeElement as HTMLElement;
 
-      // Cek apakah elemen yang difokuskan adalah dropzone
       const isImageDropzone =
         document.querySelector('input#image-dropzone') === focusedElement;
       const isFileInput =
         document.querySelector('input#file-input') === focusedElement;
 
-      if (isImageDropzone || isFileInput) return; // Jangan pindah fokus jika elemen fokus adalah dropzone atau input file
+      if (isImageDropzone || isFileInput) return;
 
       let nextElement: HTMLElement | null = null;
 
       if (event.key === 'ArrowDown' || event.key === 'Tab') {
         nextElement = getNextFocusableElement(inputs, focusedElement, 'down');
         if (event.key === 'Tab') {
-          event.preventDefault(); // Cegah default tab behavior jika ingin mengontrol pergerakan fokus
+          event.preventDefault();
         }
       } else if (
         event.key === 'ArrowUp' ||
@@ -108,13 +153,12 @@ const FormMenu = ({
       ) {
         nextElement = getNextFocusableElement(inputs, focusedElement, 'up');
       }
-      // Jika ditemukan input selanjutnya, pindahkan fokus
+
       if (nextElement) {
         nextElement.focus();
       }
     };
 
-    // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
     const getNextFocusableElement = (
       inputs: HTMLElement[],
       currentElement: HTMLElement,
@@ -123,24 +167,21 @@ const FormMenu = ({
       const index = Array.from(inputs).indexOf(currentElement as any);
 
       if (direction === 'down') {
-        // Jika sudah di input terakhir, tidak perlu pindah fokus
         if (index === inputs.length - 1) {
-          return null; // Tidak ada elemen selanjutnya
+          return null;
         }
-        return inputs[index + 1]; // Fokus pindah ke input setelahnya
+        return inputs[index + 1];
       } else {
-        return inputs[index - 1]; // Fokus pindah ke input sebelumnya
+        return inputs[index - 1];
       }
     };
 
-    // Menambahkan event listener untuk keydown
     document.addEventListener('keydown', handleKeyDown);
-
-    // Membersihkan event listener ketika komponen tidak lagi digunakan
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [openName]); // Tambahkan popOverDate sebagai dependensi
+  }, [openName]);
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -148,12 +189,12 @@ const FormMenu = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Tujuan Kapal Form'
+              ? 'Tambah Alat Bayar Form'
               : mode === 'edit'
-              ? 'Edit Tujuan Kapal Form'
+              ? 'Edit Alat Bayar Form'
               : mode === 'delete'
-              ? 'Delete Tujuan Kapal Form'
-              : 'View Tujuan Kapal Form'}
+              ? 'Delete Alat Bayar Form'
+              : 'View Alat Bayar Form'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -165,12 +206,16 @@ const FormMenu = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
+
         <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="h-full bg-white px-5 py-3">
+          <div className="min-h-full bg-white px-5 py-3 lg:h-full">
             <Form {...forms}>
               <form
                 ref={formRef}
-                onSubmit={onSubmit}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  onSubmit(false);
+                }}
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
@@ -199,13 +244,17 @@ const FormMenu = ({
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     name="keterangan"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                          Keterangan
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          KETERANGAN
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -221,27 +270,81 @@ const FormMenu = ({
                       </FormItem>
                     )}
                   />
+
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Nama Cabang
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Langsung Cair
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsCabang.map((props, index) => (
+                      {lookUpPropsStatusLangsungCair.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('cabang_id', Number(id))
-                          }
-                          inputLookupValue={forms.getValues('cabang_id')}
-                          lookupNama={forms.getValues('namacabang')}
+                          lookupValue={(id) => {
+                            forms.setValue('statuslangsungcair', Number(id));
+                          }}
+                          lookupNama={forms.getValues(
+                            'statuslangsungcair_text'
+                          )}
                           disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>
                   </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Default
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatusDefault.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) => {
+                            forms.setValue('statusdefault', Number(id));
+                          }}
+                          lookupNama={forms.getValues('statusdefault_text')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Bank
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatusBank.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) => {
+                            forms.setValue('statusbank', Number(id));
+                          }}
+                          lookupNama={forms.getValues('textbank')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
@@ -256,11 +359,10 @@ const FormMenu = ({
                         <LookUp
                           key={index}
                           {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('statusaktif', id)
-                          }
-                          inputLookupValue={forms.getValues('statusaktif')}
-                          lookupNama={forms.getValues('statusaktif_nama')}
+                          lookupValue={(id) => {
+                            forms.setValue('statusaktif', id);
+                          }}
+                          lookupNama={forms.getValues('text')}
                           disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
@@ -271,6 +373,7 @@ const FormMenu = ({
             </Form>
           </div>
         </div>
+
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
@@ -327,4 +430,4 @@ const FormMenu = ({
   );
 };
 
-export default FormMenu;
+export default FormBank;

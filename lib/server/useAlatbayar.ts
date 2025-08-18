@@ -3,28 +3,21 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteBankFn,
-  getBankFn,
-  storeBankFn,
-  updateBankFn
-} from '../apis/bank.api';
+  deleteAlatbayarFn,
+  getAlatbayarFn,
+  storeAlatbayarFn,
+  updateAlatbayarFn
+} from '../apis/alatbayar.api';
 import { useAlert } from '../store/client/useAlert';
 
-export const useGetBank = (
+export const useGetAlatbayar = (
   filters: {
     filters?: {
       nama?: string;
-      keterangan?: string;
-      keterangancoa?: string;
-      keterangancoagantung?: string;
-      textbank?: string;
+      statuslangsungcair_text?: string;
+      statusdefault_text?: string;
+      statusbank_text?: string;
       text?: string;
-      formatpenerimaantext?: string;
-      formatpenerimaangantungtext?: string;
-      formatpengeluarangantungtext?: string;
-      formatpencairantext?: string;
-      formatrekappenerimaantext?: string;
-      formatrekappengeluarantext?: string;
       created_at?: string;
       updated_at?: string;
     };
@@ -35,17 +28,20 @@ export const useGetBank = (
     search?: string; // Kata kunci pencarian
   } = {}
 ) => {
-  return useQuery(['bank', filters], async () => await getBankFn(filters));
+  return useQuery(
+    ['alatbayar', filters],
+    async () => await getAlatbayarFn(filters)
+  );
 };
 
-export const useCreateBank = () => {
+export const useCreateAlatbayar = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeBankFn, {
+  return useMutation(storeAlatbayarFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('alatbayar');
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -65,13 +61,13 @@ export const useCreateBank = () => {
   });
 };
 
-export const useDeleteBank = () => {
+export const useDeleteAlatbayar = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteBankFn, {
+  return useMutation(deleteAlatbayarFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('alatbayar');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'
@@ -89,13 +85,13 @@ export const useDeleteBank = () => {
     }
   });
 };
-export const useUpdateBank = () => {
+export const useUpdateAlatbayar = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateBankFn, {
+  return useMutation(updateAlatbayarFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('alatbayar');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'

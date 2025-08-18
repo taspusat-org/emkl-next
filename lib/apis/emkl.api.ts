@@ -1,50 +1,50 @@
 import { GetParams } from '../types/all.type';
-import { IAllBank, IBank } from '../types/bank.type';
+import { IAllEmkl, IEmkl } from '../types/emkl.type';
 import { buildQueryParams } from '../utils';
 import { api, api2 } from '../utils/AxiosInstance';
-import { BankInput } from '../validations/bank.validation';
+import { emklInput } from '../validations/emkl.validation';
 
 interface UpdateMenuParams {
   id: string;
-  fields: BankInput;
+  fields: emklInput;
 }
 
-export const getBankFn = async (filters: GetParams = {}): Promise<IAllBank> => {
+export const getEmklFn = async (filters: GetParams = {}): Promise<IAllEmkl> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/bank', { params: queryParams });
+    const response = await api2.get('/emkl', { params: queryParams });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching bank:', error);
-    throw new Error('Failed to fetch bank');
+    console.error('Error fetching harga emkl:', error);
+    throw new Error('Failed to fetch harga emkl');
   }
 };
-export const deleteBankFn = async (id: string) => {
+export const deleteEmklFn = async (id: string) => {
   try {
-    const response = await api2.delete(`/bank/${id}`);
+    const response = await api2.delete(`/emkl/${id}`);
     return response.data; // Optionally return response data if needed
   } catch (error) {
     console.error('Error deleting order:', error);
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
-export const updateBankFn = async ({ id, fields }: UpdateMenuParams) => {
-  const response = await api2.put(`/bank/update/${id}`, fields);
+export const updateEmklFn = async ({ id, fields }: UpdateMenuParams) => {
+  const response = await api2.put(`/emkl/update/${id}`, fields);
   return response.data;
 };
 
-export const storeBankFn = async (fields: BankInput) => {
-  const response = await api2.post(`/bank`, fields);
+export const storeEmklFn = async (fields: emklInput) => {
+  const response = await api2.post(`/emkl`, fields);
 
   return response.data;
 };
 
-export const exportBankFn = async (filters: any): Promise<any> => {
+export const exportEmklFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanbank', {
+    const response = await api2.get('/laporanemkl', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
@@ -55,6 +55,21 @@ export const exportBankFn = async (filters: any): Promise<any> => {
     throw new Error('Failed to export data');
   }
 };
+
+// export const exportMenuFn = async (filters: any): Promise<any> => {
+//   try {
+//     const queryParams = buildQueryParams(filters);
+//     const response = await api2.get('/menu/export', {
+//       params: queryParams,
+//       responseType: 'blob' // Pastikan respon dalam bentuk Blob
+//     });
+
+//     return response.data; // Return the Blob file from response
+//   } catch (error) {
+//     console.error('Error exporting data:', error);
+//     throw new Error('Failed to export data');
+//   }
+// };
 
 // Correctly typed 'ids' and sending proper data format to the NestJS API
 // export const reportMenuBySelectFn = async (ids: { id: number }[]) => {
