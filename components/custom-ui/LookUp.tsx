@@ -982,9 +982,11 @@ export default function LookUp({
             const defaultRow = filteredRows.find(
               (row: any) => row.default === 'YA'
             );
-            setInputValue(defaultRow?.text);
-            if (lookupValue) {
-              lookupValue(defaultRow[dataToPost as string] || defaultRow?.id);
+            if (defaultRow) {
+              setInputValue(defaultRow?.text);
+              if (lookupValue) {
+                lookupValue(defaultRow?.id);
+              }
             }
           }
         }

@@ -327,7 +327,13 @@ const FormBank = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Bank Form
+            {mode === 'add'
+              ? 'Tambah Bank Form'
+              : mode === 'edit'
+              ? 'Edit Bank Form'
+              : mode === 'delete'
+              ? 'Delete Bank Form'
+              : 'View Bank Form'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
