@@ -39,7 +39,11 @@ import {
   FaShip
 } from 'react-icons/fa';
 import { FaBuildingUser } from 'react-icons/fa6';
-import { MdAccountBalance } from 'react-icons/md';
+import { MdAccountBalance, MdOutlinePayments } from 'react-icons/md';
+import { TbReportMoney } from 'react-icons/tb';
+import { IoIosPricetags } from 'react-icons/io';
+import { BiSolidReport } from 'react-icons/bi';
+import { PiShippingContainerFill } from 'react-icons/pi';
 export type IconComponent = React.ComponentType<{
   className?: string;
   size?: string;
@@ -83,6 +87,11 @@ const iconMap: Record<string, IconComponent> = {
   ACCOUNTING: MdAccountBalance,
   CARGO: GiCargoShip,
   CARGOCONTAINER: GiCargoCrate,
+  PAYMENT: MdOutlinePayments,
+  PAYMENTREPORT: TbReportMoney,
+  PRICE: IoIosPricetags,
+  REPORTDATA: BiSolidReport,
+  CONTAINER: PiShippingContainerFill,
   BANK: BsBank
 };
 
