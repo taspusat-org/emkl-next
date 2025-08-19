@@ -33,7 +33,6 @@ const FormTypeAkuntansi = ({
   isLoadingDelete
 }: any) => {
   const { errors, setError } = useFormError(); // Mengakses errors dan setError
-  console.log('errors', errors);
   const lookupPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
@@ -68,6 +67,9 @@ const FormTypeAkuntansi = ({
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const selectLookup = useSelector(
+    (state: RootState) => state.selectLookup.selectLookup
+  );
   const dispatch = useDispatch();
 
   useEffect(() => {
