@@ -46,7 +46,6 @@ import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
 import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
-import InputDateTimePicker from '@/components/custom-ui/InputDateTimePicker';
 const FormKasGantung = ({
   popOver,
   setPopOver,
@@ -694,16 +693,24 @@ const FormKasGantung = ({
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
-                              <InputDateTimePicker
+                              <InputDatePicker
+                                value={field.value}
+                                onChange={field.onChange}
+                                showCalendar
+                                onSelect={(date) =>
+                                  forms.setValue('tglbukti', date)
+                                }
+                              />
+                              {/* <InputDateTimePicker
                                 value={field.value} // '' saat kosong
                                 onChange={field.onChange} // string keluar (mis. "16-08-2025 09:25 AM")
                                 showCalendar
                                 showTime // aktifkan 12h + AM/PM
-                                minuteStep={5}
+                                minuteStep={1}
                                 fromYear={1960}
                                 toYear={2035}
                                 // outputFormat="dd-MM-yyyy hh:mm a" // default sudah begini saat showTime
-                              />
+                              /> */}
                             </FormControl>
                             <FormMessage />
                           </div>

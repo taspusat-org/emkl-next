@@ -508,11 +508,12 @@ export default function LookUp({
     if (isAtBottom(event)) {
       const nextPage = findUnfetchedPage(1);
       if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
+        console.log('masuk', nextPage);
         setCurrentPage(nextPage);
       }
     }
   }
-
+  console.log('currentPage', currentPage);
   function handleCellClick(args: any) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -934,80 +935,90 @@ export default function LookUp({
   const hasFetchedRef = useRef(false); // Menandakan apakah sudah pernah fetch
 
   useEffect(() => {
-    // Jangan lakukan fetch jika lookup tidak terbuka
+    if (type === 'local' || !endpoint || !open) {
+      // Mode local tetap seperti sebelumnya
+      const filteredRows = data ? applyFilters(data) : [];
 
-    // Reset hasFetched ketika filter berubah
-    if (hasFetchedRef.current && !shallowEqual(filters, prevFilters)) {
-      console.log('masul');
-      hasFetchedRef.current = false;
-    }
-    console.log('hasFetchedRef.current', hasFetchedRef.current);
-    if (!hasFetchedRef.current) {
-      if (type !== 'local' && endpoint) {
-        setIsLoading(true); // Mulai loading sebelum fetch
-        abortRef.current?.abort('Effect re-run'); // Batalkan request sebelumnya
-        const controller = new AbortController();
-        abortRef.current = controller;
-
-        const myRequestId = ++requestIdRef.current; // Track request ID
-
-        (async () => {
-          try {
-            const newRows = await fetchRows(controller.signal); // Fetch data dari API
-
-            // Hanya update rows jika request ID masih sesuai (menghindari double-fetch)
-            if (myRequestId !== requestIdRef.current) return;
-            setRows(applyFilters(newRows));
-            setPrevFilters(filters); // Update prevFilters agar tidak terjadi loop
-            setIsFirstLoad(false); // Tandai fetch pertama selesai
-            hasFetchedRef.current = true; // Tandai fetch sudah dilakukan
-          } catch (error) {
-            console.error('Failed to fetch rows', error); // Log error jika terjadi masalah
-          } finally {
-            // Pastikan setIsLoading(false) hanya dipanggil setelah fetching selesai
-            if (myRequestId === requestIdRef.current) {
-              setIsLoading(false); // Akhiri loading
-              setIsFetching(false); // Mengindikasikan bahwa fetch selesai
-            }
-          }
-        })();
-
-        return () => controller.abort(); // Cleanup: Batalkan fetch jika effect dihentikan
-      } else {
-        // Filter data lokal jika tidak menggunakan API
-        const filteredRows = data ? applyFilters(data) : [];
-        console.log('isDefault', isdefault);
-        if (isdefault && !lookupNama) {
-          if (isdefault === 'YA') {
-            const defaultRow = filteredRows.find(
-              (row: any) => row.default === 'YA'
-            );
-            if (defaultRow) {
-              setInputValue(defaultRow?.text);
-              if (lookupValue) {
-                lookupValue(defaultRow?.id);
-              }
+      // Check if we're not clearing input and lookupNama is undefined
+      if (isdefault && !lookupNama && !deleteClicked) {
+        // Only set default value if inputValue is empty (cleared)
+        if (isdefault === 'YA') {
+          const defaultRow = filteredRows.find(
+            (row: any) => row.default === 'YA'
+          );
+          if (defaultRow && !clicked) {
+            setInputValue(defaultRow?.text);
+            if (lookupValue) {
+              lookupValue(defaultRow[dataToPost as string] || defaultRow?.id);
             }
           }
         }
-
-        setRows(filteredRows); // Set filtered rows
-        setIsLoading(false); // Selesaikan loading
-        hasFetchedRef.current = true; // Tandai fetch sudah selesai
       }
+
+      setRows(filteredRows);
+      setIsLoading(false);
+      return;
     }
+
+    setIsLoading(true);
+    abortRef.current?.abort('Effect re-run');
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const myRequestId = ++requestIdRef.current;
+
+    (async () => {
+      try {
+        const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
+
+        if (myRequestId !== requestIdRef.current) return;
+
+        setRows((prev) => {
+          const mapped = applyFilters(newRows);
+          if (currentPage === 1) return mapped;
+
+          // append + dedup by id
+          const seen = new Set<number | string>();
+          const merged = [...prev, ...mapped].filter((r) => {
+            const k = r.id;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+          return merged;
+        });
+
+        // tandai halaman ini sudah diambil
+        setFetchedPages((prev) => {
+          const s = new Set(prev);
+          s.add(currentPage);
+          return s;
+        });
+
+        // update hasMore berdasar totalPages
+        setHasMore(currentPage < totalPages);
+      } catch (err) {
+        if (myRequestId === requestIdRef.current) {
+          console.error('Failed to fetch rows', err);
+        }
+      } finally {
+        if (myRequestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
   }, [
     open,
-    openName,
-    filters, // Memastikan effect dipicu ketika filters berubah
-    currentPage,
-    fetchedPages,
-    type,
     endpoint,
-    data,
+    type,
+    currentPage,
+    filters,
     applyFilters,
-    prevFilters,
-    hasFetchedRef.current // Tidak gunakan state, cukup gunakan ref
+    totalPages,
+    deleteClicked,
+    clicked
   ]);
 
   useEffect(() => {
@@ -1159,13 +1170,6 @@ export default function LookUp({
         showError.label?.toLowerCase() === label?.toLowerCase() &&
         (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
-        console.log(
-          'showError.label',
-          label,
-          showError.label,
-          inputValue,
-          lookupNama
-        );
         setShowError({ label: label ?? '', status: true });
       } else {
         // Jika ada nilai, set error menjadi false
