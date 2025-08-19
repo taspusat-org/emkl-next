@@ -1,26 +1,29 @@
 import { GetParams } from '../types/all.type';
-import { IAllEmkl, IEmkl } from '../types/emkl.type';
+import { IAllEmkl } from '../types/emkl.type';
 import { buildQueryParams } from '../utils';
-import { api, api2 } from '../utils/AxiosInstance';
-import { emklInput } from '../validations/emkl.validation';
+import { api2 } from '../utils/AxiosInstance';
+import { EmklInput } from '../validations/emkl.validation';
 
-interface UpdateMenuParams {
+interface UpdateEmklParams {
   id: string;
-  fields: emklInput;
+  fields: EmklInput;
 }
-
 export const getEmklFn = async (filters: GetParams = {}): Promise<IAllEmkl> => {
   try {
     const queryParams = buildQueryParams(filters);
-
     const response = await api2.get('/emkl', { params: queryParams });
-
     return response.data;
   } catch (error) {
-    console.error('Error fetching harga emkl:', error);
-    throw new Error('Failed to fetch harga emkl');
+    console.error('Error fetching emkl:', error);
+    throw new Error('failed to fetch emkl');
   }
 };
+
+export const storeEmklFn = async (fields: EmklInput) => {
+  const response = await api2.post(`/emkl`, fields);
+  return response.data;
+};
+
 export const deleteEmklFn = async (id: string) => {
   try {
     const response = await api2.delete(`/emkl/${id}`);
@@ -30,14 +33,9 @@ export const deleteEmklFn = async (id: string) => {
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
-export const updateEmklFn = async ({ id, fields }: UpdateMenuParams) => {
-  const response = await api2.put(`/emkl/update/${id}`, fields);
-  return response.data;
-};
 
-export const storeEmklFn = async (fields: emklInput) => {
-  const response = await api2.post(`/emkl`, fields);
-
+export const updateEmklFn = async ({ id, fields }: UpdateEmklParams) => {
+  const response = await api2.put(`/emkl/${id}`, fields);
   return response.data;
 };
 

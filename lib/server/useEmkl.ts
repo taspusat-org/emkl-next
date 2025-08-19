@@ -1,7 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { useToast } from '@/hooks/use-toast';
-import { IErrorResponse } from '../types/user.type';
-import { AxiosError } from 'axios';
 import {
   deleteEmklFn,
   getEmklFn,
@@ -10,35 +7,49 @@ import {
 } from '../apis/emkl.api';
 import { useAlert } from '../store/client/useAlert';
 import { get } from 'http';
+import { useToast } from '@/hooks/use-toast';
+import { AxiosError } from 'axios';
+import { IErrorResponse } from '../types/user.type';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetEmkl = (
   filters: {
     filters?: {
-      emkl_text?: string;
-      keterangan?: string;
-      container_text?: string;
-      jenisorderan_text?: string;
-      nominal?: number;
-      text?: string;
+      nama?: string;
+      contactperson?: string;
+      alamat?: string;
+      coagiro_ket?: string;
+      coapiutang_ket?: string;
+      coahutang_ket?: string;
+      kota?: string;
+      kodepos?: string;
+      notelp?: string;
+      email?: string;
+      fax?: string;
+      alamatweb?: string;
+      top?: number | null;
+      npwp?: string;
+      namapajak?: string;
+      alamatpajak?: string;
     };
     page?: number;
     sortBy?: string;
     sortDirection?: string;
     limit?: number;
-    search?: string; // Kata kunci pencarian
+    search?: string;
   } = {}
 ) => {
-  return useQuery(['emkl', filters], async () => await getEmklFn(filters));
+  return useQuery(['emkls', filters], async () => await getEmklFn(filters));
 };
 
 export const useCreateEmkl = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { alert } = useAlert();
 
   return useMutation(storeEmklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('emkl');
+      void queryClient.invalidateQueries('emkls'); //pake s karena sebagai penamaan aja, karena kita pake mutasi, jadi pas crud dan ada data berubah kita ga fetch manual, pake ini aja asal keynya sama
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -46,13 +57,21 @@ export const useCreateEmkl = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
+        const errorFields = errorResponse.message || [];
+
+        // Iterasi error message dan set error di form
+        errorFields?.forEach((err: { path: string[]; message: string }) => {
+          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+          console.log('path', path);
+          setError(path, err.message); // Update error di context
         });
+
+        // toast({
+        //   variant: 'destructive',
+        //   title: errorResponse.message ?? 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda.'
+        // });
       }
     }
   });
@@ -64,7 +83,7 @@ export const useDeleteEmkl = () => {
 
   return useMutation(deleteEmklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('emkl');
+      void queryClient.invalidateQueries('emkls');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'
@@ -85,10 +104,11 @@ export const useDeleteEmkl = () => {
 export const useUpdateEmkl = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { setError } = useFormError();
 
   return useMutation(updateEmklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('emkl');
+      void queryClient.invalidateQueries('emkls');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'
@@ -97,11 +117,19 @@ export const useUpdateEmkl = () => {
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
+        const errorFields = errorResponse.message || [];
+
+        // Iterasi error message dan set error di form
+        errorFields?.forEach((err: { path: string[]; message: string }) => {
+          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+          console.log('path', path);
+          setError(path, err.message); // Update error di context
         });
+        // toast({
+        //   variant: 'destructive',
+        //   title: errorResponse.message ?? 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda.'
+        // });
       }
     }
   });
