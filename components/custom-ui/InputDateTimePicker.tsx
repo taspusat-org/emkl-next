@@ -170,7 +170,7 @@ const InputDateTimePicker = forwardRef<
         finalDate.setHours(parsed.getHours(), parsed.getMinutes(), 0, 0);
       }
       onChange(format(finalDate, outFmt));
-      setOpen(false);
+      // setOpen(false);
     };
 
     const setTimePart = (
@@ -441,6 +441,7 @@ const InputDateTimePicker = forwardRef<
                         const selected = (parsed?.getHours() % 12 || 12) === h;
                         return (
                           <Button
+                            type="button"
                             key={h}
                             size="icon"
                             variant={selected ? 'default' : 'ghost'}
@@ -464,6 +465,7 @@ const InputDateTimePicker = forwardRef<
                         const selected = parsed?.getMinutes() === min;
                         return (
                           <Button
+                            type="button"
                             key={min}
                             size="icon"
                             variant={selected ? 'default' : 'ghost'}
@@ -487,6 +489,7 @@ const InputDateTimePicker = forwardRef<
                           (ap === 'AM' && !isPM) || (ap === 'PM' && isPM);
                         return (
                           <Button
+                            type="button"
                             key={ap}
                             size="icon"
                             variant={selected ? 'default' : 'ghost'}
