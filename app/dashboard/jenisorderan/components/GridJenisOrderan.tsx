@@ -302,6 +302,7 @@ const GridJenisOrderan = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+  console.log(forms.getValues());
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
