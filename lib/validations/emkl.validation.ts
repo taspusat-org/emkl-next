@@ -1,44 +1,63 @@
-import { REQUIRED_FIELD } from '@/constants/validation';
 import { z } from 'zod';
 import { dynamicRequiredMessage } from '../utils';
+import { REQUIRED_FIELD } from '@/constants/validation';
 
 export const emklSchema = z.object({
-  id: z.number().min(1, { message: REQUIRED_FIELD }),
-
-  statusrelasi: z.number().nullable().optional(),
-  relasi_id: z.number().nullable().optional(),
-
-  nama: z
+  nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
+  contactperson: z
     .string()
     .trim()
-    .nonempty({ message: dynamicRequiredMessage('NAMA') }),
-
-  contactperson: z.string().nullable().optional(),
-  alamat: z.string().nullable().optional(),
-  coagiro: z.string().nullable().optional(),
-  coapiutang: z.string().nullable().optional(),
-  coahutang: z.string().nullable().optional(),
-  kota: z.string().nullable().optional(),
-  kodepos: z.string().nullable().optional(),
-  notelp: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
-  fax: z.string().nullable().optional(),
-  alamatweb: z.string().nullable().optional(),
-
-  top: z.number().nullable().optional(),
-
-  npwp: z.string().nullable().optional(),
-  namapajak: z.string().nullable().optional(),
-  alamatpajak: z.string().nullable().optional(),
-
-  statustrado: z.number().nullable().optional(),
-  statusaktif: z.number().min(1, { message: REQUIRED_FIELD }),
-
-  info: z.string().nullable().optional(),
-  modifiedby: z.string().nullable().optional(),
-
-  created_at: z.string().nullable().optional(),
-  updated_at: z.string().nullable().optional()
+    .nonempty({ message: dynamicRequiredMessage('CONTACT PERSON') }),
+  alamat: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('ALAMAT') }),
+  coagiro: z.string().trim().nullable().optional(),
+  coagiro_ket: z.string().trim().nullable().optional(),
+  coapiutang: z.string().trim().nullable().optional(),
+  coapiutang_ket: z.string().trim().nullable().optional(),
+  coahutang: z.string().trim().nullable().optional(),
+  coahutang_ket: z.string().trim().nullable().optional(),
+  kota: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('KOTA') }),
+  kodepos: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('KODE POS') }),
+  notelp: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('NO TELP') }),
+  email: z.string().trim().nullable().optional(),
+  fax: z.string().trim().nullable().optional(),
+  alamatweb: z.string().trim().nullable().optional(),
+  top: z
+    .number()
+    .int({ message: dynamicRequiredMessage('TOP Wajib Angka') })
+    .nonnegative({
+      message: dynamicRequiredMessage('TOP Tidak Boleh Angka Negatif')
+    }),
+  npwp: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('NPWP Wajib Diisi') })
+    .max(16),
+  namapajak: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('Nama Pajak Wajib Diisi') })
+    .max(255),
+  alamatpajak: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('Alamat Pajak Wajib Diisi') })
+    .max(255),
+  statustrado: z.number().min(1, `${REQUIRED_FIELD}`),
+  statusaktif: z.number().min(1, `${REQUIRED_FIELD}`),
+  statustrado_text: z.string().optional(),
+  statusaktif_text: z.string().optional(),
+  modifiedby: z.string().nullable().optional()
 });
-
-export type emklInput = z.infer<typeof emklSchema>;
+export type EmklInput = z.infer<typeof emklSchema>;
