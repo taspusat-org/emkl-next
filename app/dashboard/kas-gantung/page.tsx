@@ -9,7 +9,6 @@ import { useDispatch } from 'react-redux';
 import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 import { getRelasiFn } from '@/lib/apis/relasi.api';
 import { getBankFn } from '@/lib/apis/bank.api';
-import { getAlatBayarFn } from '@/lib/apis/alatbayar.api';
 import {
   setData,
   setDefault,
@@ -18,6 +17,7 @@ import {
 import GridKasGantungHeader from './components/GridKasGantungHeader';
 import GridKasGantungDetail from './components/GridKasGantungDetail';
 import FilterGrid from './components/FilterGrid';
+import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -36,7 +36,7 @@ const Page = () => {
         const [dataBank, dataAlatBayar, dataRelasi] =
           await Promise.all<ApiResponse>([
             getBankFn({ isLookUp: 'true' }),
-            getAlatBayarFn({ isLookUp: 'true' }),
+            getAlatbayarFn({ isLookUp: 'true' }),
             getRelasiFn({ isLookUp: 'true' })
           ]);
 

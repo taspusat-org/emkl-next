@@ -65,6 +65,7 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
@@ -73,7 +74,7 @@ interface Filter {
   filters: {
     title: string;
     parentId: string;
-    text: string;
+    statusaktif: string;
     icon: string;
     created_at: string;
     updated_at: string;
@@ -128,7 +129,7 @@ const GridMenu = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const forms = useForm<MenuInput>({
-    resolver: zodResolver(menuSchema),
+    resolver: zodResolver(menuSchema(mode as 'add' | 'edit' | 'delete')),
     mode: 'onSubmit',
     defaultValues: {
       title: '',
@@ -148,7 +149,7 @@ const GridMenu = () => {
       icon: '',
       created_at: '',
       updated_at: '',
-      text: ''
+      statusaktif: ''
     },
     search: '',
     sortBy: 'title',
@@ -257,7 +258,7 @@ const GridMenu = () => {
         icon: '',
         created_at: '',
         updated_at: '',
-        text: 'AKTIF'
+        statusaktif: 'AKTIF'
       },
       search: searchValue,
       page: 1
@@ -358,7 +359,7 @@ const GridMenu = () => {
                     title: '',
                     parentId: '',
                     icon: '',
-                    text: '',
+                    statusaktif: '',
                     created_at: '',
                     updated_at: ''
                   }
@@ -575,35 +576,16 @@ const GridMenu = () => {
               <p className="text-sm font-normal">Status Aktif</p>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                defaultValue="AKTIF"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),

@@ -484,7 +484,6 @@ const InputDateTimePicker = forwardRef<
                     <div className="flex p-2 sm:flex-col">
                       {['AM', 'PM'].map((ap) => {
                         const isPM = parsed?.getHours() >= 12;
-                        console.log('parsed?.getHours()', parsed?.getHours());
                         const selected =
                           (ap === 'AM' && !isPM) || (ap === 'PM' && isPM);
                         return (

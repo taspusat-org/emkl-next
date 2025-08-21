@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
-const IDLE_TIMEOUT = 10 * 60 * 1000; // 10 menit
+const IDLE_TIMEOUT = 60 * 60 * 1000; // 10 menit
 
 // Normalisasi ke epoch ms (number) secara aman di semua browser
 function toEpochMs(v: unknown): number {
