@@ -39,8 +39,10 @@ const FormJenisOrderan = ({
       label: 'status aktif',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
-      postData: 'text'
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
@@ -202,9 +204,8 @@ const FormJenisOrderan = ({
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('statusaktif', id)
+                            forms.setValue('statusaktif', Number(id))
                           }
-                          inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_text')}
                         />
                       ))}

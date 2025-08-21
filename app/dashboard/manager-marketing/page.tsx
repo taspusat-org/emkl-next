@@ -2,7 +2,6 @@
 
 import PageContainer from '@/components/layout/page-container';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import GridBank from './components/GridAlatbayar';
 import { fieldLength } from '@/lib/apis/field-length.api';
 
 import React, { useEffect } from 'react';
@@ -14,7 +13,13 @@ import {
   setDefault,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
+import GridKasGantungHeader from './components/GridManagerMarketingHeader';
+import GridKasGantungDetail from './components/GridManagerMarketingDetail';
 import { IParameter } from '@/lib/types/parameter.type';
+interface ApiResponse {
+  type: string;
+  data: any; // Define a more specific type for data if possible
+}
 
 const Page = () => {
   const dispatch = useDispatch();
@@ -33,7 +38,7 @@ const Page = () => {
           getStatusAktifLookup.type === 'local' &&
           getStatusAktifLookup.data
         ) {
-          const grpsToFilter = ['STATUS NILAI', 'STATUS BANK', 'STATUS AKTIF'];
+          const grpsToFilter = ['STATUS NILAI', 'STATUS AKTIF'];
 
           grpsToFilter.forEach((grp) => {
             const filteredData = getStatusAktifLookup.data.filter(
@@ -63,12 +68,14 @@ const Page = () => {
 
     fetchData();
   }, [dispatch]);
-
   return (
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-7 h-[600px]">
-          <GridBank />
+        <div className="col-span-10 h-[500px]">
+          <GridKasGantungHeader />
+        </div>
+        <div className="col-span-10 h-[500px]">
+          <GridKasGantungDetail />
         </div>
       </div>
     </PageContainer>

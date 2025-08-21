@@ -126,5 +126,29 @@
       "created_at": 250,
       "updated_at": 250
     }
+  },
+  "GridManagerMarketingHeader-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nama": 412,
+      "keterangan": 250,
+      "minimalprofit": 250,
+      "statusmentor": 150,
+      "statusleader": 150,
+      "statusaktif": 150
+    }
+  },
+  "GridManagerMarketingDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5],
+    "columnsWidth": {
+      "nominalawal": 150,
+      "nominalakhir": 199,
+      "persentase": 150,
+      "statusaktif": 150,
+      "created_at": 200,
+      "updated_at": 200
+    }
   }
 }

@@ -60,6 +60,7 @@ const FormCabang = ({
       label: 'periode cabang',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text'
     }
@@ -75,6 +76,7 @@ const FormCabang = ({
       label: 'MINUS CUTI',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text'
     }

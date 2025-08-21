@@ -39,8 +39,10 @@ const FormJenisMuatan = ({
       label: 'status aktif',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
-      postData: 'text'
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form

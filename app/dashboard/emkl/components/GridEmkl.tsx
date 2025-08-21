@@ -44,17 +44,19 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import {
-  PelayaranInput,
-  pelayaranSchema
-} from '@/lib/validations/pelayaran.validation';
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import { IEmkl } from '@/lib/types/emkl.type';
+import { EmklInput, emklSchema } from '@/lib/validations/emkl.validation';
 import {
-  useCreatePelayaran,
-  useDeletePelayaran,
-  useGetPelayaran,
-  useUpdatePelayaran
-} from '@/lib/server/usePelayaran';
-import { useGetRelasi } from '@/lib/server/useRelasi';
-import { IRelasi } from '@/lib/types/relasi.type';
+  useCreateEmkl,
+  useDeleteEmkl,
+  useGetEmkl,
+  useUpdateEmkl
+} from '@/lib/server/useEmkl';
+import FormEmkl from './FormEmkl';
+import { formatCurrency } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -62,17 +64,23 @@ interface Filter {
   search: string;
   filters: {
     nama: string;
-    statusrelasi_text: string;
+    contactperson: string;
+    alamat: string;
     coagiro_ket: string;
     coapiutang_ket: string;
     coahutang_ket: string;
-    statustitip_text: string;
-    titipcabang: string;
-    alamat: string;
+    kota: string;
+    kodepos: string;
+    notelp: string;
+    email: string;
+    fax: string;
+    alamatweb: string;
+    top: number | null;
     npwp: string;
     namapajak: string;
     alamatpajak: string;
     statusaktif_text: string;
+    statustrado_text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -85,17 +93,22 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridRelasi = () => {
+const GridEmkl = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
+  const { mutateAsync: createEmkl, isLoading: isLoadingCreate } =
+    useCreateEmkl();
+  const { mutateAsync: updateEmkl, isLoading: isLoadingUpdate } =
+    useUpdateEmkl();
+  const { mutateAsync: deleteEmkl, isLoading: isLoadingDelete } =
+    useDeleteEmkl();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
-  const [rows, setRows] = useState<IRelasi[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
@@ -113,6 +126,7 @@ const GridRelasi = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
+  const [rows, setRows] = useState<IEmkl[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -121,24 +135,49 @@ const GridRelasi = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-
+  const forms = useForm<EmklInput>({
+    resolver: zodResolver(emklSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      nama: '',
+      contactperson: '',
+      alamat: '',
+      kota: '',
+      kodepos: '',
+      notelp: '',
+      alamatweb: '',
+      email: '',
+      fax: '',
+      top: 0,
+      npwp: '',
+      namapajak: '',
+      alamatpajak: ''
+    }
+  });
+  console.log(forms.getValues());
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
     filters: {
       nama: '',
-      statusrelasi_text: '',
+      contactperson: '',
+      alamat: '',
       coagiro_ket: '',
       coapiutang_ket: '',
       coahutang_ket: '',
-      statustitip_text: '',
-      titipcabang: '',
-      alamat: '',
+      kota: '',
+      kodepos: '',
+      notelp: '',
+      email: '',
+      fax: '',
+      alamatweb: '',
+      top: null,
       npwp: '',
       namapajak: '',
       alamatpajak: '',
       statusaktif_text: '',
+      statustrado_text: '',
       modifiedby: '',
       created_at: '',
       updated_at: ''
@@ -149,7 +188,7 @@ const GridRelasi = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allRelasi, isLoading: isLoadingRelasi } = useGetRelasi({
+  const { data: allEmkl, isLoading: isLoadingEmkl } = useGetEmkl({
     ...filters,
     page: currentPage
   });
@@ -239,20 +278,27 @@ const GridRelasi = () => {
       ...prev,
       filters: {
         nama: '',
-        statusrelasi_text: '',
+        contactperson: '',
+        alamat: '',
         coagiro_ket: '',
         coapiutang_ket: '',
         coahutang_ket: '',
-        statustitip_text: '',
-        titipcabang: '',
-        alamat: '',
+        kota: '',
+        kodepos: '',
+        notelp: '',
+        email: '',
+        fax: '',
+        alamatweb: '',
+        top: null,
         npwp: '',
         namapajak: '',
         alamatpajak: '',
-        statusaktif_text: '',
+        statusaktif_text: 'AKTIF',
+        statustrado_text: '',
         modifiedby: '',
         created_at: '',
         updated_at: ''
+        // text: 'AKTIF'
       },
       search: searchValue,
       page: 1
@@ -328,7 +374,7 @@ const GridRelasi = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IRelasi>[] => {
+  const columns = useMemo((): Column<IEmkl>[] => {
     return [
       {
         key: 'nomor',
@@ -351,20 +397,27 @@ const GridRelasi = () => {
                   search: '',
                   filters: {
                     nama: '',
-                    statusrelasi_text: '',
+                    contactperson: '',
+                    alamat: '',
                     coagiro_ket: '',
                     coapiutang_ket: '',
                     coahutang_ket: '',
-                    statustitip_text: '',
-                    titipcabang: '',
-                    alamat: '',
+                    kota: '',
+                    kodepos: '',
+                    notelp: '',
+                    email: '',
+                    fax: '',
+                    alamatweb: '',
+                    top: null,
                     npwp: '',
                     namapajak: '',
                     alamatpajak: '',
                     statusaktif_text: '',
+                    statustrado_text: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: ''
+                    // text: ''
                   }
                 }),
                   setInputValue('');
@@ -385,6 +438,34 @@ const GridRelasi = () => {
             </div>
           );
         }
+      },
+      {
+        key: 'select',
+        name: '',
+        width: 50,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%]"></div>
+            <div className="flex h-[50%] w-full items-center justify-center">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={() => handleSelectAll()}
+                id="header-checkbox"
+                className="mb-2"
+              />
+            </div>
+          </div>
+        ),
+        renderCell: ({ row }: { row: IEmkl }) => (
+          <div className="flex h-full items-center justify-center">
+            <Checkbox
+              checked={checkedRows.has(row.id)}
+              onCheckedChange={() => handleRowSelect(row.id)}
+              id={`row-checkbox-${row.id}`}
+            />
+          </div>
+        )
       },
 
       {
@@ -461,8 +542,8 @@ const GridRelasi = () => {
         }
       },
       {
-        key: 'statusrelasi',
-        name: 'STATUS RELASI',
+        key: 'contactperson',
+        name: 'contactperson',
         resizable: true,
         draggable: true,
         width: 150,
@@ -471,81 +552,144 @@ const GridRelasi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('contactperson')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Status Relasi</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusrelasi_text', value);
-                }}
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'contactperson'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
               >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem className="text=xs cursor-pointer" value="EMKL">
-                      <p className="text-sm font-normal">EMKL</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="SHIPPER"
-                    >
-                      <p className="text-sm font-normal">SHIPPER</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="SUPPLIER"
-                    >
-                      <p className="text-sm font-normal">SUPPLIER</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="PELAYARAN"
-                    >
-                      <p className="text-sm font-normal">PELAYARAN</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                Contact Person
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'contactperson' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'contactperson' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['contactperson'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.contactperson.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('contactperson', value);
+                }}
+              />
+              {filters.filters.contactperson && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('contactperson', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const memoData = props.row.statusrelasi_memo
-            ? JSON.parse(props.row.statusrelasi_memo)
-            : null;
-
-          if (memoData) {
-            return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
-            );
-          }
-
-          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          const columnFilter = filters.filters.contactperson || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.contactperson !== null &&
+                  props.row.contactperson !== undefined
+                  ? props.row.contactperson
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
         }
       },
+      {
+        key: 'alamat',
+        name: 'alamat',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('alamat')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'alamat' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                Alamat
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'alamat' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'alamat' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
 
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['alamat'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.alamat.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('alamat', value);
+                }}
+              />
+              {filters.filters.alamat && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('alamat', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.alamat || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.alamat !== null && props.row.alamat !== undefined
+                  ? props.row.alamat
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
       {
         key: 'coagiro_ket',
         name: 'COA GIRO',
@@ -775,8 +919,8 @@ const GridRelasi = () => {
         }
       },
       {
-        key: 'statustitip',
-        name: 'STATUS TITIP',
+        key: 'kota',
+        name: 'KOTA',
         resizable: true,
         draggable: true,
         width: 150,
@@ -785,96 +929,21 @@ const GridRelasi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
-            >
-              <p className="text-sm font-normal">Status Titip</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statustitip_text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem className="text=xs cursor-pointer" value="YA">
-                      <p className="text-sm font-normal">YA</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK"
-                    >
-                      <p className="text-sm font-normal">TIDAK</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.statustitip_memo
-            ? JSON.parse(props.row.statustitip_memo)
-            : null;
-
-          if (memoData) {
-            return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
-            );
-          }
-
-          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'titipcabang',
-        name: 'TITIP CABANG',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('titipcabang')}
+              onClick={() => handleSort('kota')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'titipcabang'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'kota' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                TITIP CABANG
+                KOTA
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'titipcabang' &&
+                {filters.sortBy === 'kota' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'titipcabang' &&
+                ) : filters.sortBy === 'kota' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -886,19 +955,19 @@ const GridRelasi = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['titipcabang'] = el;
+                  inputColRefs.current['kota'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.titipcabang.toUpperCase() || ''}
+                value={filters.filters.kota.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('titipcabang', value);
+                  handleColumnFilterChange('kota', value);
                 }}
               />
-              {filters.filters.titipcabang && (
+              {filters.filters.kota && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('titipcabang', '')}
+                  onClick={() => handleColumnFilterChange('kota', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -908,13 +977,12 @@ const GridRelasi = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.titipcabang || '';
+          const columnFilter = filters.filters.kota || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.titipcabang !== null &&
-                  props.row.titipcabang !== undefined
-                  ? props.row.titipcabang
+                props.row.kota !== null && props.row.kota !== undefined
+                  ? props.row.kota
                   : '',
                 filters.search,
                 columnFilter
@@ -924,8 +992,8 @@ const GridRelasi = () => {
         }
       },
       {
-        key: 'alamat',
-        name: 'ALAMAT',
+        key: 'kodepos',
+        name: 'KODE POS',
         resizable: true,
         draggable: true,
         width: 150,
@@ -934,21 +1002,21 @@ const GridRelasi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('alamat')}
+              onClick={() => handleSort('kodepos')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'alamat' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'kodepos' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                ALAMAT
+                KODE POS
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'alamat' &&
+                {filters.sortBy === 'kodepos' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'alamat' &&
+                ) : filters.sortBy === 'kodepos' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -960,19 +1028,19 @@ const GridRelasi = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['alamat'] = el;
+                  inputColRefs.current['kodepos'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.alamat.toUpperCase() || ''}
+                value={filters.filters.kodepos.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('alamat', value);
+                  handleColumnFilterChange('kodepos', value);
                 }}
               />
-              {filters.filters.alamat && (
+              {filters.filters.kodepos && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('alamat', '')}
+                  onClick={() => handleColumnFilterChange('kodepos', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -982,16 +1050,376 @@ const GridRelasi = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.alamat || '';
+          const columnFilter = filters.filters.kodepos || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.alamat !== null && props.row.alamat !== undefined
-                  ? props.row.alamat
+                props.row.kodepos !== null && props.row.kodepos !== undefined
+                  ? props.row.kodepos
                   : '',
                 filters.search,
                 columnFilter
               )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'notelp',
+        name: 'NO TELP',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('notelp')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'notelp' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                NO TELP
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'notelp' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'notelp' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['notelp'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.notelp.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('notelp', value);
+                }}
+              />
+              {filters.filters.notelp && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('notelp', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.notelp || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.notelp !== null && props.row.notelp !== undefined
+                  ? props.row.notelp
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'email',
+        name: 'EMAIL',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('email')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'email' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                EMAIL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'email' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'email' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['email'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.email.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('email', value);
+                }}
+              />
+              {filters.filters.email && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('email', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.email || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.email !== null && props.row.email !== undefined
+                  ? props.row.email
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'fax',
+        name: 'FAX',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('fax')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'fax' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                FAX
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'fax' && filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'fax' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['fax'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.fax.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('fax', value);
+                }}
+              />
+              {filters.filters.fax && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('fax', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.fax || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.fax !== null && props.row.fax !== undefined
+                  ? props.row.fax
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'alamatweb',
+        name: 'WEB',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('alamatweb')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'alamatweb'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                WEB
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'alamatweb' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'alamatweb' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['alamatweb'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.alamatweb.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('alamatweb', value);
+                }}
+              />
+              {filters.filters.alamatweb && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('alamatweb', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.alamatweb || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.alamatweb !== null &&
+                  props.row.alamatweb !== undefined
+                  ? props.row.alamatweb
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'top',
+        name: 'TOP',
+        resizable: true,
+        draggable: true,
+        width: 50,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('top')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'top' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                TOP
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'top' && filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'top' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['top'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.top || 0}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('top', value);
+                }}
+              />
+              {filters.filters.top && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('top', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = Number(filters.filters.top) || 0;
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {formatCurrency(props.row.top)}
             </div>
           );
         }
@@ -1222,7 +1650,7 @@ const GridRelasi = () => {
         }
       },
       {
-        key: 'statusaktif',
+        key: 'statusaktif_text',
         name: 'STATUS AKTIF',
         resizable: true,
         draggable: true,
@@ -1259,9 +1687,9 @@ const GridRelasi = () => {
                     </SelectItem>
                     <SelectItem
                       className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
+                      value="NON AKTIF"
                     >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
+                      <p className="text-sm font-normal">NON AKTIF</p>
                     </SelectItem>
                   </SelectGroup>
                 </SelectContent>
@@ -1298,8 +1726,8 @@ const GridRelasi = () => {
         }
       },
       {
-        key: 'modifiedby',
-        name: 'MODIFIED BY',
+        key: 'statustrado_text',
+        name: 'STATUS TRADO',
         resizable: true,
         draggable: true,
         width: 150,
@@ -1308,25 +1736,97 @@ const GridRelasi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('modifiedby')}
               onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">Status Trado</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('statustrado_text', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="text=xs cursor-pointer" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="DALAM"
+                    >
+                      <p className="text-sm font-normal">DALAM</p>
+                    </SelectItem>
+                    <SelectItem className="text=xs cursor-pointer" value="LUAR">
+                      <p className="text-sm font-normal">LUAR</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statustrado_memo
+            ? JSON.parse(props.row.statustrado_memo)
+            : null;
+
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+
+      {
+        key: 'modifiedby',
+        name: 'Modified By',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('modifiedby')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'modifiedby'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                MODIFIED BY
+                Modified By
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'modifiedby' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1339,9 +1839,9 @@ const GridRelasi = () => {
                   inputColRefs.current['modifiedby'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.modifiedby.toUpperCase() || ''}
+                value={filters.filters.modifiedby || ''}
                 onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
+                  const value = e.target.value;
                   handleColumnFilterChange('modifiedby', value);
                 }}
               />
@@ -1362,10 +1862,7 @@ const GridRelasi = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.modifiedby !== null &&
-                  props.row.modifiedby !== undefined
-                  ? props.row.modifiedby
-                  : '',
+                props.row.modifiedby || '',
                 filters.search,
                 columnFilter
               )}
@@ -1487,7 +1984,7 @@ const GridRelasi = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
+                  inputColRefs.current['updated_at'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
@@ -1540,7 +2037,7 @@ const GridRelasi = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridRelasi', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridEmkl', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1555,7 +2052,7 @@ const GridRelasi = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridRelasi', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridEmkl', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1572,7 +2069,7 @@ const GridRelasi = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingRelasi || !hasMore || rows.length === 0) return;
+    if (isLoadingEmkl || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1599,7 +2096,7 @@ const GridRelasi = () => {
     }
   }
 
-  function handleCellClick(args: { row: IRelasi }) {
+  function handleCellClick(args: { row: IEmkl }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1607,7 +2104,7 @@ const GridRelasi = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IRelasi>,
+    args: CellKeyDownArgs<IEmkl>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1655,16 +2152,132 @@ const GridRelasi = () => {
       }
     }
   }
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    try {
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/emkl-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
+        }
+
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
+    } catch (error) {
+      console.error('Error during onSuccess:', error);
+      setIsFetchingManually(false);
+      setIsDataUpdated(false);
+    } finally {
+      // dispatch(setClearLookup(false));
+      setIsDataUpdated(false);
+    }
+  };
+  const onSubmit = async (values: EmklInput, keepOpenModal = false) => {
+    const selectedRowId = rows[selectedRow]?.id;
+    console.log('dasdads');
+    if (mode === 'delete') {
+      if (selectedRowId) {
+        await deleteEmkl(selectedRowId as unknown as string, {
+          onSuccess: () => {
+            setPopOver(false);
+            setRows((prevRows) =>
+              prevRows.filter((row) => row.id !== selectedRowId)
+            );
+            if (selectedRow === 0) {
+              setSelectedRow(selectedRow);
+              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+            } else {
+              setSelectedRow(selectedRow - 1);
+              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+            }
+          }
+        });
+      }
+      return;
+    }
+    if (mode === 'add') {
+      const newOrder = await createEmkl(
+        {
+          ...values,
+          ...filters // Kirim filter ke body/payload
+        },
+        {
+          onSuccess: (data) =>
+            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+        }
+      );
+
+      if (newOrder !== undefined && newOrder !== null) {
+      }
+      return;
+    }
+
+    if (selectedRowId && mode === 'edit') {
+      await updateEmkl(
+        {
+          id: selectedRowId as unknown as string,
+          fields: { ...values, ...filters }
+        },
+        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+      );
+      queryClient.invalidateQueries('menus');
+    }
+  };
+
+  const handleEdit = () => {
+    if (selectedRow !== null) {
+      const rowData = rows[selectedRow];
+      setPopOver(true);
+      setMode('edit');
+    }
+  };
+  const handleDelete = () => {
+    if (selectedRow !== null) {
+      setMode('delete');
+      setPopOver(true);
+    }
+  };
+  const handleView = () => {
+    if (selectedRow !== null) {
+      setMode('view');
+      setPopOver(true);
+    }
+  };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IRelasi) {
+  function getRowClass(row: IEmkl) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IRelasi) {
+  function rowKeyGetter(row: IEmkl) {
     return row.id;
   }
 
@@ -1685,6 +2298,19 @@ const GridRelasi = () => {
       </div>
     );
   }
+  const handleClose = () => {
+    setPopOver(false);
+    setMode('');
+
+    forms.reset();
+  };
+  const handleAdd = async () => {
+    setMode('add');
+
+    setPopOver(true);
+
+    forms.reset();
+  };
   const saveGridConfig = async (
     userId: string, // userId sebagai identifier
     gridName: string,
@@ -1734,7 +2360,7 @@ const GridRelasi = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridRelasi',
+        'GridEmkl',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1819,7 +2445,7 @@ const GridRelasi = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridRelasi');
+    loadGridConfig(user.id, 'GridEmkl');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1832,9 +2458,9 @@ const GridRelasi = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allRelasi || isFetchingManually || isDataUpdated) return;
+    if (!allEmkl || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allRelasi.data || [];
+    const newRows = allEmkl.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1852,14 +2478,14 @@ const GridRelasi = () => {
       return prevRows;
     });
 
-    if (allRelasi.pagination.totalPages) {
-      setTotalPages(allRelasi.pagination.totalPages);
+    if (allEmkl.pagination.totalPages) {
+      setTotalPages(allEmkl.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allRelasi, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allEmkl, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1905,6 +2531,45 @@ const GridRelasi = () => {
     };
   }, []);
   useEffect(() => {
+    const rowData = rows[selectedRow];
+
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' // Only fill the form if not in addMode
+    ) {
+      console.log('rowData', rowData);
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('contactperson', rowData?.contactperson);
+      forms.setValue('alamat', rowData?.alamat);
+      forms.setValue('coagiro', rowData?.coagiro);
+      forms.setValue('coagiro_ket', rowData?.coagiro_ket);
+      forms.setValue('coapiutang', rowData?.coapiutang);
+      forms.setValue('coapiutang_ket', rowData?.coapiutang_ket);
+      forms.setValue('coahutang', rowData?.coahutang);
+      forms.setValue('coahutang_ket', rowData?.coahutang_ket);
+      forms.setValue('kota', rowData?.kota);
+      forms.setValue('kodepos', rowData?.kodepos);
+      forms.setValue('notelp', rowData?.notelp);
+      forms.setValue('email', rowData?.email);
+      forms.setValue('fax', rowData?.fax);
+      forms.setValue('alamatweb', rowData?.alamatweb);
+      forms.setValue('top', Number(rowData?.top));
+      forms.setValue('npwp', rowData?.npwp);
+      forms.setValue('namapajak', rowData?.namapajak);
+      forms.setValue('alamatpajak', rowData?.alamatpajak);
+      forms.setValue('statustrado', Number(rowData?.statustrado));
+      forms.setValue('statustrado_text', rowData?.statustrado_text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
+      // If in addMode, ensure the form values are cleared
+      // forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('statusaktif_text', '');
+      forms.setValue('statustrado_text', '');
+    }
+  }, [forms, selectedRow, rows, mode]);
+  useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
       if (!inputColRefs.current[col.key]) {
@@ -1912,6 +2577,25 @@ const GridRelasi = () => {
       }
     });
   }, []);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
+
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -1974,7 +2658,13 @@ const GridRelasi = () => {
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          {isLoadingRelasi ? <LoadRowsRenderer /> : null}
+          <ActionButton
+            onAdd={handleAdd}
+            onDelete={handleDelete}
+            onView={handleView}
+            onEdit={handleEdit}
+          />
+          {isLoadingEmkl ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1996,8 +2686,19 @@ const GridRelasi = () => {
           )}
         </div>
       </div>
+      <FormEmkl
+        popOver={popOver}
+        handleClose={handleClose}
+        setPopOver={setPopOver}
+        isLoadingUpdate={isLoadingUpdate}
+        isLoadingDelete={isLoadingDelete}
+        forms={forms}
+        mode={mode}
+        onSubmit={forms.handleSubmit(onSubmit)}
+        isLoadingCreate={isLoadingCreate}
+      />
     </div>
   );
 };
 
-export default GridRelasi;
+export default GridEmkl;
