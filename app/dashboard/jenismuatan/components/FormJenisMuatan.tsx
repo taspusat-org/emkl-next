@@ -39,6 +39,7 @@ const FormJenisMuatan = ({
       label: 'status aktif',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       dataToPost: 'id'

@@ -60,6 +60,7 @@ const FormAkuntansi = ({
       label: 'periode akuntansi',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text'
     }
@@ -75,6 +76,7 @@ const FormAkuntansi = ({
       label: 'MINUS CUTI',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text'
     }
