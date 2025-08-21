@@ -51,6 +51,7 @@ const FormBank = ({
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -104,6 +105,7 @@ const FormBank = ({
       label: 'STATUS NILAI',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -120,6 +122,7 @@ const FormBank = ({
       label: 'STATUS BANK',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -136,6 +139,7 @@ const FormBank = ({
       label: 'PENERIMAAN',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -152,6 +156,7 @@ const FormBank = ({
       label: 'PENGELUARAN',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -168,6 +173,7 @@ const FormBank = ({
       label: 'PENERIMAAN GANTUNG',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -184,6 +190,7 @@ const FormBank = ({
       label: 'PENGELUARAN GANTUNG',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -200,6 +207,7 @@ const FormBank = ({
       label: 'PENCAIRAN',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -216,6 +224,7 @@ const FormBank = ({
       label: 'REKAP PENERIMAAN',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true
@@ -232,6 +241,7 @@ const FormBank = ({
       label: 'REKAP PENGELUARAN',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
       useReduxStore: true

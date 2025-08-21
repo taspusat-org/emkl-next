@@ -40,6 +40,7 @@ const FormMenu = ({
       label: 'CABANG',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'namacabang'
     }
@@ -55,6 +56,7 @@ const FormMenu = ({
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
       postData: 'text'
     }
