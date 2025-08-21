@@ -51,6 +51,7 @@ import {
   useCreateTypeAkuntansi,
   useUpdateTypeAkuntansi
 } from '@/lib/server/useTypeAkuntansi';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
@@ -62,8 +63,8 @@ interface Filter {
     nama: string;
     order: number | null | undefined | '';
     keterangan: string;
-    statusaktif_text: string;
     akuntansi: string;
+    statusaktif: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -115,7 +116,7 @@ const GridTypeAkuntansi = () => {
       nama: '',
       order: '',
       keterangan: '',
-      statusaktif_text: '',
+      statusaktif: '',
       akuntansi: '',
       modifiedby: '',
       created_at: '',
@@ -215,7 +216,7 @@ const GridTypeAkuntansi = () => {
         nama: '',
         order: '',
         keterangan: '',
-        statusaktif_text: '',
+        statusaktif: '',
         akuntansi: '',
         modifiedby: '',
         created_at: '',
@@ -382,7 +383,7 @@ const GridTypeAkuntansi = () => {
                     nama: '',
                     order: '',
                     keterangan: '',
-                    statusaktif_text: '',
+                    statusaktif: '',
                     akuntansi: '',
                     modifiedby: '',
                     created_at: '',
@@ -749,35 +750,16 @@ const GridTypeAkuntansi = () => {
               <p className="text-sm font-normal">Status Aktif</p>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif_text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="NON AKTIF"
-                    >
-                      <p className="text-sm font-normal">NON AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                defaultValue="NON AKTIF"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),

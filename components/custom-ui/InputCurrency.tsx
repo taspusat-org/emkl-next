@@ -24,10 +24,21 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
 
   const formatCurrency = (rawValue: string) => {
     const raw = rawValue.replace(/[^0-9.]/g, '');
-    const [intPart, ...rest] = raw.split('.');
-    const decPart = rest.join('');
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return decPart.length > 0 ? `${formattedInt}.${decPart}` : formattedInt;
+    const [intPartRaw = '', decPartRaw = ''] = raw.split('.');
+    const endsWithDot = raw.endsWith('.');
+
+    if (endsWithDot) {
+      // User baru saja mengetik '.', pertahankan
+      return `${intPartRaw}.`;
+    }
+
+    // Batasi 2 desimal saat mengetik
+    const dec = decPartRaw.slice(0, 2);
+    if (dec) {
+      return `${intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
+    }
+    const formattedInt = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return formattedInt;
   };
 
   const beforeMaskedStateChange = ({ nextState }: any) => {
