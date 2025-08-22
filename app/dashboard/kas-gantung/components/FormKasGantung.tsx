@@ -672,6 +672,9 @@ const FormKasGantung = ({
                         <LookUp
                           key={index}
                           {...props}
+                          clearDisabled
+                          disabled={forms.getValues('relasi_id')}
+                          onClear={forms.setValue('relasi_id', null)}
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
                           }
@@ -719,7 +722,6 @@ const FormKasGantung = ({
                               lookupValue={(id) =>
                                 forms.setValue('alatbayar_id', Number(id))
                               }
-                              linkValue={forms.getValues('bank_nama')}
                               inputLookupValue={forms.getValues('alatbayar_id')}
                               lookupNama={forms.getValues('alatbayar_nama')}
                             />
