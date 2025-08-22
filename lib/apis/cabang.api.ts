@@ -22,6 +22,14 @@ export const getAllCabangFn = async (
   }
 };
 
+export const getAllCabangHrFn = async (
+  filters: GetParams = {}
+): Promise<IAllCabang> => {
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get('/cabang/hr', { params: queryParams });
+  return response.data;
+};
+
 export const reportCabangBySelectFn = async (ids: { id: number }[]) => {
   try {
     // Sending the data in the correct format to the NestJS API

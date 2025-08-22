@@ -89,6 +89,8 @@ import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
 import { formatCurrency } from '@/lib/utils';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
@@ -189,7 +191,7 @@ const GridManagerMarketingHeader = () => {
     page: currentPage
   });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -676,32 +678,15 @@ const GridManagerMarketingHeader = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusmentor', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS NILAI']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusmentor', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -748,32 +733,17 @@ const GridManagerMarketingHeader = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusleader', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS NILAI']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusleader', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -820,32 +790,17 @@ const GridManagerMarketingHeader = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS AKTIF']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusaktif', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -1025,6 +980,7 @@ const GridManagerMarketingHeader = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1067,6 +1023,7 @@ const GridManagerMarketingHeader = () => {
     values: ManagerMarketingHeaderInput,
     keepOpenModal = false
   ) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
 
     try {
@@ -1381,7 +1338,7 @@ const GridManagerMarketingHeader = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
@@ -1654,6 +1611,7 @@ const GridManagerMarketingHeader = () => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        clearError();
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
         setPopOver(false);

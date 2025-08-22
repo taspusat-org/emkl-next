@@ -2,9 +2,18 @@ import { z } from 'zod';
 import { dynamicRequiredMessage } from '../utils';
 export const managermarketingDetailSchema = z.object({
   id: z.union([z.string(), z.number()]).optional(),
-  nominalawal: z.string().nullable(),
-  nominalakhir: z.string().nullable(),
-  persentase: z.string().nullable(),
+  nominalawal: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('NOMINAL AWAL') }),
+  nominalakhir: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('NOMINAL AKHIR') }),
+  persentase: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('PERSENTASE') }),
   statusaktif: z.string().nullable()
 });
 export type ManagerMarketingDetailInput = z.infer<

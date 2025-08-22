@@ -162,7 +162,7 @@ const FormMessage = React.forwardRef<
 
   // Mengambil field name secara otomatis dari parent form
   const { name, error, formMessageId } = useFormField();
-
+  console.log('INI ERORR !!!', errors);
   // Mendapatkan error berdasarkan field name
   const errorMessage = error
     ? String(error?.message)

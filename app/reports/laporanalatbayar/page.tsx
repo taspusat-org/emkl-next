@@ -21,7 +21,7 @@ import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportAlatbayarFn } from '@/lib/apis/alatbayar.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-
+  const [savedFilters, setSavedFilters] = useState<any>({});
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -31,46 +31,30 @@ const ReportMenuPage: React.FC = () => {
   const { ZoomPopover } = zoomPluginInstance;
 
   // Default layout with custom toolbar
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 30,
-    filters: {
-      nama: '',
-      keterangan: '',
-      created_at: '',
-      updated_at: '',
-      statuslangsungcair: '',
-      statuslangsungcair_text: '',
-      statusdefault: '',
-      statusdefault_text: '',
-      statusbank: '',
-      statusbank_text: '',
-      statusaktif: '',
-      text: ''
-    },
-    search: '',
-    sortBy: 'nama',
-    sortDirection: 'asc'
-  });
+  useEffect(() => {
+    const storedPdf = sessionStorage.getItem('pdfUrl');
+    if (storedPdf) setPdfUrl(storedPdf);
+
+    const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+    if (storedFilters) {
+      try {
+        setSavedFilters(JSON.parse(storedFilters));
+      } catch {
+        setSavedFilters({});
+      }
+    }
+  }, []);
 
   const handleExport = async () => {
     try {
-      const { page, limit, filters: nestedFilters, ...rest } = filters;
-
-      // Gabungkan search, sort, dan filters
-      const exportPayload = {
-        ...rest,
-        ...nestedFilters
-      };
-
-      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const exportPayload = { ...savedFilters };
       const response = await exportAlatbayarFn(exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_alat_bayar_${Date.now()}.xlsx`;
+      link.download = `laporan_alatbayar_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 

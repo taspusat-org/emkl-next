@@ -54,8 +54,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -109,8 +108,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -127,8 +125,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -145,8 +142,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -163,8 +159,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -181,8 +176,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -199,8 +193,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -217,8 +210,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -235,8 +227,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -253,8 +244,7 @@ const FormBank = ({
       dataToPost: 'id',
       showOnButton: true,
       postData: 'text',
-      useReduxStore: true,
-      dataToPost: 'id'
+      useReduxStore: true
     }
   ];
 
@@ -441,26 +431,33 @@ const FormBank = ({
                     </div>
                   </div>
 
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        COA GANTUNG
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsCOAGantung.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(value) => {
-                            forms.setValue('coagantung', Number(value));
-                          }}
-                          lookupNama={forms.getValues('keterangancoagantung')}
-                          disabled={['view', 'delete'].includes(mode)}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <FormField
+                    name="coagantung"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="text-sm font-semibold text-gray-700">
+                          COA GANTUNG
+                        </FormLabel>
+                        <div className="w-full lg:w-[85%]">
+                          {lookUpPropsCOAGantung.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              {...props}
+                              lookupValue={(value: any) => {
+                                field.onChange(Number(value));
+                              }}
+                              lookupNama={forms.getValues(
+                                'keterangancoagantung'
+                              )}
+                              disabled={['view', 'delete'].includes(mode)}
+                            />
+                          ))}
+                          <FormMessage />{' '}
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">

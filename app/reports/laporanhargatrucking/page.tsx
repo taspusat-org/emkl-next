@@ -21,7 +21,7 @@ import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportHargatruckingFn } from '@/lib/apis/hargatrucking.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-
+  const [savedFilters, setSavedFilters] = useState<any>({});
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -29,51 +29,30 @@ const ReportMenuPage: React.FC = () => {
   // Zoom plugin
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
+  useEffect(() => {
+    const storedPdf = sessionStorage.getItem('pdfUrl');
+    if (storedPdf) setPdfUrl(storedPdf);
 
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 30,
-    filters: {
-      tujuankapal_id: '',
-      tujuankapal_text: '',
-      tarifdetail_id: '',
-      tarifdetail_text: '',
-      emkl_id: '',
-      emkl_text: '',
-      keterangan: '',
-      container_id: '',
-      container_text: '',
-      jenisorderan_id: '',
-      jenisorderan_text: '',
-      nominal: '',
-      statusaktif: '',
-      text: '',
-      created_at: '',
-      updated_at: ''
-    },
-    search: '',
-    sortBy: 'tujuankapal_text',
-    sortDirection: 'asc'
-  });
+    const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+    if (storedFilters) {
+      try {
+        setSavedFilters(JSON.parse(storedFilters));
+      } catch {
+        setSavedFilters({});
+      }
+    }
+  }, []);
 
   const handleExport = async () => {
     try {
-      const { page, limit, filters: nestedFilters, ...rest } = filters;
-
-      // Gabungkan search, sort, dan filters
-      const exportPayload = {
-        ...rest,
-        ...nestedFilters
-      };
-
-      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const exportPayload = { ...savedFilters };
       const response = await exportHargatruckingFn(exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_hargatrucking_${Date.now()}.xlsx`;
+      link.download = `laporan_container_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
@@ -81,7 +60,7 @@ const ReportMenuPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting hargatrucking data:', error);
+      console.error('Error exporting container data:', error);
     }
   };
 
