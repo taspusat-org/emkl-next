@@ -12,15 +12,20 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormMenu from './FormMenu';
+import FormMenu from './FormDaftarbl';
 import { useQueryClient } from 'react-query';
-import { MenuInput, menuSchema } from '@/lib/validations/menu.validation';
 import {
-  useCreateMenu,
-  useDeleteMenu,
-  useGetMenu,
-  useUpdateMenu
-} from '@/lib/server/useMenu';
+  DaftarblInput,
+  daftarblSchema
+} from '@/lib/validations/daftarbl.validation';
+
+import {
+  useCreateDaftarbl,
+  useDeleteDaftarbl,
+  useGetDaftarbl,
+  useUpdateDaftarbl
+} from '@/lib/server/useDaftarbl';
+
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
@@ -59,25 +64,28 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { IMenu } from '@/lib/types/menu.type';
+import { IDaftarbl } from '@/lib/types/daftarbl.type';
+import { number } from 'zod';
 import {
-  setProcessed,
-  setProcessing
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setProcessing,
+  setProcessed
 } from '@/lib/store/loadingSlice/loadingSlice';
-import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
   filters: {
-    title: string;
-    parentId: string;
-    statusaktif: string;
-    icon: string;
+    nama: string;
+    keterangan: string;
+    text: string;
     created_at: string;
     updated_at: string;
+    statusaktif: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -87,23 +95,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridMenu = () => {
+const GridDaftarbl = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createMenu, isLoading: isLoadingCreate } =
-    useCreateMenu();
-  const { mutateAsync: updateMenu, isLoading: isLoadingUpdate } =
-    useUpdateMenu();
+  const { mutateAsync: createDaftarbl, isLoading: isLoadingCreate } =
+    useCreateDaftarbl();
+  const { mutateAsync: updateDaftarbl, isLoading: isLoadingUpdate } =
+    useUpdateDaftarbl();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
-    useDeleteMenu();
+  const { mutateAsync: deleteDaftarbl, isLoading: isLoadingDelete } =
+    useDeleteDaftarbl();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -119,7 +127,8 @@ const GridMenu = () => {
   } | null>(null);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
-  const [rows, setRows] = useState<IMenu[]>([]);
+  const [isFetchingManually, setIsFetchingManually] = useState(false);
+  const [rows, setRows] = useState<IDaftarbl[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -128,14 +137,12 @@ const GridMenu = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<MenuInput>({
-    resolver: zodResolver(menuSchema(mode as 'add' | 'edit' | 'delete')),
+  const forms = useForm<DaftarblInput>({
+    resolver: zodResolver(daftarblSchema),
     mode: 'onSubmit',
     defaultValues: {
-      title: '',
-      aco_id: 0,
-      icon: '',
-      parentId: 0,
+      nama: '',
+      keterangan: '',
       statusaktif: 1
     }
   });
@@ -144,25 +151,24 @@ const GridMenu = () => {
     page: 1,
     limit: 30,
     filters: {
-      title: '',
-      parentId: '',
-      icon: '',
+      nama: '',
+      keterangan: '',
       created_at: '',
       updated_at: '',
+      text: '',
       statusaktif: ''
     },
     search: '',
-    sortBy: 'title',
+    sortBy: 'nama',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allMenu, isLoading: isLoadingMenu } = useGetMenu({
+  const { data: allDaftarbl, isLoading: isLoadingDaftarbl } = useGetDaftarbl({
     ...filters,
     page: currentPage
   });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -253,12 +259,13 @@ const GridMenu = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        title: '',
-        parentId: '',
+        nama: '',
+        keterangan: '',
         icon: '',
         created_at: '',
         updated_at: '',
-        statusaktif: 'AKTIF'
+        text: '',
+        statusaktif: ''
       },
       search: searchValue,
       page: 1
@@ -300,7 +307,24 @@ const GridMenu = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
 
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -334,7 +358,7 @@ const GridMenu = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IMenu>[] => {
+  const columns = useMemo((): Column<IDaftarbl>[] => {
     return [
       {
         key: 'nomor',
@@ -356,12 +380,12 @@ const GridMenu = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    title: '',
-                    parentId: '',
-                    icon: '',
-                    statusaktif: '',
+                    nama: '',
+                    keterangan: '',
+                    text: '',
                     created_at: '',
-                    updated_at: ''
+                    updated_at: '',
+                    statusaktif: ''
                   }
                 }),
                   setInputValue('');
@@ -401,7 +425,7 @@ const GridMenu = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IMenu }) => (
+        renderCell: ({ row }: { row: IDaftarbl }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -413,8 +437,8 @@ const GridMenu = () => {
       },
 
       {
-        key: 'title',
-        name: 'Nama Menu',
+        key: 'nama',
+        name: 'Nama',
         resizable: true,
         draggable: true,
         width: 300,
@@ -423,21 +447,21 @@ const GridMenu = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('title')}
+              onClick={() => handleSort('nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'title' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Nama Menu
+                Nama
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'title' &&
+                {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'title' &&
+                ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -448,24 +472,22 @@ const GridMenu = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['title'] = el;
+                  inputColRefs.current['nama'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.title
-                    ? filters.filters.title.toUpperCase()
-                    : ''
+                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
                 }
                 type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('title', value);
+                  handleColumnFilterChange('nama', value);
                 }}
               />
-              {filters.filters.title && (
+              {filters.filters.nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('title', '')}
+                  onClick={() => handleColumnFilterChange('nama', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -475,11 +497,11 @@ const GridMenu = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.title || '';
+          const columnFilter = filters.filters.nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.title || '',
+                props.row.nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -488,8 +510,8 @@ const GridMenu = () => {
         }
       },
       {
-        key: 'parentId',
-        name: 'Menu Parent',
+        key: 'keterangan',
+        name: 'Keterangan',
         resizable: true,
         draggable: true,
         width: 150,
@@ -498,21 +520,23 @@ const GridMenu = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('parentId')}
+              onClick={() => handleSort('keterangan')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'parentId' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'keterangan'
+                    ? 'text-red-500'
+                    : 'font-normal'
                 }`}
               >
-                Menu Parent
+                Keterangan
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'parentId' &&
+                {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'parentId' &&
+                ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -524,19 +548,19 @@ const GridMenu = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['parentId'] = el;
+                  inputColRefs.current['keterangan'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.parentId.toUpperCase() || ''}
+                value={filters.filters.keterangan.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('parentId', value);
+                  handleColumnFilterChange('keterangan', value);
                 }}
               />
-              {filters.filters.parentId && (
+              {filters.filters.keterangan && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('parentId', '')}
+                  onClick={() => handleColumnFilterChange('keterangan', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -546,12 +570,13 @@ const GridMenu = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.parentId || '';
+          const columnFilter = filters.filters.keterangan || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.parentId !== null && props.row.parentId !== undefined
-                  ? props.row.parentId
+                props.row.keterangan !== null &&
+                  props.row.keterangan !== undefined
+                  ? props.row.keterangan
                   : '',
                 filters.search,
                 columnFilter
@@ -571,21 +596,60 @@ const GridMenu = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusaktif')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Status Aktif</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                defaultValue="AKTIF"
-                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('statusaktif', value)
-                } // Menangani perubahan nilai di parent
-              />
+              <Select
+                defaultValue=""
+                onValueChange={(value: any) => {
+                  handleColumnFilterChange('text', value);
+                }}
+              >
+                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem className="text=xs cursor-pointer" value="">
+                      <p className="text-sm font-normal">all</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="AKTIF"
+                    >
+                      <p className="text-sm font-normal">AKTIF</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="NON AKTIF"
+                    >
+                      <p className="text-sm font-normal">TIDAK AKTIF</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         ),
@@ -615,78 +679,7 @@ const GridMenu = () => {
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-      {
-        key: 'icon',
-        name: 'Menu Icon',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('icon')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'icon' ? 'text-red-500' : 'font-normal'
-                }`}
-              >
-                Menu Icon
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'icon' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'icon' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
 
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['icon'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.icon || ''}
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('icon', value);
-                }}
-              />
-              {filters.filters.icon && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('icon', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.icon || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.icon || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
       {
         key: 'created_at',
         name: 'Created At',
@@ -854,7 +847,7 @@ const GridMenu = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridMenu', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridDaftarbl', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -869,7 +862,7 @@ const GridMenu = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridMenu', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridDaftarbl', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -886,7 +879,7 @@ const GridMenu = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingMenu || !hasMore || rows.length === 0) return;
+    if (isLoadingDaftarbl || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -913,7 +906,7 @@ const GridMenu = () => {
     }
   }
 
-  function handleCellClick(args: { row: IMenu }) {
+  function handleCellClick(args: { row: IDaftarbl }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -921,7 +914,7 @@ const GridMenu = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IMenu>,
+    args: CellKeyDownArgs<IDaftarbl>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -969,42 +962,56 @@ const GridMenu = () => {
       }
     }
   }
-  const onSuccess = async (indexOnPage: any, pageNumber: any) => {
-    try {
-      forms.reset();
-      setPopOver(false);
-      setRows([]);
-      if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/menus-allItems`);
-        // Set the rows only if the data has changed
-        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-          setRows(response.data);
-          setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
-          setSelectedRow(indexOnPage);
-          setTimeout(() => {
-            gridRef?.current?.selectCell({
-              rowIdx: indexOnPage,
-              idx: 1
-            });
-          }, 200);
-        }
-      }
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
 
-      setIsDataUpdated(false);
+    try {
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/daftarbl-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
+        }
+
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
     } catch (error) {
       console.error('Error during onSuccess:', error);
+      setIsFetchingManually(false);
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: MenuInput) => {
+  const onSubmit = async (values: DaftarblInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteMenu(selectedRowId as unknown as string, {
+          await deleteDaftarbl(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1013,15 +1020,12 @@ const GridMenu = () => {
               if (selectedRow === 0) {
                 setSelectedRow(selectedRow);
                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-              } else if (selectedRow === rows.length - 1) {
+              } else {
                 setSelectedRow(selectedRow - 1);
                 gridRef?.current?.selectCell({
                   rowIdx: selectedRow - 1,
                   idx: 1
                 });
-              } else {
-                setSelectedRow(selectedRow);
-                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
               }
             }
           });
@@ -1029,13 +1033,14 @@ const GridMenu = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createMenu(
+        const newOrder = await createDaftarbl(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
           },
           {
-            onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
           }
         );
 
@@ -1043,21 +1048,20 @@ const GridMenu = () => {
         }
         return;
       }
-
       if (selectedRowId && mode === 'edit') {
-        await updateMenu(
+        await updateDaftarbl(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('menus');
+        queryClient.invalidateQueries('daftarbl');
       }
     } catch (error) {
-      console.error('Error exporting user data:', error);
+      console.error(error);
     } finally {
-      dispatch(setProcessed()); // Hide loading overlay when the request is finished
+      dispatch(setProcessed());
     }
   };
 
@@ -1080,161 +1084,162 @@ const GridMenu = () => {
       setPopOver(true);
     }
   };
-  const handleExport = async () => {
-    try {
-      const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
 
-      // Buat link untuk mendownload file
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(response);
-      link.href = url;
-      link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-      link.click(); // Trigger download
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
 
-      // Revoke URL setelah download
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting user data:', error);
-    }
-  };
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
 
-  const handleExportBySelect = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
 
-    // Mengubah checkedRows menjadi format JSON
-    const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-    try {
-      const response = await exportMenuBySelectFn(jsonCheckedRows);
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
 
-      // Buat link untuk mendownload file
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(response);
-      link.href = url;
-      link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-      link.click(); // Trigger download
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
 
-      // Revoke URL setelah download
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting menu data:', error);
-      alert({
-        title: 'Failed to generate the export. Please try again.',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    }
-  };
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
 
-  const handleReport = async () => {
-    const { page, limit, ...filtersWithoutLimit } = filters;
-    const response = await getMenuFn(filtersWithoutLimit);
-    const reportRows = response.data.map((row) => ({
-      ...row,
-      judullaporan: 'Laporan Menu',
-      usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
-      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-    }));
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
 
-    // Dynamically import Stimulsoft and generate the PDF report
-    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-      .then((module) => {
-        const { Stimulsoft } = module;
-        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/tahoma.ttf',
-          'Arial'
-        );
-        Stimulsoft.Base.StiLicense.Key =
-          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+  // const handleReport = async () => {
+  //   const { page, limit, ...filtersWithoutLimit } = filters;
+  //   const response = await getMenuFn(filtersWithoutLimit);
+  //   const reportRows = response.data.map((row) => ({
+  //     ...row,
+  //     judullaporan: 'Laporan Menu',
+  //     usercetak: user.username,
+  //     tglcetak: new Date().toLocaleDateString(),
+  //     judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //   }));
 
-        const report = new Stimulsoft.Report.StiReport();
-        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+  //   // Dynamically import Stimulsoft and generate the PDF report
+  //   import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+  //     .then((module) => {
+  //       const { Stimulsoft } = module;
+  //       Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+  //         '/fonts/tahoma.ttf',
+  //         'Arial'
+  //       );
+  //       Stimulsoft.Base.StiLicense.Key =
+  //         '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+  //         '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+  //         'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+  //         'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+  //         '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+  //         'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+  //         'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-        // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanMenu.mrt');
-        report.dictionary.dataSources.clear();
-        dataSet.readJson({ data: reportRows });
-        report.regData(dataSet.dataSetName, '', dataSet);
-        report.dictionary.synchronize();
+  //       const report = new Stimulsoft.Report.StiReport();
+  //       const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-        // Render the report asynchronously
-        report.renderAsync(() => {
-          // Export the report to PDF asynchronously
-          report.exportDocumentAsync((pdfData: any) => {
-            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-              type: 'application/pdf'
-            });
-            const pdfUrl = URL.createObjectURL(pdfBlob);
+  //       // Load the report template (MRT file)
+  //       report.loadFile('/reports/LaporanMenu.mrt');
+  //       report.dictionary.dataSources.clear();
+  //       dataSet.readJson({ data: reportRows });
+  //       report.regData(dataSet.dataSetName, '', dataSet);
+  //       report.dictionary.synchronize();
 
-            // Store the Blob URL in sessionStorage
-            sessionStorage.setItem('pdfUrl', pdfUrl);
+  //       // Render the report asynchronously
+  //       report.renderAsync(() => {
+  //         // Export the report to PDF asynchronously
+  //         report.exportDocumentAsync((pdfData: any) => {
+  //           const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+  //             type: 'application/pdf'
+  //           });
+  //           const pdfUrl = URL.createObjectURL(pdfBlob);
 
-            // Navigate to the report page
-            window.open('/reports/menu', '_blank');
-          }, Stimulsoft.Report.StiExportFormat.Pdf);
-        });
-      })
-      .catch((error) => {
-        console.error('Failed to load Stimulsoft:', error);
-      });
-  };
+  //           // Store the Blob URL in sessionStorage
+  //           sessionStorage.setItem('pdfUrl', pdfUrl);
 
-  const handleReportBySelect = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
+  //           // Navigate to the report page
+  //           window.open('/reports/menu', '_blank');
+  //         }, Stimulsoft.Report.StiExportFormat.Pdf);
+  //       });
+  //     })
+  //     .catch((error) => {
+  //       console.error('Failed to load Stimulsoft:', error);
+  //     });
+  // };
 
-    const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-    try {
-      const response = await reportMenuBySelectFn(jsonCheckedRows);
-      const reportRows = response.map((row: any) => ({
-        ...row,
-        judullaporan: 'Laporan Menu',
-        usercetak: user.username,
-        tglcetak: new Date().toLocaleDateString(),
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-      }));
-      dispatch(setReportData(reportRows));
-      window.open('/reports/menu', '_blank');
-    } catch (error) {
-      console.error('Error generating report:', error);
-      alert({
-        title: 'Failed to generate the report. Please try again.',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    }
-  };
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IMenu) {
+  function getRowClass(row: IDaftarbl) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IMenu) {
+  function rowKeyGetter(row: IDaftarbl) {
     return row.id;
   }
 
@@ -1326,7 +1331,7 @@ const GridMenu = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridMenu',
+        'GridDaftarbl',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1411,7 +1416,7 @@ const GridMenu = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridMenu');
+    loadGridConfig(user.id, 'GridDaftarbl');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1423,11 +1428,11 @@ const GridMenu = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  console.log('isDataUpdated', isDataUpdated);
-  useEffect(() => {
-    if (!allMenu || isDataUpdated) return;
 
-    const newRows = allMenu.data || [];
+  useEffect(() => {
+    if (!allDaftarbl || isFetchingManually || isDataUpdated) return;
+
+    const newRows = allDaftarbl.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1445,14 +1450,14 @@ const GridMenu = () => {
       return prevRows;
     });
 
-    if (allMenu.pagination.totalPages) {
-      setTotalPages(allMenu.pagination.totalPages);
+    if (allDaftarbl.pagination.totalPages) {
+      setTotalPages(allDaftarbl.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allMenu, currentPage, filters, isDataUpdated]);
+  }, [allDaftarbl, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1497,6 +1502,7 @@ const GridMenu = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (
@@ -1504,14 +1510,10 @@ const GridMenu = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('title', rowData.title);
-      forms.setValue('aco_id', rowData.aco_id ? Number(rowData.aco_id) : 0);
-      forms.setValue('icon', rowData.icon);
-      forms.setValue('parentId', rowData.parentId);
-      forms.setValue('statusaktif', rowData.statusaktif || 1);
+      forms.setValue('nama', rowData.nama);
+      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData.text || '');
-      forms.setValue('acos_nama', rowData.acos_nama || '');
-      forms.setValue('parent_nama', rowData.parent_nama || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');
@@ -1525,24 +1527,6 @@ const GridMenu = () => {
       }
     });
   }, []);
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1609,53 +1593,53 @@ const GridMenu = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            customActions={[
-              {
-                label: 'Resequence',
-                icon: <FaPlus />, // Custom icon
-                onClick: () => handleResequence(),
-                variant: 'success', // Optional styling variant
-                className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
-              }
-            ]}
-            dropdownMenus={[
-              {
-                label: 'Report',
-                icon: <FaPrint />,
-                className: 'bg-cyan-500 hover:bg-cyan-700',
-                actions: [
-                  {
-                    label: 'REPORT ALL',
-                    onClick: () => handleReport(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  },
-                  {
-                    label: 'REPORT BY SELECT',
-                    onClick: () => handleReportBySelect(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  }
-                ]
-              },
-              {
-                label: 'Export',
-                icon: <FaFileExport />,
-                className: 'bg-green-600 hover:bg-green-700',
-                actions: [
-                  {
-                    label: 'EXPORT ALL',
-                    onClick: () => handleExport(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  },
-                  {
-                    label: 'EXPORT BY SELECT',
-                    onClick: () => handleExportBySelect(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  }
-                ]
-              }
-            ]}
+            // customActions={[
+            //   {
+            //     label: 'Resequence',
+            //     icon: <FaPlus />, // Custom icon
+            //     onClick: () => handleResequence(),
+            //     variant: 'success', // Optional styling variant
+            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
+            //   }
+            // ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Report',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: [
+            //       {
+            //         label: 'REPORT ALL',
+            //         onClick: () => handleReport(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       },
+            //       {
+            //         label: 'REPORT BY SELECT',
+            //         onClick: () => handleReportBySelect(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       }
+            //     ]
+            //   },
+            //   {
+            //     label: 'Export',
+            //     icon: <FaFileExport />,
+            //     className: 'bg-green-600 hover:bg-green-700',
+            //     actions: [
+            //       {
+            //         label: 'EXPORT ALL',
+            //         onClick: () => handleExport(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       },
+            //       {
+            //         label: 'EXPORT BY SELECT',
+            //         onClick: () => handleExportBySelect(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       }
+            //     ]
+            //   }
+            // ]}
           />
-          {isLoadingMenu ? <LoadRowsRenderer /> : null}
+          {isLoadingDaftarbl ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1685,11 +1669,11 @@ const GridMenu = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>
   );
 };
 
-export default GridMenu;
+export default GridDaftarbl;

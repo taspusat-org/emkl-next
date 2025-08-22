@@ -139,11 +139,6 @@ export default function SignInViewPage() {
           submitText: 'OK'
         });
       } else {
-        toast({
-          title: 'Login Success',
-          description: 'You have successfully logged in.'
-        });
-
         // Gunakan getSession untuk mendapatkan session setelah login
         const session = await getSession();
 

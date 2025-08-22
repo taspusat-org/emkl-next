@@ -2302,7 +2302,6 @@ const GridKasGantungHeader = () => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
-        setPopOver(false);
         dispatch(clearOpenName());
       }
     };

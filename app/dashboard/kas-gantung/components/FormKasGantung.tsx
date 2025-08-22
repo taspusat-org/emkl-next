@@ -46,6 +46,7 @@ import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
 import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
+import LookUpModal from '@/components/custom-ui/LookUpModal';
 const FormKasGantung = ({
   popOver,
   setPopOver,
@@ -135,45 +136,6 @@ const FormKasGantung = ({
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
-  const formatThousands = (raw: string): string => {
-    // ambil cuma digit
-    const digits = raw.replace(/\D/g, '');
-    if (!digits) return '';
-    // parse integer, lalu format otomatis dengan koma (en-US)
-    return parseInt(digits, 10).toLocaleString('en-US');
-  };
-
-  const beforeMaskedStateChange = ({
-    previousState,
-    currentState,
-    nextState
-  }: {
-    previousState: { value: string; selection: any };
-    currentState: { value: string; selection: any };
-    nextState: { value: string; selection: any };
-  }) => {
-    const nextVal = nextState.value || '';
-    // a) ambil hanya digit & titik
-    const raw = nextVal.replace(/[^0-9.]/g, '');
-    // b) split integer & decimal (hanya 1 dot pertama)
-    const [intPart, ...rest] = raw.split('.');
-    const decPart = rest.join(''); // kalau user ngetik lebih dari 1 dot, kita gabung sisanya
-
-    // c) format integer part dengan koma sebagai ribuan
-    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-    // d) kalau ada decimal part, re‐attach
-    const formatted =
-      decPart.length > 0 ? `${formattedInt}.${decPart}` : formattedInt;
-
-    // e) cursor selalu di akhir
-    const pos = formatted.length;
-    return {
-      value: formatted,
-      selection: { start: pos, end: pos }
-    };
-  };
-
   // 2) onChangeRaw: simpan string yang sudah diformat ke state
   const formatWithCommas = (val: string): string => {
     // ambil cuma digit
@@ -184,50 +146,8 @@ const FormKasGantung = ({
 
   // 2) handler onChange: format langsung & simpan ke state
   const handleCurrencyChange = (rowIdx: number, rawInput: string) => {
-    const formatted = formatWithCommas(rawInput);
-    handleInputChange(rowIdx, 'nominal', formatted);
-  };
-
-  const handleCurrencyBlur = (formattedStr: string, rowIdx: number) => {
-    console.log(formattedStr);
-    if (!String(formattedStr).includes(',')) {
-      return;
-    }
-
-    if (!String(formattedStr).includes('.')) {
-      const finalValue = String(formattedStr) + '.00';
-      setRows((rs) =>
-        rs.map((r, idx) => (idx === rowIdx ? { ...r, nominal: finalValue } : r))
-      );
-    } else {
-      setRows((rs) =>
-        rs.map((r, idx) =>
-          idx === rowIdx ? { ...r, nominal: formattedStr } : r
-        )
-      );
-    }
-  };
-  const handleFocus = (rowIdx: number, raw: any) => {
-    setRows((prevRows) => {
-      return prevRows.map((row, idx) => {
-        if (idx === rowIdx) {
-          // Pengecekan apakah nominal berformat dengan desimal '.00'
-          console.log(raw); // Menampilkan raw value yang dikirim
-
-          const updatedNominal =
-            raw && String(raw).includes('.00')
-              ? raw.toString().slice(0, -3) // Menghapus '.00' jika ada
-              : raw; // Jika tidak ada '.00', tetap seperti semula
-
-          return {
-            ...row,
-            nominal: updatedNominal, // Update nilai nominal
-            isNew: row.isNew === true ? true : false // Memastikan isNew adalah boolean
-          };
-        }
-        return row;
-      });
-    });
+    // const formatted = formatWithCommas(rawInput);
+    handleInputChange(rowIdx, 'nominal', rawInput);
   };
 
   const totalNominal = rows.reduce(
@@ -454,11 +374,11 @@ const FormKasGantung = ({
   const lookUpPropsRelasi = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
-      // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       label: 'RELASI',
+      endpoint: 'relasi',
       dataToPost: 'id',
-      singleColumn: false,
+      singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
@@ -467,10 +387,10 @@ const FormKasGantung = ({
   const lookUpPropsBank = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
-      // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
+      endpoint: 'bank',
       label: 'BANK',
-      singleColumn: false,
+      singleColumn: true,
       dataToPost: 'id',
       pageSize: 20,
       showOnButton: true,
@@ -482,10 +402,11 @@ const FormKasGantung = ({
       columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
+      endpoint: 'alatbayar',
 
       label: 'ALAT BAYAR',
       dataToPost: 'id',
-      singleColumn: false,
+      singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'

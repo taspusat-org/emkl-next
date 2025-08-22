@@ -3,8 +3,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
-  useCallback,
-  useLayoutEffect
+  useCallback
 } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
@@ -12,6 +11,7 @@ import { Input } from '../ui/input';
 import { TbLayoutNavbarFilled } from 'react-icons/tb';
 import { IoClose } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 import {
   setLookUpValue,
@@ -40,6 +40,8 @@ import IcClose from '@/public/image/x.svg';
 import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
+import { IoMdClose, IoMdRefresh } from 'react-icons/io';
+import InputDatePicker from './InputDatePicker';
 
 interface LinkFilter {
   linkTo: string;
@@ -51,7 +53,7 @@ interface LookUpProps {
   label?: string;
   labelLookup?: string;
   singleColumn?: boolean;
-  filterby?: Record<string, any>;
+  filterby?: { key: string; name: string };
   pageSize?: number;
   postData?: string;
   dataToPost?: string | number;
@@ -68,6 +70,8 @@ interface LookUpProps {
   selectedRequired?: boolean;
   required?: boolean;
   linkTo?: string;
+  dateFromParam?: string; // default 'tglDari' jika tidak ada props
+  dateToParam?: string; // default 'tglSampai' jika tidak ada props
   linkValue?: string | string[] | number[] | null;
   links?: LinkFilter[];
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
@@ -86,7 +90,7 @@ interface Row {
   [key: string]: any; // Add this line
 }
 
-export default function LookUp({
+export default function LookUpModal({
   columns: rawColumns,
   endpoint,
   extendSize,
@@ -103,6 +107,8 @@ export default function LookUp({
   singleColumn = false,
   pageSize = 20,
   isSubmitClicked = false,
+  dateFromParam = 'tglDari', // default 'tglDari' jika tidak ada props
+  dateToParam = 'tglSampai', // default 'tglSampai' jika tidak ada props
   postData,
   disabled = false, // Default to false if not provided
   filterby,
@@ -118,13 +124,15 @@ export default function LookUp({
   const dispatch = useDispatch();
   const triggerRef = useRef<HTMLDivElement | null>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [popoverWidth, setPopoverWidth] = useState<number | string>('auto');
   const [clickedOutside, setClickedOutside] = useState(false);
   const gridLookUpRef = useRef<HTMLDivElement | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [filtering, setFiltering] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [deleteClicked, setDeleteClicked] = useState(false);
+  const [reload, setReload] = useState(false);
+  const [tglDari, setTglDari] = useState<string>('');
+  const [tglSampai, setTglSampai] = useState<string>('');
   const [showError, setShowError] = useState({
     label: label,
     status: false
@@ -178,6 +186,23 @@ export default function LookUp({
     return true;
   }
 
+  const onReload = () => {
+    setIsLoading(true);
+
+    abortRef.current?.abort('Reload triggered');
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    fetchRows(controller.signal)
+      .then((newRows) => {
+        setRows(newRows); // Update rows dengan hasil fetch terbaru
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsLoading(false); // Jangan lupa set loading false meskipun gagal
+      });
+  };
+
   // Gabung params dari state & props
   const buildParams = useCallback(() => {
     const params: Record<string, any> = {
@@ -188,18 +213,31 @@ export default function LookUp({
       sortDirection: filters.sortDirection
     };
 
+    // Gabungkan filters lainnya
     if (filters.filters) {
       for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
     }
     if (filterby && !Array.isArray(filterby)) {
-      // Pastikan filterby berfungsi dengan baik
-      for (const [k, v] of Object.entries(filterby)) {
-        params[k] = v; // menambahkan filterby ke params untuk API
-      }
+      for (const [k, v] of Object.entries(filterby)) params[k] = v;
     }
 
+    // Periksa apakah tglDari dan tglSampai ada, lalu tambahkan ke params dengan field name yang dikirim di props
+    const effFrom = tglDari;
+    const effTo = tglSampai;
+
+    if (effFrom) params[dateFromParam] = effFrom; // kirim dengan nama field yang diinginkan
+    if (effTo) params[dateToParam] = effTo; // kirim dengan nama field yang diinginkan
+
     return params;
-  }, [currentPage, filters, filterby]);
+  }, [
+    currentPage,
+    filters,
+    filterby,
+    dateFromParam,
+    dateToParam,
+    tglDari,
+    tglSampai
+  ]);
 
   // Mapping API → Row[]
   const mapApiToRows = useCallback(
@@ -218,6 +256,30 @@ export default function LookUp({
     },
     [lookupNama, lookupValue, onSelectRow, setInputValue]
   );
+
+  const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setTglDari(newValue); // Set local state for date
+  };
+  const handleDateChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setTglSampai(newValue); // Set local state for date
+  };
+
+  const handleCalendarSelect1 = (value: Date | undefined) => {
+    if (value) {
+      setTglDari(String(value)); // Set local state for date
+    } else {
+      setTglDari(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
+    }
+  };
+  const handleCalendarSelect2 = (value: Date | undefined) => {
+    if (value) {
+      setTglSampai(String(value));
+    } else {
+      setTglSampai(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
@@ -345,9 +407,6 @@ export default function LookUp({
     // Jika label sama dengan openName dan lookup sudah terbuka, tutup lookup
     if (label === openName) {
       if (open) {
-        setCurrentPage(1);
-        setFetchedPages(new Set());
-        setRows([]);
         setOpen(false); // Tutup lookup jika sudah terbuka
         dispatch(clearOpenName()); // Clear openName dari Redux
       } else {
@@ -490,9 +549,6 @@ export default function LookUp({
     columns.map((_, index) => index)
   );
 
-  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
-    return currentTarget.scrollTop <= 10;
-  }
   function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
     const { currentTarget } = event;
     if (!currentTarget) return false;
@@ -516,6 +572,7 @@ export default function LookUp({
     if (isAtBottom(event)) {
       const nextPage = findUnfetchedPage(1);
       if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
+        console.log('masuk', nextPage);
         setCurrentPage(nextPage);
       }
     }
@@ -624,7 +681,8 @@ export default function LookUp({
       const { data, pagination } = response.data || {};
       if (pagination?.totalPages) setTotalPages(pagination.totalPages);
 
-      return Array.isArray(data) ? mapApiToRows(data) : [];
+      const rows = Array.isArray(data) ? mapApiToRows(data) : [];
+      return rows; // Return rows untuk digunakan di setRows
     } catch (error: any) {
       if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
         return [];
@@ -645,8 +703,11 @@ export default function LookUp({
 
   function EmptyRowsRenderer() {
     return (
-      <div className="flex h-full w-full items-center px-2">
-        <p className="text-sm text-zinc-500">No results found</p>
+      <div
+        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
+        style={{ textAlign: 'center', gridColumn: '1/-1' }}
+      >
+        <p className="text-gray-400">NO ROWS DATA FOUND</p>
       </div>
     );
   }
@@ -749,7 +810,19 @@ export default function LookUp({
       );
     }
   };
+  useEffect(() => {
+    const now = new Date();
+    const fmt = (date: Date) =>
+      `${String(date.getDate()).padStart(2, '0')}-${String(
+        date.getMonth() + 1
+      ).padStart(2, '0')}-${date.getFullYear()}`;
 
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    setTglDari(fmt(firstOfMonth));
+    setTglSampai(fmt(lastOfMonth));
+  }, [dispatch]);
   useEffect(() => {
     if (open) {
       setIsFirstLoad(true);
@@ -766,16 +839,16 @@ export default function LookUp({
     (rows: Row[]) => {
       let filtered = rows;
 
-      // filter berdasarkan filterby (jika ada)
-      if (filterby && !Array.isArray(filterby)) {
+      // filterby array (local only)
+      if (Array.isArray(filterby) && filterby.length) {
         filtered = filtered.filter((row: Row) =>
-          Object.entries(filterby).every(
-            ([k, v]) => String(row[k]) === String(v) // Membandingkan row dengan filterby
+          filterby.every((f) =>
+            Object.entries(f).every(([k, v]) => String(row[k]) === String(v))
           )
         );
       }
 
-      // filter berdasarkan filters lainnya
+      // column filters
       for (const [colKey, filterValue] of Object.entries(
         filters.filters || {}
       )) {
@@ -787,17 +860,26 @@ export default function LookUp({
         );
       }
 
+      // global search
+      const q = (filters.search || '').toLowerCase();
+      if (q) {
+        filtered = filtered.filter((row: Row) =>
+          Object.values(row).some((v) => String(v).toLowerCase().includes(q))
+        );
+      }
+
       return filtered;
     },
     [filterby, filters]
   );
 
+  const [isFetching, setIsFetching] = useState(false); // Mengontrol fetching status
+  const hasFetchedRef = useRef(false); // Menandakan apakah sudah pernah fetch
+
   useEffect(() => {
     if (type === 'local' || !endpoint || !open) {
       // Mode local tetap seperti sebelumnya
       const filteredRows = data ? applyFilters(data) : [];
-
-      // Check if we're not clearing input and lookupNama is undefined
       if (isdefault && !lookupNama && !deleteClicked) {
         // Only set default value if inputValue is empty (cleared)
         if (isdefault === 'YA') {
@@ -812,8 +894,7 @@ export default function LookUp({
           }
         }
       }
-
-      setRows(filteredRows);
+      setRows(filteredRows); // Set filtered rows jika mode local
       setIsLoading(false);
       return;
     }
@@ -827,15 +908,17 @@ export default function LookUp({
 
     (async () => {
       try {
-        const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
+        const newRows = await fetchRows(controller.signal); // Ambil data baru
 
         if (myRequestId !== requestIdRef.current) return;
-        console.log('masuk');
+
         setRows((prev) => {
-          const mapped = applyFilters(newRows);
+          const mapped = applyFilters(newRows); // Terapkan filter ke data baru
+
+          // Jika halaman pertama, langsung return mapped rows
           if (currentPage === 1) return mapped;
 
-          // append + dedup by id
+          // Jika bukan halaman pertama, gabungkan dengan data sebelumnya (deduplicate)
           const seen = new Set<number | string>();
           const merged = [...prev, ...mapped].filter((r) => {
             const k = r.id;
@@ -846,14 +929,14 @@ export default function LookUp({
           return merged;
         });
 
-        // tandai halaman ini sudah diambil
+        // Tandai halaman yang sudah diambil
         setFetchedPages((prev) => {
           const s = new Set(prev);
           s.add(currentPage);
           return s;
         });
 
-        // update hasMore berdasar totalPages
+        // Update hasMore berdasar totalPages
         setHasMore(currentPage < totalPages);
       } catch (err) {
         if (myRequestId === requestIdRef.current) {
@@ -873,30 +956,12 @@ export default function LookUp({
     type,
     currentPage,
     filters,
+    applyFilters,
     totalPages,
     deleteClicked,
     clicked
   ]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (inputRef.current) {
-        setPopoverWidth(inputRef.current.offsetWidth);
-      }
-    };
-
-    const resizeObserver = new ResizeObserver(handleResize);
-
-    if (inputRef.current) {
-      resizeObserver.observe(inputRef.current);
-    }
-
-    return () => {
-      if (inputRef.current) {
-        resizeObserver.unobserve(inputRef.current);
-      }
-    };
-  }, []);
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (selectedRequired) {
@@ -959,16 +1024,6 @@ export default function LookUp({
   }, [filters.search, clickedOutside, filtering]);
 
   useEffect(() => {
-    let newWidth = inputRef.current?.offsetWidth || 'auto';
-    if (extendSize) {
-      const extendedWidth = parseInt(extendSize, 10);
-      if (!isNaN(extendedWidth)) {
-        newWidth = parseInt(newWidth as string, 10) + extendedWidth + 'px';
-      }
-    }
-    setPopoverWidth(newWidth);
-  }, [extendSize]);
-  useEffect(() => {
     if (lookupNama) {
       setInputValue(lookupNama); // Assuming "text" is the display column
     }
@@ -1004,9 +1059,6 @@ export default function LookUp({
       setOpen(true); // Jika label sama dengan openName, buka lookup
     } else {
       setOpen(false); // Jika tidak sama, tutup lookup
-      setCurrentPage(1);
-      setFetchedPages(new Set());
-      setRows([]);
     }
   }, [openName, label]); // Efek dijalankan setiap kali openName atau label berubah
 
@@ -1047,151 +1099,210 @@ export default function LookUp({
     }
   }, [lookupNama, inputValue, label, showError.label]);
 
-  // const contentRef = useRef<HTMLDivElement | null>(null);
-  // useEffect(() => {
-  //   if (!open || !contentRef.current) return;
-  //   const grid = contentRef.current.querySelector<HTMLElement>('.rdg');
-  //   console.log('grid', grid);
-  //   if (!grid) return;
-
-  //   if (rows.length > 10) {
-  //     grid.style.setProperty('overflow', 'hidden', 'important');
-  //   } else {
-  //     grid.style.removeProperty('overflow');
-  //   }
-  // }, [open, rows, contentRef]);
   return (
-    <Popover open={open} onOpenChange={() => ({})}>
-      <PopoverTrigger asChild>
-        <div className="flex w-full flex-col">
-          <div
-            className="relative flex w-full flex-row items-center"
-            ref={popoverRef}
-          >
-            <Input
-              ref={inputRef}
-              // autoFocus
-              className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
-                showOnButton ? 'rounded-r-none border-r-0' : ''
-              } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+    <>
+      <div className="flex w-full flex-col">
+        <div
+          className="relative flex w-full flex-row items-center"
+          ref={popoverRef}
+        >
+          <Input
+            ref={inputRef}
+            // autoFocus
+            className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
+              showOnButton ? 'rounded-r-none border-r-0' : ''
+            } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+            disabled={disabled}
+            value={inputValue}
+            onKeyDown={handleInputKeydown}
+            onChange={(e) => {
+              handleInputChange(e);
+            }}
+          />
+
+          {(filters.search !== '' || inputValue !== '') && (
+            <Button
+              type="button"
               disabled={disabled}
-              value={inputValue}
-              onKeyDown={handleInputKeydown}
-              onChange={(e) => {
-                handleInputChange(e);
-                // if (e.target.value.trim() !== '') {
-                //   setOpen(true);
-                // }
-              }}
-            />
-
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                disabled={disabled}
-                variant="ghost"
-                className="absolute right-10 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
-
-            {showOnButton && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
-                onClick={handleButtonClick}
-                disabled={disabled}
-              >
-                <TbLayoutNavbarFilled />
-              </Button>
-            )}
-          </div>
-          <p className="text-[0.8rem] text-destructive">
-            {showError.status === true && label === showError.label
-              ? `${label} ${REQUIRED_FIELD}`
-              : null}
-          </p>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent
-        // ref={contentRef}
-        id="popover-content"
-        className="h-fit border border-blue-500 p-0 shadow-none backdrop-blur-none"
-        side="bottom"
-        align="start"
-        sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
-        style={{ width: popoverWidth }}
-        onEscapeKeyDown={() => setOpen(false)}
-      >
-        {open && (
-          <div ref={gridLookUpRef} className="w-full">
-            <div
-              className={`${
-                collapse === true ? 'w-full' : 'w-[100%]'
-              } flex-grow overflow-hidden transition-all duration-300`}
+              variant="ghost"
+              className="absolute right-10 text-gray-500 hover:bg-transparent"
+              onClick={handleClearInput}
             >
-              <div className="min-w-full rounded-lg bg-white">
+              <Image src={IcClose} width={15} height={15} alt="close" />
+            </Button>
+          )}
+
+          {showOnButton && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+              onClick={handleButtonClick}
+              disabled={disabled}
+            >
+              <TbLayoutNavbarFilled />
+            </Button>
+          )}
+        </div>
+        <p className="text-[0.8rem] text-destructive">
+          {showError.status === true && label === showError.label
+            ? `${label} ${REQUIRED_FIELD}`
+            : null}
+        </p>
+      </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTitle hidden={true}>Title</DialogTitle>
+
+        <DialogContent className="flex h-full min-w-full flex-col overflow-hidden bg-black bg-opacity-50 p-10">
+          <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
+            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+              {labelLookup || label}
+            </h2>
+            <div
+              className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
+              onClick={() => {
+                setOpen(false);
+              }}
+            >
+              <IoMdClose className="h-5 w-5 font-bold text-white" />
+            </div>
+          </div>
+
+          <div
+            className={`${
+              collapse === true ? 'w-full' : 'w-[100%]'
+            } flex-grow overflow-hidden transition-all duration-300`}
+          >
+            <div className="h-full min-w-full border border-blue-500 bg-white p-6">
+              <div className="rounded-sm border border-blue-500 p-4">
+                <div className="flex w-full flex-row gap-4">
+                  <div className="flex w-full flex-row items-center">
+                    <FormLabel
+                      required={true}
+                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                    >
+                      TGL DARI
+                    </FormLabel>
+                    <div className="flex flex-col lg:w-[70%]">
+                      <InputDatePicker
+                        value={tglDari}
+                        showCalendar
+                        onChange={handleDateChange1}
+                        onSelect={handleCalendarSelect1}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex w-full flex-row items-center lg:ml-4">
+                    <FormLabel
+                      required={true}
+                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                    >
+                      SAMPAI TGL
+                    </FormLabel>
+                    <div className="flex flex-col lg:w-[70%]">
+                      <InputDatePicker
+                        value={tglSampai}
+                        showCalendar
+                        onChange={handleDateChange2}
+                        onSelect={handleCalendarSelect2}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <Button
+                  variant="default"
+                  type="button"
+                  className="mt-2 flex w-fit flex-row items-center justify-center px-4"
+                  onClick={onReload}
+                >
+                  <IoMdRefresh />
+                  <p style={{ fontSize: 12 }} className="font-normal">
+                    Reload
+                  </p>
+                </Button>
+              </div>
+              <div className="my-4 h-[500px] w-full rounded-sm border border-blue-500">
                 <div
-                  className="flex h-[25px] w-full flex-row items-center border border-x-0 border-t-0 border-blue-500 px-2 py-2"
+                  className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
                   style={{
                     background:
                       'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
                   }}
                 >
-                  <p className="text-[12px]">{labelLookup}</p>
-                </div>
-                <div
-                  className={`${
-                    rows.length > 0
-                      ? rows.length < 10
-                        ? 'h-fit'
-                        : 'h-[290px]'
-                      : singleColumn && rows.length <= 0
-                      ? 'h-[30px]'
-                      : 'h-[100px]'
-                  }`}
-                >
-                  <DataGrid
-                    ref={gridRef}
-                    columns={columns}
-                    rows={rows}
-                    rowKeyGetter={rowKeyGetter}
-                    onScroll={handleScroll}
-                    rowClass={getRowClass}
-                    onCellClick={handleCellClick}
-                    rowHeight={30}
-                    headerRowHeight={singleColumn ? 0 : 70}
-                    className={`rdg-light fill-grid ${
-                      rows.length < 10 ? 'overflow-hidden' : ''
-                    }`}
-                    // className="rdg-light fill-grid overflow-hidden"
-                    onColumnsReorder={onColumnsReorder}
-                    onCellKeyDown={handleKeyDown}
-                    renderers={{
-                      noRowsFallback: <EmptyRowsRenderer />
-                    }}
-                  />
-                  {isLoading ? (
-                    <div
-                      className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
-                      style={{
-                        background:
-                          'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                  <label htmlFor="" className="text-xs text-zinc-600">
+                    SEARCH :
+                  </label>
+                  <div className="relative flex w-[200px] flex-row items-center">
+                    <Input
+                      ref={inputRef}
+                      value={inputValue}
+                      onChange={(e) => {
+                        handleInputChange(e);
                       }}
-                    >
-                      <LoadRowsRenderer />
-                      <p className="text-sm text-zinc-600">Loading...</p>
-                    </div>
-                  ) : null}
+                      className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+                      placeholder="Type to search..."
+                    />
+                    {(filters.search !== '' || inputValue !== '') && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="absolute right-2 text-gray-500 hover:bg-transparent"
+                        onClick={handleClearInput}
+                      >
+                        <Image
+                          src={IcClose}
+                          width={15}
+                          height={15}
+                          alt="close"
+                        />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                <DataGrid
+                  ref={gridRef}
+                  columns={columns}
+                  rows={rows}
+                  rowKeyGetter={rowKeyGetter}
+                  onScroll={handleScroll}
+                  rowClass={getRowClass}
+                  onCellDoubleClick={handleCellClick}
+                  rowHeight={30}
+                  headerRowHeight={singleColumn ? 0 : 70}
+                  className="rdg-light h-[450px]"
+                  onColumnsReorder={onColumnsReorder}
+                  onCellKeyDown={handleKeyDown}
+                  renderers={{
+                    noRowsFallback: <EmptyRowsRenderer />
+                  }}
+                />
+                {isLoading ? (
+                  <div
+                    className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
+                    style={{
+                      background:
+                        'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                    }}
+                  >
+                    <LoadRowsRenderer />
+                    <p className="text-sm text-zinc-600">Loading...</p>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
-        )}
-      </PopoverContent>
-    </Popover>
+          <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+              onClick={() => setOpen(false)}
+            >
+              <IoMdClose /> <p className="text-center text-white">Cancel</p>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
