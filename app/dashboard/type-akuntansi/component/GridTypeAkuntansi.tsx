@@ -162,6 +162,12 @@ const GridTypeAkuntansi = () => {
       statusaktif: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
+
   // console.log(forms.getValues());
 
   const handleColumnFilterChange = (
@@ -1605,6 +1611,14 @@ const GridTypeAkuntansi = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
+  console.log('forms.getValues()', forms.getValues());
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

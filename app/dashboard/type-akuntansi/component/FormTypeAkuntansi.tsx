@@ -217,6 +217,7 @@ const FormTypeAkuntansi = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputNumeric
+                              {...field}
                               value={field.value ?? ''}
                               onValueChange={(value: any) =>
                                 forms.setValue('order', Number(value))
