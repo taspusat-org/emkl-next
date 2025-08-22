@@ -65,11 +65,9 @@ interface LookUpProps {
   inputLookupValue?: string | number;
   allowedFilterShowAllFirst?: boolean;
   disabled?: boolean; // New prop for disabling the input/button
+  clearDisabled?: boolean; // New prop for disabling the input/button
   selectedRequired?: boolean;
   required?: boolean;
-  linkTo?: string;
-  linkValue?: string | string[] | number[] | null;
-  links?: LinkFilter[];
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
   onClear?: () => void;
 }
@@ -105,6 +103,7 @@ export default function LookUp({
   isSubmitClicked = false,
   postData,
   disabled = false, // Default to false if not provided
+  clearDisabled = true, // Default to false if not provided
   filterby,
   onSelectRow,
   onClear
@@ -369,7 +368,7 @@ export default function LookUp({
   };
 
   const handleClearInput = () => {
-    if (disabled) return; // Prevent input clear if disabled
+    if (disabled && !clearDisabled) return; // Prevent input clear if disabled
     setFilters({ ...filters, search: '', filters: {} });
     setInputValue('');
     if (lookupValue) {
@@ -621,7 +620,9 @@ export default function LookUp({
         signal
       });
 
-      const { data, pagination } = response.data || {};
+      const { data, pagination } = response.data.data
+        ? response.data
+        : response || {};
       if (pagination?.totalPages) setTotalPages(pagination.totalPages);
 
       return Array.isArray(data) ? mapApiToRows(data) : [];
@@ -793,7 +794,7 @@ export default function LookUp({
   );
 
   useEffect(() => {
-    if (type === 'local' || !endpoint || !open) {
+    if (type === 'local' || !endpoint) {
       // Mode local tetap seperti sebelumnya
       const filteredRows = data ? applyFilters(data) : [];
 
@@ -830,14 +831,14 @@ export default function LookUp({
         const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
 
         if (myRequestId !== requestIdRef.current) return;
-        console.log('masuk');
+        console.log('masuk', newRows);
         setRows((prev) => {
-          const mapped = applyFilters(newRows);
-          if (currentPage === 1) return mapped;
+          if (currentPage === 1) return newRows;
+          console.log('masuk22');
 
           // append + dedup by id
           const seen = new Set<number | string>();
-          const merged = [...prev, ...mapped].filter((r) => {
+          const merged = [...prev, ...newRows].filter((r) => {
             const k = r.id;
             if (seen.has(k)) return false;
             seen.add(k);
@@ -922,6 +923,7 @@ export default function LookUp({
             ...filters,
             search: rows[0][postData as string] || ''
           });
+          setInputValue(rows[0][postData as string] || '');
           const value = rows[0][dataToPost as string] || '';
           lookupValue?.(value);
           onSelectRow?.(value); // cukup satu kali, tanpa else
@@ -1088,7 +1090,7 @@ export default function LookUp({
             {(filters.search !== '' || inputValue !== '') && (
               <Button
                 type="button"
-                disabled={disabled}
+                disabled={disabled && !clearDisabled ? true : false}
                 variant="ghost"
                 className="absolute right-10 text-gray-500 hover:bg-transparent"
                 onClick={handleClearInput}

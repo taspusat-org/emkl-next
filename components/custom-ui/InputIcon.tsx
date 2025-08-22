@@ -1,12 +1,18 @@
 import React from 'react';
 import { Input } from '../ui/input';
+import { cn } from '@/lib/utils';
 
-const InputIcon = ({ icon, textIcon, ...props }: any) => {
+const InputIcon = ({ icon, textIcon, readOnly, className, ...props }: any) => {
   return (
     <div className="relative w-full">
       <Input
         {...props}
-        className="pr-10" // memberi ruang agar teks tidak tabrakan dengan icon
+        className={cn(
+          'pr-10',
+          readOnly ? 'text-zinc-400' : '',
+          'tracking-normal', // Add this class for normal letter spacing
+          className
+        )} // memberi ruang agar teks tidak tabrakan dengan icon
       />
       {icon ||
         (textIcon && (
