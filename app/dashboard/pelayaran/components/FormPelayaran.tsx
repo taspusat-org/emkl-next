@@ -207,7 +207,7 @@ const FormPelayaran = ({
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('statusaktif', id)
+                            forms.setValue('statusaktif', Number(id))
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_text')}

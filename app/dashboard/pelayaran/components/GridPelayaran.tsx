@@ -126,7 +126,8 @@ const GridPelayaran = () => {
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
-      keterangan: ''
+      keterangan: '',
+      statusaktif: 1
     }
   });
   console.log(forms.getValues());
