@@ -38,13 +38,12 @@ const FormPelayaran = ({
       required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=status+aktif',
-      label: 'status aktif',
+      label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text',
-      dataToPost: 'id' //untuk pilih kolom yg mau diambil valuenya, bisa selain id
+      postData: 'text'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form

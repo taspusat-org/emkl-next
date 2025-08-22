@@ -78,6 +78,7 @@ import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import { getContainerFn } from '@/lib/apis/container.api';
 import { setReportFilter } from '@/lib/store/printSlice/printSlice';
+import Alert from '@/components/custom-ui/AlertCustom';
 
 interface Filter {
   page: number;
@@ -355,6 +356,7 @@ const GridContainer = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -1062,10 +1064,14 @@ const GridContainer = () => {
     }
   };
   const handleDelete = () => {
-    if (selectedRow !== null) {
+    if (selectedRow !== null && checkedRows.size < 0) {
       setMode('delete');
       setPopOver(true);
     }
+    //  else {
+    //   // Alert()
+    //   // pass;
+    // }
   };
   const handleView = () => {
     if (selectedRow !== null) {
