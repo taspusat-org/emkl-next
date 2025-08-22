@@ -70,6 +70,9 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 
 interface Filter {
   page: number;
@@ -198,7 +201,7 @@ const GridAlatbayar = () => {
     }
   );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -664,32 +667,17 @@ const GridAlatbayar = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statuslangsungcair', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS NILAI']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statuslangsungcair', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -736,32 +724,17 @@ const GridAlatbayar = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusdefault', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS NILAI']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusdefault', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -808,32 +781,17 @@ const GridAlatbayar = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusbank', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS BANK']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS BANK', subgrp: 'STATUS BANK' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusbank', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -880,32 +838,17 @@ const GridAlatbayar = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['STATUS AKTIF']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.text}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusaktif', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -1221,6 +1164,7 @@ const GridAlatbayar = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
+    clearError();
     dispatch(setClearLookup(true));
     try {
       if (keepOpenModal) {
@@ -1259,6 +1203,7 @@ const GridAlatbayar = () => {
     }
   };
   const onSubmit = async (values: AlatbayarInput, keepOpenModal = false) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1338,6 +1283,69 @@ const GridAlatbayar = () => {
       setMode('view');
       setPopOver(true);
     }
+  };
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
+
+    const response = await getAlatbayarFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Alat Bayar',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
+    sessionStorage.setItem(
+      'filtersWithoutLimit',
+      JSON.stringify(filtersWithoutLimit)
+    );
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanAlatbayar.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
+
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
+
+            // Navigate to the report page
+            window.open('/reports/laporanalatbayar', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
   };
 
   // const handleExportBySelect = async () => {
@@ -1441,7 +1449,7 @@ const GridAlatbayar = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
@@ -1516,6 +1524,7 @@ const GridAlatbayar = () => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        clearError();
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
         setPopOver(false);
@@ -1798,15 +1807,14 @@ const GridAlatbayar = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            // customActions={[
-            //   {
-            //     label: 'Resequence',
-            //     icon: <FaPlus />, // Custom icon
-            //     onClick: () => handleResequence(),
-            //     variant: 'success', // Optional styling variant
-            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
-            //   }
-            // ]}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingAlatbayar ? <LoadRowsRenderer /> : null}
           {contextMenu && (

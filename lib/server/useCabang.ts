@@ -13,10 +13,12 @@ export const useGetAllCabang = (
   filters: {
     filters?: {
       kodecabang?: string; // Filter berdasarkan class
-      namacabang?: string; // Filter berdasarkan method
+      nama?: string; // Filter berdasarkan method
       keterangan?: string; // Filter berdasarkan nama
       statusaktif?: string; // Filter berdasarkan nama
-      periode?: string; // Filter berdasarkan nama
+      text?: string; // Filter berdasarkan nama
+      cabang_id?: string;
+      namacabang?: string;
       modifiedby?: string; // Filter berdasarkan nama
       created_at?: string; // Filter berdasarkan nama
       updated_at?: string; // Filter berdasarkan nama
@@ -30,6 +32,33 @@ export const useGetAllCabang = (
 ) => {
   return useQuery(
     ['cabang', filters],
+    async () => await getAllCabangFn(filters)
+  );
+};
+
+export const useGetAllCabangHr = (
+  filters: {
+    filters?: {
+      kodecabang?: string; // Filter berdasarkan class
+      nama?: string; // Filter berdasarkan method
+      keterangan?: string; // Filter berdasarkan nama
+      statusaktif?: string; // Filter berdasarkan nama
+      text?: string; // Filter berdasarkan nama
+      cabang_id?: string;
+      namacabang?: string;
+      modifiedby?: string; // Filter berdasarkan nama
+      created_at?: string; // Filter berdasarkan nama
+      updated_at?: string; // Filter berdasarkan nama
+    };
+    page?: number;
+    sortBy?: string;
+    sortDirection?: string;
+    limit?: number;
+    search?: string; // Kata kunci pencarian
+  } = {}
+) => {
+  return useQuery(
+    ['cabangHr', filters],
     async () => await getAllCabangFn(filters)
   );
 };

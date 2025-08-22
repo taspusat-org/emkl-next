@@ -69,6 +69,8 @@ import {
   hargatruckingInput,
   hargatruckingSchema
 } from '@/lib/validations/hargatrucking.validation';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getHargatruckingFn } from '@/lib/apis/hargatrucking.api';
 
 interface Filter {
   page: number;
@@ -983,35 +985,15 @@ const GridHargatrucking = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="NON AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -1463,59 +1445,69 @@ const GridHargatrucking = () => {
     }
   };
 
-  // const handleExport = async () => {
-  //   try {
-  //     const { page, limit, ...filtersWithoutLimit } = filters;
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
 
-  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+    const response = await getHargatruckingFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Harga Trucking',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
+    sessionStorage.setItem(
+      'filtersWithoutLimit',
+      JSON.stringify(filtersWithoutLimit)
+    );
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting user data:', error);
-  //   }
-  // };
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanHargatrucking.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
 
-  // const handleExportBySelect = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  //   // Mengubah checkedRows menjadi format JSON
-  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-  //   try {
-  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
 
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
-
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting menu data:', error);
-  //     alert({
-  //       title: 'Failed to generate the export. Please try again.',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
+            // Navigate to the report page
+            window.open('/reports/laporanhargatrucking', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
+  };
 
   // const handleReport = async () => {
   //   const { page, limit, ...filtersWithoutLimit } = filters;
@@ -1990,6 +1982,14 @@ const GridHargatrucking = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
             // customActions={[
             //   {
             //     label: 'Resequence',

@@ -74,6 +74,10 @@ import {
   setProcessing,
   setProcessed
 } from '@/lib/store/loadingSlice/loadingSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getContainerFn } from '@/lib/apis/container.api';
+import { setReportFilter } from '@/lib/store/printSlice/printSlice';
 
 interface Filter {
   page: number;
@@ -171,7 +175,7 @@ const GridContainer = () => {
     }
   );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  console.log(forms.getValues());
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -315,6 +319,7 @@ const GridContainer = () => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
+        clearError();
         setPopOver(false);
         dispatch(clearOpenName());
       }
@@ -624,35 +629,15 @@ const GridContainer = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="NON AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -971,6 +956,7 @@ const GridContainer = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
+    clearError();
 
     try {
       if (keepOpenModal) {
@@ -1142,65 +1128,69 @@ const GridContainer = () => {
   //   }
   // };
 
-  // const handleReport = async () => {
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   const response = await getMenuFn(filtersWithoutLimit);
-  //   const reportRows = response.data.map((row) => ({
-  //     ...row,
-  //     judullaporan: 'Laporan Menu',
-  //     usercetak: user.username,
-  //     tglcetak: new Date().toLocaleDateString(),
-  //     judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //   }));
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
 
-  //   // Dynamically import Stimulsoft and generate the PDF report
-  //   import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-  //     .then((module) => {
-  //       const { Stimulsoft } = module;
-  //       Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-  //         '/fonts/tahoma.ttf',
-  //         'Arial'
-  //       );
-  //       Stimulsoft.Base.StiLicense.Key =
-  //         '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-  //         '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-  //         'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-  //         'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-  //         '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-  //         'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-  //         'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+    const response = await getContainerFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Container',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
+    sessionStorage.setItem(
+      'filtersWithoutLimit',
+      JSON.stringify(filtersWithoutLimit)
+    );
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-  //       const report = new Stimulsoft.Report.StiReport();
-  //       const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-  //       // Load the report template (MRT file)
-  //       report.loadFile('/reports/LaporanMenu.mrt');
-  //       report.dictionary.dataSources.clear();
-  //       dataSet.readJson({ data: reportRows });
-  //       report.regData(dataSet.dataSetName, '', dataSet);
-  //       report.dictionary.synchronize();
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanContainer.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
 
-  //       // Render the report asynchronously
-  //       report.renderAsync(() => {
-  //         // Export the report to PDF asynchronously
-  //         report.exportDocumentAsync((pdfData: any) => {
-  //           const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-  //             type: 'application/pdf'
-  //           });
-  //           const pdfUrl = URL.createObjectURL(pdfBlob);
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  //           // Store the Blob URL in sessionStorage
-  //           sessionStorage.setItem('pdfUrl', pdfUrl);
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
 
-  //           // Navigate to the report page
-  //           window.open('/reports/menu', '_blank');
-  //         }, Stimulsoft.Report.StiExportFormat.Pdf);
-  //       });
-  //     })
-  //     .catch((error) => {
-  //       console.error('Failed to load Stimulsoft:', error);
-  //     });
-  // };
+            // Navigate to the report page
+            window.open('/reports/laporancontainer', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
+  };
 
   // const handleReportBySelect = async () => {
   //   if (checkedRows.size === 0) {
@@ -1266,12 +1256,16 @@ const GridContainer = () => {
       </div>
     );
   }
+
   const handleClose = () => {
     setPopOver(false);
     setMode('');
 
+    clearError();
+
     forms.reset();
   };
+
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
@@ -1596,50 +1590,43 @@ const GridContainer = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            // customActions={[
-            //   {
-            //     label: 'Resequence',
-            //     icon: <FaPlus />, // Custom icon
-            //     onClick: () => handleResequence(),
-            //     variant: 'success', // Optional styling variant
-            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
-            //   }
-            // ]}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
             // dropdownMenus={[
             //   {
-            //     label: 'Report',
+            //     label: 'Print',
             //     icon: <FaPrint />,
             //     className: 'bg-cyan-500 hover:bg-cyan-700',
-            //     actions: [
-            //       {
-            //         label: 'REPORT ALL',
-            //         onClick: () => handleReport(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       },
-            //       {
-            //         label: 'REPORT BY SELECT',
-            //         onClick: () => handleReportBySelect(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       }
-            //     ]
-            //   },
-            //   {
-            //     label: 'Export',
-            //     icon: <FaFileExport />,
-            //     className: 'bg-green-600 hover:bg-green-700',
-            //     actions: [
-            //       {
-            //         label: 'EXPORT ALL',
-            //         onClick: () => handleExport(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       },
-            //       {
-            //         label: 'EXPORT BY SELECT',
-            //         onClick: () => handleExportBySelect(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       }
-            //     ]
+            //     actions: { onClick: () => handleReport()}
+            //       // {
+            //       //   label: 'REPORT BY SELECT',
+            //       //   onClick: () => handleReportBySelect(),
+            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       // }
             //   }
+            //   // {
+            //   //   label: 'Export',
+            //   //   icon: <FaFileExport />,
+            //   //   className: 'bg-green-600 hover:bg-green-700',
+            //   //   actions: [
+            //   //     {
+            //   //       label: 'EXPORT ALL',
+            //   //       onClick: () => handleExport(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     },
+            //   //     {
+            //   //       label: 'EXPORT BY SELECT',
+            //   //       onClick: () => handleExportBySelect(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     }
+            //   //   ]
+            //   // }
             // ]}
           />
           {isLoadingContainer ? <LoadRowsRenderer /> : null}

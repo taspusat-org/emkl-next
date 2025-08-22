@@ -375,7 +375,7 @@ const FormManagerMarketing = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
@@ -400,13 +400,26 @@ const FormManagerMarketing = ({
           }
 
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              <InputCurrency
-                readOnly={mode === 'view' || mode === 'delete'}
-                value={String(raw)}
-                onValueChange={(value) => handleCurrencyChange2(rowIdx, value)}
-              />
-            </div>
+            <FormField
+              name="nominalakhir"
+              control={forms.control}
+              render={({ field }) => (
+                <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                  <div className="flex w-full flex-col lg:w-[100%]">
+                    <FormControl>
+                      <InputCurrency
+                        readOnly={mode === 'view' || mode === 'delete'}
+                        value={String(raw)}
+                        onValueChange={(value) =>
+                          handleCurrencyChange2(rowIdx, value)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
           );
         }
       },
@@ -441,13 +454,26 @@ const FormManagerMarketing = ({
           }
 
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              <InputCurrency
-                readOnly={mode === 'view' || mode === 'delete'}
-                value={String(raw)}
-                onValueChange={(value) => handleCurrencyChange3(rowIdx, value)}
-              />
-            </div>
+            <FormField
+              name="persentase"
+              control={forms.control}
+              render={({ field }) => (
+                <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                  <div className="flex flex-col">
+                    <FormControl>
+                      <InputCurrency
+                        readOnly={mode === 'view' || mode === 'delete'}
+                        value={String(raw)}
+                        onValueChange={(value) =>
+                          handleCurrencyChange3(rowIdx, value)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
           );
         }
       },
@@ -474,13 +500,13 @@ const FormManagerMarketing = ({
               <div className="w-full lg:w-[100%]">
                 {lookUpPropsStatusAktifDetail.map((props, index) => (
                   <LookUp
-                    label={`STATUS AKTIF ${rowIdx}`}
+                    label={`STATUS AKTIF ${rowIdx + 1}`}
                     key={index}
                     {...props}
                     lookupValue={(id) =>
                       handleCurrencyChange4(rowIdx, String(id))
                     }
-                    lookupNama={forms.getValues(`details[${rowIdx}].text`)}
+                    lookupNama={forms.getValues(`details[${rowIdx + 1}].text`)}
                     disabled={mode === 'view' || mode === 'delete'}
                   />
                 ))}
@@ -544,6 +570,7 @@ const FormManagerMarketing = ({
     {
       columns: [{ key: 'text', name: 'STATUS', width: 250 }],
       labelLookup: 'STATUS AKTIF DETAIL LOOKUP',
+      required: true,
       selectedRequired: true,
       endpoint: 'parameter?grp=status+aktif',
       singleColumn: true,
@@ -909,7 +936,7 @@ const FormManagerMarketing = ({
                         columns={columns as any[]}
                         rows={rows}
                         headerRowHeight={70}
-                        rowHeight={40}
+                        rowHeight={60}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"
                       />

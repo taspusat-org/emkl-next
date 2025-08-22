@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDispatch } from 'react-redux';
 import { AxiosError } from 'axios';
 import { IErrorResponse } from '../types/user.type';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetManagerMarketingHeader = (
   filters: {
@@ -81,6 +82,7 @@ export const useGetManagerMarketingDetail = (id?: number) => {
   );
 };
 export const useCreateManagerMarketing = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
@@ -104,10 +106,15 @@ export const useCreateManagerMarketing = () => {
       const errorResponse = error.response?.data as IErrorResponse;
 
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
+        console.log('errorResponse', errorResponse);
+
+        const messages = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [{ path: ['form'], message: errorResponse.message }];
+
+        messages.forEach((err) => {
+          const path = err.path?.[0] ?? 'form';
+          setError(path, err.message);
         });
       }
     }

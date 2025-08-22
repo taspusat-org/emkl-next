@@ -72,18 +72,18 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Row {
   id: number;
   kodecabang: string;
-  namacabang: string;
+  nama: string;
   keterangan: string;
   statusaktif: number;
-  periode: number;
-  minuscuti: number;
+  text: string;
+  cabang_id: number;
+  namacabang_hr: string;
   modifiedby: string;
-  periode_text: string;
-  minuscuti_text: string;
   created_at: string;
   updated_at: string;
 }
@@ -93,11 +93,12 @@ interface Filter {
   search: string;
   filters: {
     kodecabang: string;
-    namacabang: string;
+    nama: string;
     keterangan: string;
     statusaktif: string;
-    periode: string;
-    minuscuti: string;
+    text: string;
+    cabang_id: string;
+    namacabang_hr: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -116,11 +117,12 @@ const GridCabang = () => {
     limit: 20,
     filters: {
       kodecabang: '',
-      namacabang: '',
+      nama: '',
       keterangan: '',
       statusaktif: '',
-      periode: '',
-      minuscuti: '',
+      text: '',
+      cabang_id: '',
+      namacabang_hr: '',
       modifiedby: '',
       created_at: '',
       updated_at: ''
@@ -138,7 +140,7 @@ const GridCabang = () => {
   const { reportData } = useSelector((state: RootState) => state.report);
   const inputColRefs = {
     kodecabang: useRef<HTMLInputElement>(null),
-    namacabang: useRef<HTMLInputElement>(null),
+    nama: useRef<HTMLInputElement>(null),
     keterangan: useRef<HTMLInputElement>(null),
     text: useRef<HTMLInputElement>(null),
     statusaktif: useRef<HTMLInputElement>(null),
@@ -165,7 +167,7 @@ const GridCabang = () => {
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
-
+  const [mode, setMode] = useState<string>('');
   const [dataGridKey, setDataGridKey] = useState(0);
 
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
@@ -185,7 +187,7 @@ const GridCabang = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const dispatch = useDispatch();
   const { alert } = useAlert();
-
+  const getLookup = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<CabangInput>({
     resolver: zodResolver(cabangSchema),
     mode: 'onTouched',
@@ -194,7 +196,7 @@ const GridCabang = () => {
       nama: '',
       keterangan: '',
       statusaktif: 0,
-      periode: undefined
+      cabang_id: 0
     }
   });
   const handleColumnFilterChange = (
@@ -286,14 +288,15 @@ const GridCabang = () => {
       ...prev,
       filters: {
         kodecabang: '',
-        namacabang: '',
+        nama: '',
         keterangan: '',
+        statusaktif: '',
+        text: '',
+        cabang_id: '',
+        namacabang_hr: '',
         modifiedby: '',
         created_at: '',
-        updated_at: '',
-        statusaktif: '',
-        minuscuti: '',
-        periode: ''
+        updated_at: ''
       },
       search: searchValue,
       page: 1
@@ -381,10 +384,11 @@ const GridCabang = () => {
       console.error('Error fetching parameter data:', error);
     }
   };
+  // console.log(forms.getValues());
+
   useEffect(() => {
     // Menjalankan parameterData dengan params yang sesuai
     const params = ['status aktif', 'periodecabang', 'minus cuti'];
-
     // Panggil parameterData untuk mengambil data dan mengupdate state
     parameterData(params);
   }, []); // kosongkan dependency array untuk menjalankan hanya sekali ketika komponen mount
@@ -410,14 +414,15 @@ const GridCabang = () => {
                   search: '',
                   filters: {
                     kodecabang: '',
-                    namacabang: '',
+                    nama: '',
                     keterangan: '',
+                    statusaktif: '',
+                    text: '',
+                    cabang_id: '',
+                    namacabang_hr: '',
                     modifiedby: '',
                     created_at: '',
-                    updated_at: '',
-                    statusaktif: '',
-                    minuscuti: '',
-                    periode: ''
+                    updated_at: ''
                   }
                 }),
                   setInputValue('');
@@ -536,8 +541,8 @@ const GridCabang = () => {
         }
       },
       {
-        key: 'namacabang',
-        name: 'namacabang',
+        key: 'nama',
+        name: 'nama',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -546,21 +551,21 @@ const GridCabang = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('namacabang')}
+              onClick={() => handleSort('nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'namacabang' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama Cabang
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'namacabang' &&
+                {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'namacabang' &&
+                ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -571,18 +576,18 @@ const GridCabang = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <Input
-                ref={inputColRefs.namacabang}
+                ref={inputColRefs.nama}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.namacabang || ''}
+                value={filters.filters.nama || ''}
                 onChange={(e) => {
                   const value = e.target.value;
-                  handleColumnFilterChange('namacabang', value);
+                  handleColumnFilterChange('nama', value);
                 }}
               />
-              {filters.filters.namacabang && (
+              {filters.filters.nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('namacabang', '')}
+                  onClick={() => handleColumnFilterChange('nama', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -592,11 +597,11 @@ const GridCabang = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.namacabang || '';
+          const columnFilter = filters.filters.nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.namacabang || '',
+                props.row.nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -686,32 +691,15 @@ const GridCabang = () => {
               <p className="text-sm font-normal">Status Aktif</p>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-sm font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-sm" value="">
-                      <p className="text-sm font-normal">ALL</p>
-                    </SelectItem>
-                    {statusAktifOptions.map((option, index) => (
-                      <SelectItem
-                        key={index}
-                        className="cursor-pointer text-sm"
-                        value={option.value}
-                      >
-                        <p className="text-sm font-normal">{option.label}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -739,106 +727,6 @@ const GridCabang = () => {
           }
 
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'periode',
-        name: 'PERIODE',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]">
-              <p className="text-sm font-normal">Periode</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('periode', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-sm font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-sm" value="">
-                      <p className="text-sm font-normal">ALL</p>
-                    </SelectItem>
-                    {periodeCabangOptions.map((option, index) => (
-                      <SelectItem
-                        key={index}
-                        className="cursor-pointer text-sm"
-                        value={option.value}
-                      >
-                        <p className="text-sm font-normal">{option.label}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.periode_text || '', filters.search)}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'minuscuti',
-        name: 'MINUS CUTI',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]">
-              <p className="text-sm font-normal">MINUS CUTI</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('minuscuti', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-sm font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-sm" value="">
-                      <p className="text-sm font-normal">ALL</p>
-                    </SelectItem>
-                    {minusCutiOptions.map((option, index) => (
-                      <SelectItem
-                        key={index}
-                        className="cursor-pointer text-sm"
-                        value={option.value}
-                      >
-                        <p className="text-sm font-normal">{option.label}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.minuscuti_text || '', filters.search)}
-            </div>
-          );
         }
       },
       {
@@ -1287,20 +1175,22 @@ const GridCabang = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
       forms.setValue('kodecabang', rowData.kodecabang);
-      forms.setValue('nama', rowData.namacabang);
+      forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
       forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('periode', Number(rowData.periode));
-      forms.setValue('periode_text', rowData.periode_text);
-      forms.setValue('minuscuti_text', rowData.minuscuti_text);
+      forms.setValue('text', rowData.text);
+      forms.setValue('cabang_id', Number(rowData.cabang_id));
+      forms.setValue('namacabang_hr', rowData.namacabang_hr);
+
       setPopOver(true);
       setDeleteMode(false);
-
+      setMode('edit');
       setEditMode(true);
     }
   };
 
   const handleDelete = async () => {
+    setMode('delete');
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
       const checkCabang = await checkCabangFn(rowData.id);
@@ -1312,12 +1202,12 @@ const GridCabang = () => {
         });
       } else {
         forms.setValue('kodecabang', rowData.kodecabang);
-        forms.setValue('nama', rowData.namacabang);
+        forms.setValue('nama', rowData.nama);
         forms.setValue('keterangan', rowData.keterangan);
         forms.setValue('statusaktif', Number(rowData.statusaktif));
-        forms.setValue('periode', Number(rowData.periode));
-        forms.setValue('periode_text', rowData.periode_text);
-        forms.setValue('minuscuti_text', rowData.minuscuti_text);
+        forms.setValue('text', rowData.text);
+        forms.setValue('cabang_id', Number(rowData.cabang_id));
+        forms.setValue('namacabang_hr', rowData.namacabang_hr);
         setPopOver(true);
         setEditMode(false);
         setDeleteMode(true);
@@ -1325,15 +1215,16 @@ const GridCabang = () => {
     }
   };
   const handleView = () => {
+    setMode('view');
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
       forms.setValue('kodecabang', rowData.kodecabang);
-      forms.setValue('nama', rowData.namacabang);
+      forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
       forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('periode', Number(rowData.periode));
-      forms.setValue('periode_text', rowData.periode_text);
-      forms.setValue('minuscuti_text', rowData.minuscuti_text);
+      forms.setValue('text', rowData.text);
+      forms.setValue('cabang_id', Number(rowData.cabang_id));
+      forms.setValue('namacabang_hr', rowData.namacabang_hr);
       setPopOver(true);
       setDeleteMode(true);
       setEditMode(false);
@@ -1713,6 +1604,7 @@ const GridCabang = () => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        setMode('');
         forms.reset(); // Reset the form when the Escape key is pressed
         setEditMode(false);
         setDeleteMode(false);
@@ -1854,6 +1746,7 @@ const GridCabang = () => {
         popOver={popOver}
         setPopOver={setPopOver}
         forms={forms}
+        mode={mode}
         handleClose={handleClose}
         onSubmit={forms.handleSubmit(onSubmit)}
         isLoadingCreate={isLoadingCreate}

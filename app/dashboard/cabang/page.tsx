@@ -7,6 +7,12 @@ import GridCabang from './components/GridCabang';
 import { fieldLength } from '@/lib/apis/field-length.api';
 import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 import { useDispatch } from 'react-redux';
+import { getAllCabangHrFn } from '@/lib/apis/cabang.api';
+import {
+  setData,
+  setDefault,
+  setType
+} from '@/lib/store/lookupSlice/lookupSlice';
 const Page = () => {
   const dispatch = useDispatch();
 
@@ -15,9 +21,23 @@ const Page = () => {
       try {
         const result = await fieldLength('cabang');
         dispatch(setFieldLength(result.data));
+
+        const [GetCabangHrLookup] = await Promise.all([
+          getAllCabangHrFn({ isLookUp: 'true' })
+        ]);
+
+        if (GetCabangHrLookup.type === 'local') {
+          dispatch(setData({ key: 'NAMA', data: GetCabangHrLookup.data }));
+          const defaultValue =
+            GetCabangHrLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          dispatch(setDefault({ key: 'NAMA', isdefault: defaultValue }));
+        }
+        dispatch(setType({ key: 'NAMA', type: GetCabangHrLookup.type }));
       } catch (err) {
         console.error('Error fetching data:', err);
-      } finally {
       }
     };
 

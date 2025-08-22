@@ -21,6 +21,7 @@ import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportContainerFn } from '@/lib/apis/container.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [savedFilters, setSavedFilters] = useState<any>({});
 
   // Print plugin
   const printPluginInstance = printPlugin();
@@ -31,33 +32,23 @@ const ReportMenuPage: React.FC = () => {
   const { ZoomPopover } = zoomPluginInstance;
 
   // Default layout with custom toolbar
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 30,
-    filters: {
-      nama: '',
-      keterangan: '',
-      created_at: '',
-      updated_at: '',
-      text: '',
-      statusaktif: ''
-    },
-    search: '',
-    sortBy: 'nama',
-    sortDirection: 'asc'
-  });
+  useEffect(() => {
+    const storedPdf = sessionStorage.getItem('pdfUrl');
+    if (storedPdf) setPdfUrl(storedPdf);
+
+    const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+    if (storedFilters) {
+      try {
+        setSavedFilters(JSON.parse(storedFilters));
+      } catch {
+        setSavedFilters({});
+      }
+    }
+  }, []);
 
   const handleExport = async () => {
     try {
-      const { page, limit, filters: nestedFilters, ...rest } = filters;
-
-      // Gabungkan search, sort, dan filters
-      const exportPayload = {
-        ...rest,
-        ...nestedFilters
-      };
-
-      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const exportPayload = { ...savedFilters };
       const response = await exportContainerFn(exportPayload);
 
       // Buat link download dari Blob
@@ -192,12 +183,17 @@ const ReportMenuPage: React.FC = () => {
 export default ReportMenuPage;
 
 // 'use client';
+
 // import 'stimulsoft-reports-js/Css/stimulsoft.designer.office2013.whiteblue.css';
 // import 'stimulsoft-reports-js/Css/stimulsoft.viewer.office2013.whiteblue.css';
 // import React, { useEffect, useState } from 'react';
 // import { useSelector } from 'react-redux';
 // import { RootState } from '@/lib/store/store';
 // import { getTujuankapalFn } from '@/lib/apis/tujuankapal.api';
+// import { getContainerFn } from '@/lib/apis/container.api';
+// import { getMenuFn } from '@/lib/apis/menu.api';
+// import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
+// import { getHargatruckingFn } from '@/lib/apis/hargatrucking.api';
 
 // const ReportDesigner = () => {
 //   const { token } = useSelector((state: RootState) => state.auth);
@@ -207,7 +203,7 @@ export default ReportMenuPage;
 //     // Ambil data dari API
 //     const fetchData = async () => {
 //       try {
-//         const res = await getTujuankapalFn({ page: 1, limit: 50 }); // sesuaikan filter
+//         const res = await getHargatruckingFn({ page: 1, limit: 50 }); // sesuaikan filter
 //         setReportData(res.data); // simpan ke state
 //       } catch (err) {
 //         console.error('Gagal ambil data container:', err);
@@ -244,7 +240,7 @@ export default ReportMenuPage;
 
 //         // Report
 //         const report = new Stimulsoft.Report.StiReport();
-//         report.loadFile('/reports/LaporanBank.mrt');
+//         report.loadFile('/reports/LaporanTujuankapal.mrt');
 
 //         // Designer
 //         const options = new Stimulsoft.Designer.StiDesignerOptions();

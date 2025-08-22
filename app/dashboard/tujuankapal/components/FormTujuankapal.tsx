@@ -42,8 +42,7 @@ const FormMenu = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'namacabang',
-      dataToPost: 'id'
+      postData: 'namacabang'
     }
   ];
   const lookUpPropsStatusAktif = [
@@ -59,8 +58,7 @@ const FormMenu = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      dataToPost: 'id'
+      postData: 'text'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form

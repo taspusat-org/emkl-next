@@ -21,7 +21,7 @@ import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportDaftarblFn } from '@/lib/apis/daftarbl.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-
+  const [savedFilters, setSavedFilters] = useState<any>({});
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -29,42 +29,30 @@ const ReportMenuPage: React.FC = () => {
   // Zoom plugin
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
+  useEffect(() => {
+    const storedPdf = sessionStorage.getItem('pdfUrl');
+    if (storedPdf) setPdfUrl(storedPdf);
 
-  // Default layout with custom toolbar
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 30,
-    filters: {
-      nama: '',
-      keterangan: '',
-      created_at: '',
-      updated_at: '',
-      text: '',
-      statusaktif: ''
-    },
-    search: '',
-    sortBy: 'nama',
-    sortDirection: 'asc'
-  });
+    const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+    if (storedFilters) {
+      try {
+        setSavedFilters(JSON.parse(storedFilters));
+      } catch {
+        setSavedFilters({});
+      }
+    }
+  }, []);
 
   const handleExport = async () => {
     try {
-      const { page, limit, filters: nestedFilters, ...rest } = filters;
-
-      // Gabungkan search, sort, dan filters
-      const exportPayload = {
-        ...rest,
-        ...nestedFilters
-      };
-
-      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const exportPayload = { ...savedFilters };
       const response = await exportDaftarblFn(exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_daftarbl_${Date.now()}.xlsx`;
+      link.download = `laporan_daftar bl_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
@@ -72,7 +60,7 @@ const ReportMenuPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting daftarbl data:', error);
+      console.error('Error exporting daftar bl data:', error);
     }
   };
 
