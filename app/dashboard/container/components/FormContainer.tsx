@@ -175,6 +175,7 @@ const FormContainer = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <Input
+                              autoFocus
                               {...field}
                               value={field.value ?? ''}
                               type="text"
