@@ -199,7 +199,7 @@ const GridKasGantungHeader = () => {
     colKey: keyof Filter['filters'],
     value: string
   ) => {
-    // UI instan (tidak memicu request)
+    // Logika yang ada pada handleColumnFilterChange sebelumnya
     const originalIndex = columns.findIndex((col) => col.key === colKey);
     const displayIndex =
       columnsOrder.length > 0
@@ -218,30 +218,52 @@ const GridKasGantungHeader = () => {
       ref?.focus();
     }, 200);
 
-    // DEBOUNCE PER-KOLOM
-    // - batalkan timer lama untuk kolom ini saja
-    const timers = colTimersRef.current;
-    const prevTimer = timers.get(colKey);
-    if (prevTimer) clearTimeout(prevTimer);
-
-    const t = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        filters: { ...prev.filters, [colKey]: value },
-        search: '',
-        page: 1
-      }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-      setRows([]);
-      setCurrentPage(1);
-
-      timers.delete(colKey); // bereskan map
-    }, 300);
-
-    timers.set(colKey, t);
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: value },
+      search: '',
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchValue = e.target.value;
+    // Langsung update input value tanpa debounce
+    setInputValue(searchValue);
+
+    // Menunggu beberapa waktu sebelum update filter
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+    debounceTimerRef.current = setTimeout(() => {
+      // Mengupdate filter setelah debounce
+      setCurrentPage(1);
+      setFilters((prev) => ({
+        ...prev,
+        filters: filterKasGantung, // Gunakan filter yang relevan
+        search: searchValue,
+        page: 1
+      }));
+
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setTimeout(() => {
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 100);
+
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 200);
+      setSelectedRow(0);
+      setCurrentPage(1);
+      setRows([]);
+    }, 300); // Mengatur debounce hanya untuk update filter
+  };
   function highlightText(
     text: string | number | null | undefined,
     search: string,
@@ -286,34 +308,7 @@ const GridKasGantungHeader = () => {
       />
     );
   }
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchValue = e.target.value;
-    setInputValue(searchValue);
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    debounceTimerRef.current = setTimeout(() => {
-      setCurrentPage(1);
-      setFilters((prev) => ({
-        ...prev,
-        filters: filterKasGantung,
-        search: searchValue,
-        page: 1
-      }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-      setTimeout(() => {
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 100);
 
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 200);
-      setSelectedRow(0);
-      setCurrentPage(1);
-      setRows([]);
-    }, 300);
-  };
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);

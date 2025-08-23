@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputMask from '@mona-health/react-input-mask';
 
 type NumericInputProps = {
-  value?: string;
+  value?: string; // kalau mau menerima number juga, ubah ke: value?: string | number;
   onValueChange?: (val: string) => void;
   icon?: React.ReactNode;
   className?: string;
@@ -24,6 +24,16 @@ const InputNumeric: React.FC<NumericInputProps> = ({
     typeof val === 'number' ? String(val) : val;
 
   const [inputValue, setInputValue] = useState<string>(normalizeValue(value));
+
+  // ⬇️ Sinkronkan state saat prop `value` berubah
+  useEffect(() => {
+    const normalized = normalizeValue(value ?? '');
+    if (normalized !== inputValue) {
+      setInputValue(normalized);
+    }
+    // sertakan `inputValue` di deps agar sesuai lint; guard di atas mencegah render berulang
+  }, [value, inputValue]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
     setInputValue(raw);
@@ -40,7 +50,7 @@ const InputNumeric: React.FC<NumericInputProps> = ({
         mask="999999999999999999999999"
         maskPlaceholder={null}
         maskChar={null}
-        value={inputValue} // Using processed value
+        value={inputValue}
         readOnly={readOnly}
         onChange={handleChange}
         autoFocus={autoFocus}
