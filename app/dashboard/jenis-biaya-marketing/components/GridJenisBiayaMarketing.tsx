@@ -130,6 +130,11 @@ const GridJenisBiayaMarketing = () => {
       keterangan: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   console.log(forms.getValues());
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
@@ -1423,6 +1428,13 @@ const GridJenisBiayaMarketing = () => {
     };
   }, [forms]);
 
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1485,6 +1497,7 @@ const GridJenisBiayaMarketing = () => {
           }}
         >
           <ActionButton
+            module="Jenis-Biaya-Marketing"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
