@@ -4,7 +4,18 @@ import { dynamicRequiredMessage } from '../utils';
 
 export const akuntansiSchema = z.object({
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
-  keterangan: z.string().optional(),
-  statusaktif: z.number().min(1, `${REQUIRED_FIELD}`),
+
+  keterangan: z
+    .string()
+    .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),
+
+  statusaktif: z
+    .number()
+    .min(1, { message: dynamicRequiredMessage('STATUSAKTIF') }),
+
+  statusaktif_nama: z
+    .string()
+    .nonempty({ message: dynamicRequiredMessage('STATUSAKTIF_NAMA') })
 });
+
 export type AkuntansiInput = z.infer<typeof akuntansiSchema>;

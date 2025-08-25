@@ -1,24 +1,17 @@
 'use client';
 
+import PageContainer from '@/components/layout/page-container';
+import GridSandarKapal from './component/GridSandarKapal';
+import { fieldLength } from '@/lib/apis/field-length.api';
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { fieldLength } from '@/lib/apis/field-length.api';
-import GridSandarKapal from './component/GridSandarKapal';
-import PageContainer from '@/components/layout/page-container';
 import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 import { getParameterFn } from '@/lib/apis/parameter.api';
 import {
   setData,
-  setType,
-  setDefault
+  setDefault,
+  setType
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { getAkuntansiFn } from '@/lib/apis/akuntansi.api';
-
-interface ApiResponse {
-  type: string;
-  data: any; // Define a more specific type for data if possible
-}
 
 const Page = () => {
   const dispatch = useDispatch();
@@ -26,14 +19,12 @@ const Page = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await fieldLength('typeakuntansi');
+        const result = await fieldLength('sandarkapal');
         dispatch(setFieldLength(result.data));
 
-        const [getStatusAktifLookup, getAkuntansiLookup] =
-          await Promise.all<ApiResponse>([
-            getParameterFn({ isLookUp: 'true' }),
-            getAkuntansiFn({ isLookUp: 'true' })
-          ]);
+        const [getStatusAktifLookup] = await Promise.all([
+          getParameterFn({ isLookUp: 'true' })
+        ]);
 
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];
@@ -54,19 +45,6 @@ const Page = () => {
             dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
           });
         }
-
-        if (getAkuntansiLookup.type === 'local') {
-          dispatch(
-            setData({ key: 'AKUNTANSI', data: getAkuntansiLookup.data })
-          );
-          const defaultValue =
-            getAkuntansiLookup.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
-
-          dispatch(setDefault({ key: 'AKUNTANSI', isdefault: defaultValue }));
-        }
-        dispatch(setType({ key: 'AKUNTANSI', type: getAkuntansiLookup.type }));
       } catch (err) {
         console.error('Error fetching data:', err);
       }
@@ -77,15 +55,11 @@ const Page = () => {
 
   return (
     <PageContainer scrollable>
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <div className="col-span-10 h-[500px]">
-              <GridSandarKapal />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-10 h-[500px]">
+          <GridSandarKapal />
+        </div>
+      </div>
     </PageContainer>
   );
 };

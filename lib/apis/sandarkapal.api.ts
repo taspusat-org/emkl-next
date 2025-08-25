@@ -1,31 +1,41 @@
 import { GetParams } from '../types/all.type';
-import { IAllSandarKapal } from '../types/sandarkapal.type';
+import { IAllSandarKapal, ISandarKapal } from '../types/sandarkapal.type';
 import { buildQueryParams } from '../utils';
-import { api2 } from '../utils/AxiosInstance';
+import { api, api2 } from '../utils/AxiosInstance';
 import { SandarKapalInput } from '../validations/sandarkapal.validation';
+import { MenuInput } from '../validations/menu.validation';
 
-interface UpdateSandarKapalParams {
+interface UpdateMenuParams {
   id: string;
   fields: SandarKapalInput;
 }
 
-interface validationFields {
-  aksi: string;
-  value: number | string;
-}
-
-export const getAllSandarKapalFn = async (
+export const getSandarKapalFn = async (
   filters: GetParams = {}
 ): Promise<IAllSandarKapal> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('sandarkapal', { params: queryParams });
+
+    const response = await api2.get('/sandarkapal', { params: queryParams });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Type Akuntansi data:', error);
-    throw new Error('Failed to fetch Type Akuntansi data');
+    console.error('Error fetching menus:', error);
+    throw new Error('Failed to fetch menus');
   }
+};
+export const deleteSandarKapalFn = async (id: string) => {
+  try {
+    const response = await api2.delete(`/sandarkapal/${id}`);
+    return response.data; // Optionally return response data if needed
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error; // Re-throw the error if you want to handle it in the calling function
+  }
+};
+export const updateSandarKapalFn = async ({ id, fields }: UpdateMenuParams) => {
+  const response = await api2.put(`/sandarkapal/update/${id}`, fields);
+  return response.data;
 };
 
 export const storeSandarKapalFn = async (fields: SandarKapalInput) => {
@@ -34,30 +44,62 @@ export const storeSandarKapalFn = async (fields: SandarKapalInput) => {
   return response.data;
 };
 
-export const updateSandarKapalFn = async ({
-  id,
-  fields
-}: UpdateSandarKapalParams) => {
-  const response = await api2.put(`/sandarkapal/${id}`, fields);
-
-  return response.data;
-};
-
-export const deleteSandarKapalFn = async (id: string) => {
+export const exportSandarKapalFn = async (filters: any): Promise<any> => {
   try {
-    const response = await api2.delete(`sandarkapal/${id}`);
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/laporansandarkapal', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
 
-    return response;
+    return response.data; // Return the Blob file from response
   } catch (error) {
-    console.error('Error deleting order:', error);
-    throw error;
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
   }
 };
 
-export const checkValidationSandarKapalFn = async (
-  fields: validationFields
-) => {
-  const response = await api2.post(`/sandarkapal/check-validation`, fields);
+// export const exportMenuFn = async (filters: any): Promise<any> => {
+//   try {
+//     const queryParams = buildQueryParams(filters);
+//     const response = await api2.get('/menu/export', {
+//       params: queryParams,
+//       responseType: 'blob' // Pastikan respon dalam bentuk Blob
+//     });
 
-  return response;
-};
+//     return response.data; // Return the Blob file from response
+//   } catch (error) {
+//     console.error('Error exporting data:', error);
+//     throw new Error('Failed to export data');
+//   }
+// };
+
+// Correctly typed 'ids' and sending proper data format to the NestJS API
+// export const reportMenuBySelectFn = async (ids: { id: number }[]) => {
+//   try {
+//     // Sending the data in the correct format to the NestJS API
+//     const response = await api2.post(`/menu/report-byselect`, ids);
+
+//     return response.data; // Assuming the API returns the data properly
+//   } catch (error) {
+//     console.error('Error in sending data:', error);
+//     throw new Error('Failed to send data to the API');
+//   }
+// };
+
+// export const exportMenuBySelectFn = async (ids: { id: number }[]) => {
+//   try {
+//     const response = await api2.post('/menu/export-byselect', ids, {
+//       responseType: 'blob'
+//     });
+
+//     return response.data; // Return the Blob file from response
+//   } catch (error) {
+//     console.error('Error exporting data:', error);
+//     throw new Error('Failed to export data');
+//   }
+// };
+
+// export const updateMenuResequenceFn = async (data: any) => {
+//   await api2.put(`/menu/update-resequence`, data);
+// };
