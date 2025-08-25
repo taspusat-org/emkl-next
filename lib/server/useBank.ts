@@ -48,55 +48,73 @@ export const useCreateBank = () => {
   return useMutation(storeBankFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('bank');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
+      // toast({
+      //   title: 'Proses Berhasil',
+      //   description: 'Data Berhasil Ditambahkan'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
 
       if (errorResponse !== undefined) {
-        console.log('errorResponse', errorResponse);
+        if (errorResponse.statusCode === 400) {
+          // Normalisasi pesan error agar konsisten array
+          const messages = Array.isArray(errorResponse.message)
+            ? errorResponse.message
+            : [{ path: ['form'], message: errorResponse.message }];
 
-        const messages = Array.isArray(errorResponse.message)
-          ? errorResponse.message
-          : [{ path: ['form'], message: errorResponse.message }];
-
-        messages.forEach((err) => {
-          const path = err.path?.[0] ?? 'form';
-          setError(path, err.message);
-        });
+          messages.forEach((err) => {
+            const path = err.path?.[0] ?? 'form';
+            setError(path, err.message);
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
     }
   });
 };
 
 export const useDeleteBank = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(deleteBankFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('bank');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
+      // toast({
+      //   title: 'Proses Berhasil.',
+      //   description: 'Data Berhasil Dihapus.'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda.'
+          });
+        }
       }
     }
   });
 };
 export const useUpdateBank = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -111,11 +129,20 @@ export const useUpdateBank = () => {
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda.'
+          });
+        }
       }
     }
   });

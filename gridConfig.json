@@ -97,11 +97,11 @@
     }
   },
   "GridHargatrucking-1": {
-    "columnsOrder": [0, 1, 3, 2, 4, 5, 6, 7, 8, 9, 10],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
-      "tujuankapal_id": 230,
+      "tujuankapal_id": 200,
       "emkl_id": 200,
       "keterangan": 150,
       "container_id": 300,

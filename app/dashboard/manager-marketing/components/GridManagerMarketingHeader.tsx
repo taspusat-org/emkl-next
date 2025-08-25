@@ -164,6 +164,11 @@ const GridManagerMarketingHeader = () => {
       details: []
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const gridRef = useRef<DataGridHandle>(null);
   const router = useRouter();
   const { selectedDate, selectedDate2, onReload } = useSelector(
@@ -322,7 +327,13 @@ const GridManagerMarketingHeader = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -1696,6 +1707,7 @@ const GridManagerMarketingHeader = () => {
           }}
         >
           <ActionButton
+            module="MANAGER-MARKETING"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

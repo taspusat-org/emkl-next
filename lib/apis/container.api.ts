@@ -10,6 +10,11 @@ interface UpdateMenuParams {
   fields: ContainerInput;
 }
 
+interface validationFields {
+  aksi: string;
+  value: number | string;
+}
+
 export const getContainerFn = async (
   filters: GetParams = {}
 ): Promise<IAllContainer> => {
@@ -57,6 +62,12 @@ export const exportContainerFn = async (filters: any): Promise<any> => {
     console.error('Error exporting data:', error);
     throw new Error('Failed to export data');
   }
+};
+
+export const checkValidationContainerFn = async (fields: validationFields) => {
+  const response = await api2.post(`/container/check-validation`, fields);
+
+  return response;
 };
 
 // export const exportMenuFn = async (filters: any): Promise<any> => {

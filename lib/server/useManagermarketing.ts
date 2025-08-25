@@ -95,10 +95,10 @@ export const useCreateManagerMarketing = () => {
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
       void queryClient.invalidateQueries(['managermarketing']);
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
+      // toast({
+      //   title: 'Proses Berhasil',
+      //   description: 'Data Berhasil Ditambahkan'
+      // });
       dispatch(setProcessed());
     },
     // on error, toast + clear loading
@@ -113,8 +113,11 @@ export const useCreateManagerMarketing = () => {
           : [{ path: ['form'], message: errorResponse.message }];
 
         messages.forEach((err) => {
-          const path = err.path?.[0] ?? 'form';
-          setError(path, err.message);
+          const path = Array.isArray(err.path)
+            ? err.path.join('.')
+            : err.path ?? 'form';
+
+          setError(path, err.message ?? 'Terjadi kesalahan');
         });
       }
     }
@@ -125,49 +128,77 @@ export const useCreateManagerMarketing = () => {
   });
 };
 export const useUpdateManagerMarketing = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(updateManagerMarketingFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('managermarketing');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
+      // toast({
+      //   title: 'Proses Berhasil.',
+      //   description: 'Data Berhasil Diubah.'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+      console.log('errorResponse', errorResponse);
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
     }
   });
 };
 export const useDeleteManagerMarketing = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(deleteManagerMarketingFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('managermarketing');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
+      // toast({
+      //   title: 'Proses Berhasil.',
+      //   description: 'Data Berhasil Dihapus.'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+      console.log('errorResponse', errorResponse);
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
     }
   });

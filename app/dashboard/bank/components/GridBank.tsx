@@ -177,18 +177,18 @@ const GridBank = () => {
       nama: '',
       keterangan: '',
 
-      coa: 0,
+      coa: 1,
       keterangancoa: '',
-      coagantung: 0,
+      coagantung: 2,
       keterangancoagantung: '',
 
-      statusbank: 0,
+      statusbank: 1,
       textbank: '',
 
-      statusaktif: 0,
+      statusaktif: 1,
       text: '',
 
-      statusdefault: 0,
+      statusdefault: 1,
       textdefault: '',
 
       formatpenerimaan: 0,
@@ -213,6 +213,11 @@ const GridBank = () => {
       formatrekappengeluarantext: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -1753,6 +1758,7 @@ const GridBank = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
+    console.log('sdadsakjhdjkhsa');
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -2065,12 +2071,11 @@ const GridBank = () => {
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
-      const syncResponse = await syncAcosFn();
       setMode('add');
 
       setPopOver(true);
 
-      forms.reset();
+      // forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
     }
@@ -2318,7 +2323,12 @@ const GridBank = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' &&
+      mode !== ''
+    ) {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
@@ -2383,7 +2393,7 @@ const GridBank = () => {
       );
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.reset();
+      // forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
   console.log(forms.getValues());
@@ -2395,6 +2405,13 @@ const GridBank = () => {
       }
     });
   }, []);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -2457,6 +2474,7 @@ const GridBank = () => {
           }}
         >
           <ActionButton
+            module="BANK"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

@@ -149,6 +149,11 @@ const GridDaftarbl = () => {
       statusaktif: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -330,6 +335,13 @@ const GridDaftarbl = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -1582,6 +1594,7 @@ const GridDaftarbl = () => {
           }}
         >
           <ActionButton
+            module="DAFTARBL"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

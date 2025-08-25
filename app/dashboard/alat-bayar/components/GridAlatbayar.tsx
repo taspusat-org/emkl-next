@@ -157,19 +157,24 @@ const GridAlatbayar = () => {
       nama: '',
       keterangan: '',
 
-      statuslangsungcair: 0,
+      statuslangsungcair: 1,
       statuslangsungcair_text: '',
 
-      statusdefault: 0,
+      statusdefault: 1,
       statusdefault_text: '',
 
-      statusbank: 0,
+      statusbank: 1,
       statusbank_text: '',
 
-      statusaktif: 0,
+      statusaktif: 1,
       text: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -395,7 +400,7 @@ const GridAlatbayar = () => {
     }));
     setInputValue('');
   };
-  // console.log(forms.getValues());
+  console.log(forms.getValues());
   // console.log(getLookup);
 
   const columns = useMemo((): Column<IAlatBayar>[] => {
@@ -1455,12 +1460,11 @@ const GridAlatbayar = () => {
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
-      const syncResponse = await syncAcosFn();
       setMode('add');
 
       setPopOver(true);
 
-      forms.reset();
+      // forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
     }
@@ -1540,7 +1544,13 @@ const GridAlatbayar = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const loadGridConfig = async (userId: string, gridName: string) => {
     try {
       const response = await fetch(
@@ -1803,6 +1813,7 @@ const GridAlatbayar = () => {
           }}
         >
           <ActionButton
+            module="ALAT-BAYAR"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
