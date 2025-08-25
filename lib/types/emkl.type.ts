@@ -31,5 +31,6 @@ export interface IEmkl {
 
 export interface IAllEmkl {
   data: IEmkl[];
+  type: string;
   pagination: IMeta;
 }

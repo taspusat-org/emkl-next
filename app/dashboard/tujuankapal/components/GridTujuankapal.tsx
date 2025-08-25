@@ -147,6 +147,11 @@ const GridTujuankapal = () => {
       cabang_id: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -315,7 +320,13 @@ const GridTujuankapal = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -1672,6 +1683,7 @@ const GridTujuankapal = () => {
           }}
         >
           <ActionButton
+            module="TUJUANKAPAL"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
