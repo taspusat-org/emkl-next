@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MdDelete, MdEdit } from 'react-icons/md';
 import { FaPlus } from 'react-icons/fa6';
 import { Button } from '../ui/button';
@@ -11,6 +11,8 @@ import {
   DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { LoadingOverlay } from './LoadingOverlay';
+import usePermissions from '@/hooks/hasPermission';
+import { getParameterApprovalFn } from '@/lib/apis/parameter.api';
 
 interface CustomAction {
   label: string;
@@ -45,8 +47,10 @@ interface BaseActionProps {
   dropdownMenus?: DropdownMenuItem[];
 
   // tambahkan disable flag per aksi
+  module?: string;
   disableAdd?: boolean;
   disableEdit?: boolean;
+  isApproval?: boolean;
   disableDelete?: boolean;
   disableView?: boolean;
   disableExport?: boolean;
@@ -59,9 +63,11 @@ const ActionButton = ({
   onExport,
   onReport,
   onView,
+  module = '',
   customActions = [],
   dropdownMenus = [], // Receive multiple dropdown menus
   disableAdd = false,
+  isApproval = false,
   disableEdit = false,
   disableDelete = false,
   disableView = false,
@@ -69,17 +75,31 @@ const ActionButton = ({
   disableReport = false
 }: BaseActionProps) => {
   const [openMenu, setOpenMenu] = useState<number | null>(null); // Track which dropdown is open
-
+  const { hasPermission, loading } = usePermissions();
+  const [dataParameter, setDataParameter] = useState<any>([]);
   const handleDropdownClick = (index: number) => {
     // Close the dropdown when a button inside it is clicked
     setOpenMenu(openMenu === index ? null : index);
   };
+
+  const fetchData = async () => {
+    const data = await getParameterApprovalFn();
+    setDataParameter(data.data);
+  };
+  const dataHakApproval = dataParameter.filter(
+    (item: any) =>
+      item?.grp?.toLowerCase().includes('HAK APPROVAL'.toLowerCase())
+  );
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
     <div className="flex w-full flex-row gap-1 overflow-scroll lg:overflow-hidden">
       {onAdd && (
         <Button
           onClick={onAdd}
-          disabled={disableAdd}
+          disabled={disableAdd || !hasPermission(module, 'POST')}
           variant="default"
           className="bg-[#0f82e1] text-sm font-thin hover:bg-[#105892] disabled:opacity-50"
         >
@@ -91,7 +111,7 @@ const ActionButton = ({
       {onEdit && (
         <Button
           onClick={onEdit}
-          disabled={disableEdit}
+          disabled={disableEdit || !hasPermission(module, 'PUT')}
           variant="warning"
           className="text-sm font-thin disabled:opacity-50"
         >
@@ -102,7 +122,7 @@ const ActionButton = ({
       {onDelete && (
         <Button
           onClick={onDelete}
-          disabled={disableDelete}
+          disabled={disableDelete || !hasPermission(module, 'DELETE')}
           variant="destructive"
           className="gap-1 text-sm font-thin disabled:opacity-50"
         >
@@ -161,7 +181,6 @@ const ActionButton = ({
         </Button>
       ))}
 
-      {/* Dynamic Dropdown Menus */}
       {dropdownMenus.length > 0 &&
         dropdownMenus.map((menu, index) => (
           <DropdownMenu
@@ -204,6 +223,44 @@ const ActionButton = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ))}
+      {isApproval && (
+        <DropdownMenu
+          open={openMenu === 1}
+          onOpenChange={() => setOpenMenu(openMenu === 1 ? null : 1)}
+        >
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="default"
+              className={`w-fit gap-1 text-sm font-normal `}
+            >
+              {item.icon}
+              <IoMdArrowDropup />
+            </Button>
+          </DropdownMenuTrigger>
+          {dataHakApproval.length > 0 &&
+            dataHakApproval.map((item: any, index: any) => (
+              <DropdownMenuContent
+                className="flex flex-col gap-1 border border-blue-500"
+                side="top"
+              >
+                <Button
+                  onClick={() => {
+                    onClick(); // Call action's onClick
+                    handleDropdownClick(index); // Close the dropdown
+                  }}
+                  variant="default"
+                  className={`w-full p-2 text-left text-sm font-thin ${
+                    action.className || ''
+                  }`}
+                >
+                  <p className="text-center text-sm font-normal">
+                    {action.label}
+                  </p>
+                </Button>
+              </DropdownMenuContent>
+            ))}
+        </DropdownMenu>
+      )}
     </div>
   );
 };

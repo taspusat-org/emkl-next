@@ -40,45 +40,33 @@ const FormCabang = ({
     {
       columns: [{ key: 'text', name: 'TEXT' }],
       // filterby: { class: 'system', method: 'get' },
+      required: true,
+      labelLookup: 'STATUS AKTIF LOOKUP',
       selectedRequired: false,
       endpoint: 'parameter?grp=status+aktif',
       label: 'status aktif',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text'
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
-  const lookUpPeriode = [
+
+  const lookUpPropsCabangHr = [
     {
-      columns: [{ key: 'text', name: 'TEXT' }],
+      columns: [{ key: 'namacabang', name: 'namacabang' }],
       // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
       required: true,
-      isSubmitClicked: submitClick,
-      endpoint: 'parameter?grp=periodecabang',
-      label: 'periode cabang',
+      labelLookup: 'CABANG HR LOOKUP',
+      selectedRequired: true,
+      endpoint: 'cabang/hr',
+      label: 'namacabang',
       singleColumn: true,
       pageSize: 20,
-      dataToPost: 'id',
       showOnButton: true,
-      postData: 'text'
-    }
-  ];
-  const lookUpMinusCuti = [
-    {
-      columns: [{ key: 'text', name: 'TEXT' }],
-      // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
-      required: true,
-      isSubmitClicked: submitClick,
-      endpoint: 'parameter?grp=minus+cuti',
-      label: 'MINUS CUTI',
-      singleColumn: true,
-      pageSize: 20,
-      dataToPost: 'id',
-      showOnButton: true,
-      postData: 'text'
+      postData: 'namacabang',
+      dataToPost: 'id'
     }
   ];
 
@@ -221,6 +209,7 @@ const FormCabang = ({
                           lookupValue={(id) =>
                             forms.setValue('statusaktif', id)
                           }
+                          lookupNama={forms.getValues('text')}
                           inputLookupValue={forms.getValues('statusaktif')}
                         />
                       ))}
@@ -228,42 +217,20 @@ const FormCabang = ({
                   </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        PERIODE
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        Cabang HR
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPeriode.map((props, index) => (
+                      {lookUpPropsCabangHr.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
-                          lookupValue={(id) => forms.setValue('periode', id)}
-                          inputLookupValue={forms.getValues('periode')}
-                          lookupNama={forms.getValues('periode_text')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        MINUS CUTI
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpMinusCuti.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) => forms.setValue('minuscuti', id)}
-                          inputLookupValue={forms.getValues('minuscuti')}
-                          lookupNama={forms.getValues('minuscuti_text')}
+                          lookupValue={(id) =>
+                            forms.setValue('cabang_id', Number(id))
+                          }
+                          lookupNama={forms.getValues('namacabang_hr')}
+                          inputLookupValue={forms.getValues('cabang_id')}
                         />
                       ))}
                     </div>

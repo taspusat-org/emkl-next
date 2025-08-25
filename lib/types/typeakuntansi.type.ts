@@ -22,4 +22,5 @@ export interface IAllTypeAkuntansi {
 export interface IErrorResponse {
   message: string;
   errors: Record<string, string[]>;
+  statusCode: number;
 }

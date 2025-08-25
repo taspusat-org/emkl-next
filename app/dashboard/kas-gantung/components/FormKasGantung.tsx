@@ -556,7 +556,13 @@ const FormKasGantung = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Form
+            {mode === 'add'
+              ? 'Tambah Kas Gantung'
+              : mode === 'edit'
+              ? 'Edit Kas Gantung'
+              : mode === 'delete'
+              ? 'Delete Kas Gantung'
+              : 'View Kas Gantung'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -672,6 +678,9 @@ const FormKasGantung = ({
                         <LookUp
                           key={index}
                           {...props}
+                          clearDisabled
+                          disabled={forms.getValues('relasi_id')}
+                          onClear={forms.setValue('relasi_id', null)}
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
                           }
@@ -719,7 +728,6 @@ const FormKasGantung = ({
                               lookupValue={(id) =>
                                 forms.setValue('alatbayar_id', Number(id))
                               }
-                              linkValue={forms.getValues('bank_nama')}
                               inputLookupValue={forms.getValues('alatbayar_id')}
                               lookupNama={forms.getValues('alatbayar_nama')}
                             />

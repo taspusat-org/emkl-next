@@ -38,13 +38,12 @@ const FormPelayaran = ({
       required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=status+aktif',
-      label: 'status aktif',
+      label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
+      dataToPost: 'id',
       showOnButton: true,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text',
-      dataToPost: 'id' //untuk pilih kolom yg mau diambil valuenya, bisa selain id
+      postData: 'text'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
@@ -126,7 +125,13 @@ const FormPelayaran = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Pelayaran Form
+            {mode === 'add'
+              ? 'Add Pelayaran'
+              : mode === 'edit'
+              ? 'Edit Pelayaran'
+              : mode === 'delete'
+              ? 'Delete Pelayaran'
+              : 'View Pelayaran'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -207,7 +212,7 @@ const FormPelayaran = ({
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('statusaktif', id)
+                            forms.setValue('statusaktif', Number(id))
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_text')}

@@ -21,6 +21,7 @@ import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [savedFilters, setSavedFilters] = useState<any>({});
 
   // Print plugin
   const printPluginInstance = printPlugin();
@@ -30,41 +31,30 @@ const ReportMenuPage: React.FC = () => {
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
 
-  // Default layout with custom toolbar
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 30,
-    filters: {
-      nama: '',
-      keterangan: '',
-      created_at: '',
-      updated_at: '',
-      text: '',
-      statusaktif: ''
-    },
-    search: '',
-    sortBy: 'nama',
-    sortDirection: 'asc'
-  });
+  useEffect(() => {
+    const storedPdf = sessionStorage.getItem('pdfUrl');
+    if (storedPdf) setPdfUrl(storedPdf);
+
+    const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+    if (storedFilters) {
+      try {
+        setSavedFilters(JSON.parse(storedFilters));
+      } catch {
+        setSavedFilters({});
+      }
+    }
+  }, []);
 
   const handleExport = async () => {
     try {
-      const { page, limit, filters: nestedFilters, ...rest } = filters;
-
-      // Gabungkan search, sort, dan filters
-      const exportPayload = {
-        ...rest,
-        ...nestedFilters
-      };
-
-      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const exportPayload = { ...savedFilters };
       const response = await exportJenisOrderanFn(exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_jenisorderan_${Date.now()}.xlsx`;
+      link.download = `laporan_jenis orderan_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 

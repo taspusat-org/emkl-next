@@ -7,6 +7,12 @@ import { getMenuResequence } from '@/lib/apis/menu.api';
 import { useUpdateMenuResequence } from '@/lib/server/useMenu';
 import { Button } from '@/components/ui/button';
 import { useAlert } from '@/lib/store/client/useAlert';
+import { useDispatch } from 'react-redux';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { useRouter } from 'next/navigation';
 
 type Item = NestableItem & {
   amount?: number;
@@ -63,6 +69,8 @@ const renderItem = (props: {
 export default function App(): JSX.Element {
   const [collapseAll, setCollapseAll] = useState(false);
   const [items, setItems] = useState<Item[]>([]); // Initially empty
+  const dispatch = useDispatch();
+  const router = useRouter();
   const [loading, setLoading] = useState(true); // Add loading state
   const [error, setError] = useState<string | null>(null); // Error state
   const { mutate: updateMenu, isLoading: isLoadingUpdate } =
@@ -82,6 +90,8 @@ export default function App(): JSX.Element {
     );
   };
   useEffect(() => {
+    dispatch(setProcessing());
+
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -97,6 +107,7 @@ export default function App(): JSX.Element {
         setError('An error occurred while fetching data.');
       } finally {
         setLoading(false);
+        dispatch(setProcessed());
       }
     };
 
@@ -164,13 +175,21 @@ export default function App(): JSX.Element {
         )}
         collapsed={collapseAll}
       />
-      <footer style={{ marginTop: '2rem' }}>
+      <footer className="mt-4 flex flex-row gap-2">
         <Button
           onClick={handleSubmit}
           disabled={isLoadingUpdate}
           variant="save"
         >
           {isLoadingUpdate ? 'Updating...' : 'Save'}
+        </Button>
+        <Button
+          className="bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
+          onClick={() => router.back()}
+          disabled={isLoadingUpdate}
+          variant="default"
+        >
+          BACK
         </Button>
       </footer>
     </div>

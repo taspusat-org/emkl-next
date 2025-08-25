@@ -22,7 +22,7 @@ import { exportBankFn } from '@/lib/apis/bank.api';
 
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-
+  const [savedFilters, setSavedFilters] = useState<any>({});
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -31,56 +31,23 @@ const ReportMenuPage: React.FC = () => {
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
 
-  // Default layout with custom toolbar
-  const [filters, setFilters] = useState({
-    page: 1,
-    limit: 30,
-    search: '',
-    filters: {
-      nama: '',
-      keterangan: '',
-      created_at: '',
-      updated_at: '',
-      coa: '',
-      keterangancoa: '',
-      coagantung: '',
-      keterangancoagantung: '',
-      statusbank: '',
-      textbank: '',
-      statusaktif: '',
-      text: '',
-      statusdefault: '',
-      textdefault: '',
-      formatpenerimaan: '',
-      formatpenerimaantext: '',
-      formatpengeluaran: '',
-      formatpengeluarantext: '',
-      formatpenerimaangantung: '',
-      formatpenerimaangantungtext: '',
-      formatpengeluarangantung: '',
-      formatpengeluarangantungtext: '',
-      formatpencairan: '',
-      formatpencairantext: '',
-      formatrekappenerimaan: '',
-      formatrekappenerimaantext: '',
-      formatrekappengeluaran: '',
-      formatrekappengeluarantext: ''
-    },
-    sortBy: 'nama',
-    sortDirection: 'asc'
-  });
+  useEffect(() => {
+    const storedPdf = sessionStorage.getItem('pdfUrl');
+    if (storedPdf) setPdfUrl(storedPdf);
+
+    const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+    if (storedFilters) {
+      try {
+        setSavedFilters(JSON.parse(storedFilters));
+      } catch {
+        setSavedFilters({});
+      }
+    }
+  }, []);
 
   const handleExport = async () => {
     try {
-      const { page, limit, filters: nestedFilters, ...rest } = filters;
-
-      // Gabungkan search, sort, dan filters
-      const exportPayload = {
-        ...rest,
-        ...nestedFilters
-      };
-
-      // Panggil API untuk dapatkan file (pastikan API return Blob)
+      const exportPayload = { ...savedFilters };
       const response = await exportBankFn(exportPayload);
 
       // Buat link download dari Blob

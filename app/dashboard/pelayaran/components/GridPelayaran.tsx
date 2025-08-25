@@ -126,9 +126,15 @@ const GridPelayaran = () => {
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
-      keterangan: ''
+      keterangan: '',
+      statusaktif: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   console.log(forms.getValues());
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
@@ -1286,7 +1292,6 @@ const GridPelayaran = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      console.log('rowData', rowData);
       forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
@@ -1323,6 +1328,13 @@ const GridPelayaran = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -1386,6 +1398,7 @@ const GridPelayaran = () => {
           }}
         >
           <ActionButton
+            module="Pelayaran"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

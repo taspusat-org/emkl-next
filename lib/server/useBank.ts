@@ -9,6 +9,7 @@ import {
   updateBankFn
 } from '../apis/bank.api';
 import { useAlert } from '../store/client/useAlert';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetBank = (
   filters: {
@@ -39,6 +40,7 @@ export const useGetBank = (
 };
 
 export const useCreateBank = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
@@ -55,10 +57,15 @@ export const useCreateBank = () => {
       const errorResponse = error.response?.data as IErrorResponse;
 
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
+        console.log('errorResponse', errorResponse);
+
+        const messages = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [{ path: ['form'], message: errorResponse.message }];
+
+        messages.forEach((err) => {
+          const path = err.path?.[0] ?? 'form';
+          setError(path, err.message);
         });
       }
     }

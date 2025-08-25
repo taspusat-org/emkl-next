@@ -6,6 +6,12 @@ import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import GridPelayaran from './components/GridPelayaran';
+import { getParameterFn } from '@/lib/apis/parameter.api';
+import {
+  setData,
+  setDefault,
+  setType
+} from '@/lib/store/lookupSlice/lookupSlice';
 
 const Page = () => {
   const dispatch = useDispatch();
@@ -15,11 +21,35 @@ const Page = () => {
       try {
         const result = await fieldLength('pelayaran');
         dispatch(setFieldLength(result.data));
+
+        const [getStatusAktifLookup] = await Promise.all([
+          getParameterFn({ isLookUp: 'true' })
+        ]);
+
+        if (getStatusAktifLookup.type === 'local') {
+          const grpsToFilter = ['STATUS AKTIF'];
+
+          grpsToFilter.forEach((grp) => {
+            const filteredData = getStatusAktifLookup.data.filter(
+              (item: any) => item.grp === grp
+            );
+            // console.log('ini hasil filterdData',filteredData, grp);
+
+            dispatch(setData({ key: grp, data: filteredData }));
+            dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
+
+            const defaultValue = filteredData
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null || '');
+
+            dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
+          });
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
-      } finally {
       }
     };
+
     fetchData();
   }, [dispatch]);
   return (

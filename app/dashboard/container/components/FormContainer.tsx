@@ -21,7 +21,7 @@ import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
-const FormMenu = ({
+const FormContainer = ({
   popOver,
   setPopOver,
   forms,
@@ -45,8 +45,7 @@ const FormMenu = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      dataToPost: 'id'
+      postData: 'text'
     }
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
@@ -176,6 +175,7 @@ const FormMenu = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <Input
+                              autoFocus
                               {...field}
                               value={field.value ?? ''}
                               type="text"
@@ -297,4 +297,4 @@ const FormMenu = ({
   );
 };
 
-export default FormMenu;
+export default FormContainer;

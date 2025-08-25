@@ -24,6 +24,20 @@ export const getParameterFn = async (
     throw new Error('Failed to fetch ACOS data');
   }
 };
+export const getParameterApprovalFn = async (
+  filters: GetParams = {}
+): Promise<IAllParameters> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/parameter/approval', {
+      params: queryParams
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching ACOS data:', error);
+    throw new Error('Failed to fetch ACOS data');
+  }
+};
 export const storeParameterFn = async (fields: ParameterInput) => {
   const response = await api2.post(`/parameter`, fields);
 

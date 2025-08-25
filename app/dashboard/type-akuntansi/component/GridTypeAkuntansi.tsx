@@ -162,6 +162,12 @@ const GridTypeAkuntansi = () => {
       statusaktif: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
+
   // console.log(forms.getValues());
 
   const handleColumnFilterChange = (
@@ -194,7 +200,7 @@ const GridTypeAkuntansi = () => {
 
     // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
 
     // 4. focus input filter
@@ -754,7 +760,6 @@ const GridTypeAkuntansi = () => {
                 endpoint="parameter"
                 value="id"
                 label="text"
-                defaultValue="NON AKTIF"
                 filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
                   handleColumnFilterChange('statusaktif', value)
@@ -1605,6 +1610,14 @@ const GridTypeAkuntansi = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
+  console.log('forms.getValues()', forms.getValues());
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1668,6 +1681,7 @@ const GridTypeAkuntansi = () => {
           }}
         >
           <ActionButton
+            module="Type-Akuntansi"
             onAdd={handleAdd}
             onEdit={handleEdit}
             onDelete={handleDelete}

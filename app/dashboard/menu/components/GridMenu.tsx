@@ -1249,8 +1249,11 @@ const GridMenu = () => {
     );
   }
   const handleResequence = () => {
+    dispatch(setProcessing());
     router.push('/dashboard/resequence');
+    dispatch(setProcessed());
   };
+
   function LoadRowsRenderer() {
     return (
       <div>
@@ -1605,6 +1608,7 @@ const GridMenu = () => {
           }}
         >
           <ActionButton
+            module="MENU"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

@@ -34,7 +34,6 @@ const Page = () => {
             getParameterFn({ isLookUp: 'true' }),
             getAkuntansiFn({ isLookUp: 'true' })
           ]);
-
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];
 
@@ -63,7 +62,6 @@ const Page = () => {
             getAkuntansiLookup.data
               .map((item: any) => item.default)
               .find((val: any) => val !== null) || '';
-
           dispatch(setDefault({ key: 'AKUNTANSI', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'AKUNTANSI', type: getAkuntansiLookup.type }));

@@ -6,11 +6,11 @@ export interface IForceEdit {
 }
 
 interface ForceEditState {
-  value: IForceEdit | null; // Role ACL details
+  forceedit: IForceEdit | null; // Role ACL details
 }
 
 const initialState: ForceEditState = {
-  value: null // Initially no role selected
+  forceedit: null // Initially no role selected
 };
 
 export const forceEditSlice = createSlice({
@@ -19,11 +19,11 @@ export const forceEditSlice = createSlice({
   reducers: {
     // Action to set role ACL details
     setForceEdit: (state, action: PayloadAction<IForceEdit>) => {
-      state.value = action.payload; // Update role details
+      state.forceedit = action.payload; // Update role details
     },
     // Action to reset role ACL details
     resetForceEdit: (state) => {
-      state.value = null; // Reset to null when no role is selected
+      state.forceedit = null; // Reset to null when no role is selected
     }
   }
 });
