@@ -205,7 +205,13 @@ export default function LookUp({
     (payload: any[]): Row[] => {
       return payload.map((item: any) => {
         const row: Row = { id: item.id };
-        if (item?.default && !lookupNama && item.default === 'YA') {
+        if (
+          item?.default &&
+          !lookupNama &&
+          item.default === 'YA' &&
+          !deleteClicked &&
+          !clicked
+        ) {
           setInputValue(item.text);
           const value = item[dataToPost as string] || item.id;
           lookupValue?.(value);
@@ -215,7 +221,14 @@ export default function LookUp({
         return row;
       });
     },
-    [lookupNama, lookupValue, onSelectRow, setInputValue]
+    [
+      lookupNama,
+      lookupValue,
+      onSelectRow,
+      setInputValue,
+      deleteClicked,
+      clicked
+    ]
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

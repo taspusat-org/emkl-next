@@ -1249,8 +1249,11 @@ const GridMenu = () => {
     );
   }
   const handleResequence = () => {
+    dispatch(setProcessing());
     router.push('/dashboard/resequence');
+    dispatch(setProcessed());
   };
+
   function LoadRowsRenderer() {
     return (
       <div>
