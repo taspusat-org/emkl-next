@@ -1008,7 +1008,7 @@ const FormSchedule = ({
           etd: item.etd ?? '',
           voyberangkat: item.voyberangkat ?? '',
           voytiba: item.voytiba ?? '',
-          closing: item.closing ?? '',
+          closing: item.closingForDateTime ?? '',
           etatujuan: item.etatujuan ?? '',
           etdtujuan: item.etdtujuan ?? '',
           keterangan: item.keterangan ?? '',
