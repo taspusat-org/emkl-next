@@ -1569,6 +1569,7 @@ const GridTypeAkuntansi = () => {
     const rowData = rows[selectedRow];
 
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+      forms.setValue('id', rowData?.id);
       forms.setValue('nama', rowData?.nama);
       forms.setValue('order', rowData?.order ? Number(rowData.order) : 0);
       forms.setValue('keterangan', rowData?.keterangan);
@@ -1577,6 +1578,7 @@ const GridTypeAkuntansi = () => {
       forms.setValue('statusaktif', rowData?.statusaktif || 1);
       forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
+      forms.setValue('id', 0);
       // If in addMode, ensure the form values are cleared
       // forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
       // forms.setValue('akuntansi_nama', '');
