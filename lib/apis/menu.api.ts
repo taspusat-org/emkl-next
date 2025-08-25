@@ -25,6 +25,10 @@ export const getMenuResequence = async () => {
   const response = await api2.get('/menu/menu-resequence');
   return response.data;
 };
+export const getPermissionFn = async (id: string) => {
+  const response = await api2.get(`/menu/permission/${id}`);
+  return response.data;
+};
 
 export const getMenuFn = async (
   filters: GetParams = {}

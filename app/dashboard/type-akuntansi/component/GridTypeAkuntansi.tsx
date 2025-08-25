@@ -200,7 +200,7 @@ const GridTypeAkuntansi = () => {
 
     // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
 
     // 4. focus input filter
@@ -760,7 +760,6 @@ const GridTypeAkuntansi = () => {
                 endpoint="parameter"
                 value="id"
                 label="text"
-                defaultValue="NON AKTIF"
                 filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
                   handleColumnFilterChange('statusaktif', value)
@@ -1682,6 +1681,7 @@ const GridTypeAkuntansi = () => {
           }}
         >
           <ActionButton
+            module="Type-Akuntansi"
             onAdd={handleAdd}
             onEdit={handleEdit}
             onDelete={handleDelete}

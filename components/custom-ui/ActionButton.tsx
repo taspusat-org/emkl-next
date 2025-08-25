@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger
 } from '../ui/dropdown-menu';
 import { LoadingOverlay } from './LoadingOverlay';
+import usePermissions from '@/hooks/hasPermission';
 
 interface CustomAction {
   label: string;
@@ -45,6 +46,7 @@ interface BaseActionProps {
   dropdownMenus?: DropdownMenuItem[];
 
   // tambahkan disable flag per aksi
+  module?: string;
   disableAdd?: boolean;
   disableEdit?: boolean;
   disableDelete?: boolean;
@@ -59,6 +61,7 @@ const ActionButton = ({
   onExport,
   onReport,
   onView,
+  module = '',
   customActions = [],
   dropdownMenus = [], // Receive multiple dropdown menus
   disableAdd = false,
@@ -69,7 +72,7 @@ const ActionButton = ({
   disableReport = false
 }: BaseActionProps) => {
   const [openMenu, setOpenMenu] = useState<number | null>(null); // Track which dropdown is open
-
+  const { hasPermission, loading } = usePermissions();
   const handleDropdownClick = (index: number) => {
     // Close the dropdown when a button inside it is clicked
     setOpenMenu(openMenu === index ? null : index);
@@ -79,7 +82,7 @@ const ActionButton = ({
       {onAdd && (
         <Button
           onClick={onAdd}
-          disabled={disableAdd}
+          disabled={disableAdd || !hasPermission(module, 'POST')}
           variant="default"
           className="bg-[#0f82e1] text-sm font-thin hover:bg-[#105892] disabled:opacity-50"
         >
@@ -91,7 +94,7 @@ const ActionButton = ({
       {onEdit && (
         <Button
           onClick={onEdit}
-          disabled={disableEdit}
+          disabled={disableEdit || !hasPermission(module, 'PUT')}
           variant="warning"
           className="text-sm font-thin disabled:opacity-50"
         >
@@ -102,7 +105,7 @@ const ActionButton = ({
       {onDelete && (
         <Button
           onClick={onDelete}
-          disabled={disableDelete}
+          disabled={disableDelete || !hasPermission(module, 'DELETE')}
           variant="destructive"
           className="gap-1 text-sm font-thin disabled:opacity-50"
         >
