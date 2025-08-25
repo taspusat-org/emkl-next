@@ -8,6 +8,7 @@ type CurrencyInputProps = {
   className?: string;
   autoFocus?: boolean;
   readOnly?: boolean;
+  isPercent?: boolean;
   placeholder?: string;
 };
 
@@ -17,6 +18,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   icon,
   className = '',
   autoFocus = false,
+  isPercent = false,
   readOnly = false,
   placeholder = ''
 }) => {
@@ -28,11 +30,9 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
     const endsWithDot = raw.endsWith('.');
 
     if (endsWithDot) {
-      // User baru saja mengetik '.', pertahankan
       return `${intPartRaw}.`;
     }
 
-    // Batasi 2 desimal saat mengetik
     const dec = decPartRaw.slice(0, 2);
     if (dec) {
       return `${intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
@@ -50,34 +50,40 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = e.target.value;
-    const formatted = formatCurrency(raw);
+    let raw = e.target.value;
+    let formatted = formatCurrency(raw);
+
+    // Jika isPercent adalah true, batasi agar nilai tidak lebih dari 100
+    if (isPercent) {
+      const numericValue = parseFloat(raw.replace(/[^0-9.]/g, ''));
+      if (numericValue > 100) {
+        // Jika nilai lebih dari 100, jangan update inputValue, hanya kembalikan nilai yang valid
+        return;
+      }
+    }
+
     setInputValue(formatted);
     onValueChange?.(formatted);
   };
 
   const handleBlur = (formattedStr: string) => {
-    // Jika nilai kosong, langsung set tanpa menambahkan .00
     if (!formattedStr) {
       setInputValue('');
-    }
-    // Jika sudah ada desimal, jangan tambahkan .00 lagi
-    else if (formattedStr.includes('.')) {
+    } else if (formattedStr.includes('.')) {
       setInputValue(formattedStr);
-    }
-    // Jika tidak ada desimal, tambahkan .00
-    else {
+    } else {
       setInputValue(formattedStr + '.00');
     }
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    // Select all text when focused
     e.target.select();
   };
+
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
+
   return (
     <div className="relative w-full">
       <InputMask

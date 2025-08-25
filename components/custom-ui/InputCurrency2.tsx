@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import InputMask from '@mona-health/react-input-mask';
 
 type CurrencyInputProps = {
@@ -8,6 +8,7 @@ type CurrencyInputProps = {
   className?: string;
   autoFocus?: boolean;
   readOnly?: boolean;
+  isPercent?: boolean;
   placeholder?: string;
 };
 
@@ -17,108 +18,87 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   icon,
   className = '',
   autoFocus = false,
+  isPercent = false,
   readOnly = false,
   placeholder = ''
 }) => {
   const [inputValue, setInputValue] = useState(value);
 
-  // Sinkronkan nilai awal dari props (jika perlu)
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
-
-  // Format integer dengan koma ribuan
-  const formatInt = (intStr: string) =>
-    (intStr || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-  // Helper: format currency sambil mempertahankan titik di akhir kalau user baru mengetik '.'
   const formatCurrency = (rawValue: string) => {
-    // Hilangkan karakter selain angka atau titik
     const raw = rawValue.replace(/[^0-9.]/g, '');
-
-    // Deteksi titik di akhir
+    const [intPartRaw = '', decPartRaw = ''] = raw.split('.');
     const endsWithDot = raw.endsWith('.');
 
-    // Ambil hanya titik pertama (abaikan titik-titik berikutnya)
-    const [intPartRaw = '', decPartRaw = ''] = raw.split('.');
-
-    const formattedInt = formatInt(intPartRaw);
-
     if (endsWithDot) {
-      // User baru saja mengetik '.', pertahankan
-      return `${formattedInt}.`;
+      return `${intPartRaw}.`;
     }
 
-    // Batasi 2 desimal saat mengetik
     const dec = decPartRaw.slice(0, 2);
+    if (dec) {
+      return `${intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
+    }
+    const formattedInt = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return formattedInt;
+  };
 
-    return dec ? `${formattedInt}.${dec}` : formattedInt;
+  const beforeMaskedStateChange = ({ nextState }: any) => {
+    const formatted = formatCurrency(nextState.value || '');
+    return {
+      value: formatted,
+      selection: { start: formatted.length, end: formatted.length }
+    };
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Hilangkan koma dari tampilan sebelumnya agar perhitungan konsisten
-    let raw = e.target.value.replace(/,/g, '');
+    let raw = e.target.value;
+    let formatted = formatCurrency(raw);
 
-    // Normalisasi: hanya pakai titik pertama, batasi 2 desimal
-    const [intPart = '', decPartRaw = ''] = raw.split('.');
-    const decPart = decPartRaw.slice(0, 2);
-
-    // Bangun kembali raw untuk formatter; jika user sudah mengetik titik,
-    // pertahankan titik meskipun desimal masih kosong
-    raw = raw.includes('.') ? `${intPart}.${decPart}` : intPart;
-
-    const formatted = formatCurrency(raw);
+    // Jika isPercent adalah true, batasi agar nilai tidak lebih dari 100
+    if (isPercent) {
+      const numericValue = parseFloat(raw.replace(/[^0-9.]/g, ''));
+      if (numericValue > 100) {
+        raw = '100';
+        formatted = formatCurrency(raw);
+      }
+    }
 
     setInputValue(formatted);
     onValueChange?.(formatted);
   };
 
-  // Saat blur, pastikan selalu punya 2 desimal (pad dengan 0)
-  const handleBlur = () => {
-    const raw = (inputValue || '').replace(/,/g, '');
-
-    if (raw === '') {
+  const handleBlur = (formattedStr: string) => {
+    if (!formattedStr) {
       setInputValue('');
-      onValueChange?.('');
-      return;
-    }
-
-    const endsWithDot = raw.endsWith('.');
-    const [intPartRaw = '', decRaw = ''] = raw.split('.');
-    const formattedInt = formatInt(intPartRaw || '0'); // fungsi yang sama untuk ribuan
-
-    let finalVal: string;
-
-    if (!raw.includes('.')) {
-      // Tidak ada titik → angka bulat → tambahkan .00
-      finalVal = `${formattedInt}.00`;
-    } else if (endsWithDot) {
-      // Ada titik & di akhir → pertahankan trailing dot
-      finalVal = `${formattedInt}.`;
+    } else if (formattedStr.includes('.')) {
+      setInputValue(formattedStr);
     } else {
-      // Ada titik & ada desimal → potong max 2 digit, JANGAN pad
-      finalVal = `${formattedInt}${decRaw ? `.${decRaw.slice(0, 2)}` : ''}`;
+      setInputValue(formattedStr + '.00');
     }
-
-    setInputValue(finalVal);
-    onValueChange?.(finalVal);
   };
+
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.select();
+  };
+
+  const inputStopPropagation = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
   };
 
   return (
     <div className="relative w-full">
       <InputMask
-        mask="" // tidak ada pola mask tetap
+        mask=""
         maskPlaceholder={null}
         maskChar={null}
         value={inputValue}
         readOnly={readOnly}
+        beforeMaskedStateChange={beforeMaskedStateChange}
         onChange={handleChange}
         autoFocus={autoFocus}
+        onKeyDown={inputStopPropagation}
+        onClick={(e: any) => e.stopPropagation()}
         onFocus={handleFocus}
-        onBlur={handleBlur}
+        onBlur={() => handleBlur(inputValue)}
         placeholder={placeholder}
         className={`h-9 w-full rounded-sm border border-zinc-300 px-1 py-1 text-right text-sm focus:border-blue-500 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className} ${
           readOnly ? 'text-zinc-400' : 'text-zinc-900'

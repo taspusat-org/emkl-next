@@ -54,20 +54,22 @@ export const useCreateTypeAkuntansi = () => {
       console.log('errorResponse', errorResponse);
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
+
         const errorFields = errorResponse.message || [];
-
-        // Iterasi error message dan set error di form
-        errorFields?.forEach((err: { path: string[]; message: string }) => {
-          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-          console.log('path', path);
-          setError(path, err.message); // Update error di context
-        });
-
-        // toast({
-        //   variant: 'destructive',
-        //   title: errorResponse.message ?? 'Gagal',
-        //   description: 'Terjadi masalah dengan permintaan Anda'
-        // });
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
     }
   });
