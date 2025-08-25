@@ -27,7 +27,8 @@ import {
   BsFillEyeFill,
   BsPersonFillLock,
   BsFillEyeSlashFill,
-  BsCurrencyDollar
+  BsCurrencyDollar,
+  BsFillPersonLinesFill
 } from 'react-icons/bs';
 import { RiLogoutBoxRFill } from 'react-icons/ri';
 import {
@@ -92,7 +93,8 @@ const iconMap: Record<string, IconComponent> = {
   PRICE: IoIosPricetags,
   REPORTDATA: BiSolidReport,
   CONTAINER: PiShippingContainerFill,
-  BANK: BsBank
+  BANK: BsBank,
+  USERGROUP: BsFillPersonLinesFill
 };
 
 type IconsProps = {

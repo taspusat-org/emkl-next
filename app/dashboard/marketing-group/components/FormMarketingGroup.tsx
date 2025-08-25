@@ -19,7 +19,7 @@ import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
-const FormJenisBiayaMarketing = ({
+const FormMarketingGroup = ({
   popOver,
   setPopOver,
   forms,
@@ -38,12 +38,29 @@ const FormJenisBiayaMarketing = ({
       required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=status+aktif',
-      label: 'status aktif',
+      label: 'STATUS AKTIF',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text'
+    }
+  ];
+  const lookUpPropsMarketing = [
+    {
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
+      labelLookup: 'MARKETING LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'marketing',
+      label: 'MARKETING',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text',
+      postData: 'nama',
       dataToPost: 'id' //untuk pilih kolom yg mau diambil valuenya, bisa selain id
     }
   ];
@@ -125,12 +142,12 @@ const FormJenisBiayaMarketing = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Add Jenis Biaya Marketing'
+              ? 'Add Marketing Group'
               : mode === 'edit'
-              ? 'Edit Jenis Biaya Marketing'
+              ? 'Edit Marketing Group'
               : mode === 'delete'
-              ? 'Delete Jenis Biaya Marketing'
-              : 'View Jenis Biaya Marketing'}
+              ? 'Delete Marketing Group'
+              : 'View Marketing Group'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -151,54 +168,30 @@ const FormJenisBiayaMarketing = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-                  <FormField
-                    name="nama"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Marketing
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsMarketing.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('marketing_id', Number(id))
+                          }
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          NAMA
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    name="keterangan"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                          Keterangan
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                          inputLookupValue={forms.getValues('marketing_id')}
+                          lookupNama={forms.getValues('marketing_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
@@ -216,6 +209,7 @@ const FormJenisBiayaMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('statusaktif', id)
                           }
+                          required={true}
                           inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_text')}
                         />
@@ -282,4 +276,4 @@ const FormJenisBiayaMarketing = ({
   );
 };
 
-export default FormJenisBiayaMarketing;
+export default FormMarketingGroup;

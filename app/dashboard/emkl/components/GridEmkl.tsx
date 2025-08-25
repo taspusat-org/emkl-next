@@ -154,6 +154,11 @@ const GridEmkl = () => {
       alamatpajak: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   console.log(forms.getValues());
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
@@ -2596,6 +2601,13 @@ const GridEmkl = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -2659,6 +2671,7 @@ const GridEmkl = () => {
           }}
         >
           <ActionButton
+            module="Emkl"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

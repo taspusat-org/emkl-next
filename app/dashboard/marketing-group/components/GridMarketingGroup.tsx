@@ -43,33 +43,33 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import { IPelayaran } from '@/lib/types/pelayaran.type';
-import {
-  PelayaranInput,
-  pelayaranSchema
-} from '@/lib/validations/pelayaran.validation';
-import {
-  useCreatePelayaran,
-  useDeletePelayaran,
-  useGetPelayaran,
-  useUpdatePelayaran
-} from '@/lib/server/usePelayaran';
-import FormPelayaran from './FormPelayaran';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
+import { IMarketingGroup } from '@/lib/types/marketinggroup.type';
+import {
+  MarketingGroupInput,
+  marketinggroupSchema
+} from '@/lib/validations/marketinggroup.validation';
+import {
+  useCreateMarketingGroup,
+  useDeleteMarketingGroup,
+  useGetMarketingGroup,
+  useUpdateMarketingGroup
+} from '@/lib/server/useMarketingGroup';
+import FormMarketingGroup from './FormMarketingGroup';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
   filters: {
-    nama: string;
-    keterangan: string;
+    marketing_nama: string;
+    modifiedby: string;
     created_at: string;
     updated_at: string;
-    text: string;
+    statusaktif_text: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -79,19 +79,19 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridPelayaran = () => {
+const GridMarketingGroup = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createPelayaran, isLoading: isLoadingCreate } =
-    useCreatePelayaran();
-  const { mutateAsync: updatePelayaran, isLoading: isLoadingUpdate } =
-    useUpdatePelayaran();
-  const { mutateAsync: deletePelayaran, isLoading: isLoadingDelete } =
-    useDeletePelayaran();
+  const { mutateAsync: createMarketingGroup, isLoading: isLoadingCreate } =
+    useCreateMarketingGroup();
+  const { mutateAsync: updateMarketingGroup, isLoading: isLoadingUpdate } =
+    useUpdateMarketingGroup();
+  const { mutateAsync: deleteMarketingGroup, isLoading: isLoadingDelete } =
+    useDeleteMarketingGroup();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -112,7 +112,7 @@ const GridPelayaran = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IPelayaran[]>([]);
+  const [rows, setRows] = useState<IMarketingGroup[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -121,13 +121,11 @@ const GridPelayaran = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<PelayaranInput>({
-    resolver: zodResolver(pelayaranSchema),
+  const forms = useForm<MarketingGroupInput>({
+    resolver: zodResolver(marketinggroupSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nama: '',
-      keterangan: '',
-      statusaktif: 1
+      marketing_nama: ''
     }
   });
   const {
@@ -136,16 +134,17 @@ const GridPelayaran = () => {
     formState: { isSubmitSuccessful }
   } = forms;
   console.log(forms.getValues());
+
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
     filters: {
-      nama: '',
-      keterangan: '',
+      marketing_nama: '',
+      modifiedby: '',
       created_at: '',
       updated_at: '',
-      text: ''
+      statusaktif_text: ''
     },
     search: '',
     sortBy: 'nama',
@@ -153,12 +152,11 @@ const GridPelayaran = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allPelayaran, isLoading: isLoadingPelayaran } = useGetPelayaran(
-    {
+  const { data: allMarketingGroup, isLoading: isLoadingMarketingGroup } =
+    useGetMarketingGroup({
       ...filters,
       page: currentPage
-    }
-  );
+    });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const handleColumnFilterChange = (
@@ -244,11 +242,11 @@ const GridPelayaran = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        nama: '',
-        keterangan: '',
+        marketing_nama: '',
+        modifiedby: '',
         created_at: '',
         updated_at: '',
-        text: 'AKTIF'
+        statusaktif_text: 'AKTIF'
       },
       search: searchValue,
       page: 1
@@ -324,7 +322,7 @@ const GridPelayaran = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IPelayaran>[] => {
+  const columns = useMemo((): Column<IMarketingGroup>[] => {
     return [
       {
         key: 'nomor',
@@ -346,11 +344,11 @@ const GridPelayaran = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    nama: '',
-                    keterangan: '',
+                    marketing_nama: '',
+                    modifiedby: '',
                     created_at: '',
                     updated_at: '',
-                    text: ''
+                    statusaktif_text: ''
                   }
                 }),
                   setInputValue('');
@@ -390,7 +388,7 @@ const GridPelayaran = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IPelayaran }) => (
+        renderCell: ({ row }: { row: IMarketingGroup }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -402,8 +400,8 @@ const GridPelayaran = () => {
       },
 
       {
-        key: 'nama',
-        name: 'Nama',
+        key: 'marketing',
+        name: 'Marketing',
         resizable: true,
         draggable: true,
         width: 300,
@@ -412,96 +410,23 @@ const GridPelayaran = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nama')}
+              onClick={() => handleSort('marketing_nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
-                }`}
-              >
-                Nama
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'nama' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'nama' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['nama'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nama', value);
-                }}
-              />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.nama || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'keterangan',
-        name: 'Keterangan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'keterangan'
+                  filters.sortBy === 'marketing_nama'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                Keterangan
+                MARKETING
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'keterangan' &&
+                {filters.sortBy === 'marketing_nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'keterangan' &&
+                ) : filters.sortBy === 'marketing_nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -509,23 +434,27 @@ const GridPelayaran = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['keterangan'] = el;
+                  inputColRefs.current['marketing_nama'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.marketing_nama
+                    ? filters.filters.marketing_nama.toUpperCase()
+                    : ''
+                }
+                type="text"
                 onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('marketing_nama', value);
                 }}
               />
-              {filters.filters.keterangan && (
+              {filters.filters.marketing_nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
+                  onClick={() => handleColumnFilterChange('marketing_nama', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -535,14 +464,11 @@ const GridPelayaran = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangan || '';
+          const columnFilter = filters.filters.marketing_nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
-                  : '',
+                props.row.marketing_nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -569,7 +495,7 @@ const GridPelayaran = () => {
               <Select
                 defaultValue=""
                 onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
+                  handleColumnFilterChange('statusaktif_text', value);
                 }}
               >
                 <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
@@ -599,7 +525,9 @@ const GridPelayaran = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
+          const memoData = props.row.statusaktif_memo
+            ? JSON.parse(props.row.statusaktif_memo)
+            : null;
 
           if (memoData) {
             return (
@@ -621,7 +549,78 @@ const GridPelayaran = () => {
             );
           }
 
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'modifiedby',
+        name: 'Modified By',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('modifiedby')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Modified By
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'modifiedby' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'modifiedby' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['modifiedby'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.modifiedby || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleColumnFilterChange('modifiedby', value);
+                }}
+              />
+              {filters.filters.modifiedby && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('modifiedby', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.modifiedby || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.modifiedby || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
         }
       },
       {
@@ -791,7 +790,12 @@ const GridPelayaran = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridPelayaran', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        user.id,
+        'GridMarketingGroup',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -806,7 +810,12 @@ const GridPelayaran = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridPelayaran', [...newOrder], columnsWidth);
+      saveGridConfig(
+        user.id,
+        'GridMarketingGroup',
+        [...newOrder],
+        columnsWidth
+      );
       return newOrder;
     });
   };
@@ -823,7 +832,7 @@ const GridPelayaran = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingPelayaran || !hasMore || rows.length === 0) return;
+    if (isLoadingMarketingGroup || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -850,7 +859,7 @@ const GridPelayaran = () => {
     }
   }
 
-  function handleCellClick(args: { row: IPelayaran }) {
+  function handleCellClick(args: { row: IMarketingGroup }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -858,7 +867,7 @@ const GridPelayaran = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IPelayaran>,
+    args: CellKeyDownArgs<IMarketingGroup>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -922,7 +931,7 @@ const GridPelayaran = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/pelayaran-allItems`);
+          const response = await api2.get(`/redis/get/marketinggroup-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -951,12 +960,15 @@ const GridPelayaran = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: PelayaranInput, keepOpenModal = false) => {
+  const onSubmit = async (
+    values: MarketingGroupInput,
+    keepOpenModal = false
+  ) => {
     const selectedRowId = rows[selectedRow]?.id;
     console.log('dasdads');
     if (mode === 'delete') {
       if (selectedRowId) {
-        await deletePelayaran(selectedRowId as unknown as string, {
+        await deleteMarketingGroup(selectedRowId as unknown as string, {
           onSuccess: () => {
             setPopOver(false);
             setRows((prevRows) =>
@@ -975,7 +987,7 @@ const GridPelayaran = () => {
       return;
     }
     if (mode === 'add') {
-      const newOrder = await createPelayaran(
+      const newOrder = await createMarketingGroup(
         {
           ...values,
           ...filters // Kirim filter ke body/payload
@@ -992,14 +1004,14 @@ const GridPelayaran = () => {
     }
 
     if (selectedRowId && mode === 'edit') {
-      await updatePelayaran(
+      await updateMarketingGroup(
         {
           id: selectedRowId as unknown as string,
           fields: { ...values, ...filters }
         },
         { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
       );
-      queryClient.invalidateQueries('menus');
+      queryClient.invalidateQueries('marketinggroup');
     }
   };
 
@@ -1026,12 +1038,12 @@ const GridPelayaran = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IPelayaran) {
+  function getRowClass(row: IMarketingGroup) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IPelayaran) {
+  function rowKeyGetter(row: IMarketingGroup) {
     return row.id;
   }
 
@@ -1114,7 +1126,7 @@ const GridPelayaran = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridPelayaran',
+        'GridMarketingGroup',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1199,7 +1211,7 @@ const GridPelayaran = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPelayaran');
+    loadGridConfig(user.id, 'GridMarketingGroup');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1212,9 +1224,9 @@ const GridPelayaran = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allPelayaran || isFetchingManually || isDataUpdated) return;
+    if (!allMarketingGroup || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allPelayaran.data || [];
+    const newRows = allMarketingGroup.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1232,14 +1244,20 @@ const GridPelayaran = () => {
       return prevRows;
     });
 
-    if (allPelayaran.pagination.totalPages) {
-      setTotalPages(allPelayaran.pagination.totalPages);
+    if (allMarketingGroup.pagination.totalPages) {
+      setTotalPages(allMarketingGroup.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allPelayaran, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [
+    allMarketingGroup,
+    currentPage,
+    filters,
+    isFetchingManually,
+    isDataUpdated
+  ]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1292,13 +1310,15 @@ const GridPelayaran = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData?.nama);
-      forms.setValue('keterangan', rowData?.keterangan);
+      console.log('rowData', rowData);
+      forms.setValue('marketing_id', Number(rowData?.marketing_id) || 1);
+      forms.setValue('marketing_nama', rowData?.marketing_nama || '');
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
       forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('marketing_nama', '');
+      forms.setValue('statusaktif_text', '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1332,7 +1352,7 @@ const GridPelayaran = () => {
     if (isSubmitSuccessful) {
       reset();
       // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
+      requestAnimationFrame(() => setFocus('marketing_id'));
     }
   }, [isSubmitSuccessful, setFocus]);
 
@@ -1398,13 +1418,13 @@ const GridPelayaran = () => {
           }}
         >
           <ActionButton
-            module="Pelayaran"
+            module="Marketing-Group"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
           />
-          {isLoadingPelayaran ? <LoadRowsRenderer /> : null}
+          {isLoadingMarketingGroup ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1426,7 +1446,7 @@ const GridPelayaran = () => {
           )}
         </div>
       </div>
-      <FormPelayaran
+      <FormMarketingGroup
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1441,4 +1461,4 @@ const GridPelayaran = () => {
   );
 };
 
-export default GridPelayaran;
+export default GridMarketingGroup;
