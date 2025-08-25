@@ -204,7 +204,7 @@ const GridRoleAcl = () => {
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          <ActionButton onEdit={handleEdit} />
+          <ActionButton module="roleacl" onEdit={handleEdit} />
         </div>
       </div>
       <FormRoleAclTable

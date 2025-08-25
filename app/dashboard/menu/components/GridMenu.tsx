@@ -1608,6 +1608,7 @@ const GridMenu = () => {
           }}
         >
           <ActionButton
+            module="MENU"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

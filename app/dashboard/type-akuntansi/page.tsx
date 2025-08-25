@@ -23,55 +23,55 @@ interface ApiResponse {
 const Page = () => {
   const dispatch = useDispatch();
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const result = await fieldLength('typeakuntansi');
-  //       dispatch(setFieldLength(result.data));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const result = await fieldLength('typeakuntansi');
+        dispatch(setFieldLength(result.data));
 
-  //       const [getStatusAktifLookup, getAkuntansiLookup] =
-  //         await Promise.all<ApiResponse>([
-  //           getParameterFn({ isLookUp: 'true' }),
-  //           getAkuntansiFn({ isLookUp: 'true' })
-  //         ]);
-  //       if (getStatusAktifLookup.type === 'local') {
-  //         const grpsToFilter = ['STATUS AKTIF'];
+        const [getStatusAktifLookup, getAkuntansiLookup] =
+          await Promise.all<ApiResponse>([
+            getParameterFn({ isLookUp: 'true' }),
+            getAkuntansiFn({ isLookUp: 'true' })
+          ]);
+        if (getStatusAktifLookup.type === 'local') {
+          const grpsToFilter = ['STATUS AKTIF'];
 
-  //         grpsToFilter.forEach((grp) => {
-  //           const filteredData = getStatusAktifLookup.data.filter(
-  //             (item: any) => item.grp === grp
-  //           );
-  //           // console.log('ini hasil filterdData',filteredData, grp);
+          grpsToFilter.forEach((grp) => {
+            const filteredData = getStatusAktifLookup.data.filter(
+              (item: any) => item.grp === grp
+            );
+            // console.log('ini hasil filterdData',filteredData, grp);
 
-  //           dispatch(setData({ key: grp, data: filteredData }));
-  //           dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
+            dispatch(setData({ key: grp, data: filteredData }));
+            dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
 
-  //           const defaultValue = filteredData
-  //             .map((item: any) => item.default)
-  //             .find((val: any) => val !== null || '');
+            const defaultValue = filteredData
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null || '');
 
-  //           dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
-  //         });
-  //       }
+            dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
+          });
+        }
 
-  //       if (getAkuntansiLookup.type === 'local') {
-  //         dispatch(
-  //           setData({ key: 'AKUNTANSI', data: getAkuntansiLookup.data })
-  //         );
-  //         const defaultValue =
-  //           getAkuntansiLookup.data
-  //             .map((item: any) => item.default)
-  //             .find((val: any) => val !== null) || '';
-  //         dispatch(setDefault({ key: 'AKUNTANSI', isdefault: defaultValue }));
-  //       }
-  //       dispatch(setType({ key: 'AKUNTANSI', type: getAkuntansiLookup.type }));
-  //     } catch (err) {
-  //       console.error('Error fetching data:', err);
-  //     }
-  //   };
+        if (getAkuntansiLookup.type === 'local') {
+          dispatch(
+            setData({ key: 'AKUNTANSI', data: getAkuntansiLookup.data })
+          );
+          const defaultValue =
+            getAkuntansiLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+          dispatch(setDefault({ key: 'AKUNTANSI', isdefault: defaultValue }));
+        }
+        dispatch(setType({ key: 'AKUNTANSI', type: getAkuntansiLookup.type }));
+      } catch (err) {
+        console.error('Error fetching data:', err);
+      }
+    };
 
-  //   fetchData();
-  // }, [dispatch]);
+    fetchData();
+  }, [dispatch]);
 
   return (
     <PageContainer scrollable>
