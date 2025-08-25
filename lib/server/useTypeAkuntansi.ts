@@ -44,10 +44,6 @@ export const useCreateTypeAkuntansi = () => {
   return useMutation(storeTypeAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('typeakuntansi');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -76,25 +72,42 @@ export const useCreateTypeAkuntansi = () => {
 };
 
 export const useUpdateTypeAkuntansi = () => {
+  const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(updateTypeAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('typeakuntansi');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Diubah'
-      });
+      // toast({
+      //   title: 'Proses Berhasil',
+      //   description: 'Data Berhasil Diubah'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+      // if (errorResponse !== undefined) {
+      //   toast({
+      //     variant: 'destructive',
+      //     title: errorResponse.message ?? 'Gagal',
+      //     description: 'Terjadi masalah dengan permintaan Anda'
+      //   });
+      // }
 
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda'
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
+
+        // Iterasi error message dan set error di form
+        errorFields?.forEach((err: { path: string[]; message: string }) => {
+          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+          console.log('path', path);
+          // setError(path, err.message); // Update error di context
+          if (!path) {
+            setError(path, ''); // Update error di context
+          } else {
+            setError(path, err.message); // Update error di context
+          }
         });
       }
     }

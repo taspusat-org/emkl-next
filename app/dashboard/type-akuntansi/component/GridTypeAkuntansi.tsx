@@ -577,7 +577,7 @@ const GridTypeAkuntansi = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.order || 0;
+          const columnFilter = filters.filters.order;
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
@@ -1025,7 +1025,6 @@ const GridTypeAkuntansi = () => {
         aksi: 'EDIT',
         value: rowData.id
       });
-      console.log('result force edit', result);
 
       if (result.data.status == 'failed') {
         alert({
@@ -1093,7 +1092,7 @@ const GridTypeAkuntansi = () => {
         forms.reset();
         setPopOver(false);
 
-        setRows([]);
+        // setRows([]);
         if (mode !== 'delete') {
           const response = await api2.get(`/redis/get/typeakuntansi-allItems`);
           // Set the rows only if the data has changed
@@ -1127,8 +1126,6 @@ const GridTypeAkuntansi = () => {
     values: TypeakuntansiInput,
     keepOpenModal = false
   ) => {
-    console.log('log here', keepOpenModal, mode);
-
     const selectedRowId = rows[selectedRow]?.id;
 
     if (mode === 'delete') {
@@ -1564,7 +1561,7 @@ const GridTypeAkuntansi = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  console.log(forms.getValues());
+
   useEffect(() => {
     const rowData = rows[selectedRow];
 
