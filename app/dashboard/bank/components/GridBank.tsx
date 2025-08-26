@@ -177,9 +177,9 @@ const GridBank = () => {
       nama: '',
       keterangan: '',
 
-      coa: 1,
+      coa: null,
       keterangancoa: '',
-      coagantung: 2,
+      coagantung: null,
       keterangancoagantung: '',
 
       statusbank: 1,
@@ -1961,7 +1961,7 @@ const GridBank = () => {
       .then((module) => {
         const { Stimulsoft } = module;
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/tahoma.ttf',
+          '/fonts/ComicNeue-Regular.ttf',
           'Arial'
         );
         Stimulsoft.Base.StiLicense.Key =
@@ -2336,13 +2336,17 @@ const GridBank = () => {
       mode !== 'add' &&
       mode !== ''
     ) {
+      console.log(rowData);
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
-      forms.setValue('coa', Number(rowData.coa));
+      forms.setValue('coa', rowData.coa !== null ? Number(rowData.coa) : null);
       forms.setValue('keterangancoa', rowData.keterangancoa);
 
-      forms.setValue('coagantung', Number(rowData.coagantung));
+      forms.setValue(
+        'coagantung',
+        rowData.coagantung !== null ? Number(rowData.coagantung) : null
+      );
       forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
 
       forms.setValue('statusbank', Number(rowData.statusbank));
@@ -2400,7 +2404,7 @@ const GridBank = () => {
       );
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      // forms.reset();
+      forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
   console.log(forms.getValues());
