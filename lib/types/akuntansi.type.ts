@@ -6,7 +6,6 @@ export interface IAkuntansi {
   keterangan: string;
   text: string;
   statusaktif: number;
-  order: number;
   created_at: string;
   updated_at: string;
 }

@@ -4,10 +4,28 @@ import { dynamicRequiredMessage } from '../utils';
 
 export const kapalSchema = z.object({
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
-  keterangan: z.string().optional(),
-  statusaktif: z.number().min(1, `${REQUIRED_FIELD}`),
-  pelayaran_id: z.number().min(1, `${REQUIRED_FIELD}`),
-  pelayaran: z.string().optional().nullable(),
-  text: z.string().optional().nullable(),
+
+  keterangan: z
+    .string()
+    .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),
+
+  statusaktif: z
+    .number()
+    .min(1, { message: dynamicRequiredMessage('STATUSAKTIF') }),
+
+  statusaktif_nama: z
+    .string()
+    .nullable()
+    .optional(),
+
+  pelayaran_id: z
+    .number()
+    .min(1, { message: dynamicRequiredMessage('PELAYARAN') }),
+
+  pelayaran: z
+    .string()
+    .nullable()
+    .optional()
 });
+
 export type KapalInput = z.infer<typeof kapalSchema>;

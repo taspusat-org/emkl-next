@@ -15,7 +15,8 @@ export const akuntansiSchema = z.object({
 
   statusaktif_nama: z
     .string()
-    .nonempty({ message: dynamicRequiredMessage('STATUSAKTIF_NAMA') })
+    .nullable()
+    .optional()
 });
 
 export type AkuntansiInput = z.infer<typeof akuntansiSchema>;

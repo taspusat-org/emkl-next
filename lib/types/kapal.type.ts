@@ -1,18 +1,18 @@
 import { IMeta } from './error.type';
+
+export interface IKapal {
+  id: number;
+  nama: string;
+  keterangan: string;
+  text: string;
+  statusaktif: number;
+  pelayaran: string;
+  pelayaran_id: number;
+  created_at: string;
+  updated_at: string;
+}
 export interface IAllKapal {
   data: IKapal[];
   type: string;
   pagination: IMeta;
-}
-export interface IKapal {
-  text: string | undefined;
-  id: number;
-  nama: string;
-  keterangan: string;
-  pelayaran: string;
-  pelayaran_id: number;
-  statusaktif: number;
-  modifiedby: string;
-  created_at: string; // Tanggal dalam format ISO string
-  updated_at: string; // Tanggal dalam format ISO string
 }

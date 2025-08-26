@@ -1,45 +1,40 @@
-import { AxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useToast } from '@/hooks/use-toast';
+import { IErrorResponse } from '../types/user.type';
+import { AxiosError } from 'axios';
 import {
   deleteAsalKapalFn,
-  getAllAsalKapalFn,
+  getAsalKapalFn,
   storeAsalKapalFn,
   updateAsalKapalFn
 } from '../apis/asalkapal.api';
-import { useToast } from '@/hooks/use-toast';
 import { useAlert } from '../store/client/useAlert';
-import { IErrorResponse } from '../types/asalkapal.type';
-import { log } from 'console';
+import { useFormError } from '../hooks/formErrorContext';
 
-export const useGetAllAsalKapal = (
+export const useGetAsalKapal = (
   filters: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    sortBy?: string;
-    sortDirection?: string;
     filters?: {
       nominal?: string | number | null | undefined | '';
       keterangan?: string;
-      // cabang_id?: number | null | undefined | '';
       cabang?: string;
-      // container_id?: number | null | undefined | '';
       container?: string;
-      // statusaktif?: number | null | undefined | '';
-      statusaktif_text?: string;
-      modifiedby?: string;
-      created_at?: string;
-      updated_at?: string;
+      text?: string;
     };
+    page?: number;
+    sortBy?: string;
+    sortDirection?: string;
+    limit?: number;
+    search?: string; // Kata kunci pencarian
   } = {}
 ) => {
   return useQuery(
     ['asalkapal', filters],
-    async () => await getAllAsalKapalFn(filters)
+    async () => await getAsalKapalFn(filters)
   );
 };
 
 export const useCreateAsalKapal = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
@@ -54,39 +49,25 @@ export const useCreateAsalKapal = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-
+      console.log('errorResponse', errorResponse);
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda'
-        });
-      }
-    }
-  });
-};
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
 
-export const useUpdateAsalKapal = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+        // Iterasi error message dan set error di form
+        if (Array.isArray(errorFields)) {
+          errorFields.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'asalkapal_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        }
 
-  return useMutation(updateAsalKapalFn, {
-    onSuccess: () => {
-      void queryClient.invalidateQueries('asalkapal');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Diubah'
-      });
-    },
-    onError: (error: AxiosError) => {
-      const errorResponse = error.response?.data as IErrorResponse;
-
-      if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda'
-        });
+        // toast({
+        //   variant: 'destructive',
+        //   title: errorResponse.message ?? 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda'
+        // });
       }
     }
   });
@@ -100,8 +81,8 @@ export const useDeleteAsalKapal = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries('asalkapal');
       toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Dihapus'
+        title: 'Proses Berhasil.',
+        description: 'Data Berhasil Dihapus.'
       });
     },
     onError: (error: AxiosError) => {
@@ -110,7 +91,31 @@ export const useDeleteAsalKapal = () => {
         toast({
           variant: 'destructive',
           title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda'
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
+    }
+  });
+};
+export const useUpdateAsalKapal = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(updateAsalKapalFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('asalkapal');
+      toast({
+        title: 'Proses Berhasil.',
+        description: 'Data Berhasil Diubah.'
+      });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
         });
       }
     }

@@ -23,6 +23,9 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   placeholder = ''
 }) => {
   const [inputValue, setInputValue] = useState(value);
+  useEffect(() => {
+    setInputValue(value ?? '');
+  }, [value]);
 
   const formatCurrency = (rawValue: string) => {
     const raw = rawValue.replace(/[^0-9.]/g, '');

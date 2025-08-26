@@ -1,6 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import 'react-data-grid/lib/styles.scss';
@@ -17,24 +14,32 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormKapal from './FormKapal';
 import { useQueryClient } from 'react-query';
-import { KapalInput, kapalSchema } from '@/lib/validations/kapal.validation';
+import {
+  KapalInput,
+  kapalSchema
+} from '@/lib/validations/kapal.validation';
+
 import {
   useCreateKapal,
   useDeleteKapal,
   useGetKapal,
   useUpdateKapal
 } from '@/lib/server/useKapal';
+
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import {
+  FaFileExport,
+  FaPlus,
+  FaPrint,
   FaSort,
   FaSortDown,
   FaSortUp,
   FaTimes
 } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
-import { api2 } from '@/lib/utils/AxiosInstance';
+import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -44,14 +49,36 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  exportMenuBySelectFn,
+  exportMenuFn,
+  getMenuFn,
+  reportMenuBySelectFn
+} from '@/lib/apis/menu.api';
+import { HiDocument } from 'react-icons/hi2';
+import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
+import ReportDesignerMenu from '@/app/reports/menu/page';
 import { IKapal } from '@/lib/types/kapal.type';
-import { getParameterFn } from '@/lib/apis/parameter.api';
+import { number } from 'zod';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setProcessing,
+  setProcessed
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getKapalFn } from '@/lib/apis/kapal.api';
+import { setReportFilter } from '@/lib/store/printSlice/printSlice';
+import Alert from '@/components/custom-ui/AlertCustom';
 
 interface Filter {
   page: number;
@@ -60,10 +87,11 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    pelayaran: string;
-    statusaktif?: string;
+    text: string;
     created_at: string;
     updated_at: string;
+    statusaktif: string;
+    pelayaran: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -98,8 +126,8 @@ const GridKapal = () => {
 
   const [dataGridKey, setDataGridKey] = useState(0);
 
-  const contextKapalRef = useRef<HTMLDivElement | null>(null);
-  const [contextKapal, setContextKapal] = useState<{
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
   } | null>(null);
@@ -121,9 +149,7 @@ const GridKapal = () => {
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: undefined,
-      text: '',
-      pelayaran: '',
+      statusaktif: 1,
       pelayaran_id: 0,
     }
   });
@@ -134,10 +160,11 @@ const GridKapal = () => {
     filters: {
       nama: '',
       keterangan: '',
-      pelayaran: '',
+      created_at: '',
+      updated_at: '',
+      text: '',
       statusaktif: '',
-      created_at:'',
-      updated_at:''
+      pelayaran: ''
     },
     search: '',
     sortBy: 'nama',
@@ -145,12 +172,14 @@ const GridKapal = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allKapal, isLoading: isLoadingKapal } = useGetKapal({
-    ...filters,
-    page: currentPage
-  });
+  const { data: allKapal, isLoading: isLoadingKapal } = useGetKapal(
+    {
+      ...filters,
+      page: currentPage
+    }
+  );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -243,10 +272,12 @@ const GridKapal = () => {
       filters: {
         nama: '',
         keterangan: '',
+        icon: '',
+        created_at: '',
+        updated_at: '',
+        text: '',
+        statusaktif: '',
         pelayaran: '',
-        // statusaktif: 0,
-        created_at:'',
-        updated_at:''
       },
       search: searchValue,
       page: 1
@@ -288,10 +319,25 @@ const GridKapal = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        clearError();
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
 
-  console.log(forms.getValues(),'sds');
-  
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
 
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -314,6 +360,7 @@ const GridKapal = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -325,42 +372,11 @@ const GridKapal = () => {
     }));
     setInputValue('');
   };
-  const [statusAktifOptions, setStatusAktifOptions] = useState<{ value: string; label: string }[]>([]);
-  const parameterData = async (params: string[]) => {
-    try {
-      // Gunakan Promise.all untuk memanggil semua parameter sekaligus
-      const results = await Promise.all(
-        params.map((param) => getParameterFn({ filters: { grp: param } }))
-      );
-
-      // Pisahkan hasil berdasarkan parameter dan simpan di state masing-masing
-      results.forEach((res, index) => {
-        const options = res.data.map((item: any) => ({
-          value: item.id,
-          label: item.text
-        }));
-
-        // Tentukan state berdasarkan index parameter
-        if (params[index] === 'status aktif') {
-          setStatusAktifOptions(options);
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching parameter data:', error);
-    }
-  };
-
-  useEffect(() => {
-    // Panggil parameterData dengan beberapa parameter
-    parameterData(['status aktif']);
-  }, []);
-
-
   const columns = useMemo((): Column<IKapal>[] => {
     return [
       {
         key: 'nomor',
-        name: 'id',
+        name: 'NO',
         width: 50,
         resizable: true,
         draggable: true,
@@ -380,10 +396,11 @@ const GridKapal = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    pelayaran: '',
-                    statusaktif: '',
+                    text: '',
                     created_at: '',
-                    updated_at: ''
+                    updated_at: '',
+                    statusaktif: '',
+                    pelayaran: '',
                   }
                 }),
                   setInputValue('');
@@ -436,7 +453,7 @@ const GridKapal = () => {
 
       {
         key: 'nama',
-        name: 'nama',
+        name: 'Nama',
         resizable: true,
         draggable: true,
         width: 300,
@@ -446,14 +463,14 @@ const GridKapal = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextKapal}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Nama Kapal
+                Nama
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
@@ -474,9 +491,7 @@ const GridKapal = () => {
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.nama
-                    ? filters.filters.nama.toUpperCase()
-                    : ''
+                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
                 }
                 type="text"
                 onChange={(e) => {
@@ -510,104 +525,35 @@ const GridKapal = () => {
         }
       },
       {
-        key: 'Keterangan',
-        name: 'keterangan',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextKapal}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                Keterangan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'keterangan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'keterangan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['keterangan'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('keterangan', value);
-                }}
-              />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangan || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
         key: 'pelayaran',
-        name: 'pelayaran',
+        name: 'Pelayaran',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('pelayaran')}
-              onContextMenu={handleContextKapal}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'pelayaran' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'pelayaran'
+                    ? 'text-red-500'
+                    : 'font-normal'
                 }`}
               >
-                pelayaran
+                Pelayaran
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'pelayaran' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
+                  <FaSortUp className="text-red-500" />
                 ) : filters.sortBy === 'pelayaran' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
+                  <FaSortDown className="text-red-500" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -620,9 +566,9 @@ const GridKapal = () => {
                   inputColRefs.current['pelayaran'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.pelayaran || ''}
+                value={filters.filters.pelayaran.toUpperCase() || ''}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('pelayaran', value);
                 }}
               />
@@ -643,7 +589,86 @@ const GridKapal = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.pelayaran || '',
+                props.row.pelayaran !== null &&
+                  props.row.pelayaran !== undefined
+                  ? props.row.pelayaran
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'keterangan',
+        name: 'Keterangan',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('keterangan')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangan'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Keterangan
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'keterangan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'keterangan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['keterangan'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.keterangan.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('keterangan', value);
+                }}
+              />
+              {filters.filters.keterangan && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('keterangan', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.keterangan || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.keterangan !== null &&
+                  props.row.keterangan !== undefined
+                  ? props.row.keterangan
+                  : '',
                 filters.search,
                 columnFilter
               )}
@@ -662,49 +687,46 @@ const GridKapal = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextKapal}
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
               >
-              <p className="text-sm font-normal">Status Aktif</p>
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue={filters.filters.statusaktif || ''}
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-sm font-thin">
-                  <SelectValue>
-                    {filters.filters.statusaktif == '131'
-                      ? 'AKTIF'
-                      : filters.filters.statusaktif == '132'
-                      ? 'TIDAK AKTIF'
-                      : 'ALL'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-sm" value="">
-                      <p className="text-sm font-normal">ALL</p>
-                    </SelectItem>
-                    {statusAktifOptions.map((option, index) => (
-                      <SelectItem
-                        key={index}
-                        className="cursor-pointer text-sm"
-                        value={option.value}
-                      >
-                        <p className="text-sm font-normal">{option.label}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
-              ),
-              renderCell: (props: any) => {
+        ),
+        renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-      
+
           if (memoData) {
             return (
               <div className="flex h-full w-full items-center justify-center py-1">
@@ -724,10 +746,11 @@ const GridKapal = () => {
               </div>
             );
           }
-      
+
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
+
       {
         key: 'created_at',
         name: 'Created At',
@@ -740,7 +763,7 @@ const GridKapal = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextKapal}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -815,7 +838,7 @@ const GridKapal = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextKapal}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -842,7 +865,7 @@ const GridKapal = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['updated_at'] = el;
+                  inputColRefs.current['created_at'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
@@ -887,7 +910,7 @@ const GridKapal = () => {
     const newWidthMap = { ...columnsWidth, [columnKey]: width };
     setColumnsWidth(newWidthMap);
 
-    // 3) Bersihkan timeout sebelumnya agar tidak kapalmpuk
+    // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
     if (resizeDebounceTimeout.current) {
       clearTimeout(resizeDebounceTimeout.current);
     }
@@ -1013,94 +1036,113 @@ const GridKapal = () => {
       }
     }
   }
-  const onSuccess = async (indexOnPage: any, pageNumber: any) => {
-    try {
-      forms.reset();
-      setPopOver(false);
-      setIsFetchingManually(true);
-      setRows([]);
-      if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/kapal-allItems`);
-        // Set the rows only if the data has changed
-        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-          setRows(response.data);
-          setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
-          setSelectedRow(indexOnPage);
-          setTimeout(() => {
-            gridRef?.current?.selectCell({
-              rowIdx: indexOnPage,
-              idx: 1
-            });
-          }, 200);
-        }
-      }
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    clearError();
 
-      setIsFetchingManually(false);
-      setIsDataUpdated(false);
+    try {
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/kapal-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
+        }
+
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
     } catch (error) {
+      console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
       setIsDataUpdated(false);
     }
   };
-
-  const onSubmit = async (values: KapalInput) => {
+  const onSubmit = async (values: KapalInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteKapal(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteKapal(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createKapal(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createKapal(
+          {
+            ...values,
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updateKapal(
-        {
-          id: selectedRowId as unknown as number,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('kapal');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+      if (selectedRowId && mode === 'edit') {
+        await updateKapal(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('kapal');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      console.log('Selected Row Data:', rowData);
-      
       setPopOver(true);
       setMode('edit');
     }
@@ -1110,6 +1152,10 @@ const GridKapal = () => {
       setMode('delete');
       setPopOver(true);
     }
+    //  else {
+    //   // Alert()
+    //   // pass;
+    // }
   };
   const handleView = () => {
     if (selectedRow !== null) {
@@ -1117,6 +1163,157 @@ const GridKapal = () => {
       setPopOver(true);
     }
   };
+
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
+
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
+
+    const response = await getKapalFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Kapal',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
+    sessionStorage.setItem(
+      'filtersWithoutLimit',
+      JSON.stringify(filtersWithoutLimit)
+    );
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanKapal.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
+
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
+
+            // Navigate to the report page
+            window.open('/reports/laporankapal', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
+  };
+
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
@@ -1149,12 +1346,16 @@ const GridKapal = () => {
       </div>
     );
   }
+
   const handleClose = () => {
     setPopOver(false);
     setMode('');
 
+    clearError();
+
     forms.reset();
   };
+
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
@@ -1208,7 +1409,7 @@ const GridKapal = () => {
     // Set state kembali ke nilai default
     setColumnsOrder(defaultColumnsOrder);
     setColumnsWidth(defaultColumnsWidth);
-    setContextKapal(null);
+    setContextMenu(null);
     setDataGridKey((prevKey) => prevKey + 1);
 
     gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
@@ -1270,16 +1471,16 @@ const GridKapal = () => {
       );
     }
   };
-  const handleContextKapal = (event: React.MouseEvent) => {
+  const handleContextMenu = (event: React.MouseEvent) => {
     event.preventDefault();
-    setContextKapal({ x: event.clientX, y: event.clientY });
+    setContextMenu({ x: event.clientX, y: event.clientY });
   };
   const handleClickOutside = (event: MouseEvent) => {
     if (
-      contextKapalRef.current &&
-      !contextKapalRef.current.contains(event.target as Node)
+      contextMenuRef.current &&
+      !contextMenuRef.current.contains(event.target as Node)
     ) {
-      setContextKapal(null);
+      setContextMenu(null);
     }
   };
 
@@ -1316,7 +1517,7 @@ const GridKapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allKapal || isDataUpdated) return;
+    if (!allKapal || isFetchingManually || isDataUpdated) return;
 
     const newRows = allKapal.data || [];
 
@@ -1343,7 +1544,7 @@ const GridKapal = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allKapal, currentPage, filters, isDataUpdated]);
+  }, [allKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1388,6 +1589,7 @@ const GridKapal = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (
@@ -1397,11 +1599,13 @@ const GridKapal = () => {
     ) {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('pelayaran', rowData.pelayaran);
-      forms.setValue('text', rowData.text);
-      forms.setValue('pelayaran_id', rowData.pelayaran_id ? Number(rowData.pelayaran_id) : 0);
-      forms.setValue('statusaktif', rowData.statusaktif ? Number(rowData.statusaktif) : 0);
-
+      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('pelayaran_id', Number(rowData.pelayaran_id) || 1);
+      forms.setValue('pelayaran', rowData.pelayaran || '');
+    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
+      // If in addMode, ensure the form values are cleared
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1412,7 +1616,6 @@ const GridKapal = () => {
       }
     });
   }, []);
-
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1479,15 +1682,53 @@ const GridKapal = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Print',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: { onClick: () => handleReport()}
+            //       // {
+            //       //   label: 'REPORT BY SELECT',
+            //       //   onClick: () => handleReportBySelect(),
+            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       // }
+            //   }
+            //   // {
+            //   //   label: 'Export',
+            //   //   icon: <FaFileExport />,
+            //   //   className: 'bg-green-600 hover:bg-green-700',
+            //   //   actions: [
+            //   //     {
+            //   //       label: 'EXPORT ALL',
+            //   //       onClick: () => handleExport(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     },
+            //   //     {
+            //   //       label: 'EXPORT BY SELECT',
+            //   //       onClick: () => handleExportBySelect(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     }
+            //   //   ]
+            //   // }
+            // ]}
           />
           {isLoadingKapal ? <LoadRowsRenderer /> : null}
-          {contextKapal && (
+          {contextMenu && (
             <div
-              ref={contextKapalRef}
+              ref={contextMenuRef}
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
-                top: contextKapal.y, // Pastikan contextKapal.y berasal dari event.clientY
-                left: contextKapal.x, // Pastikan contextKapal.x berasal dari event.clientX
+                top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
+                left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
                 backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',

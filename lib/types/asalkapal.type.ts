@@ -4,23 +4,17 @@ export interface IAsalKapal {
   id: number;
   nominal:  number | null ;
   keterangan: string;
+  text: string;
   statusaktif: number;
-  statusaktif_text: string | null;
+  cabang: string;
   cabang_id: number;
-  cabang: string | null;
+  container: string;
   container_id: number;
-  container: string | null;
-  modifiedby: string;
   created_at: string;
   updated_at: string;
 }
-
 export interface IAllAsalKapal {
   data: IAsalKapal[];
+  type: string;
   pagination: IMeta;
-}
-
-export interface IErrorResponse {
-  message: string;
-  errors: Record<string, string[]>;
 }

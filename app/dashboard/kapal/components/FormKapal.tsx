@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
@@ -9,19 +8,23 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { useGetMenu } from '@/lib/server/useMenu';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
-import { api, api2 } from '@/lib/utils/AxiosInstance';
-import LookUp from '@/components/custom-ui/LookUp';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
+import LookUp from '@/components/custom-ui/LookUp';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
+import { useDispatch } from 'react-redux';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
 const FormKapal = ({
-  forms,
   popOver,
   setPopOver,
+  forms,
   onSubmit,
   mode,
   handleClose,
@@ -29,15 +32,10 @@ const FormKapal = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const { fieldLength } = useSelector((state: RootState) => state.fieldLength);
-  const [submitClick, setSubmitClick] = useState(false);
-  interface FieldLengthDetails {
-    column: string;
-    length: number;
-  }
-  const lookUpProps = [
+  const lookUpPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
@@ -45,63 +43,123 @@ const FormKapal = ({
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
     }
   ];
   const lookUpPelayaran = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
-      labelLookup: 'pelayaran LOOKUP',
+      // filterby: { class: 'system', method: 'get' },
+      labelLookup: 'Pelayaran LOOKUP',
+      required: true,
       selectedRequired: false,
       endpoint: 'pelayaran',
-      label: 'pelayaran',
+      label: 'PELAYARAN',
       singleColumn: true,
       pageSize: 20,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'nama',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'nama'
     }
   ];
-
-  const fetchFieldLengths = async () => {
-    try {
-      Object.entries(fieldLength).forEach(([index, value]) => {
-        if (
-          typeof index === 'string' &&
-          value !== null &&
-          value !== undefined
-        ) {
-          const inputElement = document.getElementsByName(value.column)[0]; // Get input
-
-          if (inputElement) {
-            inputElement.setAttribute('maxlength', value.length.toString());
-          } else {
-            console.warn(`Input with name '${value.column}' not found.`);
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching field lengths:', error);
-    }
-  };
+  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
+  const openName = useSelector((state: RootState) => state.lookup.openName);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    if (fieldLength.length > 0 && popOver) {
-      setTimeout(() => {
-        fetchFieldLengths();
-      }, 100);
-    }
-  }, [fieldLength, popOver]);
+    // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Jika popOverDate ada nilainya, jangan lakukan apa-apa
+      if (openName) {
+        return;
+      }
 
+      const form = formRef.current;
+
+      if (!form) return;
+
+      const inputs = Array.from(
+        form.querySelectorAll('input, select, textarea, button')
+      ).filter(
+        (element) =>
+          element.id !== 'image-dropzone' &&
+          element.tagName !== 'BUTTON' &&
+          !element.hasAttribute('readonly') // Pengecualian jika input readonly
+      ) as HTMLElement[]; // Ambil semua input dalam form kecuali button dan readonly inputs
+
+      const focusedElement = document.activeElement as HTMLElement;
+
+      // Cek apakah elemen yang difokuskan adalah dropzone
+      const isImageDropzone =
+        document.querySelector('input#image-dropzone') === focusedElement;
+      const isFileInput =
+        document.querySelector('input#file-input') === focusedElement;
+
+      if (isImageDropzone || isFileInput) return; // Jangan pindah fokus jika elemen fokus adalah dropzone atau input file
+
+      let nextElement: HTMLElement | null = null;
+
+      if (event.key === 'ArrowDown' || event.key === 'Tab') {
+        nextElement = getNextFocusableElement(inputs, focusedElement, 'down');
+        if (event.key === 'Tab') {
+          event.preventDefault(); // Cegah default tab behavior jika ingin mengontrol pergerakan fokus
+        }
+      } else if (
+        event.key === 'ArrowUp' ||
+        (event.shiftKey && event.key === 'Tab')
+      ) {
+        nextElement = getNextFocusableElement(inputs, focusedElement, 'up');
+      }
+      // Jika ditemukan input selanjutnya, pindahkan fokus
+      if (nextElement) {
+        nextElement.focus();
+      }
+    };
+    // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
+    const getNextFocusableElement = (
+      inputs: HTMLElement[],
+      currentElement: HTMLElement,
+      direction: 'up' | 'down'
+    ): HTMLElement | null => {
+      const index = Array.from(inputs).indexOf(currentElement as any);
+
+      if (direction === 'down') {
+        // Jika sudah di input terakhir, tidak perlu pindah fokus
+        if (index === inputs.length - 1) {
+          return null; // Tidak ada elemen selanjutnya
+        }
+        return inputs[index + 1]; // Fokus pindah ke input setelahnya
+      } else {
+        return inputs[index - 1]; // Fokus pindah ke input sebelumnya
+      }
+    };
+
+    // Menambahkan event listener untuk keydown
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Membersihkan event listener ketika komponen tidak lagi digunakan
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openName]); // Tambahkan popOverDate sebagai dependensi
+
+  console.log(forms.getValues());
+  
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
-      <DialogTitle hidden={true}>Kapal Form</DialogTitle>
+      <DialogTitle hidden={true}>Title</DialogTitle>
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Form Kapal
+            {mode === 'add'
+              ? 'Tambah Kapal'
+              : mode === 'edit'
+              ? 'Edit Kapal'
+              : mode === 'delete'
+              ? 'Delete Kapal'
+              : 'View Kapal'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -116,9 +174,12 @@ const FormKapal = ({
         <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
           <div className="h-full bg-white px-5 py-3">
             <Form {...forms}>
-              <form onSubmit={onSubmit} className="flex h-full flex-col gap-6">
+              <form
+                ref={formRef}
+                onSubmit={onSubmit}
+                className="flex h-full flex-col gap-6"
+              >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-
                   <FormField
                     name="nama"
                     control={forms.control}
@@ -128,35 +189,14 @@ const FormKapal = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          Nama Kapal
+                          NAMA
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <Input
+                              autoFocus
                               {...field}
-                              value={(field.value as string) ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    name="keterangan"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                          Keterangan
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={(field.value as string) ?? ''}
+                              value={field.value ?? ''}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -168,27 +208,10 @@ const FormKapal = ({
                   />
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Status Aktif
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpProps.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('statusaktif', id)
-                          }
-                          inputLookupValue={forms.getValues('statusaktif')}
-                          lookupNama={forms.getValues('text')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
                         Pelayaran
                       </FormLabel>
                     </div>
@@ -200,10 +223,59 @@ const FormKapal = ({
                         lookupValue={(id) =>
                           forms.setValue('pelayaran_id', Number(id))
                         }
-                        required={true}
                         inputLookupValue={forms.getValues('pelayaran_id')}
                         lookupNama={forms.getValues('pelayaran')}
-                      />
+                        disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <FormField
+                    name="keterangan"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          Keterangan
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Aktif
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatusAktif.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('statusaktif', id)
+                          }
+                          inputLookupValue={forms.getValues('statusaktif')}
+                          lookupNama={forms.getValues('statusaktif_nama')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
                       ))}
                     </div>
                   </div>
@@ -215,33 +287,50 @@ const FormKapal = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={async (e) => {
-              setSubmitClick(true); // Set true saat pertama kali klik
-
-              // Panggil onSubmit dengan menggunakan async await jika diperlukan untuk operasi yang async
-              await onSubmit(e); // Tunggu sampai onSubmit selesai
-
-              // Setelah 2 detik (misalnya), setSubmitClick menjadi false
-              setTimeout(() => {
-                setSubmitClick(false);
-              }, 2000); // 2000ms = 2 detik
+            // onClick={onSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              onSubmit(false);
+              dispatch(setSubmitClicked(true));
             }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
-            <p className="text-center">{mode === 'delete' ? 'DELETE' : 'SAVE'}</p>
+            <p className="text-center">
+              {mode === 'delete' ? 'DELETE' : 'SAVE'}
+            </p>
           </Button>
+
+          {mode === 'add' && (
+            <div>
+              <Button
+                type="submit"
+                variant="success"
+                // onClick={onSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSubmit(true);
+                  dispatch(setSubmitClicked(true));
+                }}
+                disabled={mode === 'view'}
+                className="flex w-fit items-center gap-1 text-sm"
+                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+              >
+                <FaSave />
+                <p className="text-center">
+                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
+                </p>
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             variant="secondary"
             className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={(e) => {
-              // Set your state here
-              setSubmitClick(false); // Ganti dengan logika state yang diinginkan
-              handleClose(e); // Panggil onSubmit setelahnya
-            }}
+            onClick={handleClose}
           >
             <IoMdClose /> <p className="text-center text-white">Cancel</p>
           </Button>

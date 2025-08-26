@@ -11,5 +11,6 @@ export interface IPelayaran {
 
 export interface IAllPelayaran {
   data: IPelayaran[];
+  type: string;
   pagination: IMeta;
 }

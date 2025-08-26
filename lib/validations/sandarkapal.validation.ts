@@ -15,7 +15,8 @@ export const sandarkapalSchema = z.object({
 
   statusaktif_nama: z
     .string()
-    .nonempty({ message: dynamicRequiredMessage('STATUSAKTIF_NAMA') })
+    .nullable()
+    .optional()
 });
 
 export type SandarKapalInput = z.infer<typeof sandarkapalSchema>;
