@@ -56,6 +56,8 @@ import {
 } from '@/lib/server/useJenisOrderan';
 import FormJenisOrderan from './FormJenisOrderan';
 import { getJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
+import { setClearLookup } from '@/lib/store/lookupSlice/lookupSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 
 interface Filter {
   page: number;
@@ -127,6 +129,11 @@ const GridJenisOrderan = () => {
       statusaktif: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -150,7 +157,7 @@ const GridJenisOrderan = () => {
       page: currentPage
     });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -280,7 +287,13 @@ const GridJenisOrderan = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -902,39 +915,50 @@ const GridJenisOrderan = () => {
       }
     }
   }
-  const onSuccess = async (indexOnPage: any, pageNumber: any) => {
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    clearError();
     try {
-      forms.reset();
-      setPopOver(false);
-      setIsFetchingManually(true);
-      setRows([]);
-      if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/jenisorderan-allItems`);
-        // Set the rows only if the data has changed
-        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-          setRows(response.data);
-          setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
-          setSelectedRow(indexOnPage);
-          setTimeout(() => {
-            gridRef?.current?.selectCell({
-              rowIdx: indexOnPage,
-              idx: 1
-            });
-          }, 200);
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/jenisorderan-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
         }
-      }
 
-      setIsFetchingManually(false);
-      setIsDataUpdated(false);
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: JenisOrderanInput) => {
+  const onSubmit = async (values: JenisOrderanInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
 
     if (mode === 'delete') {
@@ -961,10 +985,11 @@ const GridJenisOrderan = () => {
       const newOrder = await createJenisOrderan(
         {
           ...values,
-          ...filters // Kirim filter ke body/payload
+          ...filters
         },
         {
-          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+          onSuccess: (data) =>
+            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
         }
       );
 
@@ -981,7 +1006,7 @@ const GridJenisOrderan = () => {
         },
         { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
       );
-      queryClient.invalidateQueries('menus');
+      queryClient.invalidateQueries('jenisorderans');
     }
   };
 
@@ -1100,7 +1125,7 @@ const GridJenisOrderan = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
@@ -1308,6 +1333,13 @@ const GridJenisOrderan = () => {
   }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        clearError();
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
       // Cek apakah target yang sedang fokus adalah input atau textarea
       if (
         event.key === ' ' &&
@@ -1422,6 +1454,7 @@ const GridJenisOrderan = () => {
           }}
         >
           <ActionButton
+            module="JenisOrderan"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
@@ -1465,7 +1498,7 @@ const GridJenisOrderan = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>

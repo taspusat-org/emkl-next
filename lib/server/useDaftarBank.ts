@@ -8,6 +8,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { AxiosError } from 'axios';
 import { IErrorResponse } from '../types/user.type';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetDaftarBank = (
   filters: {
@@ -23,80 +24,110 @@ export const useGetDaftarBank = (
   } = {}
 ) => {
   return useQuery(
-    ['daftarbanks', filters],
+    ['daftarbank', filters],
     async () => await getDaftarBankFn(filters)
   );
 };
 
 export const useCreateDaftarBank = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(storeDaftarBankFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('daftarbanks'); //pake s karena sebagai penamaan aja, karena kita pake mutasi, jadi pas crud dan ada data berubah kita ga fetch manual, pake ini aja asal keynya sama
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
+      void queryClient.invalidateQueries('daftarbank'); //pake s karena sebagai penamaan aja, karena kita pake mutasi, jadi pas crud dan ada data berubah kita ga fetch manual, pake ini aja asal keynya sama
+      // toast({
+      //   title: 'Proses Berhasil',
+      //   description: 'Data Berhasil Ditambahkan'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda.'
+          });
+        }
       }
     }
   });
 };
 
 export const useDeleteDaftarBank = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(deleteDaftarBankFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('daftarbanks');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
+      void queryClient.invalidateQueries('daftarbank');
+      // toast({
+      //   title: 'Proses Berhasil.',
+      //   description: 'Data Berhasil Dihapus.'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda.'
+          });
+        }
       }
     }
   });
 };
 export const useUpdateDaftarBank = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(updateDaftarBankFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('daftarbanks');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
+      void queryClient.invalidateQueries('daftarbank');
+      // toast({
+      //   title: 'Proses Berhasil.',
+      //   description: 'Data Berhasil Diubah.'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda.'
+          });
+        }
       }
     }
   });
