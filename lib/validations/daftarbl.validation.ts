@@ -13,9 +13,7 @@ export const daftarblSchema = z.object({
     .number()
     .min(1, { message: dynamicRequiredMessage('STATUSAKTIF') }),
 
-  statusaktif_nama: z
-    .string()
-    .nonempty({ message: dynamicRequiredMessage('STATUSAKTIF_NAMA') })
+  statusaktif_nama: z.string().nullable().optional()
 });
 
 export type DaftarblInput = z.infer<typeof daftarblSchema>;

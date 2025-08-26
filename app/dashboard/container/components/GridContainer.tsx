@@ -1035,12 +1035,6 @@ const GridContainer = () => {
                   idx: 1
                 });
               }
-
-              alert({
-                title: 'Berhasil!',
-                variant: 'success',
-                submitText: 'OK'
-              });
             }
           });
         }
