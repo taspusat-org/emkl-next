@@ -56,7 +56,10 @@ import {
 } from '@/lib/server/useJenisOrderan';
 import FormJenisOrderan from './FormJenisOrderan';
 import { getJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
-import { setClearLookup } from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 
 interface Filter {
