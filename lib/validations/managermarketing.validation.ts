@@ -36,8 +36,38 @@ export const managermarketingHeaderSchema = z.object({
   statusleader_text: z.string().nullable().optional(),
   statusaktif: z.number().nullable(),
   text: z.string().nullable().optional(),
-  details: z.array(managermarketingDetailSchema).min(1)
+  details: z
+    .array(managermarketingDetailSchema)
+    .min(1, { message: 'Minimal 1 detail harus diisi' })
+    .superRefine((details, ctx) => {
+      details.forEach((item, index) => {
+        if (!item.nominalawal) {
+          ctx.addIssue({
+            path: [index, 'nominalawal'],
+            code: z.ZodIssueCode.custom,
+            message: dynamicRequiredMessage(`NOMINAL AWAL (baris ${index + 1})`)
+          });
+        }
+        if (!item.nominalakhir) {
+          ctx.addIssue({
+            path: [index, 'nominalakhir'],
+            code: z.ZodIssueCode.custom,
+            message: dynamicRequiredMessage(
+              `NOMINAL AKHIR (baris ${index + 1})`
+            )
+          });
+        }
+        if (!item.persentase) {
+          ctx.addIssue({
+            path: [index, 'persentase'],
+            code: z.ZodIssueCode.custom,
+            message: dynamicRequiredMessage(`PERSENTASE (baris ${index + 1})`)
+          });
+        }
+      });
+    })
 });
+
 export type ManagerMarketingHeaderInput = z.infer<
   typeof managermarketingHeaderSchema
 >;

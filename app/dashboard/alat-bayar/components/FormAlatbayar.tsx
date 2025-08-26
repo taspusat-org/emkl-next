@@ -64,7 +64,7 @@ const FormBank = ({
       labelLookup: 'STATUS DEFAULT LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS NILAI',
+      endpoint: 'parameter?grp=status+nilai',
       label: 'STATUS NILAI',
       singleColumn: true,
       pageSize: 20,
@@ -81,7 +81,7 @@ const FormBank = ({
       labelLookup: 'STATUS BANK LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS BANK',
+      endpoint: 'parameter?grp=status+bank',
       label: 'STATUS BANK',
       singleColumn: true,
       pageSize: 20,
@@ -98,7 +98,7 @@ const FormBank = ({
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS AKTIF',
+      endpoint: 'parameter?grp=status+aktif',
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
@@ -189,12 +189,12 @@ const FormBank = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Alat Bayar Form'
+              ? 'Add Alat Bayar'
               : mode === 'edit'
-              ? 'Edit Alat Bayar Form'
+              ? 'Edit Alat Bayar'
               : mode === 'delete'
-              ? 'Delete Alat Bayar Form'
-              : 'View Alat Bayar Form'}
+              ? 'Delete Alat Bayar'
+              : 'View Alat Bayar'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"

@@ -147,6 +147,11 @@ const GridTujuankapal = () => {
       cabang_id: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -315,7 +320,13 @@ const GridTujuankapal = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -1195,6 +1206,13 @@ const GridTujuankapal = () => {
   // };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
 
     const response = await getTujuankapalFn(filtersWithoutLimit);
@@ -1202,7 +1220,7 @@ const GridTujuankapal = () => {
       ...row,
       judullaporan: 'Laporan Tujuan Kapal',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
     sessionStorage.setItem(
@@ -1672,6 +1690,7 @@ const GridTujuankapal = () => {
           }}
         >
           <ActionButton
+            module="TUJUANKAPAL"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

@@ -53,6 +53,7 @@ export interface IAllScheduleKapal {
 export const defaultFilter = {
   jenisorderan_nama: '',
   keterangan: '',
+  voyberangkat: '',
   kapal_nama: '',
   pelayaran_nama: '',
   tujuankapal_nama: '',

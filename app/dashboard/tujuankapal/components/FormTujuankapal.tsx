@@ -32,17 +32,17 @@ const FormMenu = ({
 }: any) => {
   const lookUpPropsCabang = [
     {
-      columns: [{ key: 'namacabang', name: 'NAMACABANG' }],
+      columns: [{ key: 'nama', name: 'NAMACABANG' }],
       // filterby: { class: 'system', method: 'get' },
       labelLookup: 'CABANG LOOKUP',
       selectedRequired: false,
       endpoint: 'cabang',
-      label: 'CABANG',
+      label: 'NAMACABANG',
       singleColumn: true,
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'namacabang'
+      postData: 'nama'
     }
   ];
   const lookUpPropsStatusAktif = [
@@ -148,12 +148,12 @@ const FormMenu = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Tujuan Kapal Form'
+              ? 'Add Tujuan Kapal'
               : mode === 'edit'
-              ? 'Edit Tujuan Kapal Form'
+              ? 'Edit Tujuan Kapal'
               : mode === 'delete'
-              ? 'Delete Tujuan Kapal Form'
-              : 'View Tujuan Kapal Form'}
+              ? 'Delete Tujuan Kapal'
+              : 'View Tujuan Kapal'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"

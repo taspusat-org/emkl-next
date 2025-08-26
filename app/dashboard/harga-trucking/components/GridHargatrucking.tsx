@@ -166,13 +166,18 @@ const GridHargatrucking = () => {
       container_text: '',
       jenisorderan_id: 0,
       jenisorderan_text: '',
-      nominal: 0,
+      nominal: undefined,
       statusaktif: 1,
       text: '',
       created_at: '',
       updated_at: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
 
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
@@ -197,7 +202,7 @@ const GridHargatrucking = () => {
       updated_at: ''
     },
     search: '',
-    sortBy: 'tujuankapal_text',
+    sortBy: 'tujuankapal_id',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
@@ -377,6 +382,15 @@ const GridHargatrucking = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('tujuankapal_text'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
+
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -509,6 +523,7 @@ const GridHargatrucking = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('tujuankapal_id')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -582,6 +597,7 @@ const GridHargatrucking = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('emkl_id')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1446,6 +1462,13 @@ const GridHargatrucking = () => {
   };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
 
     const response = await getHargatruckingFn(filtersWithoutLimit);
@@ -1453,7 +1476,7 @@ const GridHargatrucking = () => {
       ...row,
       judullaporan: 'Laporan Harga Trucking',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
     sessionStorage.setItem(
@@ -1897,7 +1920,7 @@ const GridHargatrucking = () => {
       forms.setValue('container_text', rowData.container_text || '');
 
       forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id) || 1);
-      forms.setValue('jenisorderan_text', rowData.container_text || '');
+      forms.setValue('jenisorderan_text', rowData.jenisorderan_text || '');
 
       forms.setValue('nominal', Number(rowData.nominal) || 1);
 
@@ -1978,6 +2001,7 @@ const GridHargatrucking = () => {
           }}
         >
           <ActionButton
+            module="HARGA-TRUCKING"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

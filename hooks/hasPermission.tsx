@@ -16,8 +16,12 @@ const usePermissions = () => {
 
   // Array untuk pengecualian, bisa berisi subject atau action
   const exclusionList: (string | string[])[] = [
-    'SHOW' // Contoh pengecualian untuk subject
-    // Tambahkan pengecualian lainnya sesuai kebutuhan
+    'SHOW',
+    'MENU',
+    'ROLEACL',
+    'ROLE',
+    'USERS',
+    'PARAMETER'
   ];
 
   useEffect(() => {

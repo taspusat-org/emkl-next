@@ -146,9 +146,15 @@ const GridDaftarbl = () => {
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 1,
+      statusaktif_nama: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -330,6 +336,13 @@ const GridDaftarbl = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -1053,7 +1066,7 @@ const GridDaftarbl = () => {
       dispatch(setProcessed());
     }
   };
-
+  console.log(forms.getValues());
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -1129,6 +1142,13 @@ const GridDaftarbl = () => {
   // };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
 
     const response = await getDaftarblFn(filtersWithoutLimit);
@@ -1136,7 +1156,7 @@ const GridDaftarbl = () => {
       ...row,
       judullaporan: 'Laporan Daftar BL',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
     sessionStorage.setItem(
@@ -1582,6 +1602,7 @@ const GridDaftarbl = () => {
           }}
         >
           <ActionButton
+            module="DAFTARBL"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

@@ -56,7 +56,7 @@ const FormMenu = ({
       labelLookup: 'TUJUAN KAPAL LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'TUJUANKAPAL',
+      endpoint: 'tujuankapal',
       label: 'TUJUANKAPAL',
       singleColumn: true,
       pageSize: 20,
@@ -72,7 +72,7 @@ const FormMenu = ({
       labelLookup: 'EMKL LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'EMKL',
+      endpoint: 'emkl',
       label: 'EMKL',
       singleColumn: true,
       pageSize: 20,
@@ -88,7 +88,7 @@ const FormMenu = ({
       labelLookup: 'CONTAINER LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'CONTAINER',
+      endpoint: 'container',
       label: 'CONTAINER',
       singleColumn: true,
       pageSize: 20,
@@ -104,7 +104,7 @@ const FormMenu = ({
       labelLookup: 'JENIS ORDERAN LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'JENIS ORDERAN',
+      endpoint: 'jenisorderan',
       label: 'JENIS ORDERAN',
       singleColumn: true,
       pageSize: 20,
@@ -200,12 +200,12 @@ const FormMenu = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Harga Trucking Form'
+              ? 'Add Harga Trucking'
               : mode === 'edit'
-              ? 'Edit Harga Trucking Form'
+              ? 'Edit Harga Trucking'
               : mode === 'delete'
-              ? 'Delete Harga Trucking Form'
-              : 'View Harga Trucking Form'}
+              ? 'Delete Harga Trucking'
+              : 'View Harga Trucking'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -226,29 +226,35 @@ const FormMenu = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Tujuan Kapal
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsTujuankapal.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) => {
-                            forms.setValue('tujuankapal_id', Number(id));
-                          }}
-                          lookupNama={forms.getValues('tujuankapal_text')}
-                          disabled={mode === 'view' || mode === 'delete'}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                  <FormField
+                    name="tujuankapal_text"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="text-sm font-semibold text-gray-700 lg:w-[15%]"
+                        >
+                          Tujuan Kapal
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          {lookUpPropsTujuankapal.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('tujuankapal_id', Number(id))
+                              }
+                              lookupNama={forms.getValues('tujuankapal_text')}
+                              disabled={mode === 'view' || mode === 'delete'}
+                            />
+                          ))}
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel

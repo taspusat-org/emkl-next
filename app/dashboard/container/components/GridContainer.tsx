@@ -76,7 +76,10 @@ import {
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { getContainerFn } from '@/lib/apis/container.api';
+import {
+  checkValidationContainerFn,
+  getContainerFn
+} from '@/lib/apis/container.api';
 import { setReportFilter } from '@/lib/store/printSlice/printSlice';
 import Alert from '@/components/custom-ui/AlertCustom';
 
@@ -148,9 +151,15 @@ const GridContainer = () => {
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 1,
+      statusaktif_nama: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -334,6 +343,13 @@ const GridContainer = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -1001,6 +1017,7 @@ const GridContainer = () => {
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
+        const selectedRowId = rows[selectedRow]?.id;
         if (selectedRowId) {
           await deleteContainer(selectedRowId as unknown as string, {
             onSuccess: () => {
@@ -1023,6 +1040,7 @@ const GridContainer = () => {
         }
         return;
       }
+
       if (mode === 'add') {
         const newOrder = await createContainer(
           {
@@ -1055,7 +1073,7 @@ const GridContainer = () => {
       dispatch(setProcessed());
     }
   };
-
+  console.log(forms.getValues());
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -1063,15 +1081,141 @@ const GridContainer = () => {
       setMode('edit');
     }
   };
-  const handleDelete = () => {
-    if (selectedRow !== null && checkedRows.size < 0) {
-      setMode('delete');
-      setPopOver(true);
+  const handleDelete = async () => {
+    try {
+      dispatch(setProcessing());
+
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const selectedRowId = rows[selectedRow]?.id;
+
+          if (selectedRowId) {
+            const validationResponse = await checkValidationContainerFn({
+              aksi: 'DELETE',
+              value: selectedRowId
+            });
+
+            if (validationResponse.data.status !== 'success') {
+              alert({
+                title: 'Data tidak dapat dihapus!',
+                variant: 'danger',
+                submitText: 'OK'
+              });
+              return;
+            }
+
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationContainerFn({
+              aksi: 'DELETE',
+              value: id
+            });
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
+        });
+
+        const validationResults = await Promise.all(validationPromises);
+
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
+
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
+          alert({
+            title: 'Beberapa data tidak dapat dihapus!',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          return;
+        }
+
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
     }
-    //  else {
-    //   // Alert()
-    //   // pass;
-    // }
+  };
+
+  // Fungsi baru untuk menangani multiple delete
+  const handleMultipleDelete = async (idsToDelete: number[]) => {
+    try {
+      // Hapus data satu per satu
+      for (const id of idsToDelete) {
+        await deleteContainer(id as unknown as string);
+      }
+
+      // Update state setelah semua data berhasil dihapus
+      setRows((prevRows) =>
+        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+
+      // Reset checked rows
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+
+      // Update selected row
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
+
+      // Focus grid
+      setTimeout(() => {
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
+
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    }
   };
   const handleView = () => {
     if (selectedRow !== null) {
@@ -1135,6 +1279,13 @@ const GridContainer = () => {
   // };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
 
     const response = await getContainerFn(filtersWithoutLimit);
@@ -1142,7 +1293,7 @@ const GridContainer = () => {
       ...row,
       judullaporan: 'Laporan Container',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
     sessionStorage.setItem(
@@ -1274,12 +1425,8 @@ const GridContainer = () => {
 
   const handleAdd = async () => {
     try {
-      // Jalankan API sinkronisasi
-      const syncResponse = await syncAcosFn();
       setMode('add');
-
       setPopOver(true);
-
       forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
@@ -1592,6 +1739,7 @@ const GridContainer = () => {
           }}
         >
           <ActionButton
+            module="Container"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

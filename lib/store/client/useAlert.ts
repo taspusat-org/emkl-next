@@ -10,6 +10,7 @@ interface AlertState {
   alert: (options: AlertOptions) => Promise<void>;
   handleClose: () => void;
   handleSubmit: () => void;
+  handleCancel: () => void;
   setLoadingAlert: (loading: boolean) => void;
 }
 
@@ -48,6 +49,18 @@ const useAlertStore = create<AlertState>((set) => ({
       };
     });
   },
+  handleCancel: () => {
+    set((state) => {
+      if (state.awaitingPromiseRef != null) {
+        state.awaitingPromiseRef.reject();
+      }
+      return {
+        alertOptions: null,
+        awaitingPromiseRef: null
+      };
+    });
+  },
+
   setLoadingAlert: (loading: boolean) =>
     set((state) => ({
       alertOptions:
@@ -58,20 +71,28 @@ const useAlertStore = create<AlertState>((set) => ({
 }));
 
 export const useAlert = () => {
-  const { alertOptions, alert, handleClose, handleSubmit, setLoadingAlert } =
-    useAlertStore((state) => ({
-      alertOptions: state.alertOptions,
-      alert: state.alert,
-      handleClose: state.handleClose,
-      handleSubmit: state.handleSubmit,
-      setLoadingAlert: state.setLoadingAlert
-    }));
+  const {
+    alertOptions,
+    alert,
+    handleClose,
+    handleSubmit,
+    handleCancel,
+    setLoadingAlert
+  } = useAlertStore((state) => ({
+    alertOptions: state.alertOptions,
+    alert: state.alert,
+    handleClose: state.handleClose,
+    handleSubmit: state.handleSubmit,
+    handleCancel: state.handleCancel,
+    setLoadingAlert: state.setLoadingAlert
+  }));
 
   return {
     alertOptions,
     alert,
     handleClose,
     handleSubmit,
+    handleCancel,
     setLoadingAlert
   };
 };

@@ -47,7 +47,7 @@ const FormBank = ({
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS AKTIF',
+      endpoint: 'parameter?grp=status+aktif',
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
@@ -101,7 +101,7 @@ const FormBank = ({
       labelLookup: 'STATUS DEFAULT LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS NILAI',
+      endpoint: 'parameter?grp=status+nilai',
       label: 'STATUS NILAI',
       singleColumn: true,
       pageSize: 20,
@@ -118,7 +118,7 @@ const FormBank = ({
       labelLookup: 'STATUS BANK LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS BANK',
+      endpoint: 'parameter?grp=status+bank',
       label: 'STATUS BANK',
       singleColumn: true,
       pageSize: 20,
@@ -135,7 +135,7 @@ const FormBank = ({
       labelLookup: 'FORMAT PENERIMAAN LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'PENERIMAAN',
+      endpoint: 'parameter?grp=penerimaan&subgrp=nomor+penerimaan',
       label: 'PENERIMAAN',
       singleColumn: true,
       pageSize: 20,
@@ -152,7 +152,7 @@ const FormBank = ({
       labelLookup: 'FORMAT PENGELUARAN LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'PENGELUARAN',
+      endpoint: 'parameter?grp=pengeluaran&subgrp=nomor+pengeluaran',
       label: 'PENGELUARAN',
       singleColumn: true,
       pageSize: 20,
@@ -169,7 +169,8 @@ const FormBank = ({
       labelLookup: 'FORMAT PENERIMAAN GANTUNG LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'PENERIMAAN GANTUNG',
+      endpoint:
+        'parameter?grp=penerimaan+gantung&subgrp=nomor+penerimaan+gantung',
       label: 'PENERIMAAN GANTUNG',
       singleColumn: true,
       pageSize: 20,
@@ -186,7 +187,8 @@ const FormBank = ({
       labelLookup: 'FORMAT PENGELUARAN GANTUNG LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'PENGELUARAN GANTUNG',
+      endpoint:
+        'parameter?grp=pengeluaran+gantung&subgrp=nomor+pengeluaran+gantung',
       label: 'PENGELUARAN GANTUNG',
       singleColumn: true,
       pageSize: 20,
@@ -203,7 +205,7 @@ const FormBank = ({
       labelLookup: 'FORMAT PENCAIRAN LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'PENCAIRAN',
+      endpoint: 'parameter?grp=pencairan&subgrp=nomor+pencairan',
       label: 'PENCAIRAN',
       singleColumn: true,
       pageSize: 20,
@@ -220,7 +222,7 @@ const FormBank = ({
       labelLookup: 'FORMAT REKAP PENERIMAAN LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'REKAP PENERIMAAN',
+      endpoint: 'parameter?grp=rekap+penerimaan&subgrp=nomor+rekap+penerimaan',
       label: 'REKAP PENERIMAAN',
       singleColumn: true,
       pageSize: 20,
@@ -237,7 +239,8 @@ const FormBank = ({
       labelLookup: 'FORMAT REKAP PENGELUARAN LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'REKAP PENGELUARAN',
+      endpoint:
+        'parameter?grp=rekap+pengeluaran&subgrp=nomor+rekap+pengeluaran',
       label: 'REKAP PENGELUARAN',
       singleColumn: true,
       pageSize: 20,
@@ -328,12 +331,12 @@ const FormBank = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Bank Form'
+              ? 'Add Bank '
               : mode === 'edit'
-              ? 'Edit Bank Form'
+              ? 'Edit Bank '
               : mode === 'delete'
-              ? 'Delete Bank Form'
-              : 'View Bank Form'}
+              ? 'Delete Bank '
+              : 'View Bank '}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"

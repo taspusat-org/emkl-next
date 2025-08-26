@@ -132,6 +132,7 @@ const GridScheduleKapal = () => {
       filters: {
         jenisorderan_nama: '',
         keterangan: '',
+        voyberangkat: '',
         kapal_nama: '',
         pelayaran_nama: '',
         tujuankapal_nama: '',
@@ -432,8 +433,8 @@ const GridScheduleKapal = () => {
         }
       },
       {
-        key: 'jenisorderan_text',
-        name: 'jenisorderan',
+        key: 'voyberangkat',
+        name: 'voyberangkat',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -442,23 +443,23 @@ const GridScheduleKapal = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('jenisorderan')}
+              onClick={() => handleSort('voyberangkat')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'jenisorderan'
+                  filters.sortBy === 'voyberangkat'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                jenisorderan
+                voy berangkat
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'jenisorderan' &&
+                {filters.sortBy === 'voyberangkat' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'jenisorderan' &&
+                ) : filters.sortBy === 'voyberangkat' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -470,21 +471,19 @@ const GridScheduleKapal = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['jenisorderan'] = el;
+                  inputColRefs.current['voyberangkat'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.jenisorderan_nama.toUpperCase() || ''}
+                value={filters.filters.voyberangkat.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('jenisorderan_nama', value);
+                  handleColumnFilterChange('voyberangkat', value);
                 }}
               />
-              {filters.filters.jenisorderan_nama && (
+              {filters.filters.voyberangkat && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('jenisorderan_nama', '')
-                  }
+                  onClick={() => handleColumnFilterChange('voyberangkat', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -494,13 +493,13 @@ const GridScheduleKapal = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.jenisorderan_nama || '';
+          const columnFilter = filters.filters.voyberangkat || '';
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.jenisorderan_nama !== null &&
-                  props.row.jenisorderan_nama !== undefined
-                  ? props.row.jenisorderan_nama
+                props.row.voyberangkat !== null &&
+                  props.row.voyberangkat !== undefined
+                  ? props.row.voyberangkat
                   : '',
                 filters.search,
                 columnFilter
@@ -680,7 +679,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                tujuankapal
+                tujuan kapal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tujuankapal' &&
@@ -758,7 +757,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                asalkapal
+                asal kapal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'asalkapal' &&
@@ -834,7 +833,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                tglberangkat
+                tgl berangkat
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tglberangkat' &&
@@ -908,7 +907,7 @@ const GridScheduleKapal = () => {
                   filters.sortBy === 'tgltiba' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                tgltiba
+                tgl tiba
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tgltiba' &&
@@ -983,7 +982,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                tglclosing
+                tgl closing
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tglclosing' &&
@@ -1039,6 +1038,84 @@ const GridScheduleKapal = () => {
         }
       },
       {
+        key: 'jenisorderan_text',
+        name: 'jenisorderan',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('jenisorderan')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'jenisorderan'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                jenis orderan
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'jenisorderan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'jenisorderan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['jenisorderan'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.jenisorderan_nama.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('jenisorderan_nama', value);
+                }}
+              />
+              {filters.filters.jenisorderan_nama && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('jenisorderan_nama', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.jenisorderan_nama || '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.jenisorderan_nama !== null &&
+                  props.row.jenisorderan_nama !== undefined
+                  ? props.row.jenisorderan_nama
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
         key: 'statusberangkatkapal',
         name: 'statusberangkatkapal',
         resizable: true,
@@ -1059,7 +1136,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                statusberangkatkapal
+                status berangkat kapal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'statusberangkatkapal' &&
@@ -1137,7 +1214,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                statustibakapal
+                status tiba kapal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'statustibakapal' &&
@@ -1215,7 +1292,7 @@ const GridScheduleKapal = () => {
                     : 'font-normal'
                 }`}
               >
-                batasmuatankapal
+                batas muatan kapal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'batasmuatankapal' &&

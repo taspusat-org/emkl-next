@@ -177,18 +177,18 @@ const GridBank = () => {
       nama: '',
       keterangan: '',
 
-      coa: 0,
+      coa: null,
       keterangancoa: '',
-      coagantung: 0,
+      coagantung: null,
       keterangancoagantung: '',
 
-      statusbank: 0,
+      statusbank: 1,
       textbank: '',
 
-      statusaktif: 0,
+      statusaktif: 1,
       text: '',
 
-      statusdefault: 0,
+      statusdefault: 1,
       textdefault: '',
 
       formatpenerimaan: 0,
@@ -213,6 +213,11 @@ const GridBank = () => {
       formatrekappengeluarantext: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -1753,6 +1758,7 @@ const GridBank = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
+    console.log('sdadsakjhdjkhsa');
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -1929,13 +1935,20 @@ const GridBank = () => {
   // };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
     const response = await getBankFn(filtersWithoutLimit);
     const reportRows = response.data.map((row) => ({
       ...row,
       judullaporan: 'Laporan Bank',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
 
@@ -1948,7 +1961,7 @@ const GridBank = () => {
       .then((module) => {
         const { Stimulsoft } = module;
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/tahoma.ttf',
+          '/fonts/ComicNeue-Regular.ttf',
           'Arial'
         );
         Stimulsoft.Base.StiLicense.Key =
@@ -2065,12 +2078,11 @@ const GridBank = () => {
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
-      const syncResponse = await syncAcosFn();
       setMode('add');
 
       setPopOver(true);
 
-      forms.reset();
+      // forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
     }
@@ -2318,14 +2330,23 @@ const GridBank = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' &&
+      mode !== ''
+    ) {
+      console.log(rowData);
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
-      forms.setValue('coa', Number(rowData.coa));
+      forms.setValue('coa', rowData.coa !== null ? Number(rowData.coa) : null);
       forms.setValue('keterangancoa', rowData.keterangancoa);
 
-      forms.setValue('coagantung', Number(rowData.coagantung));
+      forms.setValue(
+        'coagantung',
+        rowData.coagantung !== null ? Number(rowData.coagantung) : null
+      );
       forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
 
       forms.setValue('statusbank', Number(rowData.statusbank));
@@ -2395,6 +2416,13 @@ const GridBank = () => {
       }
     });
   }, []);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -2457,6 +2485,7 @@ const GridBank = () => {
           }}
         >
           <ActionButton
+            module="BANK"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

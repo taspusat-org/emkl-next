@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import { FaSave, FaTimes, FaTrashAlt } from 'react-icons/fa';
 import InputMask from '@mona-health/react-input-mask';
+import { useFormContext } from 'react-hook-form';
 import DataGrid, {
   CellKeyDownArgs,
   Column,
@@ -69,7 +70,7 @@ const FormManagerMarketing = ({
   const [isAllSelected, setIsAllSelected] = useState(false);
 
   const [dataGridKey, setDataGridKey] = useState(0);
-
+  const dispatch = useDispatch();
   const [filters, setFilters] = useState({
     nobukti: '',
     keterangan: '',
@@ -112,6 +113,34 @@ const FormManagerMarketing = ({
       newRow,
       prevRows[prevRows.length - 1]
     ]);
+  };
+
+  const resetDetailAndAddNewRow = () => {
+    setRows([
+      {
+        id: 0,
+        nominalawal: '',
+        nominalakhir: '',
+        persentase: '',
+        statusaktif: null,
+        text: '',
+        isNew: true
+      },
+      { isAddRow: true, id: 'add_row', isNew: false }
+    ]);
+
+    forms.setValue('details', [
+      {
+        id: 0,
+        nominalawal: '',
+        nominalakhir: '',
+        persentase: '',
+        statusaktif: '',
+        text: ''
+      }
+    ]);
+
+    setDataGridKey((prev) => prev + 1);
   };
 
   const handleInputChange = (
@@ -196,7 +225,6 @@ const FormManagerMarketing = ({
     const formatted = formatWithCommas(rawInput);
     handleInputChange(rowIdx, 'nominalakhir', formatted);
   };
-  console.log(rows, 'dsadsadas');
   const handleCurrencyChange3 = (rowIdx: number, rawInput: string) => {
     const formatted = formatWithCommas(rawInput);
     handleInputChange(rowIdx, 'persentase', formatted);
@@ -334,7 +362,7 @@ const FormManagerMarketing = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
@@ -346,26 +374,34 @@ const FormManagerMarketing = ({
         name: 'nominalawal',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          let raw = props.row.nominalawal ?? ''; // Nilai nominal awal
 
-          // Cek jika raw belum diformat dengan tanda koma, kemudian format
-          if (typeof raw === 'number') {
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
-
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
+          let raw = props.row.nominalawal ?? '';
+          if (typeof raw === 'number') raw = raw.toString();
+          if (!raw.includes(',')) raw = formatCurrency(parseFloat(raw));
 
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              <InputCurrency
-                readOnly={mode === 'view' || mode === 'delete'}
-                value={String(raw)}
-                onValueChange={(value) => handleCurrencyChange(rowIdx, value)}
-              />
-            </div>
+            <FormField
+              name={`details.${rowIdx}.nominalawal`}
+              control={forms.control}
+              render={({ field }) => (
+                <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                  <div className="flex w-full flex-col">
+                    <FormControl>
+                      <InputCurrency
+                        {...field}
+                        readOnly={mode === 'view' || mode === 'delete'}
+                        value={String(props.row.nominalawal ?? '')}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleCurrencyChange(rowIdx, value);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </div>
+                </FormItem>
+              )}
+            />
           );
         }
       },
@@ -401,18 +437,20 @@ const FormManagerMarketing = ({
 
           return (
             <FormField
-              name="nominalakhir"
+              name={`details.${rowIdx}.nominalakhir`}
               control={forms.control}
               render={({ field }) => (
                 <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-                  <div className="flex w-full flex-col lg:w-[100%]">
+                  <div className="flex w-full flex-col">
                     <FormControl>
                       <InputCurrency
+                        {...field}
                         readOnly={mode === 'view' || mode === 'delete'}
-                        value={String(raw)}
-                        onValueChange={(value) =>
-                          handleCurrencyChange2(rowIdx, value)
-                        }
+                        value={String(props.row.nominalakhir ?? '')}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleCurrencyChange2(rowIdx, value);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -429,7 +467,7 @@ const FormManagerMarketing = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 180,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
@@ -455,18 +493,20 @@ const FormManagerMarketing = ({
 
           return (
             <FormField
-              name="persentase"
+              name={`details.${rowIdx}.persentase`}
               control={forms.control}
               render={({ field }) => (
                 <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
                   <div className="flex flex-col">
                     <FormControl>
                       <InputCurrency
+                        {...field}
                         readOnly={mode === 'view' || mode === 'delete'}
-                        value={String(raw)}
-                        onValueChange={(value) =>
-                          handleCurrencyChange3(rowIdx, value)
-                        }
+                        value={String(props.row.persentase ?? '')}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          handleCurrencyChange3(rowIdx, value);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -516,7 +556,7 @@ const FormManagerMarketing = ({
         }
       }
     ];
-  }, [rows, checkedRows, editingRowId, editableValues]);
+  }, [rows, checkedRows, editingRowId, editableValues, dispatch]);
 
   const lookUpPropsStatusMentor = [
     {
@@ -540,7 +580,7 @@ const FormManagerMarketing = ({
       labelLookup: 'STATUS LEADER LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS NILAI',
+      endpoint: 'parameter?grp=status+nilai',
       label: 'STATUS NILAI',
       singleColumn: true,
       pageSize: 20,
@@ -556,7 +596,7 @@ const FormManagerMarketing = ({
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'STATUS AKTIF',
+      endpoint: 'parameter?grp=status+aktif',
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
@@ -582,7 +622,6 @@ const FormManagerMarketing = ({
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
-  const dispatch = useDispatch();
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -737,7 +776,6 @@ const FormManagerMarketing = ({
     }
   }, [rows]);
 
-  console.log('ini formss', forms.getValues());
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -745,12 +783,12 @@ const FormManagerMarketing = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Manager Marketing Form'
+              ? 'Add Manager Marketing'
               : mode === 'edit'
-              ? 'Edit Manager Marketing Form'
+              ? 'Edit Manager Marketing'
               : mode === 'delete'
-              ? 'Delete Manager Marketing Form'
-              : 'View Manager Marketing Form'}
+              ? 'Delete Manager Marketing'
+              : 'View Manager Marketing'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -994,11 +1032,11 @@ const FormManagerMarketing = ({
               <Button
                 type="submit"
                 variant="success"
-                // onClick={onSubmit}
                 onClick={(e) => {
                   e.preventDefault();
                   onSubmit(true);
                   dispatch(setSubmitClicked(true));
+                  resetDetailAndAddNewRow();
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"
