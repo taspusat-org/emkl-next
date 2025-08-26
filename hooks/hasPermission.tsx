@@ -20,7 +20,8 @@ const usePermissions = () => {
     'MENU',
     'ROLEACL',
     'ROLE',
-    'USERS'
+    'USERS',
+    'PARAMETER'
   ];
 
   useEffect(() => {
