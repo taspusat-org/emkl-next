@@ -2,21 +2,29 @@
 
 import Image from 'next/image';
 import 'react-data-grid/lib/styles.scss';
-import IcClose from '@/public/image/x.svg';
+import FormSchedule from './FormSchedule';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
+import { useForm } from 'react-hook-form';
+import IcClose from '@/public/image/x.svg';
+import { ImSpinner2 } from 'react-icons/im';
+import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
+import { Button } from '@/components/ui/button';
+import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { deleteScheduleFn } from '@/lib/apis/schedule.api';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ActionButton from '@/components/custom-ui/ActionButton';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
-import {
-  useCreateSchedule,
-  useDeleteSchedule,
-  useGetScheduleHeader,
-  useUpdateSchedule
-} from '@/lib/server/useSchedule';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
 import {
   filterScheduleHeader,
   ScheduleHeader
@@ -27,23 +35,16 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import { Button } from '@/components/ui/button';
-import ActionButton from '@/components/custom-ui/ActionButton';
-import { useForm } from 'react-hook-form';
 import {
   ScheduleHeaderInput,
   scheduleHeaderSchema
 } from '@/lib/validations/schedule.validation';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ImSpinner2 } from 'react-icons/im';
-import FormSchedule from './FormSchedule';
-import { deleteScheduleFn } from '@/lib/apis/schedule.api';
-import { useQueryClient } from 'react-query';
-import { api2 } from '@/lib/utils/AxiosInstance';
 import {
-  clearOpenName,
-  setClearLookup
-} from '@/lib/store/lookupSlice/lookupSlice';
+  useCreateSchedule,
+  useDeleteSchedule,
+  useGetScheduleHeader,
+  useUpdateSchedule
+} from '@/lib/server/useSchedule';
 
 interface Filter {
   page: number;
@@ -60,10 +61,9 @@ interface GridConfig {
 }
 
 const GridScheduleHeader = () => {
-  console.log('typeof filterScheduleHeader', typeof filterScheduleHeader);
-
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
+  const { clearError } = useFormError();
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: RootState) => state.filter
@@ -135,6 +135,12 @@ const GridScheduleHeader = () => {
     }
   });
   console.log(forms.getValues());
+
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
 
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
@@ -912,6 +918,7 @@ const GridScheduleHeader = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
+    clearError();
     forms.reset();
   };
 
@@ -921,6 +928,7 @@ const GridScheduleHeader = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1443,6 +1451,7 @@ const GridScheduleHeader = () => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
+        clearError();
         setPopOver(false);
         dispatch(clearOpenName());
       }
@@ -1456,6 +1465,14 @@ const GridScheduleHeader = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('tglbukti'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
 
   useEffect(() => {
     if (isFirstLoad) {
@@ -1566,6 +1583,7 @@ const GridScheduleHeader = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
+            module="SCHEDULE-HEADER"
             dropdownMenus={
               [
                 // {
