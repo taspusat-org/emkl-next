@@ -124,7 +124,7 @@ const FormJenisOrderan = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Jenis Orderan'
+              ? 'Add Jenis Orderan'
               : mode === 'edit'
               ? 'Edit Jenis Orderan'
               : mode === 'delete'

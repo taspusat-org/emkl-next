@@ -783,7 +783,7 @@ const FormManagerMarketing = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Manager Marketing'
+              ? 'Add Manager Marketing'
               : mode === 'edit'
               ? 'Edit Manager Marketing'
               : mode === 'delete'
