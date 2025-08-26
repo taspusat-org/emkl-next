@@ -1037,6 +1037,13 @@ const GridDaftarBank = () => {
   };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
 
     const response = await getDaftarBankFn(filtersWithoutLimit);
@@ -1044,7 +1051,7 @@ const GridDaftarBank = () => {
       ...row,
       judullaporan: 'Laporan Daftar Bank',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
     sessionStorage.setItem(

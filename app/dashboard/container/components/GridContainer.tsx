@@ -1150,7 +1150,22 @@ const GridContainer = () => {
           return;
         }
 
-        await handleMultipleDelete(checkedRowsArray);
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
       }
     } catch (error) {
       console.error('Error in handleDelete:', error);
@@ -1270,6 +1285,13 @@ const GridContainer = () => {
   // };
 
   const handleReport = async () => {
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
     const { page, limit, ...filtersWithoutLimit } = filters;
 
     const response = await getContainerFn(filtersWithoutLimit);
@@ -1277,7 +1299,7 @@ const GridContainer = () => {
       ...row,
       judullaporan: 'Laporan Container',
       usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
+      tglcetak: tglcetak,
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
     }));
     sessionStorage.setItem(

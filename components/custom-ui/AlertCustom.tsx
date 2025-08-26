@@ -13,6 +13,7 @@ export interface AlertOptions {
   title: string;
   variant: 'success' | 'danger';
   submitText?: string;
+  cancelText?: string;
   isLoading?: boolean;
   catchOnCancel?: boolean;
   isForceEdit?: boolean;
@@ -26,6 +27,7 @@ interface BaseAlertProps extends AlertOptions {
   open: boolean;
   onClose: () => void;
   onSubmit: () => void;
+  onCancel?: () => void;
 }
 
 export default function Alert({
@@ -133,6 +135,15 @@ export default function Alert({
           </div>
           {(variant === 'danger' || variant === 'success') && (
             <div className="flex flex-col-reverse items-center justify-center gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] py-2 md:flex-row">
+              {rest.cancelText && (
+                <Button
+                  variant="secondary"
+                  className="z-[9999999] w-fit rounded-sm border border-blue-500 bg-white px-3 py-2 font-bold capitalize text-blue-500 hover:bg-blue-500 hover:text-white md:w-fit"
+                  onClick={rest.onCancel ?? onClose}
+                >
+                  {rest.cancelText}
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 className="text-red z-[9999999] w-fit rounded-sm border border-blue-500 bg-white px-3 py-2 font-bold capitalize text-blue-500 hover:bg-blue-500 hover:text-white md:w-fit"
