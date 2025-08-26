@@ -121,26 +121,30 @@ export const useUpdateBank = () => {
   return useMutation(updateBankFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('bank');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
+      // toast({
+      //   title: 'Proses Berhasil.',
+      //   description: 'Data Berhasil Diubah.'
+      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+
       if (errorResponse !== undefined) {
-        const errorFields = errorResponse.message || [];
         if (errorResponse.statusCode === 400) {
-          errorFields?.forEach((err: { path: string[]; message: string }) => {
-            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
-            setError(path, err.message); // Update error di context
+          // Normalisasi pesan error agar konsisten array
+          const messages = Array.isArray(errorResponse.message)
+            ? errorResponse.message
+            : [{ path: ['form'], message: errorResponse.message }];
+
+          messages.forEach((err) => {
+            const path = err.path?.[0] ?? 'form';
+            setError(path, err.message);
           });
         } else {
           toast({
             variant: 'destructive',
             title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda.'
+            description: 'Terjadi masalah dengan permintaan Anda'
           });
         }
       }
