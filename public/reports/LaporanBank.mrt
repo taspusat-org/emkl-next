@@ -370,7 +370,7 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": ";10;Bold;",
+              "Font": "Tahoma;10;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:0,0,0",
@@ -390,7 +390,7 @@
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
-              "Font": ";10;Bold;",
+              "Font": "Tahoma;10;Bold;",
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:0,0,0",
@@ -410,7 +410,7 @@
               },
               "HorAlignment": "Right",
               "VertAlignment": "Center",
-              "Font": ";;Italic;",
+              "Font": "Tahoma;;Italic;",
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:0,0,0",
@@ -426,10 +426,10 @@
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "Hal:{PageNumber} dari {TotalPageCount}"
+                "Value": "Hal :{PageNumber} dari {TotalPageCount}"
               },
               "HorAlignment": "Right",
-              "Font": ";;Italic;",
+              "Font": "Tahoma;;Italic;",
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
@@ -447,7 +447,7 @@
               "Text": {
                 "Value": "{data.usercetak}"
               },
-              "Font": ";;Italic;",
+              "Font": "Tahoma;;Italic;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",

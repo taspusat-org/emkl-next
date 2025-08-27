@@ -52,7 +52,7 @@ export const storeContainerFn = async (fields: ContainerInput) => {
 export const exportContainerFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporancontainer', {
+    const response = await api2.get('/container/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

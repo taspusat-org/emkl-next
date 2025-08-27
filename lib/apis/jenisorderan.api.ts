@@ -47,7 +47,7 @@ export const updateJenisOrderanFn = async ({
 export const exportJenisOrderanFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanjenisorderan', {
+    const response = await api2.get('/jenisorderan/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

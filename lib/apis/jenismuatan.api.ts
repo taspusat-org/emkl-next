@@ -47,7 +47,7 @@ export const updateJenisMuatanFn = async ({
 export const exportJenisMuatanFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanjenismuatan', {
+    const response = await api2.get('/JenisMuatan/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

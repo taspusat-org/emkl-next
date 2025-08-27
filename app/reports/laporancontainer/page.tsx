@@ -203,7 +203,7 @@ export default ReportMenuPage;
 //     // Ambil data dari API
 //     const fetchData = async () => {
 //       try {
-//         const res = await getHargatruckingFn({ page: 1, limit: 50 }); // sesuaikan filter
+//         const res = await getContainerFn({ page: 1, limit: 50 }); // sesuaikan filter
 //         setReportData(res.data); // simpan ke state
 //       } catch (err) {
 //         console.error('Gagal ambil data container:', err);
@@ -240,7 +240,7 @@ export default ReportMenuPage;
 
 //         // Report
 //         const report = new Stimulsoft.Report.StiReport();
-//         report.loadFile('/reports/LaporanTujuankapal.mrt');
+//         report.loadFile('/reports/LaporanContainer.mrt');
 
 //         // Designer
 //         const options = new Stimulsoft.Designer.StiDesignerOptions();
