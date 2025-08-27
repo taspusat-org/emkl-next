@@ -79,36 +79,27 @@ export const useUpdateTypeAkuntansi = () => {
   return useMutation(updateTypeAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('typeakuntansi');
-      // toast({
-      //   title: 'Proses Berhasil',
-      //   description: 'Data Berhasil Diubah'
-      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-      // if (errorResponse !== undefined) {
-      //   toast({
-      //     variant: 'destructive',
-      //     title: errorResponse.message ?? 'Gagal',
-      //     description: 'Terjadi masalah dengan permintaan Anda'
-      //   });
-      // }
 
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
         const errorFields = errorResponse.message || [];
 
-        // Iterasi error message dan set error di form
-        errorFields?.forEach((err: { path: string[]; message: string }) => {
-          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-          console.log('path', path);
-          // setError(path, err.message); // Update error di context
-          if (!path) {
-            setError(path, ''); // Update error di context
-          } else {
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
             setError(path, err.message); // Update error di context
-          }
-        });
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
     }
   });
@@ -121,10 +112,6 @@ export const useDeleteTypeAkuntansi = () => {
   return useMutation(deleteTypeAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('typeakuntansi');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Dihapus'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
