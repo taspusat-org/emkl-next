@@ -62,8 +62,6 @@ const DialogForceEdit: React.FC<LoginDialogProps> = ({
       fieldValue: value
     };
 
-    console.log('Payload:', payload); // This will log the payload to the console
-
     try {
       const result = await verifyForceEditFn(payload);
       if (result?.error) {

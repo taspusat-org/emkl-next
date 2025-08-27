@@ -40,7 +40,6 @@ export const useCreateTypeAkuntansi = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
   return useMutation(storeTypeAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('typeakuntansi');

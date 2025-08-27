@@ -13,6 +13,7 @@ import {
 import { LoadingOverlay } from './LoadingOverlay';
 import usePermissions from '@/hooks/hasPermission';
 import { getParameterApprovalFn } from '@/lib/apis/parameter.api';
+import { useApprovalDialog } from '@/lib/store/client/useDialogApproval';
 
 interface CustomAction {
   label: string;
@@ -45,9 +46,8 @@ interface BaseActionProps {
   onView?: () => void;
   customActions?: CustomAction[];
   dropdownMenus?: DropdownMenuItem[];
-
-  // tambahkan disable flag per aksi
   module?: string;
+  checkedRows?: Set<number>;
   disableAdd?: boolean;
   disableEdit?: boolean;
   isApproval?: boolean;
@@ -63,6 +63,7 @@ const ActionButton = ({
   onExport,
   onReport,
   onView,
+  checkedRows,
   module = '',
   customActions = [],
   dropdownMenus = [], // Receive multiple dropdown menus
@@ -77,22 +78,30 @@ const ActionButton = ({
   const [openMenu, setOpenMenu] = useState<number | null>(null); // Track which dropdown is open
   const { hasPermission, loading } = usePermissions();
   const [dataParameter, setDataParameter] = useState<any>([]);
+  const { openDialog } = useApprovalDialog();
+
   const handleDropdownClick = (index: number) => {
     // Close the dropdown when a button inside it is clicked
     setOpenMenu(openMenu === index ? null : index);
   };
 
   const fetchData = async () => {
-    const data = await getParameterApprovalFn();
+    const data = await getParameterApprovalFn({
+      filters: { grp: 'HAK APPROVAL' }
+    });
     setDataParameter(data.data);
   };
-  const dataHakApproval = dataParameter.filter(
-    (item: any) =>
-      item?.grp?.toLowerCase().includes('HAK APPROVAL'.toLowerCase())
-  );
   useEffect(() => {
     fetchData();
   }, []);
+  console.log('checkedRows', checkedRows);
+  const onClick = (value: any) => {
+    openDialog({
+      module: module,
+      mode: value,
+      checkedRows: checkedRows
+    });
+  };
 
   return (
     <div className="flex w-full flex-row gap-1 overflow-scroll lg:overflow-hidden">
@@ -231,34 +240,37 @@ const ActionButton = ({
           <DropdownMenuTrigger asChild>
             <Button
               variant="default"
-              className={`w-fit gap-1 text-sm font-normal `}
+              className={`w-fit gap-1 bg-purple-700 text-sm font-normal hover:bg-purple-800`}
             >
-              {item.icon}
+              APPROVAL/UN
               <IoMdArrowDropup />
             </Button>
           </DropdownMenuTrigger>
-          {dataHakApproval.length > 0 &&
-            dataHakApproval.map((item: any, index: any) => (
-              <DropdownMenuContent
-                className="flex flex-col gap-1 border border-blue-500"
-                side="top"
-              >
+
+          <DropdownMenuContent
+            className="flex flex-col gap-1 border border-blue-500"
+            side="top"
+          >
+            {dataParameter.length > 0 &&
+              dataParameter.map((item: any, index: any) => (
                 <Button
                   onClick={() => {
-                    onClick(); // Call action's onClick
+                    onClick(item.memo_nama); // Call action's onClick
                     handleDropdownClick(index); // Close the dropdown
                   }}
                   variant="default"
-                  className={`w-full p-2 text-left text-sm font-thin ${
-                    action.className || ''
-                  }`}
+                  style={{
+                    backgroundColor: item?.warna,
+                    color: item.warna_tulisan
+                  }}
+                  className={`w-full p-2 text-left text-sm font-thin`}
                 >
                   <p className="text-center text-sm font-normal">
-                    {action.label}
+                    {item.memo_nama}
                   </p>
                 </Button>
-              </DropdownMenuContent>
-            ))}
+              ))}
+          </DropdownMenuContent>
         </DropdownMenu>
       )}
     </div>

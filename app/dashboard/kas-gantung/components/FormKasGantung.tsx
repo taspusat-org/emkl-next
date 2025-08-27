@@ -329,16 +329,6 @@ const FormKasGantung = ({
           const rowIdx = props.rowIdx;
           let raw = props.row.nominal ?? ''; // Nilai nominal awal
 
-          // Cek jika raw belum diformat dengan tanda koma, kemudian format
-          if (typeof raw === 'number') {
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
-
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
-
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (

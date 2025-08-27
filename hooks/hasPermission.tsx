@@ -21,7 +21,8 @@ const usePermissions = () => {
     'ROLEACL',
     'ROLE',
     'USERS',
-    'PARAMETER'
+    'PARAMETER',
+    'KAS GANTUNG'
   ];
 
   useEffect(() => {
