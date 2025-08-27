@@ -106,10 +106,42 @@ interface GridConfig {
 const GridAsalKapal = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
+  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
+    {}
+  );
+  const [filters, setFilters] = useState<Filter>({
+    page: 1,
+    limit: 30,
+    search: '',
+    sortBy: 'keterangan',
+    sortDirection: 'asc',
+    filters: {
+      nominal: '',
+      keterangan: '',
+      cabang: '',
+      container: '',
+      statusaktif_text: '',
+      modifiedby: '',
+      created_at: '',
+      updated_at: ''
+    }
+  });
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
-  const [totalPages, setTotalPages] = useState(1);
-  const [popOver, setPopOver] = useState<boolean>(false);
+  const { data: allAsalKapal, isLoading: isLoadingAsalKapal } =
+    useGetAllAsalKapal({
+      ...filters,
+      page: currentPage
+    });
+  // console.log(allAsalKapal, 'INI DATANYAA');
+
   const { mutateAsync: createAsalKapal, isLoading: isLoadingCreate } =
     useCreateAsalKapal();
   const { mutateAsync: updateAsalKapal, isLoading: isLoadingUpdate } =
@@ -153,7 +185,7 @@ const GridAsalKapal = () => {
       keterangan: '',
       statusaktif: 1,
       cabang_id: 0,
-      container_id: 0,
+      container_id: 0
     }
   });
   const router = useRouter();
@@ -168,7 +200,7 @@ const GridAsalKapal = () => {
       text: '',
       statusaktif: '',
       cabang: '',
-      container: '',
+      container: ''
     },
     search: '',
     sortBy: 'nominal',
@@ -282,7 +314,7 @@ const GridAsalKapal = () => {
         text: '',
         statusaktif: '',
         cabang: '',
-        container: '',
+        container: ''
       },
       search: searchValue,
       page: 1
@@ -406,7 +438,7 @@ const GridAsalKapal = () => {
                     updated_at: '',
                     statusaktif: '',
                     cabang: '',
-                    container: '',
+                    container: ''
                   }
                 }),
                   setInputValue('');
@@ -456,10 +488,9 @@ const GridAsalKapal = () => {
           </div>
         )
       },
-
       {
-        key: 'cabang',
-        name: 'cabang',
+        key: 'keterangan',
+        name: 'Keterangan',
         resizable: true,
         draggable: true,
         width: 150,
@@ -473,9 +504,7 @@ const GridAsalKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'cabang'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'cabang' ? 'text-red-500' : 'font-normal'
                 }`}
               >
                 Cabang
@@ -522,8 +551,7 @@ const GridAsalKapal = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.cabang !== null &&
-                  props.row.cabang !== undefined
+                props.row.cabang !== null && props.row.cabang !== undefined
                   ? props.row.cabang
                   : '',
                 filters.search,
@@ -622,12 +650,10 @@ const GridAsalKapal = () => {
               className="headers-cell h-[50%]"
               onClick={() => handleSort('container')}
               onContextMenu={handleContextMenu}
-              >
+            >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'container'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'cabang' ? 'text-red-500' : 'font-normal'
                 }`}
               >
                 Container
@@ -685,7 +711,7 @@ const GridAsalKapal = () => {
           );
         }
       },
-       {
+      {
         key: 'nominal',
         name: 'Nominal',
         resizable: true,
@@ -746,7 +772,7 @@ const GridAsalKapal = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm justify-end">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.nominal !== null && props.row.nominal !== undefined
                   ? formatCurrency(props.row.nominal)
@@ -758,6 +784,7 @@ const GridAsalKapal = () => {
           );
         }
       },
+
       {
         key: 'statusaktif',
         name: 'STATUS AKTIF',
@@ -1161,7 +1188,10 @@ const GridAsalKapal = () => {
       setIsDataUpdated(false);
     }
   };
+
   const onSubmit = async (values: AsalKapalInput, keepOpenModal = false) => {
+    console.log(values, keepOpenModal, mode);
+
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1476,6 +1506,42 @@ const GridAsalKapal = () => {
       console.error('Failed to save grid configuration:', error);
     }
   };
+
+  const onColumnResize = (index: number, width: number) => {
+    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
+
+    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
+    setColumnsWidth(newWidthMap);
+
+    if (resizeDebounceTimeout.current) {
+      // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
+      clearTimeout(resizeDebounceTimeout.current);
+    }
+
+    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
+    //    saveGridConfig akan dipanggil
+    resizeDebounceTimeout.current = setTimeout(() => {
+      saveGridConfig(user.id, 'GridAsalKapal', [...columnsOrder], newWidthMap);
+    }, 300);
+  };
+
+  const onColumnsReorder = (sourceKey: string, targetKey: string) => {
+    setColumnsOrder((prevOrder) => {
+      const sourceIndex = prevOrder.findIndex(
+        (index) => columns[index].key === sourceKey
+      );
+      const targetIndex = prevOrder.findIndex(
+        (index) => columns[index].key === targetKey
+      );
+
+      const newOrder = [...prevOrder];
+      newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
+
+      saveGridConfig(user.id, 'GridAsalKapal', [...newOrder], columnsWidth);
+      return newOrder;
+    });
+  };
+
   const resetGridConfig = () => {
     // Nilai default untuk columnsOrder dan columnsWidth
     const defaultColumnsOrder = columns.map((_, index) => index);
@@ -1673,19 +1739,19 @@ const GridAsalKapal = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' // Only fill the form if not in addMode
-    ) {
-      forms.setValue('nominal', rowData?.nominal ? formatCurrency(rowData.nominal) : '');
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
-      forms.setValue('cabang_id', Number(rowData.cabang_id) || 1);
-      forms.setValue('cabang', rowData.cabang || '');
-      forms.setValue('container_id', Number(rowData.container_id) || 1);
-      forms.setValue('container', rowData.container || '');
+
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+      forms.setValue(
+        'nominal',
+        rowData?.nominal ? formatCurrency(rowData.nominal) : ''
+      );
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('cabang_id', Number(rowData?.cabang_id) || 0);
+      forms.setValue('cabang', rowData?.cabang || '');
+      forms.setValue('container_id', Number(rowData?.container_id) || 0);
+      forms.setValue('container', rowData?.container || '');
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');
@@ -1761,6 +1827,7 @@ const GridAsalKapal = () => {
           }}
         >
           <ActionButton
+            module="ASALKAPAL"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

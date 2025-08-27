@@ -79,9 +79,81 @@ export default function Alert({
         tableName: String(tableNameForceEdit),
         tableValue: String(valueForceEdit)
       })
-    ); // Dispatch action to set force edit state
+    );
   }, [dispatch, tableNameForceEdit, valueForceEdit]);
+  const outerRef = React.useRef<HTMLDivElement>(null);
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  const submitButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = React.useRef<HTMLDivElement | null>(null);
 
+  // refs for drag state
+  const dragging = React.useRef(false);
+  const start = React.useRef({ x: 0, y: 0 });
+  const pos = React.useRef({ x: 0, y: 0 });
+
+  // Handle Escape and Enter key press
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handleKeydown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || e.key === 'Enter') {
+        onClose(); // Close the alert on Escape or Enter
+      }
+    };
+
+    // Add event listener when alert is open
+    window.addEventListener('keydown', handleKeydown);
+
+    // Cleanup event listener when component is unmounted or alert is closed
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
+    };
+  }, [open, onClose]); // Only run when 'open' state changes
+
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => submitButtonRef.current?.focus(), 300);
+      pos.current = { x: 0, y: 0 };
+      if (innerRef.current) {
+        innerRef.current.style.transform = 'translate3d(0,0,0)';
+      }
+    }
+  }, [open]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (
+      e.target === submitButtonRef.current ||
+      e.target === closeButtonRef.current
+    ) {
+      e.stopPropagation(); // Cegah event untuk bubble
+      return;
+    }
+
+    if (e.button !== 0) return; // hanya untuk tombol kiri mouse
+    dragging.current = true;
+    start.current = {
+      x: e.clientX - pos.current.x,
+      y: e.clientY - pos.current.y
+    };
+    innerRef.current?.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current) return;
+    const x = e.clientX - start.current.x;
+    const y = e.clientY - start.current.y;
+    pos.current = { x, y };
+    if (innerRef.current) {
+      innerRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    dragging.current = false;
+    innerRef.current?.releasePointerCapture(e.pointerId);
+  };
+
+  useDisableBodyScroll(open);
   return (
     <>
       <div
@@ -91,6 +163,10 @@ export default function Alert({
         )}
       >
         <div
+          ref={innerRef}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
           className={cn(
             'flex w-full cursor-move flex-col overflow-hidden rounded-sm border border-blue-500 px-1 py-1 shadow-xl md:w-[300px] lg:w-[300px]',
             open ? 'scale-100 opacity-100' : 'scale-0 opacity-0'
@@ -101,8 +177,9 @@ export default function Alert({
         >
           <div className="z-[99999] mb-1 mt-2 flex w-full flex-row items-center justify-end">
             <div
+              ref={closeButtonRef}
               className="w-fit rounded-sm bg-red-500"
-              onPointerDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()} // Stop propagation on close button click
             >
               {variant === 'danger' && (
                 <FaTimes
@@ -119,18 +196,11 @@ export default function Alert({
             {variant === 'success' && (
               <HiCheckCircle className="text-green-700" size={35} />
             )}
+
             <div className="mt-1 text-center">
-              <h3 className="text-title text-base font-medium uppercase leading-6 text-zinc-900 md:text-xs lg:text-xs">
+              <h3 className="text-title text-base font-medium uppercase leading-6 text-zinc-900 md:text-3xl lg:text-xs">
                 {title}
               </h3>
-              {/* {clickableText && (
-                <p
-                  className="mt-2 cursor-pointer text-sm font-semibold text-blue-600 hover:underline"
-                  onClick={handleTextClick}
-                >
-                  {clickableText}
-                </p>
-              )} */}
             </div>
           </div>
           {(variant === 'danger' || variant === 'success') && (
@@ -148,6 +218,9 @@ export default function Alert({
                 variant="destructive"
                 className="text-red z-[9999999] w-fit rounded-sm border border-blue-500 bg-white px-3 py-2 font-bold capitalize text-blue-500 hover:bg-blue-500 hover:text-white md:w-fit"
                 onClick={onSubmit}
+                ref={submitButtonRef}
+                tabIndex={0}
+                onPointerDown={(e) => e.stopPropagation()} // Stop propagation on submit button click
               >
                 {submitText}
               </Button>
