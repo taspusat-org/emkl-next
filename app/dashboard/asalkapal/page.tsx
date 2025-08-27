@@ -1,24 +1,19 @@
 'use client';
 
+import PageContainer from '@/components/layout/page-container';
+import GridAsalKapal from './component/GridAsalKapal';
+import { fieldLength } from '@/lib/apis/field-length.api';
 import React, { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { fieldLength } from '@/lib/apis/field-length.api';
-import GridAsalKapal from './component/GridAsalKapal';
-import PageContainer from '@/components/layout/page-container';
 import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 import { getParameterFn } from '@/lib/apis/parameter.api';
 import {
   setData,
-  setType,
-  setDefault
+  setDefault,
+  setType
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { getAkuntansiFn } from '@/lib/apis/akuntansi.api';
-
-interface ApiResponse {
-  type: string;
-  data: any; // Define a more specific type for data if possible
-}
+import { getContainerFn } from '@/lib/apis/container.api';
+import { getAllCabangFn } from '@/lib/apis/cabang.api';
 
 const Page = () => {
   const dispatch = useDispatch();
@@ -26,14 +21,51 @@ const Page = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await fieldLength('typeakuntansi');
+        const result = await fieldLength('asalkapal');
         dispatch(setFieldLength(result.data));
 
-        const [getStatusAktifLookup, getAkuntansiLookup] =
-          await Promise.all<ApiResponse>([
-            getParameterFn({ isLookUp: 'true' }),
-            getAkuntansiFn({ isLookUp: 'true' })
-          ]);
+        const [
+          getCabangLookup,
+          getContainerLookup,
+          getStatusAktifLookup
+        ] = await Promise.all([
+          getAllCabangFn({ isLookUp: 'true' }),
+          getContainerFn({ isLookUp: 'true' }),
+          getParameterFn({ isLookUp: 'true' })
+        ]);
+
+
+        // CABANG
+        if (getCabangLookup.type === 'local') {
+          dispatch(
+            setData({ key: 'CABANG', data: getCabangLookup.data })
+          );
+          const defaultValue =
+            getCabangLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          dispatch(setDefault({ key: 'CABANG', isdefault: defaultValue }));
+        }
+        dispatch(
+          setType({ key: 'CABANG', type: getCabangLookup.type })
+        );
+
+        // CONTAINER
+        if (getContainerLookup.type === 'local') {
+          dispatch(
+            setData({ key: 'CONTAINER', data: getContainerLookup.data })
+          );
+          const defaultValue =
+            getContainerLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          dispatch(setDefault({ key: 'CONTAINER', isdefault: defaultValue }));
+        }
+        dispatch(
+          setType({ key: 'CONTAINER', type: getContainerLookup.type })
+        );
 
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];
@@ -54,19 +86,6 @@ const Page = () => {
             dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
           });
         }
-
-        if (getAkuntansiLookup.type === 'local') {
-          dispatch(
-            setData({ key: 'AKUNTANSI', data: getAkuntansiLookup.data })
-          );
-          const defaultValue =
-            getAkuntansiLookup.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
-
-          dispatch(setDefault({ key: 'AKUNTANSI', isdefault: defaultValue }));
-        }
-        dispatch(setType({ key: 'AKUNTANSI', type: getAkuntansiLookup.type }));
       } catch (err) {
         console.error('Error fetching data:', err);
       }
@@ -77,15 +96,11 @@ const Page = () => {
 
   return (
     <PageContainer scrollable>
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <div className="col-span-10 h-[500px]">
-              <GridAsalKapal />
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <div className="col-span-10 h-[500px]">
+          <GridAsalKapal />
+        </div>
+      </div>
     </PageContainer>
   );
 };

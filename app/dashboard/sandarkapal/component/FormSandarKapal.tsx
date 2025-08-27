@@ -1,12 +1,5 @@
-import { RootState } from '@/lib/store/store';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { IoMdClose } from 'react-icons/io';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { FaSave } from 'react-icons/fa';
-import LookUp from '@/components/custom-ui/LookUp';
 import {
   Form,
   FormControl,
@@ -15,13 +8,23 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { useGetMenu } from '@/lib/server/useMenu';
+import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
+import LookUp from '@/components/custom-ui/LookUp';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { IoMdClose } from 'react-icons/io';
+import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
-const FormSandarKapal = ({
-  forms,
+const FormSandarkapal = ({
   popOver,
   setPopOver,
+  forms,
   onSubmit,
   mode,
   handleClose,
@@ -29,9 +32,10 @@ const FormSandarKapal = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const lookupPropsStatusAktif = [
+  const lookUpPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
@@ -39,13 +43,12 @@ const FormSandarKapal = ({
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
     }
   ];
-
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
 
@@ -98,7 +101,6 @@ const FormSandarKapal = ({
         nextElement.focus();
       }
     };
-
     // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
     const getNextFocusableElement = (
       inputs: HTMLElement[],
@@ -126,14 +128,19 @@ const FormSandarKapal = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
-
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Type Akuntansi
+            {mode === 'add'
+              ? 'Tambah Sandar Kapal'
+              : mode === 'edit'
+              ? 'Edit Sandar kapal'
+              : mode === 'delete'
+              ? 'Delete Sandar kapal'
+              : 'View Sandar kapal'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -154,9 +161,6 @@ const FormSandarKapal = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-
-                  
-
                   <FormField
                     name="nama"
                     control={forms.control}
@@ -166,11 +170,12 @@ const FormSandarKapal = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          Nama
+                          NAMA
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <Input
+                              autoFocus
                               {...field}
                               value={field.value ?? ''}
                               type="text"
@@ -191,7 +196,7 @@ const FormSandarKapal = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          KETERANGAN
+                          Keterangan
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -207,9 +212,6 @@ const FormSandarKapal = ({
                       </FormItem>
                     )}
                   />
-
-
-
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
@@ -220,7 +222,7 @@ const FormSandarKapal = ({
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookupPropsStatusAktif.map((props, index) => (
+                      {lookUpPropsStatusAktif.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
@@ -228,7 +230,8 @@ const FormSandarKapal = ({
                             forms.setValue('statusaktif', id)
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
-                          lookupNama={forms.getValues('statusaktif_text')}
+                          lookupNama={forms.getValues('statusaktif_nama')}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>
@@ -294,4 +297,4 @@ const FormSandarKapal = ({
   );
 };
 
-export default FormSandarKapal;
+export default FormSandarkapal;

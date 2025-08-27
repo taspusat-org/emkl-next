@@ -1,42 +1,46 @@
 'use client';
-
-import Image from 'next/image';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import 'react-data-grid/lib/styles.scss';
-import { useForm } from 'react-hook-form';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
-import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
-import { Input } from '@/components/ui/input';
-import { RootState } from '@/lib/store/store';
-import { Button } from '@/components/ui/button';
-import { api2 } from '@/lib/utils/AxiosInstance';
-import FormAsalKapal from './FormAsalKapal';
-import { Checkbox } from '@/components/ui/checkbox';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useAlert } from '@/lib/store/client/useAlert';
-import { QueryClient, useQueryClient } from 'react-query';
-import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import ActionButton from '@/components/custom-ui/ActionButton';
-import { IAsalKapal } from '@/lib/types/asalkapal.type';
-import {
-  clearOpenName,
-  setClearLookup
-} from '@/lib/store/lookupSlice/lookupSlice';
-import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
-import { checkValidationAsalKapalFn } from '@/lib/apis/asalkapal.api';
-import {
-  AsalKapalInput,
-  asalkapalSchema
-} from '@/lib/validations/asalkapal.validation';
 import DataGrid, {
   CellClickArgs,
   CellKeyDownArgs,
   Column,
-  DataGridHandle,
-  Row
+  DataGridHandle
 } from 'react-data-grid';
+
+import { ImSpinner2 } from 'react-icons/im';
+import ActionButton from '@/components/custom-ui/ActionButton';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import FormAsalKapal from './FormAsalKapal';
+import { useQueryClient } from 'react-query';
+import {
+  AsalKapalInput,
+  asalkapalSchema
+} from '@/lib/validations/asalkapal.validation';
+
+import {
+  useCreateAsalKapal,
+  useDeleteAsalKapal,
+  useGetAsalKapal,
+  useUpdateAsalKapal
+} from '@/lib/server/useAsalKapal';
+
+import { syncAcosFn } from '@/lib/apis/acos.api';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
+import {
+  FaFileExport,
+  FaPlus,
+  FaPrint,
+  FaSort,
+  FaSortDown,
+  FaSortUp,
+  FaTimes
+} from 'react-icons/fa';
+import { Input } from '@/components/ui/input';
+import { api, api2 } from '@/lib/utils/AxiosInstance';
+import { useRouter } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -46,126 +50,140 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import {
-  useDeleteAsalKapal,
-  useGetAllAsalKapal,
-  useCreateAsalKapal,
-  useUpdateAsalKapal
-} from '@/lib/server/useAsalKapal';
+  exportMenuBySelectFn,
+  exportMenuFn,
+  getMenuFn,
+  reportMenuBySelectFn
+} from '@/lib/apis/menu.api';
+import { HiDocument } from 'react-icons/hi2';
+import { setReportData } from '@/lib/store/reportSlice/reportSlice';
+import { useDispatch } from 'react-redux';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useAlert } from '@/lib/store/client/useAlert';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import IcClose from '@/public/image/x.svg';
+import ReportDesignerMenu from '@/app/reports/menu/page';
+import { IAsalKapal } from '@/lib/types/asalkapal.type';
+import { number } from 'zod';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setProcessing,
+  setProcessed
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getAsalKapalFn } from '@/lib/apis/asalkapal.api';
+import { setReportFilter } from '@/lib/store/printSlice/printSlice';
+import Alert from '@/components/custom-ui/AlertCustom';
 import { formatCurrency } from '@/lib/utils';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  sortBy: string;
-  sortDirection: 'asc' | 'desc';
   filters: {
-    cabang: string;
     keterangan: string;
-    container: string;
+    text: string;
     nominal: number | null | undefined | '';
-    statusaktif_text: string;
-    modifiedby: string;
     created_at: string;
     updated_at: string;
+    statusaktif: string;
+    cabang: string;
+    container: string;
   };
+  sortBy: string;
+  sortDirection: 'asc' | 'desc';
 }
 
 interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-
 const GridAsalKapal = () => {
-  const { alert } = useAlert();
-  const dispatch = useDispatch();
-  const [rows, setRows] = useState<IAsalKapal[]>([]);
-  const [mode, setMode] = useState<string>('');
-  const [hasMore, setHasMore] = useState(true);
-  const [inputValue, setInputValue] = useState('');
-  const [totalPages, setTotalPages] = useState(1);
-  const [dataGridKey, setDataGridKey] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const [popOver, setPopOver] = useState<boolean>(false);
-  const [addMode, setAddMode] = useState<boolean>(false);
-  const [editMode, setEditMode] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<boolean>(false);
-  const [deleteMode, setDeleteMode] = useState<boolean>(false);
-  const [isDataUpdated, setIsDataUpdated] = useState(false);
-  const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
-  const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
-  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
-    {}
-  );
-  const [filters, setFilters] = useState<Filter>({
-    page: 1,
-    limit: 30,
-    search: '',
-    sortBy: 'keterangan',
-    sortDirection: 'asc',
-    filters: {
-      nominal:'',
-      keterangan:'',
-      cabang:'',
-      container:'',
-      statusaktif_text:'',
-      modifiedby:'',
-      created_at:'',
-      updated_at:'',
-    }
-  });
-  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
-  const { data: allAsalKapal, isLoading: isLoadingAsalKapal } =
-    useGetAllAsalKapal({
-      ...filters,
-      page: currentPage
-    });
-  // console.log(allAsalKapal, 'INI DATANYAA');
-
+  const [totalPages, setTotalPages] = useState(1);
+  const [popOver, setPopOver] = useState<boolean>(false);
   const { mutateAsync: createAsalKapal, isLoading: isLoadingCreate } =
     useCreateAsalKapal();
   const { mutateAsync: updateAsalKapal, isLoading: isLoadingUpdate } =
     useUpdateAsalKapal();
-  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
-    useDeleteAsalKapal();
-
-  const queryClient = useQueryClient();
-
-  const { user } = useSelector((state: RootState) => state.auth);
-
-  const gridRef = useRef<DataGridHandle>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [inputValue, setInputValue] = useState<string>('');
+  const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { mutateAsync: deleteAsalKapal, isLoading: isLoadingDelete } =
+    useDeleteAsalKapal();
+  const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
+  const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
+    {}
+  );
+  const [mode, setMode] = useState<string>('');
+
+  const [dataGridKey, setDataGridKey] = useState(0);
+
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
+  const queryClient = useQueryClient();
+  const [isFetchingManually, setIsFetchingManually] = useState(false);
+  const [rows, setRows] = useState<IAsalKapal[]>([]);
+  const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
-
-  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const prevPageRef = useRef(currentPage);
+  const dispatch = useDispatch();
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const { alert } = useAlert();
+  const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const forms = useForm<AsalKapalInput>({
     resolver: zodResolver(asalkapalSchema),
     mode: 'onSubmit',
     defaultValues: {
       nominal: undefined,
       keterangan: '',
-      container_id: undefined,
-      container: '',
-      cabang_id: undefined,
-      cabang: '',
-      statusaktif: null,
-      statusaktif_text: ''
+      statusaktif: 1,
+      cabang_id: 0,
+      container_id: 0,
     }
   });
-  console.log(forms.getValues());
-
+  const router = useRouter();
+  const [filters, setFilters] = useState<Filter>({
+    page: 1,
+    limit: 30,
+    filters: {
+      nominal: '',
+      keterangan: '',
+      created_at: '',
+      updated_at: '',
+      text: '',
+      statusaktif: '',
+      cabang: '',
+      container: '',
+    },
+    search: '',
+    sortBy: 'nominal',
+    sortDirection: 'asc'
+  });
+  const gridRef = useRef<DataGridHandle>(null);
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+  const { data: allAsalKapal, isLoading: isLoadingAsalKapal } = useGetAsalKapal(
+    {
+      ...filters,
+      page: currentPage
+    }
+  );
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -173,30 +191,27 @@ const GridAsalKapal = () => {
     // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
 
-    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
         : originalIndex;
 
+    // update filter seperti biasa…
     setFilters((prev) => ({
-      // update filter seperti biasa…
       ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
+      filters: { ...prev.filters, [colKey]: value },
       search: '',
       page: 1
     }));
-
     setInputValue('');
     setCheckedRows(new Set());
     setIsAllSelected(false);
 
     // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
 
     // 4. focus input filter
@@ -206,54 +221,6 @@ const GridAsalKapal = () => {
     }, 200);
 
     setSelectedRow(0);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchValue = e.target.value;
-    setInputValue(searchValue);
-    setCurrentPage(1);
-    setFilters((prev) => ({
-      ...prev,
-      filters: {
-        cabang: '',
-        keterangan: '',
-        container: '',
-        nominal: '',
-        statusaktif_text: '',
-        modifiedby: '',
-        created_at: '',
-        updated_at: ''
-      },
-      search: searchValue,
-      page: 1
-    }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 100);
-
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 200);
-
-    setSelectedRow(0);
-    setCurrentPage(1);
-    setRows([]);
-  };
-
-  const handleClearInput = () => {
-    setFilters((prev) => ({
-      ...prev,
-      filters: {
-        ...prev.filters
-      },
-      search: '',
-      page: 1
-    }));
-    setInputValue('');
   };
 
   function highlightText(
@@ -300,7 +267,42 @@ const GridAsalKapal = () => {
       />
     );
   }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchValue = e.target.value;
+    setInputValue(searchValue);
+    setCurrentPage(1);
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        nominal: '',
+        keterangan: '',
+        icon: '',
+        created_at: '',
+        updated_at: '',
+        text: '',
+        statusaktif: '',
+        cabang: '',
+        container: '',
+      },
+      search: searchValue,
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setTimeout(() => {
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+    }, 100);
 
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 200);
+
+    setSelectedRow(0);
+    setCurrentPage(1);
+    setRows([]);
+  };
   const handleSort = (column: string) => {
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
@@ -313,17 +315,34 @@ const GridAsalKapal = () => {
       sortDirection: newSortOrder,
       page: 1
     }));
-
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 200);
-
     setSelectedRow(0);
+
     setCurrentPage(1);
     setFetchedPages(new Set([1]));
     setRows([]);
   };
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        clearError();
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
 
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -337,7 +356,6 @@ const GridAsalKapal = () => {
       return updated;
     });
   };
-
   const handleSelectAll = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
@@ -348,26 +366,25 @@ const GridAsalKapal = () => {
     setIsAllSelected(!isAllSelected);
   };
 
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
+  const handleClearInput = () => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters
+      },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
   };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (
-      contextMenuRef.current &&
-      !contextMenuRef.current.contains(event.target as Node)
-    ) {
-      setContextMenu(null);
-    }
-  };
-
   const columns = useMemo((): Column<IAsalKapal>[] => {
     return [
       {
         key: 'nomor',
         name: 'NO',
         width: 50,
+        resizable: true,
+        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -382,14 +399,14 @@ const GridAsalKapal = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    cabang: '',
-                    keterangan: '',
-                    container: '',
                     nominal: '',
-                    statusaktif_text: '',
-                    modifiedby: '',
+                    keterangan: '',
+                    text: '',
                     created_at: '',
-                    updated_at: ''
+                    updated_at: '',
+                    statusaktif: '',
+                    cabang: '',
+                    container: '',
                   }
                 }),
                   setInputValue('');
@@ -415,8 +432,6 @@ const GridAsalKapal = () => {
         key: 'select',
         name: '',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -441,159 +456,14 @@ const GridAsalKapal = () => {
           </div>
         )
       },
- {
-        key: 'keterangan',
-        name: 'Keterangan',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Keterangan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'keterangan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'keterangan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
 
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['keterangan'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
-                }}
-              />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangan || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'container',
-        name: 'Container',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('container')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'container'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Container
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'container' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'container' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['container'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.container.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('container', value);
-                }}
-              />
-              {filters.filters.container && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('container', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.container || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.container || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
       {
         key: 'cabang',
-        name: 'Cabang',
+        name: 'cabang',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -650,9 +520,12 @@ const GridAsalKapal = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.cabang || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.cabang || '',
+                props.row.cabang !== null &&
+                  props.row.cabang !== undefined
+                  ? props.row.cabang
+                  : '',
                 filters.search,
                 columnFilter
               )}
@@ -661,6 +534,158 @@ const GridAsalKapal = () => {
         }
       },
       {
+        key: 'keterangan',
+        name: 'Keterangan',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('keterangan')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangan'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Keterangan
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'keterangan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'keterangan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['keterangan'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.keterangan.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('keterangan', value);
+                }}
+              />
+              {filters.filters.keterangan && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('keterangan', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.keterangan || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.keterangan !== null &&
+                  props.row.keterangan !== undefined
+                  ? props.row.keterangan
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'container',
+        name: 'container',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('container')}
+              onContextMenu={handleContextMenu}
+              >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'container'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Container
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'container' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'container' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['container'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.container.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('container', value);
+                }}
+              />
+              {filters.filters.container && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('container', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.container || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.container !== null &&
+                  props.row.container !== undefined
+                  ? props.row.container
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+       {
         key: 'nominal',
         name: 'Nominal',
         resizable: true,
@@ -721,10 +746,10 @@ const GridAsalKapal = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm justify-end">
               {highlightText(
                 props.row.nominal !== null && props.row.nominal !== undefined
-                  ? props.row.nominal
+                  ? formatCurrency(props.row.nominal)
                   : '',
                 filters.search,
                 String(columnFilter)
@@ -733,7 +758,6 @@ const GridAsalKapal = () => {
           );
         }
       },
-     
       {
         key: 'statusaktif',
         name: 'STATUS AKTIF',
@@ -745,45 +769,46 @@ const GridAsalKapal = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusaktif')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Status Aktif</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif_text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="NON AKTIF"
-                    >
-                      <p className="text-sm font-normal">NON AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
+
           if (memoData) {
             return (
               <div className="flex h-full w-full items-center justify-center py-1">
@@ -803,78 +828,8 @@ const GridAsalKapal = () => {
               </div>
             );
           }
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'modifiedby',
-        name: 'Modified By',
-        width: 150,
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                Modified By
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'modifiedby' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'modifiedby' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
 
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['modifiedby'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.modifiedby || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('modifiedby', value);
-                }}
-              />
-              {filters.filters.modifiedby && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('modifiedby', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.modifiedby || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.modifiedby || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
@@ -955,7 +910,9 @@ const GridAsalKapal = () => {
         name: 'Updated At',
         resizable: true,
         draggable: true,
+
         headerCellClass: 'column-headers',
+
         width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -989,7 +946,7 @@ const GridAsalKapal = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['updated_at'] = el;
+                  inputColRefs.current['created_at'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
@@ -1024,273 +981,27 @@ const GridAsalKapal = () => {
         }
       }
     ];
-  }, [filters, rows, filters.filters, checkedRows]);
-
-  const handleAdd = async () => {
-    setPopOver(true);
-    setMode('add');
-    forms.reset();
-  };
-
-  const handleEdit = async () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-      const result = await checkValidationAsalKapalFn({
-        aksi: 'EDIT',
-        value: rowData.id
-      });
-      console.log('result force edit', result);
-
-      if (result.data.status == 'failed') {
-        alert({
-          title: result.data.message,
-          variant: 'danger',
-          submitText: 'OK'
-        });
-      } else {
-        setPopOver(true);
-        setMode('edit');
-      }
-    }
-  };
-
-  const handleDelete = async () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-
-      try {
-        const result = await checkValidationAsalKapalFn({
-          aksi: 'DELETE',
-          value: rowData.id
-        });
-
-        if (result.data.status == 'failed') {
-          alert({
-            title: result.data.message,
-            variant: 'danger',
-            submitText: 'OK'
-          });
-        } else {
-          setMode('delete');
-          setPopOver(true);
-        }
-      } catch (error) {
-        console.error('Error during delete validation:', error);
-      }
-    }
-  };
-
-  const handleView = () => {
-    if (selectedRow !== null) {
-      setMode('view');
-      setPopOver(true);
-    }
-  };
-
-  const handleClose = () => {
-    setPopOver(false);
-    setMode('');
-    forms.reset();
-  };
-
-  const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
-  ) => {
-    dispatch(setClearLookup(true));
-    try {
-      if (keepOpenModal) {
-        forms.reset();
-        setPopOver(true);
-      } else {
-        forms.reset();
-        setPopOver(false);
-
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/asalkapal-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsDataUpdated(false);
-      }
-    } catch (error) {
-      console.error('Error during onSuccess:', error);
-      setIsDataUpdated(false);
-    } finally {
-      // dispatch(setClearLookup(false));
-      setIsDataUpdated(false);
-    }
-  };
-
-  const onSubmit = async (
-    values: AsalKapalInput,
-    keepOpenModal = false
-  ) => {
-    console.log(values, keepOpenModal, mode);
-
-    const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteMenu(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
-            }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createAsalKapal(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.dataIndex, data.pageNumber, keepOpenModal)
-        }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
-      }
-      return;
-    }
-
-    if (selectedRowId && mode === 'edit') {
-      await updateAsalKapal(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('asalkapal');
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
+  }, [filters, rows, checkedRows]);
 
   const onColumnResize = (index: number, width: number) => {
-    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
+    // 1) Dapatkan key kolom yang di-resize
+    const columnKey = columns[columnsOrder[index]].key;
 
-    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
+    // 2) Update state width seketika (biar kolom langsung responsif)
+    const newWidthMap = { ...columnsWidth, [columnKey]: width };
     setColumnsWidth(newWidthMap);
 
+    // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
     if (resizeDebounceTimeout.current) {
-      // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
       clearTimeout(resizeDebounceTimeout.current);
     }
 
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridAsalKapal',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridAsalKapal', [...columnsOrder], newWidthMap);
     }, 300);
   };
-
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
     setColumnsOrder((prevOrder) => {
       const sourceIndex = prevOrder.findIndex(
@@ -1307,81 +1018,9 @@ const GridAsalKapal = () => {
       return newOrder;
     });
   };
-
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridAsalKapal',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  document.querySelectorAll('.column-headers').forEach((element) => {
-    element.classList.remove('c1kqdw7y7-0-0-beta-47');
-  });
-
-  function handleCellClick(args: { row: IAsalKapal }) {
-    const clickedRow = args.row;
-    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    if (rowIndex !== -1) {
-      setSelectedRow(rowIndex);
-    }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-
-  function getRowClass(row: IAsalKapal) {
-    const rowIndex = rows.findIndex((r) => r.id === row.id);
-    return rowIndex === selectedRow ? 'selected-row' : '';
-  }
-
-  function rowKeyGetter(row: IAsalKapal) {
-    return row.id;
-  }
-
   function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
     return currentTarget.scrollTop <= 10;
   }
-
   function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
     const { currentTarget } = event;
     if (!currentTarget) return false;
@@ -1391,7 +1030,6 @@ const GridAsalKapal = () => {
       currentTarget.scrollHeight - 2
     );
   }
-
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
     if (isLoadingAsalKapal || !hasMore || rows.length === 0) return;
 
@@ -1420,6 +1058,16 @@ const GridAsalKapal = () => {
     }
   }
 
+  function handleCellClick(args: { row: IAsalKapal }) {
+    const clickedRow = args.row;
+    // console.log('Clicked row:', rows);
+
+    if (!clickedRow) return;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   async function handleKeyDown(
     args: CellKeyDownArgs<IAsalKapal>,
     event: React.KeyboardEvent
@@ -1469,6 +1117,453 @@ const GridAsalKapal = () => {
       }
     }
   }
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    clearError();
+
+    try {
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/asalkapal-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
+        }
+
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
+    } catch (error) {
+      console.error('Error during onSuccess:', error);
+      setIsFetchingManually(false);
+      setIsDataUpdated(false);
+    }
+  };
+  const onSubmit = async (values: AsalKapalInput, keepOpenModal = false) => {
+    const selectedRowId = rows[selectedRow]?.id;
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteAsalKapal(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
+            }
+          });
+        }
+        return;
+      }
+      if (mode === 'add') {
+        const newOrder = await createAsalKapal(
+          {
+            ...values,
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          }
+        );
+
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+      if (selectedRowId && mode === 'edit') {
+        await updateAsalKapal(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('asalkapal');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
+
+  const handleEdit = () => {
+    if (selectedRow !== null) {
+      const rowData = rows[selectedRow];
+      setPopOver(true);
+      setMode('edit');
+    }
+  };
+  const handleDelete = () => {
+    if (selectedRow !== null) {
+      setMode('delete');
+      setPopOver(true);
+    }
+    //  else {
+    //   // Alert()
+    //   // pass;
+    // }
+  };
+  const handleView = () => {
+    if (selectedRow !== null) {
+      setMode('view');
+      setPopOver(true);
+    }
+  };
+
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
+
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
+
+    const response = await getAsalKapalFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Asal Kapal',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
+    sessionStorage.setItem(
+      'filtersWithoutLimit',
+      JSON.stringify(filtersWithoutLimit)
+    );
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanAsalKapal.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
+
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
+
+            // Navigate to the report page
+            window.open('/reports/laporanasalkapal', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
+  };
+
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
+  document.querySelectorAll('.column-headers').forEach((element) => {
+    element.classList.remove('c1kqdw7y7-0-0-beta-47');
+  });
+  function getRowClass(row: IAsalKapal) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+
+  function rowKeyGetter(row: IAsalKapal) {
+    return row.id;
+  }
+
+  function EmptyRowsRenderer() {
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center"
+        style={{ textAlign: 'center', gridColumn: '1/-1' }}
+      >
+        NO ROWS DATA FOUND
+      </div>
+    );
+  }
+  const handleResequence = () => {
+    router.push('/dashboard/resequence');
+  };
+  function LoadRowsRenderer() {
+    return (
+      <div>
+        <ImSpinner2 className="animate-spin text-3xl text-primary" />
+      </div>
+    );
+  }
+
+  const handleClose = () => {
+    setPopOver(false);
+    setMode('');
+
+    clearError();
+
+    forms.reset();
+  };
+
+  const handleAdd = async () => {
+    try {
+      // Jalankan API sinkronisasi
+      const syncResponse = await syncAcosFn();
+      setMode('add');
+
+      setPopOver(true);
+
+      forms.reset();
+    } catch (error) {
+      console.error('Error syncing ACOS:', error);
+    }
+  };
+  const saveGridConfig = async (
+    userId: string, // userId sebagai identifier
+    gridName: string,
+    columnsOrder: number[],
+    columnsWidth: { [key: string]: number }
+  ) => {
+    try {
+      const response = await fetch('/api/savegrid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          gridName,
+          config: { columnsOrder, columnsWidth }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save grid configuration');
+      }
+    } catch (error) {
+      console.error('Failed to save grid configuration:', error);
+    }
+  };
+  const resetGridConfig = () => {
+    // Nilai default untuk columnsOrder dan columnsWidth
+    const defaultColumnsOrder = columns.map((_, index) => index);
+    const defaultColumnsWidth = columns.reduce(
+      (acc, column) => {
+        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
+        return acc;
+      },
+      {} as { [key: string]: number }
+    );
+
+    // Set state kembali ke nilai default
+    setColumnsOrder(defaultColumnsOrder);
+    setColumnsWidth(defaultColumnsWidth);
+    setContextMenu(null);
+    setDataGridKey((prevKey) => prevKey + 1);
+
+    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+
+    // Simpan konfigurasi reset ke server (atau backend)
+    if (user.id) {
+      saveGridConfig(
+        user.id,
+        'GridAsalKapal',
+        defaultColumnsOrder,
+        defaultColumnsWidth
+      );
+    }
+  };
+
+  const loadGridConfig = async (userId: string, gridName: string) => {
+    try {
+      const response = await fetch(
+        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to load grid configuration');
+      }
+
+      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
+
+      setColumnsOrder(
+        columnsOrder && columnsOrder.length
+          ? columnsOrder
+          : columns.map((_, index) => index)
+      );
+      setColumnsWidth(
+        columnsWidth && Object.keys(columnsWidth).length
+          ? columnsWidth
+          : columns.reduce(
+              (acc, column) => ({
+                ...acc,
+                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
+              }),
+              {}
+            )
+      );
+    } catch (error) {
+      console.error('Failed to load grid configuration:', error);
+
+      // If configuration is not available or error occurs, fallback to original column widths
+      setColumnsOrder(columns.map((_, index) => index));
+
+      setColumnsWidth(
+        columns.reduce(
+          (acc, column) => {
+            // Use the original column width instead of '1fr' when configuration is missing or error occurs
+            acc[column.key] =
+              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
+            return acc;
+          },
+          {} as { [key: string]: number }
+        )
+      );
+    }
+  };
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY });
+  };
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      contextMenuRef.current &&
+      !contextMenuRef.current.contains(event.target as Node)
+    ) {
+      setContextMenu(null);
+    }
+  };
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
@@ -1480,6 +1575,7 @@ const GridAsalKapal = () => {
     return columns;
   }, [columns, columnsOrder]);
 
+  // Update properti width pada setiap kolom berdasarkan state columnsWidth
   const finalColumns = useMemo(() => {
     return orderedColumns.map((col) => ({
       ...col,
@@ -1490,11 +1586,9 @@ const GridAsalKapal = () => {
   useEffect(() => {
     loadGridConfig(user.id, 'GridAsalKapal');
   }, []);
-
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
-
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
@@ -1504,7 +1598,7 @@ const GridAsalKapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allAsalKapal || isDataUpdated) return;
+    if (!allAsalKapal || isFetchingManually || isDataUpdated) return;
 
     const newRows = allAsalKapal.data || [];
 
@@ -1531,7 +1625,7 @@ const GridAsalKapal = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allAsalKapal, currentPage, filters, isDataUpdated]);
+  }, [allAsalKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1539,7 +1633,6 @@ const GridAsalKapal = () => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-
   useEffect(() => {
     if (gridRef.current && dataGridKey) {
       setTimeout(() => {
@@ -1548,7 +1641,6 @@ const GridAsalKapal = () => {
       }, 0);
     }
   }, [dataGridKey]);
-
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
@@ -1581,24 +1673,24 @@ const GridAsalKapal = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' // Only fill the form if not in addMode
+    ) {
       forms.setValue('nominal', rowData?.nominal ? formatCurrency(rowData.nominal) : '');
-      forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('cabang_id', Number(rowData?.cabang_id) || 0);
-      forms.setValue('cabang', rowData?.cabang || '');
-      forms.setValue('container_id', Number(rowData?.container_id) || 0);
-      forms.setValue('container', rowData?.container || '');
-      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-
+      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('cabang_id', Number(rowData.cabang_id) || 1);
+      forms.setValue('cabang', rowData.cabang || '');
+      forms.setValue('container_id', Number(rowData.container_id) || 1);
+      forms.setValue('container', rowData.container || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      // forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-      // forms.setValue('akuntansi_nama', '');
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
-
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -1607,25 +1699,6 @@ const GridAsalKapal = () => {
       }
     });
   }, []);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1673,7 +1746,6 @@ const GridAsalKapal = () => {
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
           onSelectedCellChange={(args) => {
             handleCellClick({ row: args.row });
@@ -1690,9 +1762,47 @@ const GridAsalKapal = () => {
         >
           <ActionButton
             onAdd={handleAdd}
-            onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
+            onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Print',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: { onClick: () => handleReport()}
+            //       // {
+            //       //   label: 'REPORT BY SELECT',
+            //       //   onClick: () => handleReportBySelect(),
+            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       // }
+            //   }
+            //   // {
+            //   //   label: 'Export',
+            //   //   icon: <FaFileExport />,
+            //   //   className: 'bg-green-600 hover:bg-green-700',
+            //   //   actions: [
+            //   //     {
+            //   //       label: 'EXPORT ALL',
+            //   //       onClick: () => handleExport(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     },
+            //   //     {
+            //   //       label: 'EXPORT BY SELECT',
+            //   //       onClick: () => handleExportBySelect(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     }
+            //   //   ]
+            //   // }
+            // ]}
           />
           {isLoadingAsalKapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
@@ -1717,15 +1827,15 @@ const GridAsalKapal = () => {
         </div>
       </div>
       <FormAsalKapal
-        mode={mode}
-        forms={forms}
         popOver={popOver}
-        setPopOver={setPopOver}
         handleClose={handleClose}
-        onSubmit={forms.handleSubmit(onSubmit as any)}
-        isLoadingCreate={isLoadingCreate}
+        setPopOver={setPopOver}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
+        forms={forms}
+        mode={mode}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
+        isLoadingCreate={isLoadingCreate}
       />
     </div>
   );

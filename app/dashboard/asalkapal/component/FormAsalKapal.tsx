@@ -1,13 +1,5 @@
-import { useGetAllAsalKapal } from '@/lib/server/useAsalKapal';
-import { RootState } from '@/lib/store/store';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
-import { IoMdClose } from 'react-icons/io';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { FaSave } from 'react-icons/fa';
-import LookUp from '@/components/custom-ui/LookUp';
 import {
   Form,
   FormControl,
@@ -16,15 +8,24 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { useGetMenu } from '@/lib/server/useMenu';
+import { Button } from '@/components/ui/button';
+import { useEffect, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
+import LookUp from '@/components/custom-ui/LookUp';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { IoMdClose } from 'react-icons/io';
+import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
-import InputNumeric from '@/components/custom-ui/InputNumeric';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 
 const FormAsalKapal = ({
-  forms,
   popOver,
   setPopOver,
+  forms,
   onSubmit,
   mode,
   handleClose,
@@ -32,9 +33,10 @@ const FormAsalKapal = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const lookupPropsStatusAktif = [
+  const lookUpPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
@@ -42,45 +44,45 @@ const FormAsalKapal = ({
       label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'text',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
     }
   ];
-
-
-  const lookupPropsCabang = [
+  const lookUpCabang = [
     {
-      columns: [{ key: 'namacabang', name: 'NAMA' }],
-      labelLookup: 'cabang lookup',
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
+      labelLookup: 'Cabang LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'cabang',
       label: 'CABANG',
       singleColumn: true,
       pageSize: 20,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'namacabang',
-      dataToPost: 'id'
-    }
-  ];
-  const lookupPropsContainer = [
-    {
-      columns: [{ key: 'nama', name: 'NAMA' }],
-      labelLookup: 'container lookup',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'container',
-      label: 'Container',
-      singleColumn: true,
-      pageSize: 20,
-      disabled: mode === 'view' || mode === 'delete' ? true : false,
-      postData: 'nama',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'nama'
     }
   ];
 
-  const formRef = useRef<HTMLFormElement | null>(null);
+  const lookUpContainer = [
+    {
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
+      labelLookup: 'Container LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'container',
+      label: 'CONTAINER',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'nama'
+    }
+  ];
+  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
 
@@ -133,7 +135,6 @@ const FormAsalKapal = ({
         nextElement.focus();
       }
     };
-
     // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
     const getNextFocusableElement = (
       inputs: HTMLElement[],
@@ -162,13 +163,20 @@ const FormAsalKapal = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
+  console.log(forms.getValues());
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Type Akuntansi
+            {mode === 'add'
+              ? 'Tambah Asal Kapal'
+              : mode === 'edit'
+              ? 'Edit Asal Kapal'
+              : mode === 'delete'
+              ? 'Delete Asal Kapal'
+              : 'View Asal Kapal'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -200,44 +208,46 @@ const FormAsalKapal = ({
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookupPropsCabang.map((props, index) => (
+                      {lookUpCabang.map((props, index) => (
                         <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('cabang_id', Number(id))
-                          }
-                          required={true}
-                          inputLookupValue={forms.getValues('cabang_id')}
-                          lookupNama={forms.getValues('cabang')}
+                        key={index}
+                        {...props}
+                        lookupValue={(id) =>
+                          forms.setValue('cabang_id', Number(id))
+                        }
+                        inputLookupValue={forms.getValues('cabang_id')}
+                        lookupNama={forms.getValues('cabang')}
+                        disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>
                   </div>
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Container
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookupPropsContainer.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('container_id', Number(id))
-                          }
+
+                  <FormField
+                    name="keterangan"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
                           required={true}
-                          inputLookupValue={forms.getValues('container_id')}
-                          lookupNama={forms.getValues('container')}
-                        />
-                      ))}
-                    </div>
-                  </div>
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          Keterangan
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     name="nominal"
@@ -267,33 +277,30 @@ const FormAsalKapal = ({
                     )}
                   />
 
-                  <FormField
-                    name="keterangan"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          KETERANGAN
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Container
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpContainer.map((props, index) => (
+                        <LookUp
+                        key={index}
+                        {...props}
+                        lookupValue={(id) =>
+                          forms.setValue('container_id', Number(id))
+                        }
+                        inputLookupValue={forms.getValues('container_id')}
+                        lookupNama={forms.getValues('container')}
+                        disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
@@ -305,7 +312,7 @@ const FormAsalKapal = ({
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookupPropsStatusAktif.map((props, index) => (
+                      {lookUpPropsStatusAktif.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
@@ -313,7 +320,8 @@ const FormAsalKapal = ({
                             forms.setValue('statusaktif', id)
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
-                          lookupNama={forms.getValues('statusaktif_text')}
+                          lookupNama={forms.getValues('statusaktif_nama')}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>

@@ -14,13 +14,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormAkuntansi from './FormAkuntansi';
 import { useQueryClient } from 'react-query';
-import { AkuntansiInput, akuntansiSchema } from '@/lib/validations/akuntansi.validation';
+import {
+  AkuntansiInput,
+  akuntansiSchema
+} from '@/lib/validations/akuntansi.validation';
+
 import {
   useCreateAkuntansi,
   useDeleteAkuntansi,
   useGetAkuntansi,
   useUpdateAkuntansi
 } from '@/lib/server/useAkuntansi';
+
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
@@ -44,14 +49,36 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  exportMenuBySelectFn,
+  exportMenuFn,
+  getMenuFn,
+  reportMenuBySelectFn
+} from '@/lib/apis/menu.api';
+import { HiDocument } from 'react-icons/hi2';
+import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
+import ReportDesignerMenu from '@/app/reports/menu/page';
 import { IAkuntansi } from '@/lib/types/akuntansi.type';
-import { getParameterFn } from '@/lib/apis/parameter.api';
+import { number } from 'zod';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setProcessing,
+  setProcessed
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getAkuntansiFn } from '@/lib/apis/akuntansi.api';
+import { setReportFilter } from '@/lib/store/printSlice/printSlice';
+import Alert from '@/components/custom-ui/AlertCustom';
 
 interface Filter {
   page: number;
@@ -60,9 +87,10 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    statusaktif?: string;
+    text: string;
     created_at: string;
     updated_at: string;
+    statusaktif: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -97,8 +125,8 @@ const GridAkuntansi = () => {
 
   const [dataGridKey, setDataGridKey] = useState(0);
 
-  const contextAkuntansiRef = useRef<HTMLDivElement | null>(null);
-  const [contextAkuntansi, setContextAkuntansi] = useState<{
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
   } | null>(null);
@@ -120,7 +148,7 @@ const GridAkuntansi = () => {
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: undefined
+      statusaktif: 1
     }
   });
   const router = useRouter();
@@ -130,9 +158,10 @@ const GridAkuntansi = () => {
     filters: {
       nama: '',
       keterangan: '',
-      statusaktif: '',
-      created_at:'',
-      updated_at:''
+      created_at: '',
+      updated_at: '',
+      text: '',
+      statusaktif: ''
     },
     search: '',
     sortBy: 'nama',
@@ -140,12 +169,14 @@ const GridAkuntansi = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allAkuntansi, isLoading: isLoadingAkuntansi } = useGetAkuntansi({
-    ...filters,
-    page: currentPage
-  });
+  const { data: allAkuntansi, isLoading: isLoadingAkuntansi } = useGetAkuntansi(
+    {
+      ...filters,
+      page: currentPage
+    }
+  );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -238,9 +269,11 @@ const GridAkuntansi = () => {
       filters: {
         nama: '',
         keterangan: '',
-        // statusaktif: 0,
-        created_at:'',
-        updated_at:''
+        icon: '',
+        created_at: '',
+        updated_at: '',
+        text: '',
+        statusaktif: ''
       },
       search: searchValue,
       page: 1
@@ -282,7 +315,25 @@ const GridAkuntansi = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        clearError();
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
 
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -305,6 +356,7 @@ const GridAkuntansi = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -316,42 +368,11 @@ const GridAkuntansi = () => {
     }));
     setInputValue('');
   };
-  const [statusAktifOptions, setStatusAktifOptions] = useState<{ value: string; label: string }[]>([]);
-  const parameterData = async (params: string[]) => {
-    try {
-      // Gunakan Promise.all untuk memanggil semua parameter sekaligus
-      const results = await Promise.all(
-        params.map((param) => getParameterFn({ filters: { grp: param } }))
-      );
-
-      // Pisahkan hasil berdasarkan parameter dan simpan di state masing-masing
-      results.forEach((res, index) => {
-        const options = res.data.map((item: any) => ({
-          value: item.id,
-          label: item.text
-        }));
-
-        // Tentukan state berdasarkan index parameter
-        if (params[index] === 'status aktif') {
-          setStatusAktifOptions(options);
-        }
-      });
-    } catch (error) {
-      console.error('Error fetching parameter data:', error);
-    }
-  };
-
-  useEffect(() => {
-    // Panggil parameterData dengan beberapa parameter
-    parameterData(['status aktif']);
-  }, []);
-
-
   const columns = useMemo((): Column<IAkuntansi>[] => {
     return [
       {
         key: 'nomor',
-        name: 'id',
+        name: 'NO',
         width: 50,
         resizable: true,
         draggable: true,
@@ -371,9 +392,10 @@ const GridAkuntansi = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    statusaktif: '',
+                    text: '',
                     created_at: '',
-                    updated_at: ''
+                    updated_at: '',
+                    statusaktif: ''
                   }
                 }),
                   setInputValue('');
@@ -426,7 +448,7 @@ const GridAkuntansi = () => {
 
       {
         key: 'nama',
-        name: 'nama',
+        name: 'Nama',
         resizable: true,
         draggable: true,
         width: 300,
@@ -436,14 +458,14 @@ const GridAkuntansi = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextAkuntansi}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Nama Akuntansi
+                Nama
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
@@ -464,9 +486,7 @@ const GridAkuntansi = () => {
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.nama
-                    ? filters.filters.nama.toUpperCase()
-                    : ''
+                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
                 }
                 type="text"
                 onChange={(e) => {
@@ -500,22 +520,24 @@ const GridAkuntansi = () => {
         }
       },
       {
-        key: 'Keterangan',
-        name: 'keterangan',
+        key: 'keterangan',
+        name: 'Keterangan',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextAkuntansi}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'keterangan'
+                    ? 'text-red-500'
+                    : 'font-normal'
                 }`}
               >
                 Keterangan
@@ -523,10 +545,10 @@ const GridAkuntansi = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
+                  <FaSortUp className="text-red-500" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
+                  <FaSortDown className="text-red-500" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -539,9 +561,9 @@ const GridAkuntansi = () => {
                   inputColRefs.current['keterangan'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan || ''}
+                value={filters.filters.keterangan.toUpperCase() || ''}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('keterangan', value);
                 }}
               />
@@ -562,7 +584,10 @@ const GridAkuntansi = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.keterangan || '',
+                props.row.keterangan !== null &&
+                  props.row.keterangan !== undefined
+                  ? props.row.keterangan
+                  : '',
                 filters.search,
                 columnFilter
               )}
@@ -581,49 +606,46 @@ const GridAkuntansi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextAkuntansi}
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
               >
-              <p className="text-sm font-normal">Status Aktif</p>
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue={filters.filters.statusaktif || ''}
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('statusaktif', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-sm font-thin">
-                  <SelectValue>
-                    {filters.filters.statusaktif == '131'
-                      ? 'AKTIF'
-                      : filters.filters.statusaktif == '132'
-                      ? 'TIDAK AKTIF'
-                      : 'ALL'}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-sm" value="">
-                      <p className="text-sm font-normal">ALL</p>
-                    </SelectItem>
-                    {statusAktifOptions.map((option, index) => (
-                      <SelectItem
-                        key={index}
-                        className="cursor-pointer text-sm"
-                        value={option.value}
-                      >
-                        <p className="text-sm font-normal">{option.label}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
-              ),
-              renderCell: (props: any) => {
+        ),
+        renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-      
+
           if (memoData) {
             return (
               <div className="flex h-full w-full items-center justify-center py-1">
@@ -643,10 +665,11 @@ const GridAkuntansi = () => {
               </div>
             );
           }
-      
+
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
+
       {
         key: 'created_at',
         name: 'Created At',
@@ -659,7 +682,7 @@ const GridAkuntansi = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextAkuntansi}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -734,7 +757,7 @@ const GridAkuntansi = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextAkuntansi}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -761,7 +784,7 @@ const GridAkuntansi = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['updated_at'] = el;
+                  inputColRefs.current['created_at'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
                 value={filters.filters.updated_at.toUpperCase() || ''}
@@ -806,7 +829,7 @@ const GridAkuntansi = () => {
     const newWidthMap = { ...columnsWidth, [columnKey]: width };
     setColumnsWidth(newWidthMap);
 
-    // 3) Bersihkan timeout sebelumnya agar tidak akuntansimpuk
+    // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
     if (resizeDebounceTimeout.current) {
       clearTimeout(resizeDebounceTimeout.current);
     }
@@ -932,89 +955,107 @@ const GridAkuntansi = () => {
       }
     }
   }
-  const onSuccess = async (indexOnPage: any, pageNumber: any) => {
-    try {
-      forms.reset();
-      setPopOver(false);
-      setIsFetchingManually(true);
-      setRows([]);
-      if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/akuntansi-allItems`);
-        // Set the rows only if the data has changed
-        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-          setRows(response.data);
-          setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
-          setSelectedRow(indexOnPage);
-          setTimeout(() => {
-            gridRef?.current?.selectCell({
-              rowIdx: indexOnPage,
-              idx: 1
-            });
-          }, 200);
-        }
-      }
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    clearError();
 
-      setIsFetchingManually(false);
-      setIsDataUpdated(false);
+    try {
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+        setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/akuntansi-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
+        }
+
+        setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
       setIsDataUpdated(false);
     }
   };
-
-  console.log(rows, 'rows data');
-  
-  const onSubmit = async (values: AkuntansiInput) => {
+  const onSubmit = async (values: AkuntansiInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteAkuntansi(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteAkuntansi(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createAkuntansi(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createAkuntansi(
+          {
+            ...values,
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updateAkuntansi(
-        {
-          id: selectedRowId as unknown as number,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('akuntansi');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+      if (selectedRowId && mode === 'edit') {
+        await updateAkuntansi(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('akuntansi');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1030,6 +1071,10 @@ const GridAkuntansi = () => {
       setMode('delete');
       setPopOver(true);
     }
+    //  else {
+    //   // Alert()
+    //   // pass;
+    // }
   };
   const handleView = () => {
     if (selectedRow !== null) {
@@ -1037,6 +1082,157 @@ const GridAkuntansi = () => {
       setPopOver(true);
     }
   };
+
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
+
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
+  const handleReport = async () => {
+    const { page, limit, ...filtersWithoutLimit } = filters;
+
+    const response = await getAkuntansiFn(filtersWithoutLimit);
+    const reportRows = response.data.map((row) => ({
+      ...row,
+      judullaporan: 'Laporan Akuntansi',
+      usercetak: user.username,
+      tglcetak: new Date().toLocaleDateString(),
+      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+    }));
+    sessionStorage.setItem(
+      'filtersWithoutLimit',
+      JSON.stringify(filtersWithoutLimit)
+    );
+    // Dynamically import Stimulsoft and generate the PDF report
+    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+      .then((module) => {
+        const { Stimulsoft } = module;
+        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+          '/fonts/tahoma.ttf',
+          'Arial'
+        );
+        Stimulsoft.Base.StiLicense.Key =
+          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+        const report = new Stimulsoft.Report.StiReport();
+        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+        // Load the report template (MRT file)
+        report.loadFile('/reports/LaporanAkuntansi.mrt');
+        report.dictionary.dataSources.clear();
+        dataSet.readJson({ data: reportRows });
+        report.regData(dataSet.dataSetName, '', dataSet);
+        report.dictionary.synchronize();
+
+        // Render the report asynchronously
+        report.renderAsync(() => {
+          // Export the report to PDF asynchronously
+          report.exportDocumentAsync((pdfData: any) => {
+            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+              type: 'application/pdf'
+            });
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+
+            // Store the Blob URL in sessionStorage
+            sessionStorage.setItem('pdfUrl', pdfUrl);
+
+            // Navigate to the report page
+            window.open('/reports/laporanakuntansi', '_blank');
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
+        });
+      })
+      .catch((error) => {
+        console.error('Failed to load Stimulsoft:', error);
+      });
+  };
+
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
@@ -1069,12 +1265,16 @@ const GridAkuntansi = () => {
       </div>
     );
   }
+
   const handleClose = () => {
     setPopOver(false);
     setMode('');
 
+    clearError();
+
     forms.reset();
   };
+
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
@@ -1128,7 +1328,7 @@ const GridAkuntansi = () => {
     // Set state kembali ke nilai default
     setColumnsOrder(defaultColumnsOrder);
     setColumnsWidth(defaultColumnsWidth);
-    setContextAkuntansi(null);
+    setContextMenu(null);
     setDataGridKey((prevKey) => prevKey + 1);
 
     gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
@@ -1190,16 +1390,16 @@ const GridAkuntansi = () => {
       );
     }
   };
-  const handleContextAkuntansi = (event: React.MouseEvent) => {
+  const handleContextMenu = (event: React.MouseEvent) => {
     event.preventDefault();
-    setContextAkuntansi({ x: event.clientX, y: event.clientY });
+    setContextMenu({ x: event.clientX, y: event.clientY });
   };
   const handleClickOutside = (event: MouseEvent) => {
     if (
-      contextAkuntansiRef.current &&
-      !contextAkuntansiRef.current.contains(event.target as Node)
+      contextMenuRef.current &&
+      !contextMenuRef.current.contains(event.target as Node)
     ) {
-      setContextAkuntansi(null);
+      setContextMenu(null);
     }
   };
 
@@ -1236,7 +1436,7 @@ const GridAkuntansi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allAkuntansi || isDataUpdated) return;
+    if (!allAkuntansi || isFetchingManually || isDataUpdated) return;
 
     const newRows = allAkuntansi.data || [];
 
@@ -1263,7 +1463,7 @@ const GridAkuntansi = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allAkuntansi, currentPage, filters, isDataUpdated]);
+  }, [allAkuntansi, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1308,6 +1508,7 @@ const GridAkuntansi = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (
@@ -1317,8 +1518,11 @@ const GridAkuntansi = () => {
     ) {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', rowData.statusaktif ? Number(rowData.statusaktif) : 0);
-
+      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData.text || '');
+    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
+      // If in addMode, ensure the form values are cleared
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1329,7 +1533,6 @@ const GridAkuntansi = () => {
       }
     });
   }, []);
-
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1396,15 +1599,53 @@ const GridAkuntansi = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Print',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: { onClick: () => handleReport()}
+            //       // {
+            //       //   label: 'REPORT BY SELECT',
+            //       //   onClick: () => handleReportBySelect(),
+            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       // }
+            //   }
+            //   // {
+            //   //   label: 'Export',
+            //   //   icon: <FaFileExport />,
+            //   //   className: 'bg-green-600 hover:bg-green-700',
+            //   //   actions: [
+            //   //     {
+            //   //       label: 'EXPORT ALL',
+            //   //       onClick: () => handleExport(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     },
+            //   //     {
+            //   //       label: 'EXPORT BY SELECT',
+            //   //       onClick: () => handleExportBySelect(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     }
+            //   //   ]
+            //   // }
+            // ]}
           />
           {isLoadingAkuntansi ? <LoadRowsRenderer /> : null}
-          {contextAkuntansi && (
+          {contextMenu && (
             <div
-              ref={contextAkuntansiRef}
+              ref={contextMenuRef}
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
-                top: contextAkuntansi.y, // Pastikan contextAkuntansi.y berasal dari event.clientY
-                left: contextAkuntansi.x, // Pastikan contextAkuntansi.x berasal dari event.clientX
+                top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
+                left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
                 backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
@@ -1427,7 +1668,7 @@ const GridAkuntansi = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>
