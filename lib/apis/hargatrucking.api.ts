@@ -49,7 +49,7 @@ export const storeHargatruckingFn = async (fields: hargatruckingInput) => {
 export const exportHargatruckingFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanhargatrucking', {
+    const response = await api2.get('/hargatrucking/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

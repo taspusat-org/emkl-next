@@ -46,7 +46,7 @@ export const storeTujuankapalFn = async (fields: TujuankapalInput) => {
 export const exportTujuankapalFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporantujuankapal', {
+    const response = await api2.get('/tujuankapal/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
