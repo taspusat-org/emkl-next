@@ -12,7 +12,13 @@ import { Input } from '../ui/input';
 import { TbLayoutNavbarFilled } from 'react-icons/tb';
 import { IoClose } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
-
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage
+} from '@/components/ui/form';
 import {
   setLookUpValue,
   setSearchTerm
@@ -41,10 +47,6 @@ import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
 
-interface LinkFilter {
-  linkTo: string;
-  linkValue: string | number | Array<string | number>;
-}
 interface LookUpProps {
   columns: { key: string; name: string; width?: number }[];
   endpoint?: string;
@@ -1079,56 +1081,71 @@ export default function LookUp({
     <Popover open={open} onOpenChange={() => ({})}>
       <PopoverTrigger asChild>
         <div className="flex w-full flex-col">
-          <div
-            className="relative flex w-full flex-row items-center"
-            ref={popoverRef}
-          >
-            <Input
-              ref={inputRef}
-              // autoFocus
-              className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
-                showOnButton ? 'rounded-r-none border-r-0' : ''
-              } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
-              disabled={disabled}
-              value={inputValue}
-              onKeyDown={handleInputKeydown}
-              onChange={(e) => {
-                handleInputChange(e);
-                // if (e.target.value.trim() !== '') {
-                //   setOpen(true);
-                // }
-              }}
-            />
+          <FormField
+            name="nama"
+            render={({ field }) => (
+              <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                <FormControl>
+                  <div
+                    className="relative flex w-full flex-row items-center"
+                    ref={popoverRef}
+                  >
+                    <Input
+                      ref={inputRef}
+                      // autoFocus
+                      className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
+                        showOnButton ? 'rounded-r-none border-r-0' : ''
+                      } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+                      disabled={disabled}
+                      value={inputValue}
+                      onKeyDown={handleInputKeydown}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        // if (e.target.value.trim() !== '') {
+                        //   setOpen(true);
+                        // }
+                      }}
+                    />
 
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                disabled={disabled && !clearDisabled ? true : false}
-                variant="ghost"
-                className="absolute right-10 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
+                    {(filters.search !== '' || inputValue !== '') && (
+                      <Button
+                        type="button"
+                        disabled={disabled && !clearDisabled ? true : false}
+                        variant="ghost"
+                        className="absolute right-10 text-gray-500 hover:bg-transparent"
+                        onClick={handleClearInput}
+                      >
+                        <Image
+                          src={IcClose}
+                          width={15}
+                          height={15}
+                          alt="close"
+                        />
+                      </Button>
+                    )}
 
-            {showOnButton && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
-                onClick={handleButtonClick}
-                disabled={disabled}
-              >
-                <TbLayoutNavbarFilled />
-              </Button>
+                    {showOnButton && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+                        onClick={handleButtonClick}
+                        disabled={disabled}
+                      >
+                        <TbLayoutNavbarFilled />
+                      </Button>
+                    )}
+                  </div>
+                </FormControl>
+
+                <p className="text-[0.8rem] text-destructive">
+                  {showError.status === true && label === showError.label
+                    ? `${label} ${REQUIRED_FIELD}`
+                    : null}
+                </p>
+              </FormItem>
             )}
-          </div>
-          <p className="text-[0.8rem] text-destructive">
-            {showError.status === true && label === showError.label
-              ? `${label} ${REQUIRED_FIELD}`
-              : null}
-          </p>
+          />
         </div>
       </PopoverTrigger>
       <PopoverContent

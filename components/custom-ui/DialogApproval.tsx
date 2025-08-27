@@ -53,6 +53,7 @@ const DialogApproval: React.FC = ({}) => {
   const handleButtonClick = async (item: any) => {
     // Validasi checkedRows terlebih dahulu
     if ((checkedRows?.size ?? 0) <= 0) {
+      useApprovalDialog.setState({ open: false });
       alert({
         title:
           mode === 'APPROVAL'
