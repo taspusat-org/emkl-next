@@ -24,17 +24,35 @@ export const ShipperSchema = z.object({
   fax: z.string().nullable().optional(),
   web: z.string().nullable().optional(),
 
-  creditlimit: z.number().min(1, { message: REQUIRED_FIELD }),
-  creditterm: z.number().min(1, { message: REQUIRED_FIELD }),
-  credittermplus: z.number().min(1, { message: REQUIRED_FIELD }),
-  npwp: z.string().nullable().optional(),
+  creditlimit: z
+    .string()
+    .min(1, { message: dynamicRequiredMessage('CREDIT LIMIT') }),
+  creditterm: z
+    .number()
+    .int({ message: dynamicRequiredMessage('Credit Term Wajib Angka') })
+    .nonnegative({
+      message: dynamicRequiredMessage('Credit Term Tidak Boleh Angka Negatif')
+    })
+    .min(1, { message: dynamicRequiredMessage('CREDIT TERM') }),
+
+  credittermplus: z
+    .number()
+    .int({ message: dynamicRequiredMessage('Credit Term Plus Wajib Angka') })
+    .nonnegative({
+      message: dynamicRequiredMessage(
+        'Credit Term Plus Tidak Boleh Angka Negatif'
+      )
+    })
+    .min(1, { message: dynamicRequiredMessage('CREDIT TERM PLUS') }),
+
+  npwp: z.string().nonempty({ message: dynamicRequiredMessage('NPWP') }),
 
   coagiro: z.number().min(1, { message: REQUIRED_FIELD }),
   coagiro_text: z.string().nullable().optional(),
 
-  ppn: z.number().nullable().optional(),
+  ppn: z.string().nullable().optional(),
   titipke: z.string().nullable().optional(),
-  ppnbatalmuat: z.number().nullable().optional(),
+  ppnbatalmuat: z.string().nullable().optional(),
   grup: z.string().nullable().optional(),
   formatdeliveryreport: z.number().nullable().optional(),
   comodity: z.string().nullable().optional(),
@@ -52,7 +70,7 @@ export const ShipperSchema = z.object({
   kabupaten: z.string().nullable().optional(),
   kecamatan: z.string().nullable().optional(),
   propinsi: z.string().nullable().optional(),
-  isdpp10psn: z.number().nullable().optional(),
+  isdpp10psn: z.string().nullable().optional(),
   usertracing: z.string().nullable().optional(),
   passwordtracing: z.string().nullable().optional(),
 
@@ -67,19 +85,23 @@ export const ShipperSchema = z.object({
   keterangan1barisinvoice: z.string().nullable().optional(),
   nik: z.string().nullable().optional(),
   namaparaf: z.string().nullable().optional(),
-  saldopiutang: z.number().nullable().optional(),
+  saldopiutang: z.string().nullable().optional(),
   keteranganshipperjobminus: z.string().nullable().optional(),
   tglemailshipperjobminus: z.string().nullable().optional(),
   tgllahir: z
     .string()
     .nonempty({ message: dynamicRequiredMessage('TGLLAHIR') }),
   idshipperasal: z.number().nullable().optional(),
+  shipperasal_text: z.string().nullable().optional(),
+
   initial: z.string().nullable().optional(),
   tipe: z.string().nullable().optional(),
-  id_tipe: z.number().nullable().optional(),
+  idtipe: z.number().nullable().optional(),
   idinitial: z.number().nullable().optional(),
   nshipperprospek: z.string().nullable().optional(),
   parentshipper_id: z.number().nullable().optional(),
+  parentshipper_text: z.string().nullable().optional(),
+
   npwpnik: z.string().nullable().optional(),
   nitku: z.string().nullable().optional(),
   kodepajak: z.string().nullable().optional(),

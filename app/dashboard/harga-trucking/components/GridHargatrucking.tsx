@@ -1525,7 +1525,7 @@ const GridHargatrucking = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporanhargatrucking', '_blank');
+              window.open('/reports/hargatrucking', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

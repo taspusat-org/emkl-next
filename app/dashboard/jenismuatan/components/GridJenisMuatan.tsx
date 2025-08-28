@@ -1100,7 +1100,7 @@ const GridJenisMuatan = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporanjenismuatan', '_blank');
+              window.open('/reports/jenismuatan', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

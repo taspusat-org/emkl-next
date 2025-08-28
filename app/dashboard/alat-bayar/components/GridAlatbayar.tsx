@@ -1353,7 +1353,7 @@ const GridAlatbayar = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporanalatbayar', '_blank');
+              window.open('/reports/alatbayar', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

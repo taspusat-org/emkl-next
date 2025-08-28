@@ -1205,7 +1205,7 @@ const GridDaftarbl = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporandaftarbl', '_blank');
+              window.open('/reports/daftarbl', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

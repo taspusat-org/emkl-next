@@ -1267,7 +1267,7 @@ const GridTujuankapal = () => {
             sessionStorage.setItem('pdfUrl', pdfUrl);
 
             // Navigate to the report page
-            window.open('/reports/laporantujuankapal', '_blank');
+            window.open('/reports/tujuankapal', '_blank');
           }, Stimulsoft.Report.StiExportFormat.Pdf);
         });
       })
