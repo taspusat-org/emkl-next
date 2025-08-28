@@ -557,7 +557,7 @@ export default function LookUp({
     const value = clickedRow[dataToPost as any];
 
     lookupValue?.(value);
-    onSelectRow?.(value); // cukup satu kali, tanpa else
+    onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
