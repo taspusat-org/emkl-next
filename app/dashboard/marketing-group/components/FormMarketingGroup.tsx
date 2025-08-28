@@ -181,6 +181,8 @@ const FormMarketingGroup = ({
                       {lookUpPropsMarketing.map((props, index) => (
                         <LookUp
                           key={index}
+                          name="marketing_id"
+                          forms={forms}
                           {...props}
                           lookupValue={(id) =>
                             forms.setValue('marketing_id', Number(id))
@@ -206,6 +208,8 @@ const FormMarketingGroup = ({
                         <LookUp
                           key={index}
                           {...props}
+                          name="statusaktif"
+                          forms={forms}
                           lookupValue={(id) =>
                             forms.setValue('statusaktif', id)
                           }
