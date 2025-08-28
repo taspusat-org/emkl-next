@@ -65,7 +65,7 @@ export interface MarketingManager {
   statusapproval_nama: string;
   userapproval: string;
   statusaktif: number | null;
-  statusaktif_nama: string | null;
+  statusaktifManager_nama: string | null;
   [key: string]: string | number | boolean | null | undefined;
 }
 
