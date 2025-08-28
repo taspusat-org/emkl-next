@@ -12,19 +12,19 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormKapal from './FormKapal';
+import FormDivisi from './FormDivisi';
 import { useQueryClient } from 'react-query';
 import {
-  KapalInput,
-  kapalSchema
-} from '@/lib/validations/kapal.validation';
+  DivisiInput,
+  divisiSchema
+} from '@/lib/validations/divisi.validation';
 
 import {
-  useCreateKapal,
-  useDeleteKapal,
-  useGetKapal,
-  useUpdateKapal
-} from '@/lib/server/useKapal';
+  useCreateDivisi,
+  useDeleteDivisi,
+  useGetDivisi,
+  useUpdateDivisi
+} from '@/lib/server/useDivisi';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -64,7 +64,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { IKapal } from '@/lib/types/kapal.type';
+import { IDivisi } from '@/lib/types/divisi.type';
 import { number } from 'zod';
 import {
   clearOpenName,
@@ -76,7 +76,7 @@ import {
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { getKapalFn } from '@/lib/apis/kapal.api';
+import { getDivisiFn } from '@/lib/apis/divisi.api';
 import { setReportFilter } from '@/lib/store/printSlice/printSlice';
 import Alert from '@/components/custom-ui/AlertCustom';
 
@@ -91,7 +91,6 @@ interface Filter {
     created_at: string;
     updated_at: string;
     statusaktif: string;
-    pelayaran: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -101,23 +100,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridKapal = () => {
+const GridDivisi = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createKapal, isLoading: isLoadingCreate } =
-    useCreateKapal();
-  const { mutateAsync: updateKapal, isLoading: isLoadingUpdate } =
-    useUpdateKapal();
+  const { mutateAsync: createDivisi, isLoading: isLoadingCreate } =
+    useCreateDivisi();
+  const { mutateAsync: updateDivisi, isLoading: isLoadingUpdate } =
+    useUpdateDivisi();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteKapal, isLoading: isLoadingDelete } =
-    useDeleteKapal();
+  const { mutateAsync: deleteDivisi, isLoading: isLoadingDelete } =
+    useDeleteDivisi();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -134,7 +133,7 @@ const GridKapal = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IKapal[]>([]);
+  const [rows, setRows] = useState<IDivisi[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -143,14 +142,13 @@ const GridKapal = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<KapalInput>({
-    resolver: zodResolver(kapalSchema),
+  const forms = useForm<DivisiInput>({
+    resolver: zodResolver(divisiSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
       statusaktif: 1,
-      pelayaran_id: 0,
     }
   });
   const router = useRouter();
@@ -164,7 +162,6 @@ const GridKapal = () => {
       updated_at: '',
       text: '',
       statusaktif: '',
-      pelayaran: ''
     },
     search: '',
     sortBy: 'nama',
@@ -172,7 +169,7 @@ const GridKapal = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allKapal, isLoading: isLoadingKapal } = useGetKapal(
+  const { data: allDivisi, isLoading: isLoadingDivisi } = useGetDivisi(
     {
       ...filters,
       page: currentPage
@@ -277,7 +274,6 @@ const GridKapal = () => {
         updated_at: '',
         text: '',
         statusaktif: '',
-        pelayaran: '',
       },
       search: searchValue,
       page: 1
@@ -372,7 +368,7 @@ const GridKapal = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IKapal>[] => {
+  const columns = useMemo((): Column<IDivisi>[] => {
     return [
       {
         key: 'nomor',
@@ -400,7 +396,6 @@ const GridKapal = () => {
                     created_at: '',
                     updated_at: '',
                     statusaktif: '',
-                    pelayaran: '',
                   }
                 }),
                   setInputValue('');
@@ -440,7 +435,7 @@ const GridKapal = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IKapal }) => (
+        renderCell: ({ row }: { row: IDivisi }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -517,82 +512,6 @@ const GridKapal = () => {
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'pelayaran',
-        name: 'Pelayaran',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('pelayaran')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'pelayaran'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Pelayaran
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'pelayaran' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'pelayaran' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['pelayaran'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.pelayaran.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('pelayaran', value);
-                }}
-              />
-              {filters.filters.pelayaran && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('pelayaran', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.pelayaran || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.pelayaran !== null &&
-                  props.row.pelayaran !== undefined
-                  ? props.row.pelayaran
-                  : '',
                 filters.search,
                 columnFilter
               )}
@@ -918,7 +837,7 @@ const GridKapal = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridKapal', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridDivisi', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -933,7 +852,7 @@ const GridKapal = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridKapal', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridDivisi', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -950,7 +869,7 @@ const GridKapal = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingKapal || !hasMore || rows.length === 0) return;
+    if (isLoadingDivisi || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -977,7 +896,7 @@ const GridKapal = () => {
     }
   }
 
-  function handleCellClick(args: { row: IKapal }) {
+  function handleCellClick(args: { row: IDivisi }) {
     const clickedRow = args.row;
     // console.log('Clicked row:', rows);
 
@@ -988,7 +907,7 @@ const GridKapal = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IKapal>,
+    args: CellKeyDownArgs<IDivisi>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1054,7 +973,7 @@ const GridKapal = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/kapal-allItems`);
+          const response = await api2.get(`/redis/get/divisi-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1080,13 +999,13 @@ const GridKapal = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: KapalInput, keepOpenModal = false) => {
+  const onSubmit = async (values: DivisiInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteKapal(selectedRowId as unknown as string, {
+          await deleteDivisi(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1108,7 +1027,7 @@ const GridKapal = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createKapal(
+        const newOrder = await createDivisi(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1124,14 +1043,14 @@ const GridKapal = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateKapal(
+        await updateDivisi(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('kapal');
+        queryClient.invalidateQueries('divisi');
       }
     } catch (error) {
       console.error(error);
@@ -1221,10 +1140,10 @@ const GridKapal = () => {
   const handleReport = async () => {
     const { page, limit, ...filtersWithoutLimit } = filters;
 
-    const response = await getKapalFn(filtersWithoutLimit);
+    const response = await getDivisiFn(filtersWithoutLimit);
     const reportRows = response.data.map((row) => ({
       ...row,
-      judullaporan: 'Laporan Kapal',
+      judullaporan: 'Laporan Divisi',
       usercetak: user.username,
       tglcetak: new Date().toLocaleDateString(),
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1254,7 +1173,7 @@ const GridKapal = () => {
         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
         // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanKapal.mrt');
+        report.loadFile('/reports/LaporanDivisi.mrt');
         report.dictionary.dataSources.clear();
         dataSet.readJson({ data: reportRows });
         report.regData(dataSet.dataSetName, '', dataSet);
@@ -1273,7 +1192,7 @@ const GridKapal = () => {
             sessionStorage.setItem('pdfUrl', pdfUrl);
 
             // Navigate to the report page
-            window.open('/reports/laporankapal', '_blank');
+            window.open('/reports/laporandivisi', '_blank');
           }, Stimulsoft.Report.StiExportFormat.Pdf);
         });
       })
@@ -1317,12 +1236,12 @@ const GridKapal = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IKapal) {
+  function getRowClass(row: IDivisi) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IKapal) {
+  function rowKeyGetter(row: IDivisi) {
     return row.id;
   }
 
@@ -1418,7 +1337,7 @@ const GridKapal = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridKapal',
+        'GridDivisi',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1503,7 +1422,7 @@ const GridKapal = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridKapal');
+    loadGridConfig(user.id, 'GridDivisi');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1517,9 +1436,9 @@ const GridKapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allKapal || isFetchingManually || isDataUpdated) return;
+    if (!allDivisi || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allKapal.data || [];
+    const newRows = allDivisi.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1537,14 +1456,14 @@ const GridKapal = () => {
       return prevRows;
     });
 
-    if (allKapal.pagination.totalPages) {
-      setTotalPages(allKapal.pagination.totalPages);
+    if (allDivisi.pagination.totalPages) {
+      setTotalPages(allDivisi.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allDivisi, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1601,8 +1520,6 @@ const GridKapal = () => {
       forms.setValue('keterangan', rowData.keterangan);
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData.text || '');
-      forms.setValue('pelayaran_id', Number(rowData.pelayaran_id) || 1);
-      forms.setValue('pelayaran', rowData.pelayaran || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');
@@ -1678,7 +1595,7 @@ const GridKapal = () => {
           }}
         >
           <ActionButton
-            module='kapal'
+            module='divisi'
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
@@ -1722,7 +1639,7 @@ const GridKapal = () => {
             //   // }
             // ]}
           />
-          {isLoadingKapal ? <LoadRowsRenderer /> : null}
+          {isLoadingDivisi ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1744,7 +1661,7 @@ const GridKapal = () => {
           )}
         </div>
       </div>
-      <FormKapal
+      <FormDivisi
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1759,4 +1676,4 @@ const GridKapal = () => {
   );
 };
 
-export default GridKapal;
+export default GridDivisi;

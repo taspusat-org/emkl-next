@@ -205,7 +205,7 @@ const GridRoleAcl = () => {
           }}
         >
           <ActionButton module="roleacl" onEdit={handleEdit} />
-          <ActionButton module="ROLE" onEdit={handleEdit} />
+          {/* <ActionButton module="ROLE" onEdit={handleEdit} /> */}
         </div>
       </div>
       <FormRoleAclTable
