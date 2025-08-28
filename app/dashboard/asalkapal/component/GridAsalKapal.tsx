@@ -1761,6 +1761,7 @@ const GridAsalKapal = () => {
           }}
         >
           <ActionButton
+            module='asalkapal'
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
