@@ -1100,7 +1100,7 @@ const GridDaftarBank = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporandaftarbank', '_blank');
+              window.open('/reports/daftarbank', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

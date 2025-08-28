@@ -1100,7 +1100,7 @@ const GridJenisOrderan = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporanjenisorderan', '_blank');
+              window.open('/reports/jenisorderan', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

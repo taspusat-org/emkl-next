@@ -552,7 +552,7 @@ const GridBank = () => {
         width: 50,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
@@ -760,34 +760,14 @@ const GridBank = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('keterangancoa', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="akunpusat"
+                value="coa"
+                label="keterangancoa"
+                onChange={(value) =>
+                  handleColumnFilterChange('keterangancoa', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -834,34 +814,14 @@ const GridBank = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('keterangancoagantung', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="akunpusat"
+                value="coa"
+                label="keterangancoa"
+                onChange={(value) =>
+                  handleColumnFilterChange('keterangancoagantung', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),

@@ -2399,6 +2399,7 @@ const GridKasGantungHeader = () => {
           }}
         >
           <ActionButton
+            module="KAS-GANTUNG"
             onAdd={handleAdd}
             module="KAS GANTUNG"
             onDelete={handleDelete}
