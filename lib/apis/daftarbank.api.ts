@@ -47,7 +47,7 @@ export const updateDaftarBankFn = async ({
 export const exportDaftarbankFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporandaftarbank', {
+    const response = await api2.get('/daftarbank/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

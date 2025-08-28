@@ -45,7 +45,7 @@ export const storeAlatbayarFn = async (fields: AlatbayarInput) => {
 export const exportAlatbayarFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanalatbayar', {
+    const response = await api2.get('/alatbayar/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

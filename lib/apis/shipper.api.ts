@@ -1,53 +1,52 @@
 import { GetParams } from '../types/all.type';
-import { IAllDaftarbl, IDaftarbl } from '../types/daftarbl.type';
+import { IAllShipper, IShipper } from '../types/shipper.type';
 import { buildQueryParams } from '../utils';
 import { api, api2 } from '../utils/AxiosInstance';
-import { DaftarblInput } from '../validations/daftarbl.validation';
-import { MenuInput } from '../validations/menu.validation';
+import { ShipperInput } from '../validations/shipper.validation';
 
 interface UpdateMenuParams {
   id: string;
-  fields: DaftarblInput;
+  fields: ShipperInput;
 }
 
-export const getDaftarblFn = async (
+export const getShipperFn = async (
   filters: GetParams = {}
-): Promise<IAllDaftarbl> => {
+): Promise<IAllShipper> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/daftarbl', { params: queryParams });
+    const response = await api2.get('/shipper', { params: queryParams });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching daftar bl:', error);
-    throw new Error('Failed to fetch daftar bl');
+    console.error('Error fetching bank:', error);
+    throw new Error('Failed to fetch shipper');
   }
 };
-export const deleteDaftarblFn = async (id: string) => {
+export const deleteShipperFn = async (id: string) => {
   try {
-    const response = await api2.delete(`/daftarbl/${id}`);
+    const response = await api2.delete(`/shipper/${id}`);
     return response.data; // Optionally return response data if needed
   } catch (error) {
     console.error('Error deleting order:', error);
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
-export const updateDaftarblFn = async ({ id, fields }: UpdateMenuParams) => {
-  const response = await api2.put(`/daftarbl/update/${id}`, fields);
+export const updateShipperFn = async ({ id, fields }: UpdateMenuParams) => {
+  const response = await api2.put(`/shipper/update/${id}`, fields);
   return response.data;
 };
 
-export const storeDaftarblFn = async (fields: DaftarblInput) => {
-  const response = await api2.post(`/daftarbl`, fields);
+export const storeShipperFn = async (fields: ShipperInput) => {
+  const response = await api2.post(`/shipper`, fields);
 
   return response.data;
 };
 
-export const exportDaftarblFn = async (filters: any): Promise<any> => {
+export const exportShipperFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/daftarbl/export', {
+    const response = await api2.get('/laporanshipper', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
@@ -58,21 +57,6 @@ export const exportDaftarblFn = async (filters: any): Promise<any> => {
     throw new Error('Failed to export data');
   }
 };
-
-// export const exportMenuFn = async (filters: any): Promise<any> => {
-//   try {
-//     const queryParams = buildQueryParams(filters);
-//     const response = await api2.get('/menu/export', {
-//       params: queryParams,
-//       responseType: 'blob' // Pastikan respon dalam bentuk Blob
-//     });
-
-//     return response.data; // Return the Blob file from response
-//   } catch (error) {
-//     console.error('Error exporting data:', error);
-//     throw new Error('Failed to export data');
-//   }
-// };
 
 // Correctly typed 'ids' and sending proper data format to the NestJS API
 // export const reportMenuBySelectFn = async (ids: { id: number }[]) => {

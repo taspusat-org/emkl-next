@@ -16,16 +16,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { QueryClient, useQueryClient } from 'react-query';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { ITypeAkuntansi } from '@/lib/types/typeakuntansi.type';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import { checkValidationTypeAkuntansiFn } from '@/lib/apis/typeakuntansi.api';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
-import { checkValidationTypeAkuntansiFn } from '@/lib/apis/typeakuntansi.api';
 import {
   TypeakuntansiInput,
   typeakuntansiSchema
@@ -38,20 +40,15 @@ import DataGrid, {
   Row
 } from 'react-data-grid';
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import {
   useDeleteTypeAkuntansi,
   useGetAllTypeAkuntansi,
   useCreateTypeAkuntansi,
   useUpdateTypeAkuntansi
 } from '@/lib/server/useTypeAkuntansi';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 
 interface Filter {
   page: number;
@@ -79,6 +76,14 @@ interface GridConfig {
 const GridTypeAkuntansi = () => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+  const { clearError } = useFormError();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const gridRef = useRef<DataGridHandle>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [rows, setRows] = useState<ITypeAkuntansi[]>([]);
   const [mode, setMode] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -126,29 +131,15 @@ const GridTypeAkuntansi = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
   const { data: allTypeAkuntansi, isLoading: isLoadingTypeAkuntansi } =
-    useGetAllTypeAkuntansi({
-      ...filters,
-      page: currentPage
-    });
+    useGetAllTypeAkuntansi({ ...filters, page: currentPage });
   // console.log(allTypeAkuntansi, 'INI DATANYAA');
 
   const { mutateAsync: createTypeAkuntansi, isLoading: isLoadingCreate } =
     useCreateTypeAkuntansi();
   const { mutateAsync: updateTypeAkuntansi, isLoading: isLoadingUpdate } =
     useUpdateTypeAkuntansi();
-  const { mutateAsync: deleteMenu, isLoading: isLoadingDelete } =
+  const { mutateAsync: deleteTypeAkuntansi, isLoading: isLoadingDelete } =
     useDeleteTypeAkuntansi();
-
-  const queryClient = useQueryClient();
-
-  const { user } = useSelector((state: RootState) => state.auth);
-
-  const gridRef = useRef<DataGridHandle>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const contextMenuRef = useRef<HTMLDivElement | null>(null);
-  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
-
-  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const forms = useForm<TypeakuntansiInput>({
     resolver: zodResolver(typeakuntansiSchema),
@@ -162,6 +153,7 @@ const GridTypeAkuntansi = () => {
       statusaktif: 1
     }
   });
+
   const {
     setFocus,
     reset,
@@ -1039,29 +1031,137 @@ const GridTypeAkuntansi = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
+  const handleMultipleDelete = async (idsToDelete: number[]) => {
+    try {
+      // Hapus data satu per satu
+      for (const id of idsToDelete) {
+        await deleteTypeAkuntansi(id as unknown as string);
+      }
 
-      try {
-        const result = await checkValidationTypeAkuntansiFn({
-          aksi: 'DELETE',
-          value: rowData.id
+      // Update state setelah semua data berhasil dihapus
+      setRows((prevRows) =>
+        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+
+      // Reset checked rows
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+
+      // Update selected row
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
+
+      // Focus grid
+      setTimeout(() => {
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
+
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      dispatch(setProcessing());
+
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const rowData = rows[selectedRow];
+
+          const result = await checkValidationTypeAkuntansiFn({
+            aksi: 'DELETE',
+            value: rowData.id
+          });
+
+          if (result.data.status == 'failed') {
+            alert({
+              title: result.data.message,
+              variant: 'danger',
+              submitText: 'OK'
+            });
+          } else {
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationTypeAkuntansiFn({
+              aksi: 'DELETE',
+              value: id
+            });
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
         });
 
-        if (result.data.status == 'failed') {
+        const validationResults = await Promise.all(validationPromises);
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
+
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
+          console.log(cannotDeleteIds);
+
           alert({
-            title: result.data.message,
+            title: 'Beberapa data tidak dapat dihapus!',
             variant: 'danger',
             submitText: 'OK'
           });
-        } else {
-          setMode('delete');
-          setPopOver(true);
+          return;
         }
-      } catch (error) {
-        console.error('Error during delete validation:', error);
+
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
       }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1075,6 +1175,7 @@ const GridTypeAkuntansi = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
+    clearError();
     forms.reset();
   };
 
@@ -1084,6 +1185,8 @@ const GridTypeAkuntansi = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
+    clearError();
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1127,53 +1230,62 @@ const GridTypeAkuntansi = () => {
     keepOpenModal = false
   ) => {
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteMenu(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteTypeAkuntansi(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createTypeAkuntansi(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.dataIndex, data.pageNumber, keepOpenModal)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createTypeAkuntansi(
+          {
+            ...values,
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.dataIndex, data.pageNumber, keepOpenModal)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updateTypeAkuntansi(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('typeakuntansi');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+
+      if (selectedRowId && mode === 'edit') {
+        await updateTypeAkuntansi(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('typeakuntansi');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1596,6 +1708,7 @@ const GridTypeAkuntansi = () => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
+        clearError();
         setPopOver(false);
         dispatch(clearOpenName());
       }
@@ -1609,6 +1722,7 @@ const GridTypeAkuntansi = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+
   useEffect(() => {
     if (isSubmitSuccessful) {
       reset();

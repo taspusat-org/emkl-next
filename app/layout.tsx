@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { pdfjs } from 'react-pdf';
 import ForceEditDialogHost from '@/components/custom-ui/ForceEditDialogHost';
 import { FormErrorProvider } from '@/lib/hooks/formErrorContext';
+import ApprovalDialog from '@/components/custom-ui/ApprovalDialog';
 
 const roboto = Roboto({
   subsets: ['latin'],
@@ -55,24 +56,25 @@ export default function RootLayout({
       <body className="overflow-hidden">
         <SidebarProvider>
           <Provider store={store}>
-            <Alert
-              open={Boolean(alertOptions)}
-              onSubmit={handleSubmit}
-              onClose={handleClose}
-              {...(alertOptions as AlertOptions)}
-            />
-            {/* <ForceEditDialogHost /> */}
-            <FormErrorProvider>
-              <PersistGate loading={null} persistor={persistor}>
-                <NextTopLoader showSpinner={false} />
-                <Providers>
-                  <Toaster />
-                  <QueryClientProvider client={queryClient}>
+            <QueryClientProvider client={queryClient}>
+              <Alert
+                open={Boolean(alertOptions)}
+                onSubmit={handleSubmit}
+                onClose={handleClose}
+                {...(alertOptions as AlertOptions)}
+              />
+              {/* <ForceEditDialogHost /> */}
+              <ApprovalDialog />
+              <FormErrorProvider>
+                <PersistGate loading={null} persistor={persistor}>
+                  <NextTopLoader showSpinner={false} />
+                  <Providers>
+                    <Toaster />
                     <IdleTimerProvider>{children}</IdleTimerProvider>
-                  </QueryClientProvider>
-                </Providers>
-              </PersistGate>
-            </FormErrorProvider>
+                  </Providers>
+                </PersistGate>
+              </FormErrorProvider>
+            </QueryClientProvider>
           </Provider>
         </SidebarProvider>
       </body>

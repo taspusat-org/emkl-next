@@ -1330,7 +1330,6 @@ const GridPelayaran = () => {
   }, [forms]);
   useEffect(() => {
     if (isSubmitSuccessful) {
-      reset();
       // Pastikan fokus terjadi setelah repaint
       requestAnimationFrame(() => setFocus('nama'));
     }
@@ -1398,7 +1397,9 @@ const GridPelayaran = () => {
           }}
         >
           <ActionButton
+            isApproval
             module="Pelayaran"
+            checkedRows={checkedRows}
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
@@ -1434,7 +1435,7 @@ const GridPelayaran = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>
