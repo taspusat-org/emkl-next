@@ -45,7 +45,8 @@ import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import {
   clearOpenName,
-  setClearLookup
+  setClearLookup,
+  setFocusLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
 import { IMarketingGroup } from '@/lib/types/marketinggroup.type';
 import {
@@ -59,6 +60,7 @@ import {
   useUpdateMarketingGroup
 } from '@/lib/server/useMarketingGroup';
 import FormMarketingGroup from './FormMarketingGroup';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 
 interface Filter {
   page: number;
@@ -100,6 +102,8 @@ const GridMarketingGroup = () => {
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
+  const { clearError } = useFormError();
+
   const [mode, setMode] = useState<string>('');
 
   const [dataGridKey, setDataGridKey] = useState(0);
@@ -921,6 +925,7 @@ const GridMarketingGroup = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1067,6 +1072,7 @@ const GridMarketingGroup = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
+    clearError();
 
     forms.reset();
   };
@@ -1334,6 +1340,7 @@ const GridMarketingGroup = () => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
+        clearError();
         setMode(''); // Reset the mode to empty
         setPopOver(false);
         dispatch(clearOpenName());
@@ -1352,9 +1359,9 @@ const GridMarketingGroup = () => {
     if (isSubmitSuccessful) {
       reset();
       // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('marketing_id'));
+      requestAnimationFrame(() => dispatch(setFocusLookup('marketing_id')));
     }
-  }, [isSubmitSuccessful, setFocus]);
+  }, [isSubmitSuccessful]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -1454,7 +1461,7 @@ const GridMarketingGroup = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>
