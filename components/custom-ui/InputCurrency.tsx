@@ -22,6 +22,15 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   readOnly = false,
   placeholder = ''
 }) => {
+  useEffect(() => {
+    if (!value.includes(',')) {
+      setInputValue(formatCurrency(value) ?? '');
+      console.log('MASUK CURRRRRRR', formatCurrency(value));
+    } else {
+      setInputValue(value ?? '');
+    }
+  }, [value]);
+
   const [inputValue, setInputValue] = useState(value);
   useEffect(() => {
     setInputValue(value ?? '');

@@ -20,7 +20,7 @@ export const hargatruckingSchema = z.object({
   jenisorderan_id: z.number().min(1, { message: REQUIRED_FIELD }),
   jenisorderan_text: z.string().nullable().optional(),
 
-  nominal: z.number().min(1, { message: REQUIRED_FIELD }),
+  nominal: z.string().min(1, { message: REQUIRED_FIELD }),
 
   statusaktif: z.number().min(1, { message: REQUIRED_FIELD }),
   text: z.string().nullable().optional()

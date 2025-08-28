@@ -52,7 +52,7 @@ const ReportMenuPage: React.FC = () => {
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_container_${Date.now()}.xlsx`;
+      link.download = `laporan_hargatrucking_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
@@ -60,7 +60,7 @@ const ReportMenuPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting container data:', error);
+      console.error('Error exporting laporan_hargatrucking data:', error);
     }
   };
 
