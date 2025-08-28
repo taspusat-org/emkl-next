@@ -61,3 +61,18 @@ export const checkValidationTypeAkuntansiFn = async (
 
   return response;
 };
+
+export const exportTypeAkuntansiFn = async (filters: any): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/type-akuntansi/export', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data type akuntansi:', error);
+    throw new Error('Failed to export data type akuntansi');
+  }
+};
