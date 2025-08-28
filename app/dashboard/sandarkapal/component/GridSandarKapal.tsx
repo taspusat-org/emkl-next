@@ -1595,6 +1595,7 @@ const GridSandarKapal = () => {
           }}
         >
           <ActionButton
+            module='sandarkapal'
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
