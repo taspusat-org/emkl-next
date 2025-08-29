@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
-import InputCurrency from '@/components/custom-ui/InputCurrency2';
+import InputCurrency from '@/components/custom-ui/InputCurrency';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import { formatCurrency } from '@/lib/utils';
 import InputNumeric from '@/components/custom-ui/InputNumeric';

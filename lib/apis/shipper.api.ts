@@ -19,7 +19,7 @@ export const getShipperFn = async (
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching bank:', error);
+    console.error('Error fetching shipper:', error);
     throw new Error('Failed to fetch shipper');
   }
 };

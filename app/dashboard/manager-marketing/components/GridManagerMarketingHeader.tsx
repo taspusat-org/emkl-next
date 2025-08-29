@@ -157,7 +157,7 @@ const GridManagerMarketingHeader = () => {
     defaultValues: {
       nama: '',
       keterangan: '',
-      minimalprofit: '',
+      minimalprofit: undefined,
       statusmentor: null,
       statusleader: null,
       statusaktif: null,
@@ -1596,7 +1596,7 @@ const GridManagerMarketingHeader = () => {
       const row = rows[selectedRow];
       forms.setValue('nama', row.nama);
       forms.setValue('keterangan', row.keterangan);
-      forms.setValue('minimalprofit', String(row.minimalprofit) ?? '');
+      forms.setValue('minimalprofit', formatCurrency(row.minimalprofit));
       forms.setValue('statusmentor', Number(row.statusmentor) ?? null);
       forms.setValue('statusmentor_text', row.statusmentor_text ?? null);
       forms.setValue('statusleader', Number(row.statusleader) ?? null);

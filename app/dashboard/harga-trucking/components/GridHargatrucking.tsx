@@ -71,6 +71,8 @@ import {
 } from '@/lib/validations/hargatrucking.validation';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import { getHargatruckingFn } from '@/lib/apis/hargatrucking.api';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import { formatCurrency } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -215,7 +217,7 @@ const GridHargatrucking = () => {
     });
 
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -367,6 +369,7 @@ const GridHargatrucking = () => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        clearError();
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
         setPopOver(false);
@@ -956,11 +959,7 @@ const GridHargatrucking = () => {
           const columnFilter = filters.filters.nominal || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nominal || '',
-                filters.search,
-                columnFilter
-              )}
+              {formatCurrency(props.row.nominal)}
             </div>
           );
         }
@@ -1271,14 +1270,6 @@ const GridHargatrucking = () => {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
   function handleCellClick(args: { row: IHargatrucking }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -1341,7 +1332,7 @@ const GridHargatrucking = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
-
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1666,7 +1657,7 @@ const GridHargatrucking = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
@@ -1929,7 +1920,7 @@ const GridHargatrucking = () => {
       forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id) || 1);
       forms.setValue('jenisorderan_text', rowData.jenisorderan_text || '');
 
-      forms.setValue('nominal', Number(rowData.nominal) || 1);
+      forms.setValue('nominal', String(rowData.nominal) || '');
 
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('text', rowData.text || '');

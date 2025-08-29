@@ -21,6 +21,7 @@ import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
+import { formatCurrency } from '@/lib/utils';
 
 const FormMenu = ({
   popOver,
@@ -363,11 +364,9 @@ const FormMenu = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={field.value ?? ''}
+                              value={formatCurrency(field.value)}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? Number(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />

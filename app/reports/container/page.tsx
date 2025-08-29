@@ -240,7 +240,7 @@ export default ReportMenuPage;
 
 //         // Report
 //         const report = new Stimulsoft.Report.StiReport();
-//         report.loadFile('/reports/LaporanContainer.mrt');
+//         report.loadFile('/reports/LaporanHargatrucking.mrt');
 
 //         // Designer
 //         const options = new Stimulsoft.Designer.StiDesignerOptions();
