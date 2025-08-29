@@ -1698,6 +1698,7 @@ const GridTujuankapal = () => {
         >
           <ActionButton
             module="TUJUANKAPAL"
+            checkedRows={checkedRows}
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

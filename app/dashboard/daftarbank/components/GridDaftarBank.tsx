@@ -1480,6 +1480,7 @@ const GridDaftarBank = () => {
           <ActionButton
             module="DAFTARBANK"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

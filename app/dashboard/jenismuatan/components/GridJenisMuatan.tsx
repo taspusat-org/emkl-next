@@ -1471,6 +1471,7 @@ const GridJenisMuatan = () => {
           <ActionButton
             module="JENISMUATAN"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

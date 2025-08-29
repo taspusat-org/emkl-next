@@ -1450,6 +1450,7 @@ const GridRole = () => {
           <ActionButton
             module="role"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

@@ -1709,6 +1709,7 @@ const GridManagerMarketingHeader = () => {
           <ActionButton
             module="MANAGER-MARKETING"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

@@ -2906,6 +2906,7 @@ const GridEmkl = () => {
           <ActionButton
             module="Emkl"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

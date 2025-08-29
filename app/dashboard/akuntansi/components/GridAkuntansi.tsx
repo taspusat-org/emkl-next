@@ -1595,8 +1595,9 @@ const GridAkuntansi = () => {
           }}
         >
           <ActionButton
-            module='akuntansi'
+            module="akuntansi"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

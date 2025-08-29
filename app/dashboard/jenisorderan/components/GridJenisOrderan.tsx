@@ -1477,6 +1477,7 @@ const GridJenisOrderan = () => {
           <ActionButton
             module="JenisOrderan"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

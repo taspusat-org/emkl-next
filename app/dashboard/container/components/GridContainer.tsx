@@ -1748,6 +1748,7 @@ const GridContainer = () => {
           <ActionButton
             module="Container"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

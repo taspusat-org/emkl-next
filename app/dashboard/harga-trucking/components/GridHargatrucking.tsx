@@ -2001,6 +2001,7 @@ const GridHargatrucking = () => {
           <ActionButton
             module="HARGA-TRUCKING"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

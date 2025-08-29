@@ -2309,6 +2309,7 @@ const GridMarketing = () => {
         >
           <ActionButton
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}

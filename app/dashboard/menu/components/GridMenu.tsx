@@ -1610,6 +1610,7 @@ const GridMenu = () => {
           <ActionButton
             module="MENU"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

@@ -1526,6 +1526,7 @@ const GridError = () => {
         >
           <ActionButton
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onEdit={handleEdit}
             onView={handleView}

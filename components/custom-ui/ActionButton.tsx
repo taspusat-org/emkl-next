@@ -117,8 +117,6 @@ const ActionButton = ({
 
     const relevantPermissions = permissionData.filter((permission) => {
       const formattedSubject = permission.subject?.replace(/-/g, ' ');
-      console.log('formattedSubject', formattedSubject);
-      console.log('formattedModule', formattedModule);
       // Sesuaikan logic ini dengan struktur data permission Anda
       return formattedSubject?.toUpperCase() === formattedModule?.toUpperCase();
     });
