@@ -3,6 +3,7 @@ import { dynamicRequiredMessage } from '../utils';
 import { REQUIRED_FIELD } from '@/constants/validation';
 
 export const marketinggroupSchema = z.object({
+  id: z.number().nullable().optional(),
   marketing_id: z.coerce
     .number({
       required_error: dynamicRequiredMessage('MARKETING'),
