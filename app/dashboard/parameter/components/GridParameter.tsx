@@ -1237,6 +1237,7 @@ const GridParameter = () => {
           <ActionButton
             module="PARAMETER"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onEdit={handleEdit}
             onView={handleView}

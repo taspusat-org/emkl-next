@@ -14,10 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormKapal from './FormKapal';
 import { useQueryClient } from 'react-query';
-import {
-  KapalInput,
-  kapalSchema
-} from '@/lib/validations/kapal.validation';
+import { KapalInput, kapalSchema } from '@/lib/validations/kapal.validation';
 
 import {
   useCreateKapal,
@@ -150,7 +147,7 @@ const GridKapal = () => {
       nama: '',
       keterangan: '',
       statusaktif: 1,
-      pelayaran_id: 0,
+      pelayaran_id: 0
     }
   });
   const router = useRouter();
@@ -172,12 +169,10 @@ const GridKapal = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allKapal, isLoading: isLoadingKapal } = useGetKapal(
-    {
-      ...filters,
-      page: currentPage
-    }
-  );
+  const { data: allKapal, isLoading: isLoadingKapal } = useGetKapal({
+    ...filters,
+    page: currentPage
+  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
@@ -277,7 +272,7 @@ const GridKapal = () => {
         updated_at: '',
         text: '',
         statusaktif: '',
-        pelayaran: '',
+        pelayaran: ''
       },
       search: searchValue,
       page: 1
@@ -400,7 +395,7 @@ const GridKapal = () => {
                     created_at: '',
                     updated_at: '',
                     statusaktif: '',
-                    pelayaran: '',
+                    pelayaran: ''
                   }
                 }),
                   setInputValue('');
@@ -1678,8 +1673,9 @@ const GridKapal = () => {
           }}
         >
           <ActionButton
-            module='kapal'
+            module="kapal"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

@@ -1735,6 +1735,7 @@ const GridJenisBiayaMarketing = () => {
           <ActionButton
             module="Jenis-Biaya-Marketing"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

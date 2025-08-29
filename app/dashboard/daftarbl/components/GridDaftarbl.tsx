@@ -1611,6 +1611,7 @@ const GridDaftarbl = () => {
           <ActionButton
             module="DAFTARBL"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

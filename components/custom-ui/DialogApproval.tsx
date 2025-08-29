@@ -81,6 +81,7 @@ const DialogApproval: React.FC = ({}) => {
       const checkResponse = await checkApproveFn(checkPayload);
 
       // Jika status 400 atau ada error, tampilkan alert
+      console.log('checkResponse', checkResponse);
       if (checkResponse.status === 400 || !checkResponse.isValid) {
         alert({
           title: checkResponse.message || 'Data tidak valid untuk diproses',

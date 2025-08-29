@@ -14,10 +14,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormDivisi from './FormDivisi';
 import { useQueryClient } from 'react-query';
-import {
-  DivisiInput,
-  divisiSchema
-} from '@/lib/validations/divisi.validation';
+import { DivisiInput, divisiSchema } from '@/lib/validations/divisi.validation';
 
 import {
   useCreateDivisi,
@@ -79,6 +76,7 @@ import FilterOptions from '@/components/custom-ui/FilterOptions';
 import { getDivisiFn } from '@/lib/apis/divisi.api';
 import { setReportFilter } from '@/lib/store/printSlice/printSlice';
 import Alert from '@/components/custom-ui/AlertCustom';
+import { useApprovalDialog } from '@/lib/store/client/useDialogApproval';
 
 interface Filter {
   page: number;
@@ -148,7 +146,7 @@ const GridDivisi = () => {
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: 1,
+      statusaktif: 1
     }
   });
   const router = useRouter();
@@ -161,7 +159,7 @@ const GridDivisi = () => {
       created_at: '',
       updated_at: '',
       text: '',
-      statusaktif: '',
+      statusaktif: ''
     },
     search: '',
     sortBy: 'nama',
@@ -169,12 +167,10 @@ const GridDivisi = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allDivisi, isLoading: isLoadingDivisi } = useGetDivisi(
-    {
-      ...filters,
-      page: currentPage
-    }
-  );
+  const { data: allDivisi, isLoading: isLoadingDivisi } = useGetDivisi({
+    ...filters,
+    page: currentPage
+  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
@@ -273,7 +269,7 @@ const GridDivisi = () => {
         created_at: '',
         updated_at: '',
         text: '',
-        statusaktif: '',
+        statusaktif: ''
       },
       search: searchValue,
       page: 1
@@ -395,7 +391,7 @@ const GridDivisi = () => {
                     text: '',
                     created_at: '',
                     updated_at: '',
-                    statusaktif: '',
+                    statusaktif: ''
                   }
                 }),
                   setInputValue('');
@@ -1595,7 +1591,8 @@ const GridDivisi = () => {
           }}
         >
           <ActionButton
-            module='divisi'
+            module="divisi"
+            checkedRows={checkedRows}
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

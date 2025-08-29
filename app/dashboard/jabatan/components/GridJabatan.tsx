@@ -150,7 +150,7 @@ const GridJabatan = () => {
       nama: '',
       keterangan: '',
       statusaktif: 1,
-      divisi_id: 0,
+      divisi_id: 0
     }
   });
   const router = useRouter();
@@ -172,12 +172,10 @@ const GridJabatan = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allJabatan, isLoading: isLoadingJabatan } = useGetJabatan(
-    {
-      ...filters,
-      page: currentPage
-    }
-  );
+  const { data: allJabatan, isLoading: isLoadingJabatan } = useGetJabatan({
+    ...filters,
+    page: currentPage
+  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
@@ -277,7 +275,7 @@ const GridJabatan = () => {
         updated_at: '',
         text: '',
         statusaktif: '',
-        divisi: '',
+        divisi: ''
       },
       search: searchValue,
       page: 1
@@ -400,7 +398,7 @@ const GridJabatan = () => {
                     created_at: '',
                     updated_at: '',
                     statusaktif: '',
-                    divisi: '',
+                    divisi: ''
                   }
                 }),
                   setInputValue('');
@@ -540,9 +538,7 @@ const GridJabatan = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'divisi'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'divisi' ? 'text-red-500' : 'font-normal'
                 }`}
               >
                 Divisi
@@ -589,8 +585,7 @@ const GridJabatan = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.divisi !== null &&
-                  props.row.divisi !== undefined
+                props.row.divisi !== null && props.row.divisi !== undefined
                   ? props.row.divisi
                   : '',
                 filters.search,
@@ -1678,8 +1673,9 @@ const GridJabatan = () => {
           }}
         >
           <ActionButton
-            module='jabatan'
+            module="jabatan"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

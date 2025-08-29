@@ -169,12 +169,11 @@ const GridSandarKapal = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allSandarKapal, isLoading: isLoadingSandarKapal } = useGetSandarKapal(
-    {
+  const { data: allSandarKapal, isLoading: isLoadingSandarKapal } =
+    useGetSandarKapal({
       ...filters,
       page: currentPage
-    }
-  );
+    });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
@@ -837,7 +836,12 @@ const GridSandarKapal = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridSandarKapal', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        user.id,
+        'GridSandarKapal',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1595,8 +1599,9 @@ const GridSandarKapal = () => {
           }}
         >
           <ActionButton
-            module='sandarkapal'
+            module="sandarkapal"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

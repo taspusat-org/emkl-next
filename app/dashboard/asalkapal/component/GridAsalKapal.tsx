@@ -153,7 +153,7 @@ const GridAsalKapal = () => {
       keterangan: '',
       statusaktif: 1,
       cabang_id: 0,
-      container_id: 0,
+      container_id: 0
     }
   });
   const router = useRouter();
@@ -168,7 +168,7 @@ const GridAsalKapal = () => {
       text: '',
       statusaktif: '',
       cabang: '',
-      container: '',
+      container: ''
     },
     search: '',
     sortBy: 'nominal',
@@ -282,7 +282,7 @@ const GridAsalKapal = () => {
         text: '',
         statusaktif: '',
         cabang: '',
-        container: '',
+        container: ''
       },
       search: searchValue,
       page: 1
@@ -406,7 +406,7 @@ const GridAsalKapal = () => {
                     updated_at: '',
                     statusaktif: '',
                     cabang: '',
-                    container: '',
+                    container: ''
                   }
                 }),
                   setInputValue('');
@@ -473,9 +473,7 @@ const GridAsalKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'cabang'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'cabang' ? 'text-red-500' : 'font-normal'
                 }`}
               >
                 Cabang
@@ -522,8 +520,7 @@ const GridAsalKapal = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.cabang !== null &&
-                  props.row.cabang !== undefined
+                props.row.cabang !== null && props.row.cabang !== undefined
                   ? props.row.cabang
                   : '',
                 filters.search,
@@ -622,7 +619,7 @@ const GridAsalKapal = () => {
               className="headers-cell h-[50%]"
               onClick={() => handleSort('container')}
               onContextMenu={handleContextMenu}
-              >
+            >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'container'
@@ -685,7 +682,7 @@ const GridAsalKapal = () => {
           );
         }
       },
-       {
+      {
         key: 'nominal',
         name: 'Nominal',
         resizable: true,
@@ -746,7 +743,7 @@ const GridAsalKapal = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm justify-end">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.nominal !== null && props.row.nominal !== undefined
                   ? formatCurrency(props.row.nominal)
@@ -1678,7 +1675,10 @@ const GridAsalKapal = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nominal', rowData?.nominal ? formatCurrency(rowData.nominal) : '');
+      forms.setValue(
+        'nominal',
+        rowData?.nominal ? formatCurrency(rowData.nominal) : ''
+      );
       forms.setValue('keterangan', rowData.keterangan);
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData.text || '');
@@ -1761,7 +1761,8 @@ const GridAsalKapal = () => {
           }}
         >
           <ActionButton
-            module='asalkapal'
+            module="asalkapal"
+            checkedRows={checkedRows}
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}

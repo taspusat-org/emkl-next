@@ -2454,6 +2454,7 @@ const GridBank = () => {
           <ActionButton
             module="BANK"
             onAdd={handleAdd}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
