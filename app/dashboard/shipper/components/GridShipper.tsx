@@ -74,6 +74,7 @@ import {
   ShipperSchema
 } from '@/lib/validations/shipper.validation';
 import { formatCurrency } from '@/lib/utils';
+import { getShipperFn } from '@/lib/apis/shipper.api';
 
 interface Filter {
   page: number;
@@ -227,14 +228,14 @@ const GridShipper = () => {
       npwp: '',
       coagiro: 1,
       coagiro_text: '',
-      ppn: null,
+      ppn: undefined,
       titipke: '',
-      ppnbatalmuat: null,
+      ppnbatalmuat: undefined,
       grup: '',
-      formatdeliveryreport: null,
+      formatdeliveryreport: undefined,
       comodity: '',
       namashippercetak: '',
-      formatcetak: null,
+      formatcetak: undefined,
       marketing_id: 1,
       marketing_text: '',
       blok: '',
@@ -245,7 +246,7 @@ const GridShipper = () => {
       kabupaten: '',
       kecamatan: '',
       propinsi: '',
-      isdpp10psn: null,
+      isdpp10psn: undefined,
       usertracing: '',
       passwordtracing: '',
       kodeprospek: '',
@@ -254,7 +255,7 @@ const GridShipper = () => {
       keterangan1barisinvoice: '',
       nik: '',
       namaparaf: '',
-      saldopiutang: null,
+      saldopiutang: undefined,
       keteranganshipperjobminus: '',
       tglemailshipperjobminus: '',
       tgllahir: '',
@@ -1711,7 +1712,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.creditlimit || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {formatCurrency(props.row.creditlimit)}
             </div>
           );
@@ -1784,7 +1785,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.creditterm || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.creditterm || '',
                 filters.search,
@@ -1861,7 +1862,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.credittermplus || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.credittermplus || '',
                 filters.search,
@@ -2053,8 +2054,10 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.ppn || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {formatCurrency(props.row.ppn)}
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+              {props.row.ppn != null && props.row.ppn !== ''
+                ? formatCurrency(props.row.ppn)
+                : ''}
             </div>
           );
         }
@@ -2191,8 +2194,10 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.ppnbatalmuat || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {formatCurrency(props.row.ppnbatalmuat)}
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+              {props.row.ppnbatalmuat != null && props.row.ppnbatalmuat !== ''
+                ? formatCurrency(props.row.ppnbatalmuat)
+                : ''}
             </div>
           );
         }
@@ -3258,7 +3263,9 @@ const GridShipper = () => {
           const columnFilter = filters.filters.isdpp10psn || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {formatCurrency(props.row.isdpp10psn)}
+              {props.row.isdpp10psn != null && props.row.isdpp10psn !== ''
+                ? formatCurrency(props.row.isdpp10psn)
+                : ''}
             </div>
           );
         }
@@ -3924,8 +3931,10 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.saldopiutang || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {formatCurrency(props.row.saldopiutang)}
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+              {props.row.saldopiutang != null && props.row.saldopiutang !== ''
+                ? formatCurrency(props.row.saldopiutang)
+                : ''}
             </div>
           );
         }
@@ -4278,7 +4287,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.initial || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.initial || '',
                 filters.search,
@@ -5401,74 +5410,81 @@ const GridShipper = () => {
   // };
 
   const handleReport = async () => {
-    const now = new Date();
-    const pad = (n: any) => n.toString().padStart(2, '0');
-    const tglcetak = `${pad(now.getDate())}-${pad(
-      now.getMonth() + 1
-    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-      now.getMinutes()
-    )}:${pad(now.getSeconds())}`;
-    const { page, limit, ...filtersWithoutLimit } = filters;
-    const response = await getBankFn(filtersWithoutLimit);
-    const reportRows = response.data.map((row) => ({
-      ...row,
-      judullaporan: 'Laporan Bank',
-      usercetak: user.username,
-      tglcetak: tglcetak,
-      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-    }));
+    try {
+      dispatch(setProcessing());
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
+      const response = await getShipperFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Shipper',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
 
-    sessionStorage.setItem(
-      'filtersWithoutLimit',
-      JSON.stringify(filtersWithoutLimit)
-    );
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
 
-    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-      .then((module) => {
-        const { Stimulsoft } = module;
-        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/ComicNeue-Regular.ttf',
-          'Arial'
-        );
-        Stimulsoft.Base.StiLicense.Key =
-          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-        const report = new Stimulsoft.Report.StiReport();
-        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-        // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanBank.mrt');
-        report.dictionary.dataSources.clear();
-        dataSet.readJson({ data: reportRows });
-        report.regData(dataSet.dataSetName, '', dataSet);
-        report.dictionary.synchronize();
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanShipper.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
 
-        // Render the report asynchronously
-        report.renderAsync(() => {
-          // Export the report to PDF asynchronously
-          report.exportDocumentAsync((pdfData: any) => {
-            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-              type: 'application/pdf'
-            });
-            const pdfUrl = URL.createObjectURL(pdfBlob);
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
 
-            // Store the Blob URL in sessionStorage
-            sessionStorage.setItem('pdfUrl', pdfUrl);
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
 
-            // Navigate to the report page
-            window.open('/reports/bank', '_blank');
-          }, Stimulsoft.Report.StiExportFormat.Pdf);
+              // Navigate to the report page
+              window.open('/reports/shipper', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
         });
-      })
-      .catch((error) => {
-        console.error('Failed to load Stimulsoft:', error);
-      });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
+    }
   };
 
   // const handleReportBySelect = async () => {
@@ -5855,24 +5871,58 @@ const GridShipper = () => {
       forms.setValue('coa', Number(rowData.coa));
       forms.setValue('coapiutang', Number(rowData.coapiutang));
       forms.setValue('coahutang', Number(rowData.coahutang));
-      forms.setValue('creditlimit', String(rowData.creditlimit));
+      forms.setValue('creditlimit', formatCurrency(rowData.creditlimit));
       forms.setValue('creditterm', rowData.creditterm);
       forms.setValue('credittermplus', rowData.credittermplus);
       forms.setValue('coagiro', Number(rowData.coagiro));
-      forms.setValue('ppn', rowData.ppn);
-      forms.setValue('ppnbatalmuat', String(rowData.ppnbatalmuat));
+      forms.setValue(
+        'ppn',
+        rowData.ppn == null ? undefined : formatCurrency(rowData.ppn)
+      );
+
+      forms.setValue(
+        'ppnbatalmuat',
+        rowData.ppnbatalmuat == null
+          ? undefined
+          : formatCurrency(rowData.ppnbatalmuat)
+      );
+
       forms.setValue('grup', rowData.grup);
       forms.setValue(
         'formatdeliveryreport',
-        Number(rowData.formatdeliveryreport)
+        rowData?.formatdeliveryreport != null
+          ? Number(rowData.formatdeliveryreport)
+          : undefined
       );
-      forms.setValue('formatcetak', Number(rowData.formatcetak));
+
+      forms.setValue(
+        'formatcetak',
+        rowData?.formatcetak != null ? Number(rowData.formatcetak) : undefined
+      );
+
       forms.setValue('marketing_id', Number(rowData.marketing_id));
-      forms.setValue('isdpp10psn', String(rowData.isdpp10psn));
-      forms.setValue('saldopiutang', String(rowData.saldopiutang));
+      forms.setValue(
+        'isdpp10psn',
+        rowData.isdpp10psn == null
+          ? undefined
+          : formatCurrency(rowData.isdpp10psn)
+      );
+      forms.setValue(
+        'saldopiutang',
+        rowData.saldopiutang == null
+          ? undefined
+          : formatCurrency(rowData.saldopiutang)
+      );
       forms.setValue('idshipperasal', Number(rowData.idshipperasal));
-      forms.setValue('idtipe', Number(rowData.idtipe));
-      forms.setValue('idinitial', Number(rowData.idinitial));
+      forms.setValue(
+        'idtipe',
+        rowData?.idtipe != null ? Number(rowData.idtipe) : undefined
+      );
+
+      forms.setValue(
+        'idinitial',
+        rowData?.idinitial != null ? Number(rowData.idinitial) : undefined
+      );
       forms.setValue('parentshipper_id', Number(rowData.parentshipper_id));
       forms.setValue('statusaktif', Number(rowData.statusaktif));
 

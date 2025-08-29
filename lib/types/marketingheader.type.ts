@@ -97,6 +97,7 @@ export interface MarketingDetail {
 
 export interface IAllMarketingHeader {
   data: MarketingHeader[];
+  type: string;
   pagination: IMeta;
 }
 

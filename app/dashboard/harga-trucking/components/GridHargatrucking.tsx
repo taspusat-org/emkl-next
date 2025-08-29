@@ -1920,7 +1920,7 @@ const GridHargatrucking = () => {
       forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id) || 1);
       forms.setValue('jenisorderan_text', rowData.jenisorderan_text || '');
 
-      forms.setValue('nominal', String(rowData.nominal) || '');
+      forms.setValue('nominal', formatcu);
 
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('text', rowData.text || '');

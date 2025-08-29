@@ -21,6 +21,7 @@ import InputCurrency from '@/components/custom-ui/InputCurrency';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import { formatCurrency } from '@/lib/utils';
 import InputNumeric from '@/components/custom-ui/InputNumeric';
+import InputMask from '@mona-health/react-input-mask';
 
 interface FormShipperProps {
   popOver: boolean;
@@ -405,6 +406,8 @@ const FormShipper = ({
                           lookupValue={(value: any) => {
                             forms.setValue('coa', Number(value));
                           }}
+                          name="coa"
+                          forms={forms}
                           lookupNama={forms.getValues('coa_text')}
                           disabled={['view', 'delete'].includes(mode)}
                         />
@@ -429,6 +432,8 @@ const FormShipper = ({
                           lookupValue={(value: any) => {
                             forms.setValue('coapiutang', Number(value));
                           }}
+                          name="coapiutang"
+                          forms={forms}
                           lookupNama={forms.getValues('coapiutang_text')}
                           disabled={['view', 'delete'].includes(mode)}
                         />
@@ -453,6 +458,8 @@ const FormShipper = ({
                           lookupValue={(value: any) => {
                             forms.setValue('coahutang', Number(value));
                           }}
+                          name="coahutang"
+                          forms={forms}
                           lookupNama={forms.getValues('coahutang_text')}
                           disabled={['view', 'delete'].includes(mode)}
                         />
@@ -516,12 +523,20 @@ const FormShipper = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Input
+                            <InputMask
                               {...field}
+                              mask="999999999999999"
+                              maskPlaceholder={null}
                               value={field.value ?? ''}
+                              className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                                mode === 'delete'
+                                  ? 'text-zinc-400'
+                                  : 'text-zinc-900'
+                              } focus:outline-none focus:ring-0`}
+                              onChange={field.onChange}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
-                            />
+                            ></InputMask>
                           </FormControl>
                           <FormMessage />
                         </div>
@@ -532,6 +547,13 @@ const FormShipper = ({
                   <FormField
                     name="email"
                     control={forms.control}
+                    rules={{
+                      required: 'Email wajib diisi',
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Format email tidak valid'
+                      }
+                    }}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
@@ -541,8 +563,13 @@ const FormShipper = ({
                           <FormControl>
                             <Input
                               {...field}
+                              type="email"
                               value={field.value ?? ''}
-                              type="text"
+                              className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                                mode === 'delete'
+                                  ? 'text-zinc-400'
+                                  : 'text-zinc-900'
+                              } focus:outline-none focus:ring-0`}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
@@ -612,11 +639,9 @@ const FormShipper = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={formatCurrency(field.value) ?? ''}
+                              value={field.value}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? String(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -694,12 +719,20 @@ const FormShipper = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Input
+                            <InputMask
                               {...field}
+                              mask="99.999.999.9-999.999"
+                              maskPlaceholder={null}
                               value={field.value ?? ''}
+                              className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                                mode === 'delete'
+                                  ? 'text-zinc-400'
+                                  : 'text-zinc-900'
+                              } focus:outline-none focus:ring-0`}
+                              onChange={field.onChange}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
-                            />
+                            ></InputMask>
                           </FormControl>
                           <FormMessage />
                         </div>
@@ -724,6 +757,8 @@ const FormShipper = ({
                           lookupValue={(value: any) => {
                             forms.setValue('coagiro', Number(value));
                           }}
+                          name="coagiro"
+                          forms={forms}
                           lookupNama={forms.getValues('coagiro_text')}
                           disabled={['view', 'delete'].includes(mode)}
                         />
@@ -742,11 +777,9 @@ const FormShipper = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={formatCurrency(field.value) ?? ''}
+                              value={field.value}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? String(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -791,11 +824,9 @@ const FormShipper = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={formatCurrency(field.value) ?? ''}
+                              value={field.value}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? String(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -1145,11 +1176,9 @@ const FormShipper = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={formatCurrency(field.value) ?? ''}
+                              value={field.value}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? String(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -1271,7 +1300,7 @@ const FormShipper = ({
                             <Input
                               {...field}
                               value={field.value ?? ''}
-                              type="text"
+                              type="email"
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
@@ -1314,12 +1343,20 @@ const FormShipper = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Input
+                            <InputMask
                               {...field}
+                              mask="9999999999999999"
+                              maskPlaceholder={null}
                               value={field.value ?? ''}
+                              className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                                mode === 'delete'
+                                  ? 'text-zinc-400'
+                                  : 'text-zinc-900'
+                              } focus:outline-none focus:ring-0`}
+                              onChange={field.onChange}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
-                            />
+                            ></InputMask>
                           </FormControl>
                           <FormMessage />
                         </div>
@@ -1361,11 +1398,9 @@ const FormShipper = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={formatCurrency(field.value) ?? ''}
+                              value={field.value}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? String(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
@@ -1633,12 +1668,20 @@ const FormShipper = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Input
+                            <InputMask
                               {...field}
+                              mask="9999999999999999"
+                              maskPlaceholder={null}
                               value={field.value ?? ''}
+                              className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                                mode === 'delete'
+                                  ? 'text-zinc-400'
+                                  : 'text-zinc-900'
+                              } focus:outline-none focus:ring-0`}
+                              onChange={field.onChange}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
-                            />
+                            ></InputMask>
                           </FormControl>
                           <FormMessage />
                         </div>
@@ -1717,10 +1760,9 @@ const FormShipper = ({
                   </div>
                 </div>
 
-                <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+                <div className="sticky bottom-0 z-10 m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
                   <Button
                     type="submit"
-                    // onClick={onSubmit}
                     onClick={(e) => {
                       e.preventDefault();
                       onSubmit(false);
@@ -1743,7 +1785,6 @@ const FormShipper = ({
                       <Button
                         type="submit"
                         variant="success"
-                        // onClick={onSubmit}
                         onClick={(e) => {
                           e.preventDefault();
                           onSubmit(true);
@@ -1769,7 +1810,7 @@ const FormShipper = ({
                     className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
                     onClick={handleClose}
                   >
-                    <IoMdClose />{' '}
+                    <IoMdClose />
                     <p className="text-center text-white">Cancel</p>
                   </Button>
                 </div>

@@ -93,6 +93,7 @@ export const useDeleteShipper = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+
       if (errorResponse !== undefined) {
         const errorFields = errorResponse.message || [];
         if (errorResponse.statusCode === 400) {
@@ -127,7 +128,7 @@ export const useUpdateShipper = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-
+      console.log('errorResponse', errorResponse);
       if (errorResponse !== undefined) {
         if (errorResponse.statusCode === 400) {
           // Normalisasi pesan error agar konsisten array
