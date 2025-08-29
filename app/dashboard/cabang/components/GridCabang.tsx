@@ -1680,6 +1680,7 @@ const GridCabang = () => {
         <div className="border border-x-0 border-b-0 border-blue-500 p-2">
           <ActionButton
             onAdd={handleAdd}
+            module="cabang"
             checkedRows={checkedRows}
             onDelete={handleDelete}
             onEdit={handleEdit}

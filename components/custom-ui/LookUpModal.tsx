@@ -53,7 +53,8 @@ interface LookUpProps {
   label?: string;
   labelLookup?: string;
   singleColumn?: boolean;
-  filterby?: { key: string; name: string };
+  filterby?: Record<string, any>;
+
   pageSize?: number;
   postData?: string;
   dataToPost?: string | number;
@@ -218,7 +219,10 @@ export default function LookUpModal({
       for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
     }
     if (filterby && !Array.isArray(filterby)) {
-      for (const [k, v] of Object.entries(filterby)) params[k] = v;
+      // Pastikan filterby berfungsi dengan baik
+      for (const [k, v] of Object.entries(filterby)) {
+        params[k] = v; // menambahkan filterby ke params untuk API
+      }
     }
 
     // Periksa apakah tglDari dan tglSampai ada, lalu tambahkan ke params dengan field name yang dikirim di props
@@ -840,10 +844,10 @@ export default function LookUpModal({
       let filtered = rows;
 
       // filterby array (local only)
-      if (Array.isArray(filterby) && filterby.length) {
+      if (filterby && !Array.isArray(filterby)) {
         filtered = filtered.filter((row: Row) =>
-          filterby.every((f) =>
-            Object.entries(f).every(([k, v]) => String(row[k]) === String(v))
+          Object.entries(filterby).every(
+            ([k, v]) => String(row[k]) === String(v) // Membandingkan row dengan filterby
           )
         );
       }
