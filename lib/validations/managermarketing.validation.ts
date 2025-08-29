@@ -26,10 +26,14 @@ export const managermarketingHeaderSchema = z.object({
     .string()
     .trim()
     .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),
-  minimalprofit: z
-    .string()
-    .trim()
-    .nonempty({ message: dynamicRequiredMessage('MINIMAL PROFIT') }),
+  minimalprofit: z.coerce
+    .string({
+      required_error: dynamicRequiredMessage('MINIMAL PROFIT'),
+      invalid_type_error: dynamicRequiredMessage('MINIMAL PROFIT')
+    })
+    .refine((val) => val !== 'undefined' && val.trim() !== '', {
+      message: dynamicRequiredMessage('MINIMAL PROFIT')
+    }),
   statusmentor: z.number().nullable(),
   statusmentor_text: z.string().nullable().optional(),
   statusleader: z.number().nullable(),

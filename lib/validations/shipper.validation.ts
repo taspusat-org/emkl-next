@@ -20,28 +20,34 @@ export const ShipperSchema = z.object({
   kota: z.string().nullable().optional(),
   kodepos: z.string().nullable().optional(),
   telp: z.string().nullable().optional(),
-  email: z.string().nullable().optional(),
+  email: z
+    .string()
+    .email('Email harus mengandung @ dan domain yang valid')
+    .nullable()
+    .or(z.literal('')),
   fax: z.string().nullable().optional(),
   web: z.string().nullable().optional(),
 
-  creditlimit: z
-    .string()
-    .min(1, { message: dynamicRequiredMessage('CREDIT LIMIT') }),
-  creditterm: z
-    .number()
-    .int({ message: dynamicRequiredMessage('Credit Term Wajib Angka') })
-    .nonnegative({
-      message: dynamicRequiredMessage('Credit Term Tidak Boleh Angka Negatif')
+  creditlimit: z.coerce
+    .string({
+      required_error: dynamicRequiredMessage('CREDIT LIMIT'),
+      invalid_type_error: dynamicRequiredMessage('CREDIT LIMIT')
+    })
+    .refine((val) => val !== 'undefined' && val.trim() !== '', {
+      message: dynamicRequiredMessage('CREDIT LIMIT')
+    }),
+
+  creditterm: z.coerce
+    .number({
+      required_error: dynamicRequiredMessage('CREDIT TERM'),
+      invalid_type_error: dynamicRequiredMessage('CREDIT TERM')
     })
     .min(1, { message: dynamicRequiredMessage('CREDIT TERM') }),
 
-  credittermplus: z
-    .number()
-    .int({ message: dynamicRequiredMessage('Credit Term Plus Wajib Angka') })
-    .nonnegative({
-      message: dynamicRequiredMessage(
-        'Credit Term Plus Tidak Boleh Angka Negatif'
-      )
+  credittermplus: z.coerce
+    .number({
+      required_error: dynamicRequiredMessage('CREDIT TERM PLUS'),
+      invalid_type_error: dynamicRequiredMessage('CREDIT TERM PLUS')
     })
     .min(1, { message: dynamicRequiredMessage('CREDIT TERM PLUS') }),
 
@@ -81,7 +87,11 @@ export const ShipperSchema = z.object({
     .string()
     .nonempty({ message: dynamicRequiredMessage('NAMASHIPPERPROSPEK') }),
 
-  emaildelay: z.string().nullable().optional(),
+  emaildelay: z
+    .string()
+    .email('Email harus mengandung @ dan domain yang valid')
+    .nullable()
+    .or(z.literal('')),
   keterangan1barisinvoice: z.string().nullable().optional(),
   nik: z.string().nullable().optional(),
   namaparaf: z.string().nullable().optional(),
@@ -90,7 +100,7 @@ export const ShipperSchema = z.object({
   tglemailshipperjobminus: z.string().nullable().optional(),
   tgllahir: z
     .string()
-    .nonempty({ message: dynamicRequiredMessage('TGLLAHIR') }),
+    .nonempty({ message: dynamicRequiredMessage('TANGGAL LAHIR') }),
   idshipperasal: z.number().nullable().optional(),
   shipperasal_text: z.string().nullable().optional(),
 
