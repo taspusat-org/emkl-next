@@ -20,7 +20,14 @@ export const hargatruckingSchema = z.object({
   jenisorderan_id: z.number().min(1, { message: REQUIRED_FIELD }),
   jenisorderan_text: z.string().nullable().optional(),
 
-  nominal: z.string().min(1, { message: REQUIRED_FIELD }),
+  nominal: z.coerce
+    .string({
+      required_error: dynamicRequiredMessage('NOMINAL'),
+      invalid_type_error: dynamicRequiredMessage('NOMINAL')
+    })
+    .refine((val) => val !== 'undefined' && val.trim() !== '', {
+      message: dynamicRequiredMessage('NOMINAL')
+    }),
 
   statusaktif: z.number().min(1, { message: REQUIRED_FIELD }),
   text: z.string().nullable().optional()

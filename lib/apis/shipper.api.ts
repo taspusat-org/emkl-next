@@ -46,7 +46,7 @@ export const storeShipperFn = async (fields: ShipperInput) => {
 export const exportShipperFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanshipper', {
+    const response = await api2.get('/shipper/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
