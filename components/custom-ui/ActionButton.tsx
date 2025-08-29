@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { MdDelete, MdEdit } from 'react-icons/md';
 import { FaPlus } from 'react-icons/fa6';
 import { Button } from '../ui/button';
@@ -14,6 +14,10 @@ import { LoadingOverlay } from './LoadingOverlay';
 import usePermissions from '@/hooks/hasPermission';
 import { getParameterApprovalFn } from '@/lib/apis/parameter.api';
 import { useApprovalDialog } from '@/lib/store/client/useDialogApproval';
+import { getPermissionFn } from '@/lib/apis/menu.api';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
+// Import API untuk get permissions (sesuaikan dengan API Anda)
 
 interface CustomAction {
   label: string;
@@ -21,19 +25,19 @@ interface CustomAction {
   onClick: () => void;
   variant?: 'success' | 'warning' | 'destructive' | 'outline';
   className?: string;
-  disabled?: boolean; // Add disabled property
+  disabled?: boolean;
 }
 
 interface DropdownAction {
   label: string;
   onClick: () => void;
-  className?: string; // Add className for custom styling
+  className?: string;
 }
 
 interface DropdownMenuItem {
   label: string;
-  actions: DropdownAction[]; // List of actions within a dropdown
-  className?: string; // Add className for custom styling
+  actions: DropdownAction[];
+  className?: string;
   icon?: React.ReactNode;
 }
 
@@ -56,6 +60,7 @@ interface BaseActionProps {
   disableExport?: boolean;
   disableReport?: boolean;
 }
+
 const ActionButton = ({
   onDelete,
   onEdit,
@@ -66,7 +71,7 @@ const ActionButton = ({
   checkedRows,
   module = '',
   customActions = [],
-  dropdownMenus = [], // Receive multiple dropdown menus
+  dropdownMenus = [],
   disableAdd = false,
   isApproval = false,
   disableEdit = false,
@@ -75,26 +80,29 @@ const ActionButton = ({
   disableExport = false,
   disableReport = false
 }: BaseActionProps) => {
-  const [openMenu, setOpenMenu] = useState<number | null>(null); // Track which dropdown is open
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
   const { hasPermission, loading } = usePermissions();
   const [dataParameter, setDataParameter] = useState<any>([]);
   const { openDialog } = useApprovalDialog();
+  const { id } = useSelector((state: RootState) => state.auth);
+
+  // State untuk permissions
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [hasApprovalPermission, setHasApprovalPermission] = useState(false);
+  const [hasNonApprovalPermission, setHasNonApprovalPermission] =
+    useState(false);
+  const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
+
+  // State untuk memisahkan data APPROVAL dan NON APPROVAL
+  const [approvalData, setApprovalData] = useState<any[]>([]);
+  const [nonApprovalData, setNonApprovalData] = useState<any[]>([]);
 
   const handleDropdownClick = (index: number) => {
-    // Close the dropdown when a button inside it is clicked
     setOpenMenu(openMenu === index ? null : index);
   };
 
-  const fetchData = async () => {
-    const data = await getParameterApprovalFn({
-      filters: { grp: 'HAK APPROVAL' }
-    });
-    setDataParameter(data.data);
-  };
-  useEffect(() => {
-    fetchData();
-  }, []);
-  console.log('checkedRows', checkedRows);
+  const formattedModule = module?.replace(/-/g, ' ');
+
   const onClick = (value: any) => {
     openDialog({
       module: module,
@@ -102,6 +110,157 @@ const ActionButton = ({
       checkedRows: checkedRows
     });
   };
+
+  // Function untuk check permissions berdasarkan data permission user
+  const checkPermissions = (permissionData: any[]) => {
+    // Filter permissions yang relevant dengan module saat ini
+
+    const relevantPermissions = permissionData.filter((permission) => {
+      const formattedSubject = permission.subject?.replace(/-/g, ' ');
+      console.log('formattedSubject', formattedSubject);
+      console.log('formattedModule', formattedModule);
+      // Sesuaikan logic ini dengan struktur data permission Anda
+      return formattedSubject?.toUpperCase() === formattedModule?.toUpperCase();
+    });
+    // Check apakah ada permission dengan YA (untuk APPROVAL)
+    const hasYA = relevantPermissions.some(
+      (permission) =>
+        permission.action &&
+        (permission.action.includes('-> YA') ||
+          permission.action.toUpperCase().includes('YA'))
+    );
+
+    // Check apakah ada permission dengan TIDAK (untuk NON APPROVAL)
+    const hasTIDAK = relevantPermissions.some(
+      (permission) =>
+        permission.action &&
+        (permission.action.includes('-> TIDAK') ||
+          permission.action.toUpperCase().includes('TIDAK'))
+    );
+
+    setHasApprovalPermission(hasYA);
+    setHasNonApprovalPermission(hasTIDAK);
+
+    return { hasYA, hasTIDAK };
+  };
+
+  // Function untuk filter data parameter berdasarkan permissions
+  const filterParameterByPermission = (
+    data: any[],
+    hasYA: boolean,
+    hasTIDAK: boolean
+  ) => {
+    const approvalItems: any[] = [];
+    const nonApprovalItems: any[] = [];
+
+    data.forEach((item) => {
+      // Categorize berdasarkan nama atau field tertentu
+      // Sesuaikan logic ini dengan struktur data Anda
+      if (
+        item.memo_nama?.toUpperCase().includes('APPROVAL') &&
+        !item.memo_nama?.toUpperCase().includes('NON')
+      ) {
+        if (hasYA) {
+          approvalItems.push(item);
+        }
+      } else if (
+        item.memo_nama?.toUpperCase().includes('NON APPROVAL') ||
+        item.memo_nama?.toUpperCase().includes('UN')
+      ) {
+        if (hasTIDAK) {
+          nonApprovalItems.push(item);
+        }
+      }
+    });
+
+    setApprovalData(approvalItems);
+    setNonApprovalData(nonApprovalItems);
+  };
+
+  // Fetch all required data
+  const fetchData = async () => {
+    setIsLoadingPermissions(true);
+    try {
+      // 1. Fetch HAK APPROVAL data
+      const hakApprovalResponse = await getParameterApprovalFn({
+        filters: { grp: 'HAK APPROVAL' }
+      });
+
+      // 2. Fetch user permissions (gunakan API permission yang sesuai)
+      // Sesuaikan dengan endpoint permission Anda
+      const res = await getPermissionFn(String(id));
+      console.log('res', res);
+      if (hakApprovalResponse?.data) {
+        setDataParameter(hakApprovalResponse.data);
+      }
+
+      if (res?.abilities) {
+        setPermissions(res.abilities);
+        const { hasYA, hasTIDAK } = checkPermissions(res.abilities);
+        console.log('hasYA', hasYA, hasTIDAK);
+        // Filter data parameter berdasarkan permissions
+        if (hakApprovalResponse?.data) {
+          filterParameterByPermission(
+            hakApprovalResponse.data,
+            hasYA,
+            hasTIDAK
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      // Set default jika error
+      setHasApprovalPermission(false);
+      setHasNonApprovalPermission(false);
+    } finally {
+      setIsLoadingPermissions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (formattedModule) {
+      fetchData();
+    }
+  }, [formattedModule]);
+
+  // Computed value untuk menentukan apakah show dropdown
+  const showApprovalDropdown = useMemo(() => {
+    return hasApprovalPermission || hasNonApprovalPermission;
+  }, [hasApprovalPermission, hasNonApprovalPermission]);
+
+  // Computed value untuk data yang akan ditampilkan di dropdown
+  const filteredApprovalData = useMemo(() => {
+    const combinedData: any[] = [];
+
+    // Tambahkan APPROVAL items jika ada permission
+    if (hasApprovalPermission && approvalData.length > 0) {
+      combinedData.push(...approvalData);
+    }
+
+    // Tambahkan NON APPROVAL items jika ada permission
+    if (hasNonApprovalPermission && nonApprovalData.length > 0) {
+      combinedData.push(...nonApprovalData);
+    }
+
+    return combinedData;
+  }, [
+    hasApprovalPermission,
+    hasNonApprovalPermission,
+    approvalData,
+    nonApprovalData
+  ]);
+
+  // Computed value untuk label button
+  const approvalButtonLabel = useMemo(() => {
+    if (hasApprovalPermission && hasNonApprovalPermission) {
+      return 'APPROVAL/NON';
+    } else if (hasApprovalPermission) {
+      return 'APPROVAL';
+    } else if (hasNonApprovalPermission) {
+      return 'NON APPROVAL';
+    }
+    return 'APPROVAL/NON';
+  }, [hasApprovalPermission, hasNonApprovalPermission]);
 
   return (
     <div className="flex w-full flex-row gap-1 overflow-scroll lg:overflow-hidden">
@@ -216,8 +375,8 @@ const ActionButton = ({
                 <Button
                   key={actionIndex}
                   onClick={() => {
-                    action.onClick(); // Call action's onClick
-                    handleDropdownClick(index); // Close the dropdown
+                    action.onClick();
+                    handleDropdownClick(index);
                   }}
                   variant="default"
                   className={`w-full p-2 text-left text-sm font-thin ${
@@ -232,31 +391,33 @@ const ActionButton = ({
             </DropdownMenuContent>
           </DropdownMenu>
         ))}
-      {isApproval && (
+
+      {/* APPROVAL/NON APPROVAL Dropdown - Only show if has permission */}
+      {showApprovalDropdown && !isLoadingPermissions && (
         <DropdownMenu
-          open={openMenu === 1}
-          onOpenChange={() => setOpenMenu(openMenu === 1 ? null : 1)}
+          open={openMenu === 999} // Use unique index for approval dropdown
+          onOpenChange={() => setOpenMenu(openMenu === 999 ? null : 999)}
         >
           <DropdownMenuTrigger asChild>
             <Button
               variant="default"
               className={`w-fit gap-1 bg-purple-700 text-sm font-normal hover:bg-purple-800`}
             >
-              APPROVAL/UN
+              {approvalButtonLabel}
               <IoMdArrowDropup />
             </Button>
           </DropdownMenuTrigger>
-
           <DropdownMenuContent
             className="flex flex-col gap-1 border border-blue-500"
             side="top"
           >
-            {dataParameter.length > 0 &&
-              dataParameter.map((item: any, index: any) => (
+            {filteredApprovalData.length > 0 ? (
+              filteredApprovalData.map((item: any, index: number) => (
                 <Button
+                  key={`approval-${index}`}
                   onClick={() => {
-                    onClick(item.memo_nama); // Call action's onClick
-                    handleDropdownClick(index); // Close the dropdown
+                    onClick(item.memo_nama);
+                    handleDropdownClick(999);
                   }}
                   variant="default"
                   style={{
@@ -269,7 +430,12 @@ const ActionButton = ({
                     {item.memo_nama}
                   </p>
                 </Button>
-              ))}
+              ))
+            ) : (
+              <div className="p-2 text-center text-sm text-gray-500">
+                Tidak ada opsi tersedia
+              </div>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}

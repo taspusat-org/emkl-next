@@ -126,7 +126,6 @@ const FormUserRole = ({
                               }}
                               value={selectedRoles}
                               placeholder="Select roles"
-                              maxCount={5}
                             />
                           </FormControl>
                           <FormMessage />

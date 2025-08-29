@@ -1971,46 +1971,11 @@ const GridPengembalianKasGantung = () => {
           }}
         >
           <ActionButton
+            module="PENGEMBALIAN-KAS-GANTUNG"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            dropdownMenus={[
-              {
-                label: 'Report',
-                icon: <FaPrint />,
-                className: 'bg-cyan-500 hover:bg-cyan-700',
-                actions: [
-                  {
-                    label: 'REPORT ALL',
-                    onClick: () => handleReport(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  },
-                  {
-                    label: 'REPORT BY SELECT',
-                    onClick: () => handleReportBySelect(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  }
-                ]
-              },
-              {
-                label: 'Export',
-                icon: <FaFileExport />,
-                className: 'bg-green-600 hover:bg-green-700',
-                actions: [
-                  {
-                    label: 'EXPORT ALL',
-                    onClick: () => handleExport(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  },
-                  {
-                    label: 'EXPORT BY SELECT',
-                    onClick: () => handleExportBySelect(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  }
-                ]
-              }
-            ]}
           />
           {isLoadingData ? <LoadRowsRenderer /> : null}
           {contextMenu && (

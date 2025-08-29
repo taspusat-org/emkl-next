@@ -1,8 +1,9 @@
+import { REQUIRED_FIELD } from '@/constants/validation';
 import { z } from 'zod';
 
 export const pengembalianKasGantungDetailSchema = z.object({
   id: z.number().optional(),
-  nobukti: z.string().nullable(),
+  nobukti: z.string().nullable().optional(),
   kasgantung_nobukti: z.string().nullable().optional(),
   keterangan: z.string().nullable(),
   nominal: z.string().nullable()
@@ -13,7 +14,7 @@ export type PengembalianKasGantungDetailInput = z.infer<
 
 export const pengembalianKasGantungHeaderSchema = z.object({
   nobukti: z.string().nullable(),
-  tglbukti: z.string().nullable(),
+  tglbukti: z.string().min(1, { message: REQUIRED_FIELD }),
   keterangan: z.string().nullable(),
   bank_id: z.number().nullable(),
   bank_nama: z.string().nullable(),
