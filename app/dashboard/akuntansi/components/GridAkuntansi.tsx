@@ -1158,7 +1158,7 @@ const GridAkuntansi = () => {
         const { Stimulsoft } = module;
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
           '/fonts/tahoma.ttf',
-          'Arial'
+          'Tahoma'
         );
         Stimulsoft.Base.StiLicense.Key =
           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +

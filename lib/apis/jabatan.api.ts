@@ -47,7 +47,7 @@ export const storeJabatanFn = async (fields: JabatanInput) => {
 export const exportJabatanFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanjabatan', {
+    const response = await api2.get('/jabatan/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
