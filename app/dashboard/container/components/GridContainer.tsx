@@ -1342,7 +1342,7 @@ const GridContainer = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporancontainer', '_blank');
+              window.open('/reports/container', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

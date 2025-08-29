@@ -8,6 +8,10 @@ interface UpdateEmklParams {
   id: string;
   fields: EmklInput;
 }
+interface validationFields {
+  aksi: string;
+  value: number | string;
+}
 export const getEmklFn = async (filters: GetParams = {}): Promise<IAllEmkl> => {
   try {
     const queryParams = buildQueryParams(filters);
@@ -42,7 +46,7 @@ export const updateEmklFn = async ({ id, fields }: UpdateEmklParams) => {
 export const exportEmklFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanemkl', {
+    const response = await api2.get('/emkl/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });
@@ -52,6 +56,12 @@ export const exportEmklFn = async (filters: any): Promise<any> => {
     console.error('Error exporting data:', error);
     throw new Error('Failed to export data');
   }
+};
+
+export const checkValidationEmklFn = async (fields: validationFields) => {
+  const response = await api2.post(`/emkl/check-validation`, fields);
+
+  return response;
 };
 
 // export const exportMenuFn = async (filters: any): Promise<any> => {

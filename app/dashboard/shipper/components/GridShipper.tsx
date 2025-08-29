@@ -14,7 +14,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormShipper from './FormShipper';
 import { useQueryClient } from 'react-query';
-import { BankInput, BankSchema } from '@/lib/validations/bank.validation';
 import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
 
 import {
@@ -74,6 +73,7 @@ import {
   ShipperInput,
   ShipperSchema
 } from '@/lib/validations/shipper.validation';
+import { formatCurrency } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -137,7 +137,7 @@ interface Filter {
     idshipperasal: string;
     initial: string;
     tipe: string;
-    id_tipe: string;
+    idtipe: string;
     idinitial: string;
     nshipperprospek: string;
     parentshipper_id: string;
@@ -221,20 +221,20 @@ const GridShipper = () => {
       email: '',
       fax: '',
       web: '',
-      creditlimit: 0,
-      creditterm: 0,
-      credittermplus: 0,
+      creditlimit: undefined,
+      creditterm: undefined,
+      credittermplus: undefined,
       npwp: '',
       coagiro: 1,
       coagiro_text: '',
-      ppn: 0,
+      ppn: null,
       titipke: '',
-      ppnbatalmuat: 0,
+      ppnbatalmuat: null,
       grup: '',
-      formatdeliveryreport: 0,
+      formatdeliveryreport: null,
       comodity: '',
       namashippercetak: '',
-      formatcetak: 0,
+      formatcetak: null,
       marketing_id: 1,
       marketing_text: '',
       blok: '',
@@ -245,7 +245,7 @@ const GridShipper = () => {
       kabupaten: '',
       kecamatan: '',
       propinsi: '',
-      isdpp10psn: 0,
+      isdpp10psn: null,
       usertracing: '',
       passwordtracing: '',
       kodeprospek: '',
@@ -254,17 +254,17 @@ const GridShipper = () => {
       keterangan1barisinvoice: '',
       nik: '',
       namaparaf: '',
-      saldopiutang: 0,
+      saldopiutang: null,
       keteranganshipperjobminus: '',
       tglemailshipperjobminus: '',
       tgllahir: '',
-      idshipperasal: 0,
+      idshipperasal: null,
       initial: '',
       tipe: '',
-      id_tipe: 0,
-      idinitial: 0,
+      idtipe: null,
+      idinitial: null,
       nshipperprospek: '',
-      parentshipper_id: 0,
+      parentshipper_id: null,
       npwpnik: '',
       nitku: '',
       kodepajak: '',
@@ -339,7 +339,7 @@ const GridShipper = () => {
       idshipperasal: '',
       initial: '',
       tipe: '',
-      id_tipe: '',
+      idtipe: '',
       idinitial: '',
       nshipperprospek: '',
       parentshipper_id: '',
@@ -523,7 +523,7 @@ const GridShipper = () => {
         idshipperasal: '',
         initial: '',
         tipe: '',
-        id_tipe: '',
+        idtipe: '',
         idinitial: '',
         nshipperprospek: '',
         parentshipper_id: '',
@@ -576,7 +576,6 @@ const GridShipper = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  console.log(getCoa, 'iniicoa');
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -615,9 +614,10 @@ const GridShipper = () => {
   const columns = useMemo((): Column<IShipper>[] => {
     return [
       {
-        key: 'nomor',
+        key: 'no',
         name: 'NO',
         width: 50,
+        minWidth: 10,
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -690,7 +690,7 @@ const GridShipper = () => {
                     idshipperasal: '',
                     initial: '',
                     tipe: '',
-                    id_tipe: '',
+                    idtipe: '',
                     idinitial: '',
                     nshipperprospek: '',
                     parentshipper_id: '',
@@ -728,7 +728,7 @@ const GridShipper = () => {
         width: 50,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
@@ -756,7 +756,7 @@ const GridShipper = () => {
         name: 'Nama',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -829,7 +829,7 @@ const GridShipper = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -1065,6 +1065,7 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coa')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1085,34 +1086,12 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('coa', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="akunpusat"
+                value="coa"
+                label="keterangancoa"
+                onChange={(value) => handleColumnFilterChange('coa', value)} // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -1126,7 +1105,7 @@ const GridShipper = () => {
       },
       {
         key: 'coapiutang',
-        name: 'COA',
+        name: 'coapiutang',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1159,34 +1138,14 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('coapiutang', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="akunpusat"
+                value="coa"
+                label="keterangancoa"
+                onChange={(value) =>
+                  handleColumnFilterChange('coapiutang', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -1201,7 +1160,7 @@ const GridShipper = () => {
 
       {
         key: 'coahutang',
-        name: 'COA',
+        name: 'coahutang',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1234,34 +1193,14 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('coahutang', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getCoa['KETERANGANCOA']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">
-                          {item.keterangancoa}
-                        </p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="akunpusat"
+                value="coa"
+                label="keterangancoa"
+                onChange={(value) =>
+                  handleColumnFilterChange('coahutang', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -1773,11 +1712,7 @@ const GridShipper = () => {
           const columnFilter = filters.filters.creditlimit || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.creditlimit || '',
-                filters.search,
-                columnFilter
-              )}
+              {formatCurrency(props.row.creditlimit)}
             </div>
           );
         }
@@ -2037,26 +1972,12 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['coagiro'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={filters.filters.coagiro ?? ''}
-                type="text"
-                onChange={(e) => {
-                  handleColumnFilterChange('coagiro', e.target.value);
-                }}
+              <FilterOptions
+                endpoint="akunpusat"
+                value="coa"
+                label="keterangancoa"
+                onChange={(value) => handleColumnFilterChange('coagiro', value)} // Menangani perubahan nilai di parent
               />
-              {filters.filters.coagiro && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coagiro', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
@@ -2133,7 +2054,7 @@ const GridShipper = () => {
           const columnFilter = filters.filters.ppn || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.ppn || '', filters.search, columnFilter)}
+              {formatCurrency(props.row.ppn)}
             </div>
           );
         }
@@ -2271,11 +2192,7 @@ const GridShipper = () => {
           const columnFilter = filters.filters.ppnbatalmuat || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.ppnbatalmuat || '',
-                filters.search,
-                columnFilter
-              )}
+              {formatCurrency(props.row.ppnbatalmuat)}
             </div>
           );
         }
@@ -2356,7 +2273,7 @@ const GridShipper = () => {
         name: 'Format Delivery Report',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 210,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -2680,26 +2597,14 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['marketing_id'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={filters.filters.marketing_id ?? ''}
-                type="text"
-                onChange={(e) =>
-                  handleColumnFilterChange('marketing_id', e.target.value)
-                }
+              <FilterOptions
+                endpoint="marketing"
+                value="id"
+                label="nama"
+                onChange={(value) =>
+                  handleColumnFilterChange('marketing_id', value)
+                } // Menangani perubahan nilai di parent
               />
-              {filters.filters.marketing_id && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('marketing_id', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
@@ -2994,7 +2899,7 @@ const GridShipper = () => {
         name: 'kelurahan',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3069,7 +2974,7 @@ const GridShipper = () => {
         name: 'kabupaten',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3144,7 +3049,7 @@ const GridShipper = () => {
         name: 'kecamatan',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3219,7 +3124,7 @@ const GridShipper = () => {
         name: 'propinsi',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3292,7 +3197,7 @@ const GridShipper = () => {
         name: 'isdpp10psn',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3353,11 +3258,7 @@ const GridShipper = () => {
           const columnFilter = filters.filters.isdpp10psn || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.isdpp10psn || '',
-                filters.search,
-                columnFilter
-              )}
+              {formatCurrency(props.row.isdpp10psn)}
             </div>
           );
         }
@@ -3367,7 +3268,7 @@ const GridShipper = () => {
         name: 'usertracing',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3442,7 +3343,7 @@ const GridShipper = () => {
         name: 'passwordtracing',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3519,7 +3420,7 @@ const GridShipper = () => {
         name: 'kodeprospek',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3594,7 +3495,7 @@ const GridShipper = () => {
         name: 'namashipperprospek',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3671,7 +3572,7 @@ const GridShipper = () => {
         name: 'emaildelay',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3746,7 +3647,7 @@ const GridShipper = () => {
         name: 'keterangan1barisinvoice',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3823,7 +3724,7 @@ const GridShipper = () => {
         name: 'nik',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3888,7 +3789,7 @@ const GridShipper = () => {
         name: 'namaparaf',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3963,7 +3864,7 @@ const GridShipper = () => {
         name: 'saldopiutang',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -4024,11 +3925,7 @@ const GridShipper = () => {
           const columnFilter = filters.filters.saldopiutang || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.saldopiutang || '',
-                filters.search,
-                columnFilter
-              )}
+              {formatCurrency(props.row.saldopiutang)}
             </div>
           );
         }
@@ -4038,7 +3935,7 @@ const GridShipper = () => {
         name: 'keteranganshipperjobminus',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -4116,7 +4013,7 @@ const GridShipper = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 300,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -4193,7 +4090,7 @@ const GridShipper = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -4263,7 +4160,7 @@ const GridShipper = () => {
         name: 'idshipperasal',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -4279,7 +4176,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                shipperasal
+                shipper asal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'idshipperasal' &&
@@ -4294,29 +4191,14 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['idshipperasal'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={filters.filters.idshipperasal || ''}
-                type="text"
-                onChange={(e) =>
-                  handleColumnFilterChange(
-                    'idshipperasal',
-                    e.target.value.toUpperCase()
-                  )
-                }
+              <FilterOptions
+                endpoint="shipper"
+                value="id"
+                label="nama"
+                onChange={(value) =>
+                  handleColumnFilterChange('idshipperasal', value)
+                } // Menangani perubahan nilai di parent
               />
-              {filters.filters.idshipperasal && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('idshipperasal', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
@@ -4338,7 +4220,7 @@ const GridShipper = () => {
         name: 'initial',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 100,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -4477,31 +4359,31 @@ const GridShipper = () => {
         }
       },
       {
-        key: 'id_tipe',
-        name: 'id_tipe',
+        key: 'idtipe',
+        name: 'idtipe',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 120,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-4"
-              onClick={() => handleSort('id_tipe')}
+              onClick={() => handleSort('idtipe')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'id_tipe' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'idtipe' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                saldo piutang
+                id tipe
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'id_tipe' &&
+                {filters.sortBy === 'idtipe' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'id_tipe' &&
+                ) : filters.sortBy === 'idtipe' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -4512,22 +4394,22 @@ const GridShipper = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['id_tipe'] = el;
+                  inputColRefs.current['idtipe'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={filters.filters.id_tipe || ''}
+                value={filters.filters.idtipe || ''}
                 type="text"
                 onChange={(e) =>
                   handleColumnFilterChange(
-                    'id_tipe',
+                    'idtipe',
                     e.target.value.toUpperCase()
                   )
                 }
               />
-              {filters.filters.id_tipe && (
+              {filters.filters.idtipe && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('id_tipe', '')}
+                  onClick={() => handleColumnFilterChange('idtipe', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -4537,11 +4419,444 @@ const GridShipper = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.id_tipe || '';
+          const columnFilter = filters.filters.idtipe || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.id_tipe || '',
+                props.row.idtipe || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'idinitial',
+        name: 'idinitial',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-4"
+              onClick={() => handleSort('idinitial')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'idinitial'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                ID Initial
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'idinitial' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'idinitial' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['idinitial'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.filters.idinitial || ''}
+                type="text"
+                onChange={(e) =>
+                  handleColumnFilterChange(
+                    'idinitial',
+                    e.target.value.toUpperCase()
+                  )
+                }
+              />
+              {filters.filters.idinitial && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('idinitial', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.idinitial || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.idinitial || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nshipperprospek',
+        name: 'nshipperprospek',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-4"
+              onClick={() => handleSort('nshipperprospek')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nshipperprospek'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Nama Shipper Prospek
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nshipperprospek' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'nshipperprospek' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['nshipperprospek'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.filters.nshipperprospek || ''}
+                type="text"
+                onChange={(e) =>
+                  handleColumnFilterChange(
+                    'nshipperprospek',
+                    e.target.value.toUpperCase()
+                  )
+                }
+              />
+              {filters.filters.nshipperprospek && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('nshipperprospek', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nshipperprospek || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.nshipperprospek || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'parentshipper_id',
+        name: 'parentshipper_id',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-4"
+              onClick={() => handleSort('parentshipper_id')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'parentshipper_id'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                Parent Shipper
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'parentshipper_id' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'parentshipper_id' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="shipper"
+                value="id"
+                label="nama"
+                onChange={(value) =>
+                  handleColumnFilterChange('parentshipper_id', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.parentshipper_id || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.parentshipper_text || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'npwpnik',
+        name: 'npwpnik',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-4"
+              onClick={() => handleSort('npwpnik')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'npwpnik' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                npwpnik
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'npwpnik' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'npwpnik' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['npwpnik'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.filters.npwpnik || ''}
+                type="text"
+                onChange={(e) =>
+                  handleColumnFilterChange(
+                    'npwpnik',
+                    e.target.value.toUpperCase()
+                  )
+                }
+              />
+              {filters.filters.npwpnik && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('npwpnik', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.npwpnik || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.npwpnik || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nitku',
+        name: 'nitku',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-4"
+              onClick={() => handleSort('nitku')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nitku' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                nitku
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nitku' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'nitku' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['nitku'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.filters.nitku || ''}
+                type="text"
+                onChange={(e) =>
+                  handleColumnFilterChange(
+                    'nitku',
+                    e.target.value.toUpperCase()
+                  )
+                }
+              />
+              {filters.filters.nitku && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('nitku', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nitku || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.nitku || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'kodepajak',
+        name: 'kodepajak',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-4"
+              onClick={() => handleSort('kodepajak')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'kodepajak'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                kode pajak
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'kodepajak' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'kodepajak' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['kodepajak'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={filters.filters.kodepajak || ''}
+                type="text"
+                onChange={(e) =>
+                  handleColumnFilterChange(
+                    'kodepajak',
+                    e.target.value.toUpperCase()
+                  )
+                }
+              />
+              {filters.filters.kodepajak && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('kodepajak', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.kodepajak || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.kodepajak || '',
                 filters.search,
                 columnFilter
               )}
@@ -4621,473 +4936,7 @@ const GridShipper = () => {
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-      {
-        key: 'statusdefault',
-        name: 'Status Default',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('statusdefault')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'statusdefault'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Status Default
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'statusdefault' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'statusdefault' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('statusdefault', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.textdefault || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpenerimaan',
-        name: 'Format Penerimaan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpenerimaan')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpenerimaan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Penerimaan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpenerimaan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpenerimaan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'PENERIMAAN', subgrp: 'NOMOR PENERIMAAN' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatpenerimaan', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatpenerimaantext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpenerimaantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpengeluaran',
-        name: 'Format Pengeluaran',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpengeluaran')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpengeluaran'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Pengeluaran
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpengeluaran' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpengeluaran' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'PENGELUARAN', subgrp: 'NOMOR PENGELUARAN' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatpengeluaran', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatpengeluarantext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpengeluarantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpenerimaangantung',
-        name: 'Format Penerimaan Gantung',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpenerimaangantung')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpenerimaangantung'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Penerimaan Gantung
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpenerimaangantung' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpenerimaangantung' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{
-                  grp: 'PENERIMAAN GANTUNG',
-                  subgrp: 'NOMOR PENERIMAAN GANTUNG'
-                }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatpenerimaangantung', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter =
-            filters.filters.formatpenerimaangantungtext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpenerimaangantungtext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpengeluarangantung',
-        name: 'Format Pengeluaran Gantung',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpengeluarangantung')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpengeluarangantung'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Pengeluaran Gantung
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpengeluarangantung' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpengeluarangantung' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{
-                  grp: 'PENGELUARAN GANTUNG',
-                  subgrp: 'NOMOR PENGELUARAN GANTUNG'
-                }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatpengeluarangantung', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter =
-            filters.filters.formatpengeluarangantungtext || '';
 
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpengeluarangantungtext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatpencairan',
-        name: 'Format Pencairan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatpencairan')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatpencairan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Pencairan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatpencairan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatpencairan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{
-                  grp: 'PENCAIRAN',
-                  subgrp: 'NOMOR PENCAIRAN'
-                }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatpencairan', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatpencairantext || '';
-
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatpencairantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatrekappenerimaan',
-        name: 'Format Rekap Penerimaan',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatrekappenerimaan')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatrekappenerimaan'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Rekap Penerimaan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatrekappenerimaan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatrekappenerimaan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{
-                  grp: 'REKAP PENERIMAAN',
-                  subgrp: 'NOMOR REKAP PENERIMAAN'
-                }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatrekappenerimaan', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatrekappenerimaantext || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatrekappenerimaantext || ''}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'formatrekappengeluaran',
-        name: 'Format Rekap Pengeluaran',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('formatrekappengeluaran')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'formatrekappengeluaran'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Format Rekap Pengeluaran
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'formatrekappengeluaran' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'formatrekappengeluaran' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{
-                  grp: 'REKAP PENGELUARAN',
-                  subgrp: 'NOMOR REKAP PENGELUARAN'
-                }}
-                onChange={(value) =>
-                  handleColumnFilterChange('formatrekappengeluaran', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.formatrekappengeluarantext || '';
-
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.formatrekappengeluarantext || ''}
-            </div>
-          );
-        }
-      },
       {
         key: 'created_at',
         name: 'Created At',
@@ -5414,7 +5263,7 @@ const GridShipper = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: BankInput, keepOpenModal = false) => {
+  const onSubmit = async (values: ShipperInput, keepOpenModal = false) => {
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
@@ -5953,75 +5802,94 @@ const GridShipper = () => {
       mode !== 'add' &&
       mode !== ''
     ) {
-      console.log(rowData);
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
-
-      forms.setValue('coa', rowData.coa !== null ? Number(rowData.coa) : null);
-      forms.setValue('keterangancoa', rowData.keterangancoa);
+      forms.setValue('contactperson', rowData.contactperson);
+      forms.setValue('alamat', rowData.alamat);
+      forms.setValue('kota', rowData.kota);
+      forms.setValue('kodepos', rowData.kodepos);
+      forms.setValue('telp', rowData.telp);
+      forms.setValue('email', rowData.email);
+      forms.setValue('fax', rowData.fax);
+      forms.setValue('web', rowData.web);
+      forms.setValue('npwp', rowData.npwp);
+      forms.setValue('titipke', rowData.titipke);
+      forms.setValue('comodity', rowData.comodity);
+      forms.setValue('namashippercetak', rowData.namashippercetak);
+      forms.setValue('blok', rowData.blok);
+      forms.setValue('nomor', rowData.nomor);
+      forms.setValue('rt', rowData.rt);
+      forms.setValue('rw', rowData.rw);
+      forms.setValue('kelurahan', rowData.kelurahan);
+      forms.setValue('kabupaten', rowData.kabupaten);
+      forms.setValue('kecamatan', rowData.kecamatan);
+      forms.setValue('propinsi', rowData.propinsi);
+      forms.setValue('usertracing', rowData.usertracing);
+      forms.setValue('passwordtracing', rowData.passwordtracing);
+      forms.setValue('kodeprospek', rowData.kodeprospek);
+      forms.setValue('namashipperprospek', rowData.namashipperprospek);
+      forms.setValue('emaildelay', rowData.emaildelay);
+      forms.setValue(
+        'keterangan1barisinvoice',
+        rowData.keterangan1barisinvoice
+      );
+      forms.setValue('nik', rowData.nik);
+      forms.setValue('namaparaf', rowData.namaparaf);
+      forms.setValue(
+        'keteranganshipperjobminus',
+        rowData.keteranganshipperjobminus
+      );
+      forms.setValue('initial', rowData.initial);
+      forms.setValue('tipe', rowData.tipe);
+      forms.setValue('nshipperprospek', rowData.nshipperprospek);
+      forms.setValue('npwpnik', rowData.npwpnik);
+      forms.setValue('nitku', rowData.nitku);
+      forms.setValue('kodepajak', rowData.kodepajak);
 
       forms.setValue(
-        'coagantung',
-        rowData.coagantung !== null ? Number(rowData.coagantung) : null
+        'tglemailshipperjobminus',
+        rowData.tglemailshipperjobminus
       );
-      forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
+      forms.setValue('tgllahir', rowData.tgllahir);
 
-      forms.setValue('statusbank', Number(rowData.statusbank));
-      forms.setValue('textbank', rowData.textbank);
-
+      forms.setValue('coa', Number(rowData.coa));
+      forms.setValue('coapiutang', Number(rowData.coapiutang));
+      forms.setValue('coahutang', Number(rowData.coahutang));
+      forms.setValue('creditlimit', String(rowData.creditlimit));
+      forms.setValue('creditterm', rowData.creditterm);
+      forms.setValue('credittermplus', rowData.credittermplus);
+      forms.setValue('coagiro', Number(rowData.coagiro));
+      forms.setValue('ppn', rowData.ppn);
+      forms.setValue('ppnbatalmuat', String(rowData.ppnbatalmuat));
+      forms.setValue('grup', rowData.grup);
+      forms.setValue(
+        'formatdeliveryreport',
+        Number(rowData.formatdeliveryreport)
+      );
+      forms.setValue('formatcetak', Number(rowData.formatcetak));
+      forms.setValue('marketing_id', Number(rowData.marketing_id));
+      forms.setValue('isdpp10psn', String(rowData.isdpp10psn));
+      forms.setValue('saldopiutang', String(rowData.saldopiutang));
+      forms.setValue('idshipperasal', Number(rowData.idshipperasal));
+      forms.setValue('idtipe', Number(rowData.idtipe));
+      forms.setValue('idinitial', Number(rowData.idinitial));
+      forms.setValue('parentshipper_id', Number(rowData.parentshipper_id));
       forms.setValue('statusaktif', Number(rowData.statusaktif));
+
+      // Join / text reference
+      forms.setValue('coa_text', rowData.coa_text);
+      forms.setValue('coapiutang_text', rowData.coapiutang_text);
+      forms.setValue('coahutang_text', rowData.coahutang_text);
+      forms.setValue('coagiro_text', rowData.coagiro_text);
+      forms.setValue('shipperasal_text', rowData.shipperasal_text);
+      forms.setValue('parentshipper_text', rowData.parentshipper_text);
+      forms.setValue('marketing_text', rowData.marketing_text);
+
       forms.setValue('text', rowData.text);
-
-      forms.setValue('statusdefault', Number(rowData.statusdefault));
-      forms.setValue('textdefault', rowData.textdefault);
-
-      forms.setValue('formatpenerimaan', Number(rowData.formatpenerimaan));
-      forms.setValue('formatpenerimaantext', rowData.formatpenerimaantext);
-
-      forms.setValue('formatpengeluaran', Number(rowData.formatpengeluaran));
-      forms.setValue('formatpengeluarantext', rowData.formatpengeluarantext);
-
-      forms.setValue(
-        'formatpenerimaangantung',
-        Number(rowData.formatpenerimaangantung)
-      );
-      forms.setValue(
-        'formatpenerimaangantungtext',
-        rowData.formatpenerimaangantungtext
-      );
-
-      forms.setValue(
-        'formatpengeluarangantung',
-        Number(rowData.formatpengeluarangantung)
-      );
-      forms.setValue(
-        'formatpengeluarangantungtext',
-        rowData.formatpengeluarangantungtext
-      );
-
-      forms.setValue('formatpencairan', Number(rowData.formatpencairan));
-      forms.setValue('formatpencairantext', rowData.formatpencairantext);
-
-      forms.setValue(
-        'formatrekappenerimaan',
-        Number(rowData.formatrekappenerimaan)
-      );
-      forms.setValue(
-        'formatrekappenerimaantext',
-        rowData.formatrekappenerimaantext
-      );
-
-      forms.setValue(
-        'formatrekappengeluaran',
-        Number(rowData.formatrekappengeluaran)
-      );
-      forms.setValue(
-        'formatrekappengeluarantext',
-        rowData.formatrekappengeluarantext
-      );
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();
+      forms.setValue('text', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
   console.log(forms.getValues());

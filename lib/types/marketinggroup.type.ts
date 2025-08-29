@@ -11,5 +11,6 @@ export interface IMarketingGroup {
 
 export interface IAllMarketingGroup {
   data: IMarketingGroup[];
+  type: string;
   pagination: IMeta;
 }

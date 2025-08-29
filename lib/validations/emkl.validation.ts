@@ -3,6 +3,7 @@ import { dynamicRequiredMessage } from '../utils';
 import { REQUIRED_FIELD } from '@/constants/validation';
 
 export const emklSchema = z.object({
+  id: z.number().nullable().optional(),
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
   contactperson: z
     .string()
@@ -29,7 +30,8 @@ export const emklSchema = z.object({
   notelp: z
     .string()
     .trim()
-    .nonempty({ message: dynamicRequiredMessage('NO TELP') }),
+    .nonempty({ message: dynamicRequiredMessage('NO TELP') })
+    .max(14),
   email: z.string().trim().nullable().optional(),
   fax: z.string().trim().nullable().optional(),
   alamatweb: z.string().trim().nullable().optional(),
@@ -42,8 +44,7 @@ export const emklSchema = z.object({
   npwp: z
     .string()
     .trim()
-    .nonempty({ message: dynamicRequiredMessage('NPWP Wajib Diisi') })
-    .max(16),
+    .nonempty({ message: dynamicRequiredMessage('NPWP Wajib Diisi') }),
   namapajak: z
     .string()
     .trim()

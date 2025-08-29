@@ -1081,7 +1081,7 @@ const GridJenisMuatan = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanContainer.mrt');
+          report.loadFile('/reports/LaporanJenismuatan.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1100,7 +1100,7 @@ const GridJenisMuatan = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporanjenismuatan', '_blank');
+              window.open('/reports/jenismuatan', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

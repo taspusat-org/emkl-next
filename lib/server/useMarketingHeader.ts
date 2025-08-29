@@ -10,6 +10,7 @@ import {
   getMarketingManagerFn,
   getMarketingOrderanFn,
   getMarketingProsesFeeFn,
+  storeMarketingDetailFn,
   storeMarketingFn,
   updateMarketingFn
 } from '../apis/marketingheader.api';
@@ -122,13 +123,24 @@ export const useGetMarketingOrderan = (
 export const useGetMarketingBiaya = (
   id?: number,
   activeTab?: string,
-  tabFromValues?: string
+  tabFromValues?: string,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      marketing_nama?: string;
+      jenisbiayamarketing_nama?: string;
+      nominal?: string;
+      statusaktif_nama?: string;
+    };
+  } = {}
 ) => {
-  // console.log('test di use marketing biaya', id, 'activeTab', activeTab);
-
   return useQuery(
-    ['marketing', id],
-    async () => await getMarketingBiayaFn(id!),
+    ['marketingbiaya', id, filters],
+    async () => await getMarketingBiayaFn(id!, filters),
     {
       enabled:
         !!id ||
@@ -141,13 +153,28 @@ export const useGetMarketingBiaya = (
 export const useGetMarketingManager = (
   id?: number,
   activeTab?: string,
-  tabFromValues?: string
+  tabFromValues?: string,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      marketing_nama?: string;
+      managermarketing_nama?: string;
+      tglapproval?: string;
+      statusapproval?: string;
+      userapproval?: string;
+      statusaktif_nama?: string;
+    };
+  } = {}
 ) => {
   // console.log('test di use marketing manager', id, 'activeTab', activeTab);
 
   return useQuery(
-    ['marketing', id],
-    async () => await getMarketingManagerFn(id!),
+    ['marketingmanager', id, filters],
+    async () => await getMarketingManagerFn(id!, filters),
     {
       enabled:
         !!id ||
@@ -187,12 +214,26 @@ export const useGetMarketingProsesFee = (
   );
 };
 
-export const useGetMarketingDetail = (id?: number) => {
-  console.log('test di use marketing detail', id);
-
+export const useGetMarketingDetail = (
+  id?: number,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      marketing_nama?: string;
+      nominalawal?: string;
+      nominalakhir?: string;
+      persentase?: string;
+      statusaktif_nama?: string;
+    };
+  } = {}
+) => {
   return useQuery(
-    ['marketingdetail', id],
-    async () => await getMarketingDetailFn(id!),
+    ['marketingdetail', id, filters],
+    async () => await getMarketingDetailFn(id!, filters),
     {
       enabled: !!id
     }
@@ -216,42 +257,72 @@ export const useCreateMarketing = () => {
       dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
-      // const err = (error.response?.data as IErrorResponse) ?? {};
-      // dispatch(setProcessed());
+      const errorResponse = (error.response?.data as IErrorResponse) ?? {};
+      dispatch(setProcessed());
 
-      // const errorResponse = error.response?.data as IErrorResponse ?? {};
-      // console.log('errorResponse', errorResponse);
-      // if (errorResponse !== undefined) {
-      //   // Menangani error berdasarkan path
-      //   const errorFields = errorResponse.message || [];
+      if (errorResponse !== undefined) {
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
 
-      //   // Iterasi error message dan set error di form
-      //   errorFields?.forEach((err: { path: string[]; message: string }) => {
-      //     const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-      //     console.log('path', path);
-      //     setError(path, err.message); // Update error di context
-      //   });
-
-      //   dispatch(setProcessed())
-      //   // toast({
-      //   //   variant: 'destructive',
-      //   //   title: errorResponse.message ?? 'Gagal',
-      //   //   description: 'Terjadi masalah dengan permintaan Anda'
-      //   // });
-      // }
-
-      const err = (error.response?.data as IErrorResponse) ?? {};
-      toast({
-        variant: 'destructive',
-        title: err.message ?? 'Gagal',
-        description: 'Terjadi masalah dengan permintaan Anda.'
-      });
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
+      }
+    },
+    onSettled: () => {
       dispatch(setProcessed());
     }
-    // alternatively: always clear loading, whether success or fail
-    // onSettled: () => {
-    //   dispatch(clearProcessing());
-    // }
+  });
+};
+
+export const useCreateMarketingDetail = () => {
+  const { setError } = useFormError();
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { toast } = useToast();
+
+  return useMutation(storeMarketingDetailFn, {
+    onMutate: () => {
+      dispatch(setProcessing());
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries(['marketingdetail']);
+      dispatch(setProcessed());
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0];
+            console.log('path', path);
+            setError(path, err.message);
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
+      }
+    },
+    onSettled: () => {
+      dispatch(setProcessed());
+    }
   });
 };
 
@@ -269,26 +340,22 @@ export const useUpdateMarketing = () => {
       console.log('errorResponse', errorResponse);
 
       if (errorResponse !== undefined) {
-        // toast({
-        //   variant: 'destructive',
-        //   title: errorResponse.message ?? 'Gagal',
-        //   description: 'Terjadi masalah dengan permintaan Anda'
-        // });
-
-        // Menangani error berdasarkan path
         const errorFields = errorResponse.message || [];
 
-        // Iterasi error message dan set error di form
-        errorFields?.forEach((err: { path: string[]; message: string }) => {
-          const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-          console.log('path', path);
-          // setError(path, err.message); // Update error di context
-          if (!path) {
-            setError(path, ''); // Update error di context
-          } else {
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
             setError(path, err.message); // Update error di context
-          }
-        });
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
     }
   });

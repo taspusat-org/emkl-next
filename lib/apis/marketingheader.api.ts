@@ -1,7 +1,10 @@
 import { buildQueryParams } from '../utils';
 import { api2 } from '../utils/AxiosInstance';
 import { GetParams } from '../types/all.type';
-import { MarketingInput } from '../validations/marketing.validation';
+import {
+  MarketingDetailInput,
+  MarketingInput
+} from '../validations/marketing.validation';
 import {
   IAllMarketingBiaya,
   IAllMarketingDetail,
@@ -27,7 +30,6 @@ export const getMarketingHeaderFn = async (
   try {
     const queryParams = buildQueryParams(filters);
     const response = await api2.get('/marketing', { params: queryParams });
-    console.log('response di api fe', response.data);
 
     return response.data;
   } catch (error) {
@@ -49,20 +51,25 @@ export const getMarketingOrderanFn = async (
 };
 
 export const getMarketingBiayaFn = async (
-  id: number
+  id: number,
+  filters: GetParams = {}
 ): Promise<IAllMarketingBiaya> => {
-  const response = await api2.get(`/marketingbiaya/${id}`);
-  // console.log('response marketing biaya di api fe', response);
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/marketingbiaya/${id}`, {
+    params: queryParams
+  });
 
   return response.data;
 };
 
 export const getMarketingManagerFn = async (
-  id: number
+  id: number,
+  filters: GetParams = {}
 ): Promise<IAllMarketingManager> => {
-  const response = await api2.get(`/marketingmanager/${id}`);
-  // console.log('response marketing manager di api fe', response);
-
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/marketingmanager/${id}`, {
+    params: queryParams
+  });
   return response.data;
 };
 
@@ -79,10 +86,13 @@ export const getMarketingProsesFeeFn = async (
 };
 
 export const getMarketingDetailFn = async (
-  id: number
+  id: number,
+  filters: GetParams = {}
 ): Promise<IAllMarketingDetail> => {
-  const response = await api2.get(`/marketingdetail/${id}`);
-  console.log('response marketing detail di api fe', response);
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/marketingdetail/${id}`, {
+    params: queryParams
+  });
 
   return response.data;
 };
@@ -105,4 +115,23 @@ export const deleteMarketingFn = async (id: string) => {
     console.error('Error deleting marketing in api fe:', error);
     throw error;
   }
+};
+
+export const storeMarketingDetailFn = async (fields: MarketingDetailInput) => {
+  const response = await api2.post('/marketingdetail', fields);
+  return response.data;
+};
+
+export const checkValidationMarketingFn = async (fields: validationFields) => {
+  const response = await api2.post(`/marketing/check-validation`, fields);
+
+  return response;
+};
+
+export const checkValidationEditmarketingDetailFn = async (
+  fields: validationFields
+) => {
+  const response = await api2.post(`/marketingdetail/check-validation`, fields);
+
+  return response;
 };

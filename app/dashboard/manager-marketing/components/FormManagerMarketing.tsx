@@ -874,11 +874,9 @@ const FormManagerMarketing = ({
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <InputCurrency
-                              value={formatCurrency(field.value) ?? ''}
+                              value={field.value}
                               onValueChange={(val) => {
-                                const num =
-                                  val && val !== '' ? String(val) : undefined;
-                                field.onChange(num);
+                                field.onChange(val);
                               }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />

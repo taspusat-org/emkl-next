@@ -17,6 +17,7 @@ import {
 import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
 import { getMarketingHeaderFn } from '@/lib/apis/marketingheader.api';
 import { IParameter } from '@/lib/types/parameter.type';
+import { getShipperFn } from '@/lib/apis/shipper.api';
 
 interface ApiResponse {
   type: string;
@@ -39,95 +40,36 @@ const Page = () => {
         const fieldLengthResult = await fieldLength('shipper');
         dispatch(setFieldLength(fieldLengthResult.data));
 
-        const [getStatusAktifLookup, getAkunpusatLookup, getMarketingLookup] =
-          await Promise.all([
-            getParameterFn({ isLookUp: 'true' }),
-            getAkunpusatFn({ isLookUp: 'true' }),
-            getMarketingHeaderFn({ isLookUp: 'true' })
-          ]);
+        const [
+          getStatusAktifLookup,
+          getAkunpusatLookup,
+          getMarketingLookup,
+          getShipperLookup
+        ] = await Promise.all([
+          getParameterFn({ isLookUp: 'true' }),
+          getAkunpusatFn({ isLookUp: 'true' }),
+          getMarketingHeaderFn({ isLookUp: 'true' }),
+          getShipperFn({ isLookUp: 'true' })
+        ]);
 
         // Process Parameter lookup data dengan type safety
-        if (
-          getStatusAktifLookup.type === 'local' &&
-          getStatusAktifLookup.data
-        ) {
-          const grpsToFilter = [
-            'STATUS AKTIF',
-            'STATUS NILAI',
-            'STATUS RELASI',
-            'STATUS APPROVAL',
-            'STATUS BANK' // Tambahan untuk status bank
-          ];
+        if (getStatusAktifLookup.type === 'local') {
+          const grpsToFilter = ['STATUS AKTIF'];
 
           grpsToFilter.forEach((grp) => {
             const filteredData = getStatusAktifLookup.data.filter(
-              (item: IParameter) => item.grp === grp
+              (item: any) => item.grp === grp
             );
 
-            if (filteredData.length > 0) {
-              dispatch(setData({ key: grp, data: filteredData }));
-              dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
+            dispatch(setData({ key: grp, data: filteredData }));
+            dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
 
-              // Set default value jika ada
-              const defaultItem = filteredData.find(
-                (item: IParameter) => item.default !== null
-              );
-              const defaultValue = defaultItem
-                ? String(defaultItem.default)
-                : '';
+            const defaultValue = filteredData
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null || '');
 
-              dispatch(setDefault({ key: grp, isdefault: defaultValue }));
-            }
+            dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
           });
-
-          // Setup lookup untuk format-format yang ada di database
-          const formatGroups = [
-            { key: 'PENERIMAAN', subgrp: 'NOMOR PENERIMAAN' },
-            { key: 'PENGELUARAN', subgrp: 'NOMOR PENGELUARAN' },
-            { key: 'PENERIMAAN GANTUNG', subgrp: 'NOMOR PENERIMAAN GANTUNG' },
-            { key: 'PENGELUARAN GANTUNG', subgrp: 'NOMOR PENGELUARAN GANTUNG' },
-            { key: 'PENCAIRAN', subgrp: 'NOMOR PENCAIRAN' },
-            { key: 'REKAP PENERIMAAN', subgrp: 'NOMOR REKAP PENERIMAAN' },
-            { key: 'REKAP PENGELUARAN', subgrp: 'NOMOR REKAP PENGELUARAN' }
-          ];
-
-          // Setup untuk format groups
-          formatGroups.forEach(({ key, subgrp }) => {
-            const formatData = getStatusAktifLookup.data.filter(
-              (item: IParameter) => item.subgrp === subgrp
-            );
-
-            if (formatData && formatData.length > 0) {
-              dispatch(setData({ key, data: formatData }));
-              dispatch(setType({ key, type: 'local' }));
-
-              const defaultItem = formatData.find(
-                (item: IParameter) => item.default !== null
-              );
-              const defaultValue = defaultItem
-                ? String(defaultItem.default)
-                : '';
-              dispatch(setDefault({ key, isdefault: defaultValue }));
-            }
-          });
-
-          // Setup untuk status bank jika belum ada di grpsToFilter
-          const statusBankData = getStatusAktifLookup.data.filter(
-            (item: IParameter) => item.grp === 'STATUS BANK'
-          );
-
-          if (statusBankData && statusBankData.length > 0) {
-            dispatch(setData({ key: 'STATUS BANK', data: statusBankData }));
-            dispatch(setType({ key: 'STATUS BANK', type: 'local' }));
-
-            const defaultItem = statusBankData.find(
-              (item: IParameter) => item.default !== null
-            );
-            const defaultValue = defaultItem ? String(defaultItem.default) : '';
-            dispatch(
-              setDefault({ key: 'STATUS BANK', isdefault: defaultValue })
-            );
-          }
         }
 
         if (getAkunpusatLookup.type === 'local') {
@@ -159,6 +101,17 @@ const Page = () => {
           dispatch(setDefault({ key: 'MARKETING', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'MARKETING', type: getMarketingLookup.type }));
+
+        if (getShipperLookup.type === 'local') {
+          dispatch(setData({ key: 'SHIPPER', data: getShipperLookup.data }));
+          const defaultValue =
+            getShipperLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          dispatch(setDefault({ key: 'SHIPPER', isdefault: defaultValue }));
+        }
+        dispatch(setType({ key: 'SHIPPER', type: getShipperLookup.type }));
       } catch (err) {
         console.error('Error fetching lookup data:', err);
       }

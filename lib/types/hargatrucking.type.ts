@@ -17,7 +17,7 @@ export interface IHargatrucking {
   jenisorderan_id: number;
   jenisorderan_text: string;
 
-  nominal: number;
+  nominal: string;
 
   statusaktif: number;
   text: string;

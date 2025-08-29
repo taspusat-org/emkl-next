@@ -69,6 +69,8 @@ interface LookUpProps {
   disabled?: boolean; // New prop for disabling the input/button
   clearDisabled?: boolean; // New prop for disabling the input/button
   selectedRequired?: boolean;
+  name?: string;
+  forms?: any;
   required?: boolean;
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
   onClear?: () => void;
@@ -97,6 +99,8 @@ export default function LookUp({
   lookupNama,
   required,
   dataToPost,
+  name,
+  forms,
   selectedRequired = false,
   showOnButton = true,
   lookupValue,
@@ -146,6 +150,7 @@ export default function LookUp({
   );
 
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const focus = useSelector((state: RootState) => state.lookup.focus);
   const clearLookup = useSelector(
     (state: RootState) => state.lookup.clearLookup
   );
@@ -178,7 +183,7 @@ export default function LookUp({
     for (const k of ka) if (a[k] !== b[k]) return false;
     return true;
   }
-
+  console.log('forms', forms);
   // Gabung params dari state & props
   const buildParams = useCallback(() => {
     const params: Record<string, any> = {
@@ -552,7 +557,7 @@ export default function LookUp({
     const value = clickedRow[dataToPost as any];
 
     lookupValue?.(value);
-    onSelectRow?.(value); // cukup satu kali, tanpa else
+    onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
@@ -1063,7 +1068,14 @@ export default function LookUp({
       setShowError({ label: label ?? '', status: false });
     }
   }, [lookupNama, inputValue, label, showError.label]);
-
+  useEffect(() => {
+    if (focus === name && submitClicked) {
+      console.log('masuksdfsfsdf');
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [focus, name, inputRef, submitClicked]);
   // const contentRef = useRef<HTMLDivElement | null>(null);
   // useEffect(() => {
   //   if (!open || !contentRef.current) return;
@@ -1082,15 +1094,17 @@ export default function LookUp({
       <PopoverTrigger asChild>
         <div className="flex w-full flex-col">
           <FormField
-            name="nama"
+            name={String(name) ?? ''}
+            control={forms?.control}
             render={({ field }) => (
-              <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+              <FormItem className="flex w-full flex-col justify-between ">
                 <FormControl>
                   <div
                     className="relative flex w-full flex-row items-center"
                     ref={popoverRef}
                   >
                     <Input
+                      {...field}
                       ref={inputRef}
                       // autoFocus
                       className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
@@ -1137,12 +1151,16 @@ export default function LookUp({
                     )}
                   </div>
                 </FormControl>
-
-                <p className="text-[0.8rem] text-destructive">
-                  {showError.status === true && label === showError.label
-                    ? `${label} ${REQUIRED_FIELD}`
-                    : null}
-                </p>
+                {/* {name ? (
+                  <FormMessage />
+                ) : (
+                  <p className="text-[0.8rem] text-destructive">
+                    {showError.status === true && label === showError.label
+                      ? `${label} ${REQUIRED_FIELD}`
+                      : null}
+                  </p>
+                )} */}
+                <FormMessage />
               </FormItem>
             )}
           />

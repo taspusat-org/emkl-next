@@ -649,6 +649,7 @@ const GridAlatbayar = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statuslangsungcair')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -706,6 +707,7 @@ const GridAlatbayar = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusdefault')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -763,6 +765,7 @@ const GridAlatbayar = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusbank')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1353,7 +1356,7 @@ const GridAlatbayar = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporanalatbayar', '_blank');
+              window.open('/reports/alatbayar', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
