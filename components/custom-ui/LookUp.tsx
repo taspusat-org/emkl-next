@@ -1070,25 +1070,12 @@ export default function LookUp({
   }, [lookupNama, inputValue, label, showError.label]);
   useEffect(() => {
     if (focus === name && submitClicked) {
-      console.log('masuksdfsfsdf');
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
     }
   }, [focus, name, inputRef, submitClicked]);
-  // const contentRef = useRef<HTMLDivElement | null>(null);
-  // useEffect(() => {
-  //   if (!open || !contentRef.current) return;
-  //   const grid = contentRef.current.querySelector<HTMLElement>('.rdg');
-  //   console.log('grid', grid);
-  //   if (!grid) return;
 
-  //   if (rows.length > 10) {
-  //     grid.style.setProperty('overflow', 'hidden', 'important');
-  //   } else {
-  //     grid.style.removeProperty('overflow');
-  //   }
-  // }, [open, rows, contentRef]);
   return (
     <Popover open={open} onOpenChange={() => ({})}>
       <PopoverTrigger asChild>

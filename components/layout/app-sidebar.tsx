@@ -49,6 +49,7 @@ import { clearCredentials } from '@/lib/store/authSlice/authSlice';
 import { deleteCookie } from '@/lib/utils/cookie-actions';
 import { clearHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import { setLoaded, setLoading } from '@/lib/store/loadingSlice/loadingSlice';
+import useDisableBodyScroll from '@/lib/hooks/useDisableBodyScroll';
 export const company = {
   name: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
   logo: GalleryVerticalEnd
