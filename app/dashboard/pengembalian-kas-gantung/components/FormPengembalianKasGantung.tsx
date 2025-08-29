@@ -703,13 +703,15 @@ const FormPengembalianKasGantung = ({
       }
     ];
   }, [rows, checkedRows, editingRowId, filteredRows, summaryRows]);
+  console.log('forms.getValues', forms.getValues());
   const lookUpPropsRelasi = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       label: 'RELASI',
-      singleColumn: false,
+      dataToPost: 'id',
+      singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
@@ -721,7 +723,8 @@ const FormPengembalianKasGantung = ({
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       label: 'BANK',
-      singleColumn: false,
+      dataToPost: 'id',
+      singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
@@ -732,11 +735,11 @@ const FormPengembalianKasGantung = ({
       columns: [{ key: 'nama', name: 'NAMA' }],
       // filterby: { class: 'system', method: 'get' },
       endpoint: 'alatbayar',
-      filterby: { statuslangsungcair: 1, statusdefault: 1 },
+      filterby: { statusbank: selectLookup?.statusbank },
       selectedRequired: false,
       label: 'ALAT BAYAR',
-
-      singleColumn: false,
+      dataToPost: 'id',
+      singleColumn: true,
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
@@ -1232,8 +1235,9 @@ const FormPengembalianKasGantung = ({
                               key={index}
                               {...props}
                               lookupValue={(id) =>
-                                forms.setValue('statusbank', Number(id))
+                                forms.setValue('bank_id', Number(id))
                               }
+                              labelLookup="LOOKUP BANK"
                               inputLookupValue={forms.getValues('bank_id')}
                               lookupNama={forms.getValues('bank_nama')}
                             />
@@ -1251,11 +1255,12 @@ const FormPengembalianKasGantung = ({
                             <LookUp
                               key={index}
                               {...props}
+                              labelLookup="LOOKUP ALAT BAYAR"
                               lookupValue={(id) =>
-                                forms.setValue('relasi_id', Number(id))
+                                forms.setValue('alatbayar_id', Number(id))
                               }
-                              inputLookupValue={forms.getValues('relasi_id')}
-                              lookupNama={forms.getValues('relasi_nama')}
+                              inputLookupValue={forms.getValues('alatbayar_id')}
+                              lookupNama={forms.getValues('alatbayar_nama')}
                             />
                           ))}
                         </div>

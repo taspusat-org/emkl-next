@@ -183,7 +183,6 @@ export default function LookUp({
     for (const k of ka) if (a[k] !== b[k]) return false;
     return true;
   }
-  console.log('forms', forms);
   // Gabung params dari state & props
   const buildParams = useCallback(() => {
     const params: Record<string, any> = {
@@ -395,6 +394,7 @@ export default function LookUp({
       lookupValue(null);
     }
     setDeleteClicked(true);
+    dispatch(setSelectLookup({ key: label ?? '', data: {} }));
     dispatch(setSearchTerm(''));
     dispatch(clearOpenName()); // Clear openName ketika input dibersihkan
     setOpen(false);
@@ -692,7 +692,7 @@ export default function LookUp({
       setInputValue(rowData[postData as string]);
       const value = dataToPost ? rowData[dataToPost] : rowData.id;
       lookupValue?.(value);
-      onSelectRow?.(value); // cukup satu kali, tanpa else
+      onSelectRow?.(rowData); // cukup satu kali, tanpa else
       setOpen(false);
     }
     if (event.key === 'ArrowDown') {
@@ -1151,7 +1151,7 @@ export default function LookUp({
                     )}
                   </div>
                 </FormControl>
-                {/* {name ? (
+                {name ? (
                   <FormMessage />
                 ) : (
                   <p className="text-[0.8rem] text-destructive">
@@ -1159,8 +1159,8 @@ export default function LookUp({
                       ? `${label} ${REQUIRED_FIELD}`
                       : null}
                   </p>
-                )} */}
-                <FormMessage />
+                )}
+                {/* <FormMessage /> */}
               </FormItem>
             )}
           />

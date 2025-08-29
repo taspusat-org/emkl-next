@@ -64,7 +64,9 @@ const FormKasGantung = ({
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
     new Map()
   ); // Nilai yang sedang diedit untuk setiap baris
-
+  const selectLookup = useSelector(
+    (state: RootState) => state.selectLookup.selectLookup['BANK']
+  );
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
 
@@ -210,7 +212,7 @@ const FormKasGantung = ({
         colSpan: (args) => {
           // If it's the "Add Row" row, span across multiple columns
           if (args.type === 'ROW' && args.row.isAddRow) {
-            return 3; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 2; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
@@ -235,46 +237,12 @@ const FormKasGantung = ({
         }
       },
       {
-        key: 'nobukti',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        cellClass: 'form-input',
-        draggable: true,
-
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nomor Bukti</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
-          </div>
-        ),
-        name: 'NOMOR BUKTI',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  disabled
-                  value={props.row.nobukti}
-                  className="w-full rounded border border-gray-300 px-2 py-1"
-                />
-              )}
-            </div>
-          );
-        }
-      },
-      {
         key: 'keterangan',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 250,
+        width: 500,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
@@ -292,6 +260,7 @@ const FormKasGantung = ({
               ) : (
                 <Input
                   type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
                   value={props.row.keterangan}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
@@ -352,6 +321,7 @@ const FormKasGantung = ({
                 // />
                 <InputCurrency
                   value={String(raw)}
+                  disabled={mode === 'view' || mode === 'delete'}
                   onValueChange={(value) => handleCurrencyChange(rowIdx, value)}
                 />
               )}
@@ -381,6 +351,7 @@ const FormKasGantung = ({
       endpoint: 'bank',
       label: 'BANK',
       singleColumn: true,
+
       dataToPost: 'id',
       pageSize: 20,
       showOnButton: true,
@@ -393,6 +364,7 @@ const FormKasGantung = ({
       // filterby: { class: 'system', method: 'get' },
       selectedRequired: false,
       endpoint: 'alatbayar',
+      filterby: { statusbank: selectLookup?.statusbank },
 
       label: 'ALAT BAYAR',
       dataToPost: 'id',
@@ -547,7 +519,7 @@ const FormKasGantung = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Kas Gantung'
+              ? 'ADD Kas Gantung'
               : mode === 'edit'
               ? 'Edit Kas Gantung'
               : mode === 'delete'
@@ -613,6 +585,7 @@ const FormKasGantung = ({
                               <InputDatePicker
                                 value={field.value}
                                 onChange={field.onChange}
+                                disabled={mode === 'view' || mode === 'delete'}
                                 showCalendar
                                 onSelect={(date) =>
                                   forms.setValue('tglbukti', date)
@@ -649,7 +622,7 @@ const FormKasGantung = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -668,8 +641,8 @@ const FormKasGantung = ({
                         <LookUp
                           key={index}
                           {...props}
-                          clearDisabled
-                          disabled={forms.getValues('relasi_id')}
+                          labelLookup="LOOKUP RELASI"
+                          disabled={mode === 'view' || mode === 'delete'}
                           onClear={forms.setValue('relasi_id', null)}
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
@@ -695,6 +668,8 @@ const FormKasGantung = ({
                             <LookUp
                               key={index}
                               {...props}
+                              labelLookup="LOOKUP BANK"
+                              disabled={mode === 'view' || mode === 'delete'}
                               lookupValue={(id) =>
                                 forms.setValue('bank_id', Number(id))
                               }
@@ -715,6 +690,8 @@ const FormKasGantung = ({
                             <LookUp
                               key={index}
                               {...props}
+                              labelLookup="LOOKUP ALAT BAYAR"
+                              disabled={mode === 'view' || mode === 'delete'}
                               lookupValue={(id) =>
                                 forms.setValue('alatbayar_id', Number(id))
                               }

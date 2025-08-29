@@ -8,6 +8,7 @@ type CurrencyInputProps = {
   className?: string;
   autoFocus?: boolean;
   readOnly?: boolean;
+  disabled?: boolean;
   isPercent?: boolean;
   placeholder?: string;
 };
@@ -20,6 +21,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   autoFocus = false,
   isPercent = false,
   readOnly = false,
+  disabled = false,
   placeholder = ''
 }) => {
   useEffect(() => {
@@ -33,7 +35,11 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
 
   const [inputValue, setInputValue] = useState(value);
   useEffect(() => {
-    setInputValue(value ?? '');
+    if (!value.includes(',')) {
+      setInputValue(formatCurrency(value) ?? '');
+    } else {
+      setInputValue(value ?? '');
+    }
   }, [value]);
 
   const formatCurrency = (rawValue: string) => {
@@ -104,6 +110,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         maskChar={null}
         value={inputValue}
         readOnly={readOnly}
+        disabled={disabled}
         beforeMaskedStateChange={beforeMaskedStateChange}
         onChange={handleChange}
         autoFocus={autoFocus}
@@ -113,7 +120,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         onBlur={() => handleBlur(inputValue)}
         placeholder={placeholder}
         className={`h-9 w-full rounded-sm border border-zinc-300 px-1 py-1 text-right text-sm focus:border-blue-500 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className} ${
-          readOnly ? 'text-zinc-400' : 'text-zinc-900'
+          readOnly || disabled ? 'text-zinc-400' : 'text-zinc-900'
         }`}
       />
       {icon && (

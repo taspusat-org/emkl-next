@@ -88,6 +88,7 @@ import {
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
+import { formatDateToDDMMYYYY } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -2298,9 +2299,11 @@ const GridKasGantungHeader = () => {
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
       // Clear or set defaults when adding a new record
+      const currentDate = new Date(); // Dapatkan tanggal sekarang
       forms.setValue('bank_nama', '');
       forms.setValue('relasi_nama', '');
       forms.setValue('alatbayar_nama', '');
+      forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
       forms.setValue('pengeluaran_nobukti', '');
       forms.setValue('coakaskeluar', '');
     }
@@ -2337,8 +2340,6 @@ const GridKasGantungHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
-  console.log('filters', filters);
-  console.log('prevFilters', prevFilters);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
