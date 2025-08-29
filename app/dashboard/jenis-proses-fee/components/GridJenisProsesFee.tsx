@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
-import FormTypeAkuntansi from './FormTypeAkuntansi';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
@@ -20,21 +19,12 @@ import { useFormError } from '@/lib/hooks/formErrorContext';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ActionButton from '@/components/custom-ui/ActionButton';
-import { ITypeAkuntansi } from '@/lib/types/typeakuntansi.type';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
-import {
-  checkValidationTypeAkuntansiFn,
-  getAllTypeAkuntansiFn
-} from '@/lib/apis/typeakuntansi.api';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import {
-  TypeakuntansiInput,
-  typeakuntansiSchema
-} from '@/lib/validations/typeakuntansi';
 import DataGrid, {
   CellClickArgs,
   CellKeyDownArgs,
@@ -43,15 +33,28 @@ import DataGrid, {
   Row
 } from 'react-data-grid';
 import {
-  useDeleteTypeAkuntansi,
-  useGetAllTypeAkuntansi,
-  useCreateTypeAkuntansi,
-  useUpdateTypeAkuntansi
-} from '@/lib/server/useTypeAkuntansi';
-import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  filterJenisProsesFee,
+  JenisProsesFee
+} from '@/lib/types/jenisprosesfee.type';
+import {
+  useCreateJenisProsesFee,
+  useDeleteJenisProsesFee,
+  useGetAllJenisProsesFee,
+  useUpdateJenisProsesFee
+} from '@/lib/server/useJenisProsesFee';
+import FormJenisProsesFee from './FormJenisProsesFee';
+import {
+  JenisProsesFeeInput,
+  jenisprosesfeeSchema
+} from '@/lib/validations/jenisprosesfee.validation';
+import {
+  checkValidationJenisProsesFeeFn,
+  getAllJenisProsesFeeFn
+} from '@/lib/apis/jenisprosesfee.api';
 
 interface Filter {
   page: number;
@@ -59,16 +62,7 @@ interface Filter {
   search: string;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
-  filters: {
-    nama: string;
-    order: number | null | undefined | '';
-    keterangan: string;
-    akuntansi: string;
-    statusaktif: string;
-    modifiedby: string;
-    created_at: string;
-    updated_at: string;
-  };
+  filters: typeof filterJenisProsesFee;
 }
 
 interface GridConfig {
@@ -76,7 +70,7 @@ interface GridConfig {
   columnsWidth: { [key: string]: number };
 }
 
-const GridTypeAkuntansi = () => {
+const GridJenisProsesFee = () => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -87,23 +81,19 @@ const GridTypeAkuntansi = () => {
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const [rows, setRows] = useState<ITypeAkuntansi[]>([]);
   const [mode, setMode] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
-  const [inputValue, setInputValue] = useState('');
   const [totalPages, setTotalPages] = useState(1);
-  const [dataGridKey, setDataGridKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [dataGridKey, setDataGridKey] = useState(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [rows, setRows] = useState<JenisProsesFee[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const [addMode, setAddMode] = useState<boolean>(false);
-  const [editMode, setEditMode] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<boolean>(false);
-  const [deleteMode, setDeleteMode] = useState<boolean>(false);
-  const [isDataUpdated, setIsDataUpdated] = useState(false);
-  const [isAllSelected, setIsAllSelected] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<number>(0);
+  const [inputValue, setInputValue] = useState<string>('');
   const [selectedCol, setSelectedCol] = useState<number>(0);
+  const [selectedRow, setSelectedRow] = useState<number>(0);
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
@@ -121,91 +111,36 @@ const GridTypeAkuntansi = () => {
     sortBy: 'nama',
     sortDirection: 'asc',
     filters: {
-      nama: '',
-      order: '',
-      keterangan: '',
-      statusaktif: '',
-      akuntansi: '',
-      modifiedby: '',
-      created_at: '',
-      updated_at: ''
+      ...filterJenisProsesFee
     }
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
-  const { data: allTypeAkuntansi, isLoading: isLoadingTypeAkuntansi } =
-    useGetAllTypeAkuntansi({ ...filters, page: currentPage });
-  // console.log(allTypeAkuntansi, 'INI DATANYAA');
+  const { data: allJenisProsesFee, isLoading: isLoadingJenisProsesFee } =
+    useGetAllJenisProsesFee({ ...filters, page: currentPage });
+  const { mutateAsync: createJenisProsesFee, isLoading: isLoadingCreate } =
+    useCreateJenisProsesFee();
+  const { mutateAsync: updateJenisProsesFee, isLoading: isLoadingUpdate } =
+    useUpdateJenisProsesFee();
+  const { mutateAsync: deleteJenisProsesFee, isLoading: isLoadingDelete } =
+    useDeleteJenisProsesFee();
 
-  const { mutateAsync: createTypeAkuntansi, isLoading: isLoadingCreate } =
-    useCreateTypeAkuntansi();
-  const { mutateAsync: updateTypeAkuntansi, isLoading: isLoadingUpdate } =
-    useUpdateTypeAkuntansi();
-  const { mutateAsync: deleteTypeAkuntansi, isLoading: isLoadingDelete } =
-    useDeleteTypeAkuntansi();
-
-  const forms = useForm<TypeakuntansiInput>({
-    resolver: zodResolver(typeakuntansiSchema),
+  const forms = useForm<JenisProsesFeeInput>({
+    resolver: zodResolver(jenisprosesfeeSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
-      order: undefined,
       keterangan: '',
-      akuntansi_id: null,
-      akuntansi_nama: '',
-      statusaktif: 1
+      statusaktif_nama: ''
     }
   });
+  console.log(forms.getValues());
 
   const {
     setFocus,
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-
-  // console.log(forms.getValues());
-
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // 1. cari index di array columns asli
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
-
-    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    setFilters((prev) => ({
-      // update filter seperti biasa…
-      ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
-      search: '',
-      page: 1
-    }));
-
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-
-    // 3. focus sel di grid pakai displayIndex
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    // 4. focus input filter
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
@@ -215,10 +150,8 @@ const GridTypeAkuntansi = () => {
       ...prev,
       filters: {
         nama: '',
-        order: '',
         keterangan: '',
-        statusaktif: '',
-        akuntansi: '',
+        statusaktif_nama: '',
         modifiedby: '',
         created_at: '',
         updated_at: ''
@@ -255,50 +188,46 @@ const GridTypeAkuntansi = () => {
     setInputValue('');
   };
 
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
+  const handleColumnFilterChange = (
+    colKey: keyof Filter['filters'],
+    value: string
+  ) => {
+    const originalIndex = columns.findIndex((col) => col.key === colKey); // 1. cari index di array columns asli
 
-    if (!search.trim() && !columnFilter.trim()) {
-      return textValue;
-    }
+    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
 
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
+    setFilters((prev) => ({
+      // update filter seperti biasa…
+      ...prev,
+      filters: {
+        ...prev.filters,
+        [colKey]: value
+      },
+      search: '',
+      page: 1
+    }));
 
-    // 1. Fungsi untuk escape regex‐meta chars
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    setInputValue('');
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
 
-    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-    const pattern = combined
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
+    // 3. focus sel di grid pakai displayIndex
+    setTimeout(() => {
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+    }, 100);
 
-    // 3. Build regex-nya
-    const regex = new RegExp(`(${pattern})`, 'gi');
+    // 4. focus input filter
+    setTimeout(() => {
+      const ref = inputColRefs.current[colKey];
+      ref?.focus();
+    }, 200);
 
-    // 4. Replace dengan <span>
-    const highlighted = textValue.replace(
-      regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
+    setSelectedRow(0);
+  };
 
   const handleSort = (column: string) => {
     const newSortOrder =
@@ -361,7 +290,7 @@ const GridTypeAkuntansi = () => {
     }
   };
 
-  const columns = useMemo((): Column<ITypeAkuntansi>[] => {
+  const columns = useMemo((): Column<JenisProsesFee>[] => {
     return [
       {
         key: 'nomor',
@@ -382,10 +311,8 @@ const GridTypeAkuntansi = () => {
                   search: '',
                   filters: {
                     nama: '',
-                    order: '',
                     keterangan: '',
-                    statusaktif: '',
-                    akuntansi: '',
+                    statusaktif_nama: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: ''
@@ -430,7 +357,7 @@ const GridTypeAkuntansi = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: ITypeAkuntansi }) => (
+        renderCell: ({ row }: { row: JenisProsesFee }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -442,10 +369,10 @@ const GridTypeAkuntansi = () => {
       },
       {
         key: 'nama',
-        name: 'Nama Type Akuntansi',
+        name: 'nama',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -459,7 +386,7 @@ const GridTypeAkuntansi = () => {
                   filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Nama Type Akuntansi
+                Nama
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
@@ -514,161 +441,12 @@ const GridTypeAkuntansi = () => {
         }
       },
       {
-        key: 'order',
-        name: 'Order',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-header',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('order')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'order' ? 'text-red-500' : 'font-normal'
-                }`}
-              >
-                Order
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'order' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'order' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['order'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.order || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('order', value);
-                }}
-              />
-              {filters.filters.order && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('order', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.order;
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.order !== null && props.row.order !== undefined
-                  ? props.row.order
-                  : '',
-                filters.search,
-                String(columnFilter)
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'akuntansi_text',
-        name: 'akuntansi',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('akuntansi')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'akuntansi'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                akuntansi
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'akuntansi' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'akuntansi' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['akuntansi'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.akuntansi.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('akuntansi', value);
-                }}
-              />
-              {filters.filters.akuntansi && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('akuntansi', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.akuntansi || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.akuntansi_nama !== null &&
-                  props.row.akuntansi_nama !== undefined
-                  ? props.row.akuntansi_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
         key: 'keterangan',
         name: 'Keterangan',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 300,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -757,7 +535,7 @@ const GridTypeAkuntansi = () => {
                 label="text"
                 filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('statusaktif', value)
+                  handleColumnFilterChange('statusaktif_nama', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -864,7 +642,7 @@ const GridTypeAkuntansi = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -937,7 +715,7 @@ const GridTypeAkuntansi = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1007,6 +785,23 @@ const GridTypeAkuntansi = () => {
     ];
   }, [filters, rows, filters.filters, checkedRows]);
 
+  const orderedColumns = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // Mapping dan filter untuk menghindari undefined
+      return columnsOrder
+        .map((orderIndex) => columns[orderIndex])
+        .filter((col) => col !== undefined);
+    }
+    return columns;
+  }, [columns, columnsOrder]);
+
+  const finalColumns = useMemo(() => {
+    return orderedColumns.map((col) => ({
+      ...col,
+      width: columnsWidth[col.key] ?? col.width
+    }));
+  }, [orderedColumns, columnsWidth]);
+
   const handleAdd = async () => {
     setPopOver(true);
     setMode('add');
@@ -1016,7 +811,7 @@ const GridTypeAkuntansi = () => {
   const handleEdit = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      const result = await checkValidationTypeAkuntansiFn({
+      const result = await checkValidationJenisProsesFeeFn({
         aksi: 'EDIT',
         value: rowData.id
       });
@@ -1036,18 +831,18 @@ const GridTypeAkuntansi = () => {
 
   const handleMultipleDelete = async (idsToDelete: number[]) => {
     try {
-      // Hapus data satu per satu
       for (const id of idsToDelete) {
-        await deleteTypeAkuntansi(id as unknown as string);
+        // Hapus data satu per satu
+        await deleteJenisProsesFee(id as unknown as string);
       }
 
-      // Update state setelah semua data berhasil dihapus
-      setRows((prevRows) =>
-        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      setRows(
+        (
+          prevRows // Update state setelah semua data berhasil dihapus
+        ) => prevRows.filter((row) => !idsToDelete.includes(row.id))
       );
 
-      // Reset checked rows
-      setCheckedRows(new Set());
+      setCheckedRows(new Set()); // Reset checked rows
       setIsAllSelected(false);
 
       // Update selected row
@@ -1086,7 +881,7 @@ const GridTypeAkuntansi = () => {
         if (selectedRow !== null) {
           const rowData = rows[selectedRow];
 
-          const result = await checkValidationTypeAkuntansiFn({
+          const result = await checkValidationJenisProsesFeeFn({
             aksi: 'DELETE',
             value: rowData.id
           });
@@ -1106,7 +901,7 @@ const GridTypeAkuntansi = () => {
         const checkedRowsArray = Array.from(checkedRows);
         const validationPromises = checkedRowsArray.map(async (id) => {
           try {
-            const response = await checkValidationTypeAkuntansiFn({
+            const response = await checkValidationJenisProsesFeeFn({
               aksi: 'DELETE',
               value: id
             });
@@ -1200,7 +995,7 @@ const GridTypeAkuntansi = () => {
 
         // setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/typeakuntansi-allItems`);
+          const response = await api2.get(`/redis/get/jenisprosesfee-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1229,7 +1024,7 @@ const GridTypeAkuntansi = () => {
   };
 
   const onSubmit = async (
-    values: TypeakuntansiInput,
+    values: JenisProsesFeeInput,
     keepOpenModal = false
   ) => {
     const selectedRowId = rows[selectedRow]?.id;
@@ -1237,7 +1032,7 @@ const GridTypeAkuntansi = () => {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteTypeAkuntansi(selectedRowId as unknown as string, {
+          await deleteJenisProsesFee(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1259,7 +1054,7 @@ const GridTypeAkuntansi = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createTypeAkuntansi(
+        const newOrder = await createJenisProsesFee(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1276,19 +1071,199 @@ const GridTypeAkuntansi = () => {
       }
 
       if (selectedRowId && mode === 'edit') {
-        await updateTypeAkuntansi(
+        await updateJenisProsesFee(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('typeakuntansi');
+        queryClient.invalidateQueries('jenisprosesfee');
       }
     } catch (error) {
       console.error(error);
     } finally {
       dispatch(setProcessed());
+    }
+  };
+
+  const handleReport = async () => {
+    try {
+      dispatch(setProcessing());
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
+
+      const response = await getAllJenisProsesFeeFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Jenis Proses Fee',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+      console.log('reportRows', reportRows);
+
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      // Dynamically import Stimulsoft and generate the PDF report
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanJenisProsesFee.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
+
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
+
+              // Navigate to the report page
+              window.open('/reports/jenisprosesfee', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
+        });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
+
+  const saveGridConfig = async (
+    userId: string, // userId sebagai identifier
+    gridName: string,
+    columnsOrder: number[],
+    columnsWidth: { [key: string]: number }
+  ) => {
+    try {
+      const response = await fetch('/api/savegrid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          gridName,
+          config: { columnsOrder, columnsWidth }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save grid configuration');
+      }
+    } catch (error) {
+      console.error('Failed to save grid configuration:', error);
+    }
+  };
+
+  const onColumnResize = (index: number, width: number) => {
+    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
+
+    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
+    setColumnsWidth(newWidthMap);
+
+    if (resizeDebounceTimeout.current) {
+      clearTimeout(resizeDebounceTimeout.current); // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
+    }
+
+    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu, saveGridConfig akan dipanggil
+    resizeDebounceTimeout.current = setTimeout(() => {
+      saveGridConfig(
+        user.id,
+        'GridJenisProsesFee',
+        [...columnsOrder],
+        newWidthMap
+      );
+    }, 300);
+  };
+
+  const onColumnsReorder = (sourceKey: string, targetKey: string) => {
+    setColumnsOrder((prevOrder) => {
+      const sourceIndex = prevOrder.findIndex(
+        (index) => columns[index].key === sourceKey
+      );
+      const targetIndex = prevOrder.findIndex(
+        (index) => columns[index].key === targetKey
+      );
+
+      const newOrder = [...prevOrder];
+      newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
+
+      saveGridConfig(
+        user.id,
+        'GridJenisProsesFee',
+        [...newOrder],
+        columnsWidth
+      );
+      return newOrder;
+    });
+  };
+
+  const resetGridConfig = () => {
+    // Nilai default untuk columnsOrder dan columnsWidth
+    const defaultColumnsOrder = columns.map((_, index) => index);
+    const defaultColumnsWidth = columns.reduce(
+      (acc, column) => {
+        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
+        return acc;
+      },
+      {} as { [key: string]: number }
+    );
+
+    // Set state kembali ke nilai default
+    setColumnsOrder(defaultColumnsOrder);
+    setColumnsWidth(defaultColumnsWidth);
+    setContextMenu(null);
+    setDataGridKey((prevKey) => prevKey + 1);
+
+    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+
+    // Simpan konfigurasi reset ke server (atau backend)
+    if (user.id) {
+      saveGridConfig(
+        user.id,
+        'GridJenisProsesFee',
+        defaultColumnsOrder,
+        defaultColumnsWidth
+      );
     }
   };
 
@@ -1339,114 +1314,9 @@ const GridTypeAkuntansi = () => {
     }
   };
 
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-
-  const onColumnResize = (index: number, width: number) => {
-    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
-
-    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
-    setColumnsWidth(newWidthMap);
-
-    if (resizeDebounceTimeout.current) {
-      // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
-      clearTimeout(resizeDebounceTimeout.current);
-    }
-
-    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
-    //    saveGridConfig akan dipanggil
-    resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridTypeAkuntansi',
-        [...columnsOrder],
-        newWidthMap
-      );
-    }, 300);
-  };
-
-  const onColumnsReorder = (sourceKey: string, targetKey: string) => {
-    setColumnsOrder((prevOrder) => {
-      const sourceIndex = prevOrder.findIndex(
-        (index) => columns[index].key === sourceKey
-      );
-      const targetIndex = prevOrder.findIndex(
-        (index) => columns[index].key === targetKey
-      );
-
-      const newOrder = [...prevOrder];
-      newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
-
-      saveGridConfig(user.id, 'GridTypeAkuntansi', [...newOrder], columnsWidth);
-      return newOrder;
-    });
-  };
-
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridTypeAkuntansi',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-
-  function handleCellClick(args: { row: ITypeAkuntansi }) {
-    const clickedRow = args.row;
-    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    if (rowIndex !== -1) {
-      setSelectedRow(rowIndex);
-    }
-  }
 
   function LoadRowsRenderer() {
     return (
@@ -1467,31 +1337,16 @@ const GridTypeAkuntansi = () => {
     );
   }
 
-  function getRowClass(row: ITypeAkuntansi) {
-    const rowIndex = rows.findIndex((r) => r.id === row.id);
-    return rowIndex === selectedRow ? 'selected-row' : '';
-  }
-
-  function rowKeyGetter(row: ITypeAkuntansi) {
-    return row.id;
-  }
-
-  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
-    return currentTarget.scrollTop <= 10;
-  }
-
-  function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
-    const { currentTarget } = event;
-    if (!currentTarget) return false;
-
-    return (
-      currentTarget.scrollTop + currentTarget.clientHeight >=
-      currentTarget.scrollHeight - 2
-    );
+  function handleCellClick(args: { row: JenisProsesFee }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
   }
 
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingTypeAkuntansi || !hasMore || rows.length === 0) return;
+    if (isLoadingJenisProsesFee || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1519,7 +1374,7 @@ const GridTypeAkuntansi = () => {
   }
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<ITypeAkuntansi>,
+    args: CellKeyDownArgs<JenisProsesFee>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1568,105 +1423,76 @@ const GridTypeAkuntansi = () => {
     }
   }
 
-  const orderedColumns = useMemo(() => {
-    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // Mapping dan filter untuk menghindari undefined
-      return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
-        .filter((col) => col !== undefined);
+  function highlightText(
+    text: string | number | null | undefined,
+    search: string,
+    columnFilter: string = ''
+  ) {
+    const textValue = text != null ? String(text) : '';
+    if (!textValue) return '';
+
+    if (!search.trim() && !columnFilter.trim()) {
+      return textValue;
     }
-    return columns;
-  }, [columns, columnsOrder]);
 
-  const finalColumns = useMemo(() => {
-    return orderedColumns.map((col) => ({
-      ...col,
-      width: columnsWidth[col.key] ?? col.width
-    }));
-  }, [orderedColumns, columnsWidth]);
-
-  const handleReport = async () => {
-    try {
-      dispatch(setProcessing());
-      const now = new Date();
-      const pad = (n: any) => n.toString().padStart(2, '0');
-      const tglcetak = `${pad(now.getDate())}-${pad(
-        now.getMonth() + 1
-      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-        now.getMinutes()
-      )}:${pad(now.getSeconds())}`;
-      const { page, limit, ...filtersWithoutLimit } = filters;
-
-      const response = await getAllTypeAkuntansiFn(filtersWithoutLimit);
-      const reportRows = response.data.map((row) => ({
-        ...row,
-        judullaporan: 'Laporan Type Akuntansi',
-        usercetak: user.username,
-        tglcetak: tglcetak,
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-      }));
-      console.log('reportRows', reportRows);
-
-      sessionStorage.setItem(
-        'filtersWithoutLimit',
-        JSON.stringify(filtersWithoutLimit)
-      );
-      // Dynamically import Stimulsoft and generate the PDF report
-      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-        .then((module) => {
-          const { Stimulsoft } = module;
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'Tahoma'
-          );
-          Stimulsoft.Base.StiLicense.Key =
-            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-          const report = new Stimulsoft.Report.StiReport();
-          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-
-          // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanTypeAkuntansi.mrt');
-          report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows });
-          report.regData(dataSet.dataSetName, '', dataSet);
-          report.dictionary.synchronize();
-
-          // Render the report asynchronously
-          report.renderAsync(() => {
-            // Export the report to PDF asynchronously
-            report.exportDocumentAsync((pdfData: any) => {
-              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-                type: 'application/pdf'
-              });
-              const pdfUrl = URL.createObjectURL(pdfBlob);
-
-              // Store the Blob URL in sessionStorage
-              sessionStorage.setItem('pdfUrl', pdfUrl);
-
-              // Navigate to the report page
-              window.open('/reports/typeakuntansi', '_blank');
-            }, Stimulsoft.Report.StiExportFormat.Pdf);
-          });
-        })
-        .catch((error) => {
-          console.error('Failed to load Stimulsoft:', error);
-        });
-    } catch (error) {
-      dispatch(setProcessed());
-    } finally {
-      dispatch(setProcessed());
+    const combined = search + columnFilter;
+    if (!combined) {
+      return textValue;
     }
-  };
+
+    // 1. Fungsi untuk escape regex‐meta chars
+    const escapeRegExp = (s: string) =>
+      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
+    const pattern = combined
+      .split('')
+      .map((ch) => escapeRegExp(ch))
+      .join('|');
+
+    // 3. Build regex-nya
+    const regex = new RegExp(`(${pattern})`, 'gi');
+
+    // 4. Replace dengan <span>
+    const highlighted = textValue.replace(
+      regex,
+      (m) =>
+        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+    );
+
+    return (
+      <span
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+    );
+  }
+
+  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
+    return currentTarget.scrollTop <= 10;
+  }
+
+  function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
+    const { currentTarget } = event;
+    if (!currentTarget) return false;
+
+    return (
+      currentTarget.scrollTop + currentTarget.clientHeight >=
+      currentTarget.scrollHeight - 2
+    );
+  }
+
+  function getRowClass(row: JenisProsesFee) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+
+  function rowKeyGetter(row: JenisProsesFee) {
+    return row.id;
+  }
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridTypeAkuntansi');
+    loadGridConfig(user.id, 'GridJenisProsesFee');
   }, []);
 
   useEffect(() => {
@@ -1682,34 +1508,34 @@ const GridTypeAkuntansi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allTypeAkuntansi || isDataUpdated) return;
+    if (!allJenisProsesFee || isDataUpdated) return;
 
-    const newRows = allTypeAkuntansi.data || [];
+    const newRows = allJenisProsesFee.data || [];
 
     setRows((prevRows) => {
-      // Reset data if filter changes (first page)
       if (currentPage === 1 || filters !== prevFilters) {
+        // Reset data if filter changes (first page)
         setCurrentPage(1); // Reset currentPage to 1
         setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
         return newRows; // Use the fetched new rows directly
       }
 
-      // Add new data to the bottom for infinite scroll
       if (!fetchedPages.has(currentPage)) {
+        // Add new data to the bottom for infinite scroll
         return [...prevRows, ...newRows];
       }
 
       return prevRows;
     });
 
-    if (allTypeAkuntansi.pagination.totalPages) {
-      setTotalPages(allTypeAkuntansi.pagination.totalPages);
+    if (allJenisProsesFee.pagination.totalPages) {
+      setTotalPages(allJenisProsesFee.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allTypeAkuntansi, currentPage, filters, isDataUpdated]);
+  }, [allJenisProsesFee, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1761,24 +1587,18 @@ const GridTypeAkuntansi = () => {
     const rowData = rows[selectedRow];
 
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      forms.setValue('id', rowData?.id);
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
-      forms.setValue('order', rowData?.order ? Number(rowData.order) : 0);
       forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('akuntansi_id', rowData?.akuntansi_id || 0);
-      forms.setValue('akuntansi_nama', rowData?.akuntansi_nama || '');
-      forms.setValue('statusaktif', rowData?.statusaktif || 1);
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.statusaktif_nama || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       forms.setValue('id', 0);
-      // If in addMode, ensure the form values are cleared
-      // forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-      // forms.setValue('akuntansi_nama', '');
+      forms.setValue('statusaktif_nama', '');
     }
   }, [forms, selectedRow, rows, mode]);
 
   useEffect(() => {
-    // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
       if (!inputColRefs.current[col.key]) {
         inputColRefs.current[col.key] = null;
@@ -1809,11 +1629,10 @@ const GridTypeAkuntansi = () => {
   useEffect(() => {
     if (isSubmitSuccessful) {
       // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
+      requestAnimationFrame(() => setFocus('nama')); // Pastikan fokus terjadi setelah repaint
     }
   }, [isSubmitSuccessful, setFocus]);
-  console.log('forms.getValues()', forms.getValues());
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1891,7 +1710,7 @@ const GridTypeAkuntansi = () => {
               }
             ]}
           />
-          {isLoadingTypeAkuntansi ? <LoadRowsRenderer /> : null}
+          {isLoadingJenisProsesFee ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1913,7 +1732,7 @@ const GridTypeAkuntansi = () => {
           )}
         </div>
       </div>
-      <FormTypeAkuntansi
+      <FormJenisProsesFee
         mode={mode}
         forms={forms}
         popOver={popOver}
@@ -1921,11 +1740,11 @@ const GridTypeAkuntansi = () => {
         handleClose={handleClose}
         onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
-        isLoadingUpdate={isLoadingUpdate}
-        isLoadingDelete={isLoadingDelete}
+        // isLoadingUpdate={isLoadingUpdate}
+        // isLoadingDelete={isLoadingDelete}
       />
     </div>
   );
 };
 
-export default GridTypeAkuntansi;
+export default GridJenisProsesFee;
