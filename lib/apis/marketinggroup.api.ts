@@ -8,6 +8,10 @@ interface UpdateMarketingGroupParams {
   id: string;
   fields: MarketingGroupInput;
 }
+interface validationFields {
+  aksi: string;
+  value: number | string;
+}
 
 export const getMarketingGroupFn = async (
   filters: GetParams = {}
@@ -44,4 +48,27 @@ export const updateMarketingGroupFn = async ({
 }: UpdateMarketingGroupParams) => {
   const response = await api2.put(`/marketinggroup/${id}`, fields);
   return response.data;
+};
+
+export const exportMarketingGroupFn = async (filters: any): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/marketinggroup/export', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
+  }
+};
+
+export const checkValidationMarketingGroupFn = async (
+  fields: validationFields
+) => {
+  const response = await api2.post(`/marketinggroup/check-validation`, fields);
+
+  return response;
 };

@@ -50,10 +50,6 @@ export const useCreateEmkl = () => {
   return useMutation(storeEmklFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('emkls'); //pake s karena sebagai penamaan aja, karena kita pake mutasi, jadi pas crud dan ada data berubah kita ga fetch manual, pake ini aja asal keynya sama
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -84,10 +80,6 @@ export const useDeleteEmkl = () => {
   return useMutation(deleteEmklFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('emkls');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -109,10 +101,6 @@ export const useUpdateEmkl = () => {
   return useMutation(updateEmklFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('emkls');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;

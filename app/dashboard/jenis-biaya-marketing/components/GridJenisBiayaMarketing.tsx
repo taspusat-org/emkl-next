@@ -59,6 +59,15 @@ import {
 } from '@/lib/server/useJenisBiayaMarketing';
 import { IJenisBiayaMarketing } from '@/lib/types/jenisbiayamarketing.type';
 import FormJenisBiayaMarketing from './FormJenisBiayaMarketing';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  checkValidationJenisBiayaMarketingFn,
+  getJenisBiayaMarketingFn
+} from '@/lib/apis/jenisbiayamarketing.api';
 
 interface Filter {
   page: number;
@@ -162,7 +171,7 @@ const GridJenisBiayaMarketing = () => {
     page: currentPage
   });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -999,6 +1008,7 @@ const GridJenisBiayaMarketing = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1045,53 +1055,69 @@ const GridJenisBiayaMarketing = () => {
     keepOpenModal = false
   ) => {
     const selectedRowId = rows[selectedRow]?.id;
-    console.log('dasdads');
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteJenisBiayaMarketing(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      console.log('dasdads');
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteJenisBiayaMarketing(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else if (selectedRow === rows.length - 1) {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createJenisBiayaMarketing(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createJenisBiayaMarketing(
+          {
+            ...values,
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updateJenisBiayaMarketing(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('menus');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+
+      if (selectedRowId && mode === 'edit') {
+        await updateJenisBiayaMarketing(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('menus');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1102,10 +1128,217 @@ const GridJenisBiayaMarketing = () => {
       setMode('edit');
     }
   };
-  const handleDelete = () => {
-    if (selectedRow !== null) {
-      setMode('delete');
-      setPopOver(true);
+  const handleDelete = async () => {
+    try {
+      dispatch(setProcessing());
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const selectedRowId = rows[selectedRow]?.id;
+
+          if (selectedRowId) {
+            const validationResponse =
+              await checkValidationJenisBiayaMarketingFn({
+                aksi: 'DELETE',
+                value: selectedRowId
+              });
+
+            if (validationResponse.data.status !== 'success') {
+              alert({
+                title: 'Data tidak dapat dihapus!',
+                variant: 'danger',
+                submitText: 'OK'
+              });
+              return;
+            }
+
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationJenisBiayaMarketingFn({
+              aksi: 'DELETE',
+              value: id
+            });
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
+        });
+
+        const validationResults = await Promise.all(validationPromises);
+
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
+
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
+          alert({
+            title: 'Beberapa data tidak dapat dihapus!',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          return;
+        }
+
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
+
+  // Fungsi baru untuk menangani multiple delete
+  const handleMultipleDelete = async (idsToDelete: number[]) => {
+    try {
+      // Hapus data satu per satu
+      for (const id of idsToDelete) {
+        await deleteJenisBiayaMarketing(id as unknown as string);
+      }
+
+      // Update state setelah semua data berhasil dihapus
+      setRows((prevRows) =>
+        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+
+      // Reset checked rows
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+
+      // Update selected row
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
+
+      // Focus grid
+      setTimeout(() => {
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
+
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    }
+  };
+  const handleReport = async () => {
+    try {
+      dispatch(setProcessing());
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
+
+      const response = await getJenisBiayaMarketingFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Jenis Biaya Marketing',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      // Dynamically import Stimulsoft and generate the PDF report
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanJenisBiayaMarketing.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
+
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
+
+              // Navigate to the report page
+              window.open('/reports/jenisbiayamarketing', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
+        });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
     }
   };
   const handleView = () => {
@@ -1147,7 +1380,7 @@ const GridJenisBiayaMarketing = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
@@ -1391,12 +1624,14 @@ const GridJenisBiayaMarketing = () => {
       mode !== 'add' // Only fill the form if not in addMode
     ) {
       console.log('rowData', rowData);
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
       forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
+      forms.setValue('id', 0);
       forms.setValue('statusaktif_text', '');
     }
   }, [forms, selectedRow, rows, mode]);
@@ -1414,6 +1649,7 @@ const GridJenisBiayaMarketing = () => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
+        clearError();
         setPopOver(false);
         dispatch(clearOpenName());
       }
@@ -1430,7 +1666,7 @@ const GridJenisBiayaMarketing = () => {
 
   useEffect(() => {
     if (isSubmitSuccessful) {
-      reset();
+      // reset();
       // Pastikan fokus terjadi setelah repaint
       requestAnimationFrame(() => setFocus('nama'));
     }
@@ -1502,6 +1738,14 @@ const GridJenisBiayaMarketing = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingJenisBiayaMarketing ? <LoadRowsRenderer /> : null}
           {contextMenu && (

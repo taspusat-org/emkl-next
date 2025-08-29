@@ -19,6 +19,7 @@ import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 import InputNumeric from '@/components/custom-ui/InputNumeric';
+import InputMask from '@mona-health/react-input-mask';
 
 const FormEmkl = ({
   popOver,
@@ -395,7 +396,7 @@ const FormEmkl = ({
                             <Input
                               {...field}
                               value={field.value ?? ''}
-                              type="text"
+                              type="email"
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
@@ -478,7 +479,7 @@ const FormEmkl = ({
                     name="npwp"
                     control={forms.control}
                     render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                      <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
@@ -487,12 +488,30 @@ const FormEmkl = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <Input
+                            <InputMask
                               {...field}
+                              mask="99.999.999.9-999.999"
+                              // maskChar={null}
+                              maskPlaceholder={null}
                               value={field.value ?? ''}
+                              className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] focus-visible:outline-none`}
+                              onChange={field.onChange}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
-                            />
+                            >
+                              {/* {(inputProps) => (
+                                <input
+                                  {...inputProps}
+                                  type="text"
+                                  placeholder="dd-mm-yyyy"
+                                  className={`h-9 w-full rounded-sm border border-zinc-300 p-2 text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                                    deleteMode
+                                      ? 'text-zinc-400'
+                                      : 'text-zinc-600'
+                                  } focus:outline-none focus:ring-0`}
+                                />
+                              )} */}
+                            </InputMask>
                           </FormControl>
                           <FormMessage />
                         </div>

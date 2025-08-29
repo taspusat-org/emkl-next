@@ -59,6 +59,15 @@ import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import {
+  checkValidationPelayaranFn,
+  getPelayaranFn
+} from '@/lib/apis/pelayaran.api';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 
 interface Filter {
   page: number;
@@ -70,6 +79,7 @@ interface Filter {
     created_at: string;
     updated_at: string;
     text: string;
+    modifiedby: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -145,7 +155,8 @@ const GridPelayaran = () => {
       keterangan: '',
       created_at: '',
       updated_at: '',
-      text: ''
+      text: '',
+      modifiedby: ''
     },
     search: '',
     sortBy: 'nama',
@@ -160,7 +171,7 @@ const GridPelayaran = () => {
     }
   );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -248,7 +259,8 @@ const GridPelayaran = () => {
         keterangan: '',
         created_at: '',
         updated_at: '',
-        text: 'AKTIF'
+        text: 'AKTIF',
+        modifiedby: ''
       },
       search: searchValue,
       page: 1
@@ -350,7 +362,8 @@ const GridPelayaran = () => {
                     keterangan: '',
                     created_at: '',
                     updated_at: '',
-                    text: ''
+                    text: '',
+                    modifiedby: ''
                   }
                 }),
                   setInputValue('');
@@ -622,6 +635,77 @@ const GridPelayaran = () => {
           }
 
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'modifiedby',
+        name: 'Modified By',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('modifiedby')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Modified By
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'modifiedby' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'modifiedby' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['modifiedby'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.modifiedby || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleColumnFilterChange('modifiedby', value);
+                }}
+              />
+              {filters.filters.modifiedby && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('modifiedby', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.modifiedby || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.modifiedby || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
         }
       },
       {
@@ -912,6 +996,7 @@ const GridPelayaran = () => {
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -953,73 +1038,308 @@ const GridPelayaran = () => {
   };
   const onSubmit = async (values: PelayaranInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
-    console.log('dasdads');
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deletePelayaran(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      console.log('dasdads');
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deletePelayaran(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else if (selectedRow === rows.length - 1) {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createPelayaran(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createPelayaran(
+          {
+            ...values,
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updatePelayaran(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('menus');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+
+      if (selectedRowId && mode === 'edit') {
+        await updatePelayaran(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('menus');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      setPopOver(true);
-      setMode('edit');
+      const result = await checkValidationPelayaranFn({
+        aksi: 'EDIT',
+        value: rowData.id
+      });
+
+      if (result.data.status == 'failed') {
+        alert({
+          title: result.data.message,
+          variant: 'danger',
+          submitText: 'OK'
+        });
+      } else {
+        setPopOver(true);
+        setMode('edit');
+      }
     }
   };
-  const handleDelete = () => {
-    if (selectedRow !== null) {
-      setMode('delete');
-      setPopOver(true);
+  const handleDelete = async () => {
+    try {
+      dispatch(setProcessing());
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const selectedRowId = rows[selectedRow]?.id;
+
+          if (selectedRowId) {
+            const validationResponse = await checkValidationPelayaranFn({
+              aksi: 'DELETE',
+              value: selectedRowId
+            });
+
+            if (validationResponse.data.status !== 'success') {
+              alert({
+                title: 'Data tidak dapat dihapus!',
+                variant: 'danger',
+                submitText: 'OK'
+              });
+              return;
+            }
+
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationPelayaranFn({
+              aksi: 'DELETE',
+              value: id
+            });
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
+        });
+
+        const validationResults = await Promise.all(validationPromises);
+
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
+
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
+          alert({
+            title: 'Beberapa data tidak dapat dihapus!',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          return;
+        }
+
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
+  // Fungsi baru untuk menangani multiple delete
+  const handleMultipleDelete = async (idsToDelete: number[]) => {
+    try {
+      // Hapus data satu per satu
+      for (const id of idsToDelete) {
+        await deletePelayaran(id as unknown as string);
+      }
+
+      // Update state setelah semua data berhasil dihapus
+      setRows((prevRows) =>
+        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+
+      // Reset checked rows
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+
+      // Update selected row
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
+
+      // Focus grid
+      setTimeout(() => {
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
+
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
     }
   };
   const handleView = () => {
     if (selectedRow !== null) {
       setMode('view');
       setPopOver(true);
+    }
+  };
+
+  const handleReport = async () => {
+    try {
+      dispatch(setProcessing());
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
+
+      const response = await getPelayaranFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Pelayaran',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      // Dynamically import Stimulsoft and generate the PDF report
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanPelayaran.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
+
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
+
+              // Navigate to the report page
+              window.open('/reports/pelayaran', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
+        });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1055,7 +1375,7 @@ const GridPelayaran = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
@@ -1292,13 +1612,15 @@ const GridPelayaran = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
       forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('id', 0);
+      forms.setValue('statusaktif_text', '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1315,6 +1637,7 @@ const GridPelayaran = () => {
       if (event.key === 'Escape') {
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
+        clearError();
         setPopOver(false);
         dispatch(clearOpenName());
       }
@@ -1404,6 +1727,14 @@ const GridPelayaran = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingPelayaran ? <LoadRowsRenderer /> : null}
           {contextMenu && (

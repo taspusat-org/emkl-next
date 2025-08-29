@@ -8,6 +8,10 @@ interface UpdateJenisBiayaMarketingParams {
   id: string;
   fields: JenisBiayaMarketingInput;
 }
+interface validationFields {
+  aksi: string;
+  value: number | string;
+}
 
 export const getJenisBiayaMarketingFn = async (
   filters: GetParams = {}
@@ -46,4 +50,31 @@ export const updateJenisBiayaMarketingFn = async ({
 }: UpdateJenisBiayaMarketingParams) => {
   const response = await api2.put(`/jenisbiayamarketing/${id}`, fields);
   return response.data;
+};
+export const exportJenisBiayaMarketingFn = async (
+  filters: any
+): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/jenisbiayamarketing/export', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
+  }
+};
+
+export const checkValidationJenisBiayaMarketingFn = async (
+  fields: validationFields
+) => {
+  const response = await api2.post(
+    `/jenisbiayamarketing/check-validation`,
+    fields
+  );
+
+  return response;
 };

@@ -8,7 +8,10 @@ interface UpdatePelayaranParams {
   id: string;
   fields: PelayaranInput;
 }
-
+interface validationFields {
+  aksi: string;
+  value: number | string;
+}
 export const getPelayaranFn = async (
   filters: GetParams = {}
 ): Promise<IAllPelayaran> => {
@@ -42,4 +45,25 @@ export const updatePelayaranFn = async ({
 }: UpdatePelayaranParams) => {
   const response = await api2.put(`/pelayaran/${id}`, fields);
   return response.data;
+};
+
+export const exportPelayaranFn = async (filters: any): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/pelayaran/export', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
+  }
+};
+
+export const checkValidationPelayaranFn = async (fields: validationFields) => {
+  const response = await api2.post(`/pelayaran/check-validation`, fields);
+
+  return response;
 };
