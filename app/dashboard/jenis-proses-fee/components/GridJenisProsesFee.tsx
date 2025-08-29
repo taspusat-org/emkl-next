@@ -1696,7 +1696,7 @@ const GridJenisProsesFee = () => {
           }}
         >
           <ActionButton
-            module="Type-Akuntansi"
+            module="JENIS-PROSES-FEE"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onEdit={handleEdit}

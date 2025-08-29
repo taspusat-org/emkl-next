@@ -30,9 +30,6 @@ export interface ScheduleDetail {
   etatujuan: string | null;
   etdtujuan: string | null;
   keterangan: string | null;
-  modifiedby: string | null;
-  created_at: string;
-  updated_at: string;
   [key: string]: string | number | boolean | null | undefined;
 }
 export interface IAllScheduleHeader {
@@ -52,4 +49,22 @@ export const filterScheduleHeader = {
   updated_at: '',
   tglDari: '',
   tglSampai: ''
+};
+
+export const filterScheduleDetail = {
+  nobukti: '',
+  pelayaran: '',
+  kapal: '',
+  tujuankapal: '',
+  tglberangkat: '',
+  tgltiba: '',
+  etb: '',
+  eta: '',
+  etd: '',
+  voyberangkat: '',
+  voytiba: '',
+  closing: '',
+  etatujuan: '',
+  etdtujuan: '',
+  keterangan: ''
 };
