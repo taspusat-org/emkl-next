@@ -47,7 +47,7 @@ export const storeAsalKapalFn = async (fields: AsalKapalInput) => {
 export const exportAsalKapalFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanasalkapal', {
+    const response = await api2.get('/asalkapal/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

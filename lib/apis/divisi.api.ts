@@ -47,7 +47,7 @@ export const storeDivisiFn = async (fields: DivisiInput) => {
 export const exportDivisiFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporandivisi', {
+    const response = await api2.get('/divisi/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

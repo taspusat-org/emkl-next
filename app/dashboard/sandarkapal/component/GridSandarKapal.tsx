@@ -1143,7 +1143,7 @@ const GridSandarKapal = () => {
     const response = await getSandarKapalFn(filtersWithoutLimit);
     const reportRows = response.data.map((row) => ({
       ...row,
-      judullaporan: 'Laporan SandarKapal',
+      judullaporan: 'Laporan Sandar Kapal',
       usercetak: user.username,
       tglcetak: new Date().toLocaleDateString(),
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1158,7 +1158,7 @@ const GridSandarKapal = () => {
         const { Stimulsoft } = module;
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
           '/fonts/tahoma.ttf',
-          'Arial'
+          'tahoma'
         );
         Stimulsoft.Base.StiLicense.Key =
           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +

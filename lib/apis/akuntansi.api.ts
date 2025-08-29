@@ -47,7 +47,7 @@ export const storeAkuntansiFn = async (fields: AkuntansiInput) => {
 export const exportAkuntansiFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporanakuntansi', {
+    const response = await api2.get('/akuntansi/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

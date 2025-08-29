@@ -47,7 +47,7 @@ export const storeSandarKapalFn = async (fields: SandarKapalInput) => {
 export const exportSandarKapalFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/laporansandarkapal', {
+    const response = await api2.get('/sandarkapal/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

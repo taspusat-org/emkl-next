@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "1f9ef208049310eaa34b17cb327ff359",
+  "ReportGuid": "e646cc0840b2763d3a80cedc2560fd90",
   "ReportName": "Report",
   "ReportAlias": "Report",
-  "ReportFile": "/reports/LaporanKapal.mrt",
+  "ReportFile": "LaporanAkuntansi.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1756437302000+0700)/",
+  "ReportChanged": "/Date(1756435475000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -53,15 +53,15 @@
             "Type": "System.String"
           },
           "4": {
-            "Name": "divisi_id",
-            "NameInSource": "divisi_id",
-            "Alias": "divisi_id",
+            "Name": "pelayaran_id",
+            "NameInSource": "pelayaran_id",
+            "Alias": "pelayaran_id",
             "Type": "System.String"
           },
           "5": {
-            "Name": "divisi",
-            "NameInSource": "divisi",
-            "Alias": "divisi",
+            "Name": "pelayaran",
+            "NameInSource": "pelayaran",
+            "Alias": "pelayaran",
             "Type": "System.String"
           },
           "6": {
@@ -396,7 +396,7 @@
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "DIVISI"
+                "Value": "PELAYARAN"
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",
@@ -537,7 +537,6 @@
               "Ident": "StiStartPointPrimitive",
               "Name": "StartPointPrimitive1",
               "ClientRectangle": "108,29,0,0",
-              "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
               },
@@ -547,7 +546,6 @@
               "Ident": "StiEndPointPrimitive",
               "Name": "EndPointPrimitive1",
               "ClientRectangle": "108,37,0,0",
-              "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
               },
@@ -713,7 +711,7 @@
               },
               "MaxNumberOfLines": 6,
               "Text": {
-                "Value": "{data.divisi}"
+                "Value": "{data.pelayaran}"
               },
               "VertAlignment": "Center",
               "Font": "Tahoma;;;",
@@ -849,7 +847,6 @@
               "Ident": "StiStartPointPrimitive",
               "Name": "StartPointPrimitive10",
               "ClientRectangle": "162,-0.5,0,0",
-              "ComponentPlacement": "d.DataBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
               },
@@ -859,7 +856,6 @@
               "Ident": "StiEndPointPrimitive",
               "Name": "EndPointPrimitive10",
               "ClientRectangle": "162,9.5,0,0",
-              "ComponentPlacement": "d.DataBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
               },
