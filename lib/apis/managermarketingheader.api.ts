@@ -61,3 +61,19 @@ export const deleteManagerMarketingFn = async (id: string) => {
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
+
+export const exportManagerMarketingFn = async (filters: any): Promise<Blob> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get('/managermarketing/export', {
+      params: queryParams,
+      responseType: 'blob' // backend return file (Excel)
+    });
+
+    return response.data; // ini sudah Blob
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    throw new Error('Failed to export data');
+  }
+};

@@ -958,7 +958,7 @@ const GridHargatrucking = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {formatCurrency(props.row.nominal)}
             </div>
           );
@@ -1920,7 +1920,7 @@ const GridHargatrucking = () => {
       forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id) || 1);
       forms.setValue('jenisorderan_text', rowData.jenisorderan_text || '');
 
-      forms.setValue('nominal', formatcu);
+      forms.setValue('nominal', formatCurrency(rowData.nominal));
 
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('text', rowData.text || '');
@@ -2001,7 +2001,6 @@ const GridHargatrucking = () => {
           <ActionButton
             module="HARGA-TRUCKING"
             onAdd={handleAdd}
-            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

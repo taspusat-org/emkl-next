@@ -2340,7 +2340,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.formatdeliveryreport || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.formatdeliveryreport || '',
                 filters.search,
@@ -2556,7 +2556,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.formatcetak || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.formatcetak || '',
                 filters.search,
@@ -4430,7 +4430,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.idtipe || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.idtipe || '',
                 filters.search,
@@ -4505,7 +4505,7 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.idinitial || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.idinitial || '',
                 filters.search,

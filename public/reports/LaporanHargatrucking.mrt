@@ -846,6 +846,12 @@
               "TextOptions": {
                 "WordWrap": true
               },
+              "Margins": {
+                "Left": 0,
+                "Right": 3,
+                "Top": 0,
+                "Bottom": 0
+              },
               "ShrinkFontToFit": true,
               "ShrinkFontToFitMinimumSize": 5,
               "Type": "DataColumn"
