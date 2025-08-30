@@ -229,15 +229,15 @@ const FormMarketingDetail = ({
           const rowIdx = props.rowIdx;
           let raw = props.row.nominalawal ?? ''; // Nilai nominal awal
 
-          if (typeof raw === 'number') {
-            // Cek jika raw belum diformat dengan tanda koma, kemudian format
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
+          // if (typeof raw === 'number') {
+          //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
+          //   raw = raw.toString(); // Mengonversi nominal menjadi string
+          // }
 
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
+          // // Jika raw tidak mengandung tanda koma, format sebagai currency
+          // if (!raw.includes(',')) {
+          //   raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+          // }
 
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -277,15 +277,15 @@ const FormMarketingDetail = ({
           const rowIdx = props.rowIdx;
           let raw = props.row.nominalakhir ?? ''; // Nilai nominal awal
 
-          if (typeof raw === 'number') {
-            // Cek jika raw belum diformat dengan tanda koma, kemudian format
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
+          // if (typeof raw === 'number') {
+          //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
+          //   raw = raw.toString(); // Mengonversi nominal menjadi string
+          // }
 
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
+          // // Jika raw tidak mengandung tanda koma, format sebagai currency
+          // if (!raw.includes(',')) {
+          //   raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+          // }
 
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -325,57 +325,49 @@ const FormMarketingDetail = ({
           const rowIdx = props.rowIdx;
           let raw = props.row.persentase ?? ''; // Nilai nominal awal
 
-          if (typeof raw === 'number') {
-            // Cek jika raw belum diformat dengan tanda koma, kemudian format
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
-
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
-
           return (
-            // <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-            //   {props.row.isAddRow ? (
-            //     <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
-            //       {formatCurrency(persentase)}
-            //     </div>
-            //   ) : (
-            //     <InputCurrency
-            //       value={String(raw)}
-            //       onValueChange={(value) => handleInputChange(rowIdx, 'persentase', value)}
-            //     />
-            //   )}
-            // </div>
-
-            <div>
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
                 <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
                   {formatCurrency(persentase)}
                 </div>
               ) : (
-                <FormField
-                  name="persentase"
-                  control={forms.control}
-                  render={({ field }) => (
-                    <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                      <div className="flex flex-col lg:w-full">
-                        <FormControl>
-                          <InputCurrency
-                            value={String(raw)}
-                            onValueChange={(value) =>
-                              handleInputChange(rowIdx, 'persentase', value)
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
+                <InputCurrency
+                  value={String(raw)}
+                  onValueChange={(value) =>
+                    handleInputChange(rowIdx, 'persentase', value)
+                  }
                 />
               )}
             </div>
+
+            // <div>
+            //   {props.row.isAddRow ? (
+            //     <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+            //       {formatCurrency(persentase)}
+            //     </div>
+            //   ) : (
+            //     <FormField
+            //       name="persentase"
+            //       control={forms.control}
+            //       render={({ field }) => (
+            //         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+            //           <div className="flex flex-col lg:w-full">
+            //             <FormControl>
+            //               <InputCurrency
+            //                 value={String(raw)}
+            //                 onValueChange={(value) =>
+            //                   handleInputChange(rowIdx, 'persentase', value)
+            //                 }
+            //               />
+            //             </FormControl>
+            //             <FormMessage />
+            //           </div>
+            //         </FormItem>
+            //       )}
+            //     />
+            //   )}
+            // </div>
           );
         }
       },

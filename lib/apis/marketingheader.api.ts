@@ -135,3 +135,19 @@ export const checkValidationEditmarketingDetailFn = async (
 
   return response;
 };
+
+export const exportMarketingFn = async (filters: any): Promise<Blob> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get('/marketing/export', {
+      params: queryParams,
+      responseType: 'blob' // backend return file (Excel)
+    });
+
+    return response.data; // ini sudah Blob
+  } catch (error) {
+    console.error('Error exporting data marketing:', error);
+    throw new Error('Failed to export data marketing');
+  }
+};

@@ -7,7 +7,7 @@ export const marketingOrderanSchema = z.object({
   keterangan: z.string().nullable(),
   singkatan: z.string().nullable(),
   statusaktif: z.number().nullable(),
-  statusaktifOrderan_nama: z.string().nullable()
+  statusaktifOrderan_nama: z.string().nullable().optional()
 });
 
 export const marketingBiayaSchema = z.object({
@@ -63,15 +63,35 @@ export const marketingSchema = z.object({
       invalid_type_error: dynamicRequiredMessage('TGL MASUK')
     })
     .nonempty({ message: dynamicRequiredMessage('TGL MASUK') }),
-  statustarget: z.number().nullable(),
+  // statustarget: z.number().nullable(),
+  statustarget: z
+    .number()
+    .int({ message: dynamicRequiredMessage('STATUS TARGET') })
+    .min(1, { message: dynamicRequiredMessage('STATUS TARGET') }),
   statustarget_nama: z.string().nullable().optional(),
-  statusbagifee: z.number().nullable(),
+  // statusbagifee: z.number().nullable(),
+  statusbagifee: z
+    .number()
+    .int({ message: dynamicRequiredMessage('STATUS BAGI FEE') })
+    .min(1, { message: dynamicRequiredMessage('STATUS BAGI FEE') }),
   statusbagifee_nama: z.string().nullable().optional(),
-  statusfeemanager: z.number().nullable(),
+  // statusfeemanager: z.number().nullable(),
+  statusfeemanager: z
+    .number()
+    .int({ message: dynamicRequiredMessage('STATUS FEE MANAGER') })
+    .min(1, { message: dynamicRequiredMessage('STATUS FEE MANAGER') }),
   statusfeemanager_nama: z.string().nullable().optional(),
-  marketinggroup_id: z.number().nullable(),
+  // marketinggroup_id: z.number().nullable(),
+  marketinggroup_id: z
+    .number()
+    .int({ message: dynamicRequiredMessage('MARKETING GROUP') })
+    .min(1, { message: dynamicRequiredMessage('MARKETING GROUP') }),
   marketinggroup_nama: z.string().nullable().optional(),
-  statusprafee: z.number().nullable(),
+  // statusprafee: z.number().nullable(),
+  statusprafee: z
+    .number()
+    .int({ message: dynamicRequiredMessage('STATUS PRA FEE') })
+    .min(1, { message: dynamicRequiredMessage('STATUS PRA FEE') }),
   statusprafee_nama: z.string().nullable().optional(),
   marketingorderan: z.array(marketingOrderanSchema),
   marketingbiaya: z.array(marketingBiayaSchema),

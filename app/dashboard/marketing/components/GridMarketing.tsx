@@ -35,7 +35,6 @@ import DataGrid, {
   DataGridHandle
 } from 'react-data-grid';
 import {
-  FaFileExport,
   FaPlus,
   FaPrint,
   FaSort,
@@ -59,9 +58,20 @@ import {
 import { api2 } from '@/lib/utils/AxiosInstance';
 import { useQueryClient } from 'react-query';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { checkValidationMarketingFn } from '@/lib/apis/marketingheader.api';
+import {
+  checkValidationMarketingFn,
+  getMarketingBiayaFn,
+  getMarketingHeaderFn,
+  getMarketingManagerFn,
+  getMarketingOrderanFn,
+  getMarketingProsesFeeFn
+} from '@/lib/apis/marketingheader.api';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { useFormError } from '@/lib/hooks/formErrorContext';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 
 interface Filter {
   page: number;
@@ -1627,32 +1637,134 @@ const GridMarketing = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-
-      try {
-        // Mengirim request untuk validasi beberapa kombinasi
-        // const result = await checkValidationKasGantungFn({
-        //   aksi: 'DELETE',
-        //   value: rowData.nobukti
-        // });
-
-        // if (result.status == 'failed') {
-        //   // Menampilkan alert jika ada yang gagal
-        //   alert({
-        //     title: result.message,
-        //     variant: 'danger',
-        //     submitText: 'OK'
-        //   });
-        // } else {
-        // Jika semua validasi berhasil, lanjutkan proses penghapusan atau operasi lain
-        setMode('delete');
-        setPopOver(true);
-        // }
-      } catch (error) {
-        console.error('Error during delete validation:', error);
+  const handleMultipleDelete = async (idsToDelete: number[]) => {
+    try {
+      for (const id of idsToDelete) {
+        await deleteMarketing(id as unknown as string);
       }
+
+      setRows((prevRows) =>
+        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+
+      // Reset checked rows
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+
+      // Update selected row
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
+
+      // Focus grid
+      setTimeout(() => {
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
+
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      dispatch(setProcessing());
+
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const rowData = rows[selectedRow];
+
+          const result = await checkValidationMarketingFn({
+            aksi: 'DELETE',
+            value: rowData.id
+          });
+
+          if (result.data.status == 'failed') {
+            alert({
+              title: result.data.message,
+              variant: 'danger',
+              submitText: 'OK'
+            });
+          } else {
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationMarketingFn({
+              aksi: 'DELETE',
+              value: id
+            });
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
+        });
+
+        const validationResults = await Promise.all(validationPromises);
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
+
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
+
+          alert({
+            title: 'Beberapa data tidak dapat dihapus!',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          return;
+        }
+
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1784,6 +1896,240 @@ const GridMarketing = () => {
         { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
       );
       queryClient.invalidateQueries('marketing');
+    }
+  };
+
+  const handleReport = async () => {
+    try {
+      dispatch(setProcessing());
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
+
+      const master = await getMarketingHeaderFn(filtersWithoutLimit);
+
+      // const formatted = await Promise.all(
+      //   master.data.map(async (data: any) => {
+      //     const detailItems = await getMarketingOrderanFn(data.id);
+
+      //     return {
+      //       detail: detailItems.data.map((d: any) => ({
+      //         nama: data.nama,
+      //         keterangan: data.keterangan,
+      //         singkatan: data.singkatan,
+      //         statusaktif_nama: data.statusaktif_nama,
+      //       }))
+      //     };
+      //   })
+      // );
+
+      const marketingWithOrderan = await Promise.all(
+        master.data.map(async (data: any) => {
+          const marketingorderan = await getMarketingOrderanFn(data.id);
+
+          return {
+            marketingorderan: marketingorderan.data.map((details: any) => ({
+              nama: data.nama,
+              keterangan: data.keterangan,
+              statusaktif_nama: data.statusaktif_nama,
+              email: data.email,
+              karyawan_nama: data.karyawan_nama,
+              tglmasuk: data.tglmasuk,
+              cabang_nama: data.cabang_nama,
+              statustarget_nama: data.statustarget_nama,
+              statusbagifee_nama: data.statusbagifee_nama,
+              statusfeemanager_nama: data.statusfeemanager_nama,
+              marketinggroup_nama: data.marketinggroup_nama,
+              statusprafee_nama: data.statusprafee_nama,
+              namadetailorderan: details.nama,
+              keterangandetailorderan: details.keterangan,
+              singkatandetailorderan: details.singkatan,
+              statusaktifdetailorderan: details.statusaktif_nama
+            }))
+          };
+        })
+      );
+
+      const reportMarketingOrderanData = marketingWithOrderan.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Marketing',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+
+      const marketingWithBiaya = await Promise.all(
+        master.data.map(async (data: any) => {
+          const marketingbiaya = await getMarketingBiayaFn(data.id);
+
+          return {
+            marketingbiaya: marketingbiaya.data.map((details: any) => ({
+              nama: data.nama,
+              keterangan: data.keterangan,
+              statusaktif_nama: data.statusaktif_nama,
+              email: data.email,
+              karyawan_nama: data.karyawan_nama,
+              tglmasuk: data.tglmasuk,
+              cabang_nama: data.cabang_nama,
+              statustarget_nama: data.statustarget_nama,
+              statusbagifee_nama: data.statusbagifee_nama,
+              statusfeemanager_nama: data.statusfeemanager_nama,
+              marketinggroup_nama: data.marketinggroup_nama,
+              statusprafee_nama: data.statusprafee_nama,
+              jenisbiayamarketing_namadetailbiaya:
+                details.jenisbiayamarketing_nama,
+              nominaldetailbiaya: details.nominal,
+              statusaktifdetailbiaya: details.statusaktif_nama
+            }))
+          };
+        })
+      );
+
+      const reportMarketingBiayaData = marketingWithBiaya.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Marketing',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+
+      const marketingWithManager = await Promise.all(
+        master.data.map(async (data: any) => {
+          const marketingmanager = await getMarketingManagerFn(data.id);
+
+          return {
+            marketingmanager: marketingmanager.data.map((details: any) => ({
+              nama: data.nama,
+              keterangan: data.keterangan,
+              statusaktif_nama: data.statusaktif_nama,
+              email: data.email,
+              karyawan_nama: data.karyawan_nama,
+              tglmasuk: data.tglmasuk,
+              cabang_nama: data.cabang_nama,
+              statustarget_nama: data.statustarget_nama,
+              statusbagifee_nama: data.statusbagifee_nama,
+              statusfeemanager_nama: data.statusfeemanager_nama,
+              marketinggroup_nama: data.marketinggroup_nama,
+              statusprafee_nama: data.statusprafee_nama,
+              managermarketing_namadetailmanager: details.managermarketing_nama,
+              tglapprovaldetailmanager: details.tglapproval,
+              statusapprovaldetailmanager: details.statusapproval_nama,
+              userapprovaldetailmanager: details.userapproval,
+              statusaktifdetailmanager: details.statusaktif_nama
+            }))
+          };
+        })
+      );
+
+      const reportMarketingManagerData = marketingWithManager.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Marketing',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+
+      const marketingWithProsesFee = await Promise.all(
+        master.data.map(async (data: any) => {
+          const marketinprosesfee = await getMarketingProsesFeeFn(data.id);
+
+          return {
+            marketinprosesfee: marketinprosesfee.data.map((details: any) => ({
+              nama: data.nama,
+              keterangan: data.keterangan,
+              statusaktif_nama: data.statusaktif_nama,
+              email: data.email,
+              karyawan_nama: data.karyawan_nama,
+              tglmasuk: data.tglmasuk,
+              cabang_nama: data.cabang_nama,
+              statustarget_nama: data.statustarget_nama,
+              statusbagifee_nama: data.statusbagifee_nama,
+              statusfeemanager_nama: data.statusfeemanager_nama,
+              marketinggroup_nama: data.marketinggroup_nama,
+              statusprafee_nama: data.statusprafee_nama,
+              namadetailorderan: details.nama,
+              jenisprosesfee_namadetailprosesfee: details.jenisprosesfee_nama,
+              statuspotongbiayakantor_namadetailprosesfee:
+                details.statuspotongbiayakantor_nama,
+              statusaktifdetailprosesfee: details.statusaktif_nama
+            }))
+          };
+        })
+      );
+
+      const reportMarketingBProsesFeeData = marketingWithProsesFee.map(
+        (row) => ({
+          ...row,
+          judullaporan: 'Laporan Marketing',
+          usercetak: user.username,
+          tglcetak: tglcetak,
+          judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+        })
+      );
+
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      // Dynamically import Stimulsoft and generate the PDF report
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanMarketing.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportMarketingOrderanData });
+          dataSet.readJson({ mbiaya: reportMarketingBiayaData });
+          dataSet.readJson({ mManager: reportMarketingManagerData });
+          dataSet.readJson({ mProsesFee: reportMarketingBProsesFeeData });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
+
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
+
+              // Navigate to the report page
+              window.open('/reports/marketing', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
+        });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -2308,12 +2654,20 @@ const GridMarketing = () => {
           }}
         >
           <ActionButton
+            module="MARKETING"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
-            module="MARKETING"
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingDataMarketing ? <LoadRowsRenderer /> : null}
           {contextMenu && (
