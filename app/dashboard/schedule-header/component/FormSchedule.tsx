@@ -271,7 +271,7 @@ const FormSchedule = ({
                       handleInputChange(
                         props.rowIdx,
                         'pelayaran_nama',
-                        val.nama
+                        val?.nama
                       )
                     }
                     lookupNama={
@@ -315,7 +315,7 @@ const FormSchedule = ({
                         handleInputChange(props.rowIdx, 'kapal_id', Number(id)) // Use props.rowIdx to get the correct index
                     }
                     onSelectRow={(val) =>
-                      handleInputChange(props.rowIdx, 'kapal_nama', val.nama)
+                      handleInputChange(props.rowIdx, 'kapal_nama', val?.nama)
                     }
                     lookupNama={
                       props.row.kapal_nama
@@ -372,7 +372,7 @@ const FormSchedule = ({
                       handleInputChange(
                         props.rowIdx,
                         'tujuankapal_nama',
-                        val.nama
+                        val?.nama
                       )
                     }
                     lookupNama={

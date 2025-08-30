@@ -1199,7 +1199,7 @@ const GridScheduleHeader = () => {
             report.loadFile('/reports/LaporanSchedule.mrt');
             report.dictionary.dataSources.clear();
             dataSet.readJson({ data: dataHeader });
-            dataSet.readJson({ details: dataDetail });
+            dataSet.readJson({ details: dataDetail.data });
             report.regData(dataSet.dataSetName, '', dataSet);
             report.dictionary.synchronize();
 
