@@ -574,7 +574,7 @@ const GridTypeAkuntansi = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.order;
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.order !== null && props.row.order !== undefined
                   ? props.row.order
