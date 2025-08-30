@@ -32,7 +32,6 @@ export const scheduleHeaderSchema = z.object({
   tglbukti: z
     .string()
     .nonempty({ message: dynamicRequiredMessage('TGL BUKTI') }),
-  // keterangan: z.string().min(1,)
   keterangan: z
     .string()
     .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),

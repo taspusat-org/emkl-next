@@ -15,12 +15,18 @@ import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { deleteScheduleFn } from '@/lib/apis/schedule.api';
+import {
+  checkValidationScheduleFn,
+  deleteScheduleFn,
+  getScheduleById,
+  getScheduleDetailFn,
+  getScheduleHeaderFn
+} from '@/lib/apis/schedule.api';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
-import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
   clearOpenName,
   setClearLookup
@@ -45,6 +51,11 @@ import {
   useGetScheduleHeader,
   useUpdateSchedule
 } from '@/lib/server/useSchedule';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { useAlert } from '@/lib/store/client/useAlert';
 
 interface Filter {
   page: number;
@@ -61,6 +72,7 @@ interface GridConfig {
 }
 
 const GridScheduleHeader = () => {
+  const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
@@ -846,65 +858,161 @@ const GridScheduleHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   const handleAdd = async () => {
-    try {
-      setMode('add');
-      setPopOver(true);
-      forms.reset();
-    } catch (error) {
-      console.error('Error syncing ACOS:', error);
-    }
+    setMode('add');
+    setPopOver(true);
+    forms.reset();
   };
 
   const handleEdit = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      // const result = await checkValidationKasGantungFn({
-      //   aksi: 'EDIT',
-      //   value: rowData.id
-      // });
-      // if (result.status == 'failed') {
-      //   alert({
-      //     title: result.message,
-      //     variant: 'danger',
-      //     submitText: 'OK',
-      //     isForceEdit: true,
-      //     valueForceEdit: rowData.id,
-      //     tableNameForceEdit: 'kasgantungheader',
-      //     clickableText: 'LANJUT EDIT'
-      //   });
-      // } else {
-      setPopOver(true);
-      setMode('edit');
-      // }
+      const result = await checkValidationScheduleFn({
+        aksi: 'EDIT',
+        value: rowData.id
+      });
+      if (result.data.status == 'failed') {
+        alert({
+          title: result.data.message,
+          variant: 'danger',
+          submitText: 'OK',
+          isForceEdit: true,
+          valueForceEdit: rowData.id,
+          tableNameForceEdit: 'scheduleheader',
+          clickableText: 'LANJUT EDIT'
+        });
+      } else {
+        setPopOver(true);
+        setMode('edit');
+      }
+    }
+  };
+
+  const handleMultipleDelete = async (idsToDelete: number[]) => {
+    try {
+      for (const id of idsToDelete) {
+        await deleteSchedule(id as unknown as string);
+      }
+
+      setRows((prevRows) =>
+        prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
+
+      setTimeout(() => {
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
+
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
     }
   };
 
   const handleDelete = async () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
+    try {
+      dispatch(setProcessing());
 
-      try {
-        // Mengirim request untuk validasi beberapa kombinasi
-        // const result = await checkValidationKasGantungFn({
-        //   aksi: 'DELETE',
-        //   value: rowData.nobukti
-        // });
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const rowData = rows[selectedRow];
 
-        // if (result.status == 'failed') {
-        //   // Menampilkan alert jika ada yang gagal
-        //   alert({
-        //     title: result.message,
-        //     variant: 'danger',
-        //     submitText: 'OK'
-        //   });
-        // } else {
-        // Jika semua validasi berhasil, lanjutkan proses penghapusan atau operasi lain
-        setMode('delete');
-        setPopOver(true);
-        // }
-      } catch (error) {
-        console.error('Error during delete validation:', error);
+          const result = await checkValidationScheduleFn({
+            aksi: 'DELETE',
+            value: rowData.id
+          });
+
+          if (result.data.status == 'failed') {
+            alert({
+              title: result.data.message,
+              variant: 'danger',
+              submitText: 'OK'
+            });
+          } else {
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationScheduleFn({
+              aksi: 'DELETE',
+              value: id
+            });
+
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
+        });
+
+        const validationResults = await Promise.all(validationPromises);
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
+
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
+
+          alert({
+            title: 'Beberapa data tidak dapat dihapus!',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          return;
+        }
+
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            cancelText: 'TIDAK',
+            catchOnCancel: true
+          });
+
+          await handleMultipleDelete(checkedRowsArray);
+
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
       }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -971,7 +1079,6 @@ const GridScheduleHeader = () => {
     values: ScheduleHeaderInput,
     keepOpenModal = false
   ) => {
-    console.log('kesini ga?');
     const selectedRowId = rows[selectedRow]?.id;
 
     if (mode === 'delete') {
@@ -1027,6 +1134,106 @@ const GridScheduleHeader = () => {
         { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
       );
       queryClient.invalidateQueries('schedule');
+    }
+  };
+
+  const handleReport = async () => {
+    if (selectedRow != null) {
+      const selectedRowId = rows[selectedRow]?.id;
+
+      try {
+        dispatch(setProcessing());
+        const now = new Date();
+        const pad = (n: any) => n.toString().padStart(2, '0');
+        const tglcetak = `${pad(now.getDate())}-${pad(
+          now.getMonth() + 1
+        )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+          now.getMinutes()
+        )}:${pad(now.getSeconds())}`;
+        const { page, limit, ...filtersWithoutLimit } = filters;
+
+        const dataHeader = await getScheduleById(selectedRowId);
+        // const response = await getScheduleHeaderFn(filtersWithoutLimit);
+        const dataDetail = await getScheduleDetailFn(
+          selectedRowId,
+          filtersWithoutLimit
+        );
+        // const reportRows = response.data.map((row) => ({
+        //   ...row,
+        //   judullaporan: 'Laporan SChedule',
+        //   usercetak: user.username,
+        //   tglcetak: tglcetak,
+        //   judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+        // }));
+
+        (dataHeader.judullaporan = 'Laporan SChedule'),
+          (dataHeader.usercetak = user.username),
+          (dataHeader.tglcetak = tglcetak),
+          (dataHeader.judul = 'PT.TRANSPORINDO AGUNG SEJAHTERA');
+
+        sessionStorage.setItem(
+          'filtersWithoutLimit',
+          JSON.stringify(filtersWithoutLimit)
+        );
+        // Dynamically import Stimulsoft and generate the PDF report
+        import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+          .then((module) => {
+            const { Stimulsoft } = module;
+            Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+              '/fonts/tahomabd.ttf',
+              'Tahoma'
+            );
+            Stimulsoft.Base.StiLicense.Key =
+              '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+              '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+              'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+              'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+              '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+              'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+              'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+            const report = new Stimulsoft.Report.StiReport();
+            const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+            // Load the report template (MRT file)
+            report.loadFile('/reports/LaporanSchedule.mrt');
+            report.dictionary.dataSources.clear();
+            dataSet.readJson({ data: dataHeader });
+            dataSet.readJson({ details: dataDetail });
+            report.regData(dataSet.dataSetName, '', dataSet);
+            report.dictionary.synchronize();
+
+            // Render the report asynchronously
+            report.renderAsync(() => {
+              // Export the report to PDF asynchronously
+              report.exportDocumentAsync((pdfData: any) => {
+                const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                  type: 'application/pdf'
+                });
+                const pdfUrl = URL.createObjectURL(pdfBlob);
+
+                // Store the Blob URL in sessionStorage
+                sessionStorage.setItem('pdfUrl', pdfUrl);
+                sessionStorage.setItem('headerId', String(selectedRowId));
+                // Navigate to the report page
+                window.open('/reports/schedule', '_blank');
+              }, Stimulsoft.Report.StiExportFormat.Pdf);
+            });
+          })
+          .catch((error) => {
+            console.error('Failed to load Stimulsoft:', error);
+          });
+      } catch (error) {
+        dispatch(setProcessed());
+      } finally {
+        dispatch(setProcessed());
+      }
+    } else {
+      alert({
+        title: 'HARAP PILIH RECORD',
+        variant: 'danger',
+        submitText: 'OK'
+      });
     }
   };
 
@@ -1585,46 +1792,14 @@ const GridScheduleHeader = () => {
             onDelete={handleDelete}
             onView={handleView}
             module="SCHEDULE-HEADER"
-            dropdownMenus={
-              [
-                // {
-                //   label: 'Report',
-                //   icon: <FaPrint />,
-                //   className: 'bg-cyan-500 hover:bg-cyan-700',
-                //   actions: [
-                //     {
-                //       label: 'REPORT ALL',
-                //       onClick: () => handleReport(),
-                //       className: 'bg-cyan-500 hover:bg-cyan-700'
-                //     }
-                //     // ,
-                //     // {
-                //     //   label: 'REPORT BY SELECT',
-                //     //   onClick: () => handleReportBySelect(),
-                //     //   className: 'bg-cyan-500 hover:bg-cyan-700'
-                //     // }
-                //   ]
-                // },
-                // {
-                //   label: 'Export',
-                //   icon: <FaFileExport />,
-                //   className: 'bg-green-600 hover:bg-green-700',
-                //   actions: [
-                //     {
-                //       label: 'EXPORT ALL',
-                //       onClick: () => handleExport(),
-                //       className: 'bg-green-600 hover:bg-green-700'
-                //     }
-                //     // ,
-                //     // {
-                //     //   label: 'EXPORT BY SELECT',
-                //     //   // onClick: () => handleExportBySelect(),
-                //     //   className: 'bg-green-600 hover:bg-green-700'
-                //     // }
-                //   ]
-                // }
-              ]
-            }
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingScheduleHeaderData ? <LoadRowsRenderer /> : null}
           {contextMenu && (

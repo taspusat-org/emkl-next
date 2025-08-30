@@ -14,6 +14,7 @@ import {
 } from '../store/loadingSlice/loadingSlice';
 import { AxiosError } from 'axios';
 import { IErrorResponse } from '../types/user.type';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetScheduleHeader = (
   filters: {
@@ -47,8 +48,6 @@ export const useGetScheduleHeader = (
 
       try {
         const data = await getScheduleHeaderFn(filters);
-        // console.log('result di use fe', data);
-
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -64,7 +63,6 @@ export const useGetScheduleHeader = (
       }
     },
     {
-      // Optionally, you can use the `onSettled` callback if you want to reset the processing state after query success or failure
       onSettled: () => {
         if (filters.page === 1) {
           dispatch(setProcessed());
@@ -74,10 +72,36 @@ export const useGetScheduleHeader = (
   );
 };
 
-export const useGetScheduleDetail = (id?: number) => {
+export const useGetScheduleDetail = (
+  id?: number,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      nobukti?: string;
+      pelayaran?: string;
+      kapal?: string;
+      tujuankapal?: string;
+      tglberangkat?: string;
+      tgltiba?: string;
+      etb?: string;
+      eta?: string;
+      etd?: string;
+      voyberangkat?: string;
+      voytiba?: string;
+      closing?: string;
+      etatujuan?: string;
+      etdtujuan?: string;
+      keterangan?: string;
+    };
+  } = {}
+) => {
   return useQuery(
-    ['schedule', id],
-    async () => await getScheduleDetailFn(id!),
+    ['schedule', id, filters],
+    async () => await getScheduleDetailFn(id!, filters),
     {
       enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
@@ -85,6 +109,7 @@ export const useGetScheduleDetail = (id?: number) => {
 };
 
 export const useCreateSchedule = () => {
+  const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
@@ -95,28 +120,35 @@ export const useCreateSchedule = () => {
       dispatch(setProcessing());
     },
     onSuccess: () => {
-      // on success, invalidate + toast + clear loading
+      // on success, invalidate + clear loading
       void queryClient.invalidateQueries(['schedule']);
-      // toast({
-      //   title: 'Proses Berhasil',
-      //   description: 'Data Berhasil Ditambahkan'
-      // });
       dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
-      // on error, toast + clear loading
+      // on error, clear loading
       const err = (error.response?.data as IErrorResponse) ?? {};
-      toast({
-        variant: 'destructive',
-        title: err.message ?? 'Gagal',
-        description: 'Terjadi masalah dengan permintaan Anda.'
-      });
+
+      if (err !== undefined) {
+        const errorFields = err.message || [];
+        if (err.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: err.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
+      }
+      dispatch(setProcessed());
+    },
+    onSettled: () => {
       dispatch(setProcessed());
     }
-    // alternatively: always clear loading, whether success or fail
-    // onSettled: () => {
-    //   dispatch(clearProcessing());
-    // }
   });
 };
 

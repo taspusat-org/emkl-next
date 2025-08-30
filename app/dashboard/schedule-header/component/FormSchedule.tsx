@@ -62,7 +62,6 @@ const FormSchedule = ({
       required: true,
       selectedRequired: false,
       endpoint: 'pelayaran',
-      // label: 'PELAYARAN',
       singleColumn: false,
       pageSize: 20,
       postData: 'nama',
@@ -77,7 +76,6 @@ const FormSchedule = ({
       required: true,
       selectedRequired: false,
       endpoint: 'kapal',
-      // label: 'KAPAL',
       singleColumn: false,
       pageSize: 20,
       postData: 'nama',
@@ -92,7 +90,6 @@ const FormSchedule = ({
       required: true,
       selectedRequired: false,
       endpoint: 'tujuankapal',
-      // label: 'TUJUAN KAPAL',
       singleColumn: false,
       pageSize: 20,
       postData: 'nama',
@@ -214,7 +211,7 @@ const FormSchedule = ({
         colSpan: (args) => {
           if (args.type === 'ROW' && args.row.isAddRow) {
             // If it's the "Add Row" row, span across multiple columns
-            return 4; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 15; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
@@ -254,13 +251,6 @@ const FormSchedule = ({
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        colSpan: (args) => {
-          // If it's the "Add Row" row, span across multiple columns
-          if (args.type === 'ROW' && args.row.isAddRow) {
-            return 5; // Spanning the "Add Row" button across 3 columns (adjust as needed)
-          }
-          return undefined; // For other rows, no column spanning
-        },
         renderCell: (props: any) => (
           <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
             {props.row.isAddRow
@@ -277,6 +267,13 @@ const FormSchedule = ({
                         Number(id)
                       ); // Use props.rowIdx to get the correct index
                     }}
+                    onSelectRow={(val) =>
+                      handleInputChange(
+                        props.rowIdx,
+                        'pelayaran_nama',
+                        val.nama
+                      )
+                    }
                     lookupNama={
                       props.row.pelayaran_nama
                         ? String(props.row.pelayaran_nama)
@@ -316,6 +313,9 @@ const FormSchedule = ({
                     lookupValue={
                       (id) =>
                         handleInputChange(props.rowIdx, 'kapal_id', Number(id)) // Use props.rowIdx to get the correct index
+                    }
+                    onSelectRow={(val) =>
+                      handleInputChange(props.rowIdx, 'kapal_nama', val.nama)
                     }
                     lookupNama={
                       props.row.kapal_nama
@@ -367,6 +367,13 @@ const FormSchedule = ({
                           'tujuankapal_id',
                           Number(id)
                         ) // Use props.rowIdx to get the correct index
+                    }
+                    onSelectRow={(val) =>
+                      handleInputChange(
+                        props.rowIdx,
+                        'tujuankapal_nama',
+                        val.nama
+                      )
                     }
                     lookupNama={
                       props.row.tujuankapal_nama
@@ -1064,6 +1071,36 @@ const FormSchedule = ({
     }
   }, [rows]);
 
+  useEffect(() => {
+    if (forms.getValues()?.details?.length === 0) {
+      setRows([
+        {
+          id: 0,
+          nobukti: '',
+          pelayaran_id: 0,
+          pelayaran_nama: '',
+          kapal_id: 0,
+          kapal_nama: '',
+          tujuankapal_id: 0,
+          tujuankapal_nama: '',
+          tglberangkat: '',
+          tgltiba: '',
+          etb: '',
+          eta: '',
+          etd: '',
+          voyberangkat: '',
+          voytiba: '',
+          closing: '',
+          etatujuan: '',
+          etdtujuan: '',
+          keterangan: '',
+          isNew: true
+        },
+        { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
+      ]);
+    }
+  }, [forms, forms.getValues().details]);
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1146,7 +1183,8 @@ const FormSchedule = ({
                             <InputDatePicker
                               value={field.value}
                               onChange={field.onChange}
-                              showCalendar
+                              showCalendar={mode == 'add' || mode == 'edit'}
+                              disabled={mode == 'delete' || mode == 'view'}
                               onSelect={(date) =>
                                 forms.setValue('tglbukti', date)
                               }
@@ -1249,32 +1287,32 @@ const FormSchedule = ({
                 e.preventDefault();
                 onSubmit(true);
                 dispatch(setSubmitClicked(true));
-                setRows([
-                  // If no data, add one editable row and the "Add Row" button row at the end
-                  {
-                    id: 0,
-                    nobukti: '',
-                    pelayaran_id: 0,
-                    pelayaran_nama: '',
-                    kapal_id: 0,
-                    kapal_nama: '',
-                    tujuankapal_id: 0,
-                    tujuankapal_nama: '',
-                    tglberangkat: '',
-                    tgltiba: '',
-                    etb: '',
-                    eta: '',
-                    etd: '',
-                    voyberangkat: '',
-                    voytiba: '',
-                    closing: '',
-                    etatujuan: '',
-                    etdtujuan: '',
-                    keterangan: '',
-                    isNew: true
-                  },
-                  { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
-                ]);
+                // setRows([
+                //   // If no data, add one editable row and the "Add Row" button row at the end
+                //   {
+                //     id: 0,
+                //     nobukti: '',
+                //     pelayaran_id: 0,
+                //     pelayaran_nama: '',
+                //     kapal_id: 0,
+                //     kapal_nama: '',
+                //     tujuankapal_id: 0,
+                //     tujuankapal_nama: '',
+                //     tglberangkat: '',
+                //     tgltiba: '',
+                //     etb: '',
+                //     eta: '',
+                //     etd: '',
+                //     voyberangkat: '',
+                //     voytiba: '',
+                //     closing: '',
+                //     etatujuan: '',
+                //     etdtujuan: '',
+                //     keterangan: '',
+                //     isNew: true
+                //   },
+                //   { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
+                // ]);
               }}
               className="flex w-fit items-center gap-1 text-sm"
             >

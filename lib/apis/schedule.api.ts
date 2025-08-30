@@ -35,10 +35,24 @@ export const getScheduleHeaderFn = async (
   }
 };
 
+export const getScheduleById = async (id: any) => {
+  try {
+    const response = await api2.get(`/schedule-header/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error to get data schedule by id in api fe', error);
+    throw new Error('Error to get data schedule by id in api fe');
+  }
+};
+
 export const getScheduleDetailFn = async (
-  id: number
+  id: number,
+  filters: GetParams = {}
 ): Promise<IAllScheduleDetail> => {
-  const response = await api2.get(`/schedule-detail/${id}`);
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/schedule-detail/${id}`, {
+    params: queryParams
+  });
 
   return response.data;
 };
@@ -60,5 +74,29 @@ export const deleteScheduleFn = async (id: string) => {
   } catch (error) {
     console.error('Error deleting order:', error);
     throw error; // Re-throw the error if you want to handle it in the calling function
+  }
+};
+
+export const checkValidationScheduleFn = async (fields: validationFields) => {
+  const response = await api2.post(`/schedule-header/check-validation`, fields);
+
+  return response;
+};
+
+export const exportScheduleFn = async (
+  id: string,
+  filters: any
+): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get(`/schedule-header/export/${id}`, {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
+
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data schedule:', error);
+    throw new Error('Failed to export data schedule');
   }
 };
