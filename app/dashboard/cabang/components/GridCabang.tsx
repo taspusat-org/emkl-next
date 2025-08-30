@@ -146,7 +146,8 @@ const GridCabang = () => {
     statusaktif: useRef<HTMLInputElement>(null),
     modifiedby: useRef<HTMLInputElement>(null),
     created_at: useRef<HTMLInputElement>(null),
-    updated_at: useRef<HTMLInputElement>(null)
+    updated_at: useRef<HTMLInputElement>(null),
+    namacabang_hr: useRef<HTMLInputElement>(null)
   };
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -609,6 +610,78 @@ const GridCabang = () => {
           );
         }
       },
+      {
+        key: 'namacabang_hr',
+        name: 'Nama Cabang HR',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('namacabang_hr')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'namacabang_hr'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                Nama Cabang HR
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'namacabang_hr' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'namacabang_hr' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={inputColRefs.namacabang_hr}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.namacabang_hr || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleColumnFilterChange('namacabang_hr', value);
+                }}
+              />
+              {filters.filters.namacabang_hr && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('namacabang_hr', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.namacabang_hr || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.namacabang_hr || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+
       {
         key: 'Keterangan',
         name: 'keterangan',
@@ -1685,40 +1758,12 @@ const GridCabang = () => {
             onDelete={handleDelete}
             onEdit={handleEdit}
             onView={handleView}
-            dropdownMenus={[
+            customActions={[
               {
-                label: 'Report',
+                label: 'Print',
                 icon: <FaPrint />,
-                className: 'bg-cyan-500 hover:bg-cyan-700',
-                actions: [
-                  {
-                    label: 'REPORT ALL',
-                    onClick: () => handleReport(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  },
-                  {
-                    label: 'REPORT BY SELECT',
-                    onClick: () => handleReportBySelect(),
-                    className: 'bg-cyan-500 hover:bg-cyan-700'
-                  }
-                ]
-              },
-              {
-                label: 'Export',
-                icon: <FaFileExport />,
-                className: 'bg-green-600 hover:bg-green-700',
-                actions: [
-                  {
-                    label: 'EXPORT ALL',
-                    onClick: () => handleExport(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  },
-                  {
-                    label: 'EXPORT BY SELECT',
-                    onClick: () => handleExportBySelect(),
-                    className: 'bg-green-600 hover:bg-green-700'
-                  }
-                ]
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
           />
@@ -1727,10 +1772,9 @@ const GridCabang = () => {
           <div
             ref={contextMenuRef}
             style={{
-              position: 'absolute',
-              top: contextMenu.y - 60,
-              left: contextMenu.x - 200,
-              transform: 'translate(-50%, 0)', // Pusatkan pada posisi mouse
+              position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
+              top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
+              left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
               backgroundColor: 'white',
               boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
               padding: '8px',
