@@ -66,7 +66,7 @@ const GridManagerMarketingDetail = () => {
         name: 'nominalawal',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
               {formatCurrency(props.row.nominalawal)}
             </div>
           );
@@ -89,7 +89,7 @@ const GridManagerMarketingDetail = () => {
         name: 'nominalakhir',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
               {formatCurrency(props.row.nominalakhir)}
             </div>
           );
@@ -112,7 +112,7 @@ const GridManagerMarketingDetail = () => {
         name: 'persentase',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
               {formatCurrency(props.row.persentase)}
             </div>
           );

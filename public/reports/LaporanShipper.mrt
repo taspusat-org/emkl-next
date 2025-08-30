@@ -1155,8 +1155,8 @@
             },
             "4": {
               "Ident": "StiText",
-              "Name": "Text8",
-              "Guid": "b3e9c73e10b07b2bb334105143aa06d4",
+              "Name": "Text6",
+              "Guid": "162e19fc726fec246d4ae3643cea705a",
               "CanGrow": true,
               "ClientRectangle": "152,-0.5,28,10",
               "ComponentPlacement": "d.DataBand1",
@@ -1174,12 +1174,6 @@
               "TextBrush": "solid:Black",
               "TextOptions": {
                 "WordWrap": true
-              },
-              "Margins": {
-                "Left": 5,
-                "Right": 3,
-                "Top": 0,
-                "Bottom": 0
               },
               "ShrinkFontToFit": true,
               "ShrinkFontToFitMinimumSize": 5,
