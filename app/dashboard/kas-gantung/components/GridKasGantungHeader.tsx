@@ -45,7 +45,10 @@ import {
   reportMenuBySelectFn
 } from '@/lib/apis/menu.api';
 import { HiDocument } from 'react-icons/hi2';
-import { setReportData } from '@/lib/store/reportSlice/reportSlice';
+import {
+  setDetailDataReport,
+  setReportData
+} from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
@@ -87,7 +90,12 @@ import {
 } from '@/lib/server/useKasGantung';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
-import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
+import {
+  checkValidationKasGantungFn,
+  getKasGantungDetailFn,
+  getKasGantungHeaderByIdFn,
+  getKasGantungHeaderFn
+} from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
 
 interface Filter {
@@ -1841,66 +1849,147 @@ const GridKasGantungHeader = () => {
   };
 
   const handleReport = async () => {
+    if (checkedRows.size === 0) {
+      alert({
+        title: 'PILIH DATA YANG INGIN DI CETAK!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      return; // Stop execution if no rows are selected
+    }
+    if (checkedRows.size > 1) {
+      alert({
+        title: 'HANYA BISA MEMILIH SATU DATA!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      return; // Stop execution if no rows are selected
+    }
+    const rowId = Array.from(checkedRows)[0];
+
     const { page, limit, ...filtersWithoutLimit } = filters;
-    const response =
-      await getPengembalianKasGantungReportFn(filtersWithoutLimit);
-    const reportRows = response.data.map((row) => ({
-      ...row,
-      judullaporan: 'Laporan Pengembalian Kas Gantung',
-      usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
-      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-    }));
+    try {
+      dispatch(setProcessing());
+      const response = await getKasGantungHeaderByIdFn(
+        rowId,
+        filtersWithoutLimit
+      );
+      const responseDetail = await getKasGantungDetailFn(rowId);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Kas Gantung',
+        usercetak: user.username,
+        tglcetak: new Date().toLocaleDateString(),
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'TahomaBD'
+          );
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanKasGantung.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          dataSet.readJson({ detail: responseDetail.data });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
+
+          // Render the report asynchronously
+
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
+
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
+
+              // Navigate to the report page
+              window.open('/reports/kasgantung', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
+        });
+    } catch (error) {
+      console.error('Error generating report:', error);
+    } finally {
+      dispatch(setProcessed());
+    }
 
     // Dynamically import Stimulsoft and generate the PDF report
-    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-      .then((module) => {
-        const { Stimulsoft } = module;
-        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/arial.ttf',
-          'Arial'
-        );
-        Stimulsoft.Base.StiLicense.Key =
-          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-        const report = new Stimulsoft.Report.StiReport();
-        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-
-        // Load the report template (MRT file)
-        report.loadFile('/reports/ReportPenerimaanKasGantung.mrt');
-        report.dictionary.dataSources.clear();
-        dataSet.readJson({ data: reportRows });
-        report.regData(dataSet.dataSetName, '', dataSet);
-        report.dictionary.synchronize();
-
-        // Render the report asynchronously
-
-        report.renderAsync(() => {
-          // Export the report to PDF asynchronously
-          report.exportDocumentAsync((pdfData: any) => {
-            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-              type: 'application/pdf'
-            });
-            const pdfUrl = URL.createObjectURL(pdfBlob);
-
-            // Store the Blob URL in sessionStorage
-            sessionStorage.setItem('pdfUrl', pdfUrl);
-
-            // Navigate to the report page
-            window.open('/reports/pengembaliankasgantung', '_blank');
-          }, Stimulsoft.Report.StiExportFormat.Pdf);
-        });
-      })
-      .catch((error) => {
-        console.error('Failed to load Stimulsoft:', error);
-      });
   };
+  // const handleReport = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+  //   if (checkedRows.size > 1) {
+  //     alert({
+  //       title: 'HANYA BISA MEMILIH SATU DATA!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const rowId = Array.from(checkedRows)[0];
+
+  //   const { page, limit, ...filtersWithoutLimit } = filters;
+  //   const response = await getKasGantungHeaderByIdFn(
+  //     rowId,
+  //     filtersWithoutLimit
+  //   );
+  //   console.log('response', response);
+  //   const responseDetail = await getKasGantungDetailFn(rowId);
+  //   console.log('responseDetail', responseDetail);
+  //   if (response.data === null || response.data.length === 0) {
+  //     alert({
+  //       title: 'DATA TIDAK TERSEDIA!',
+  //       variant: 'danger',
+  //       submitText: 'ok'
+  //     });
+  //   } else {
+  //     const reportRows = response.data.map((row) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Kas Gantung',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     dispatch(setDetailDataReport(responseDetail.data));
+  //     window.open('/reports/designer', '_blank');
+  //   }
+  // };
+
   // const handleReport = async () => {
   //   const { page, limit, ...filtersWithoutLimit } = filters;
   //   dispatch(setProcessing()); // Show loading overlay when the request starts
@@ -2359,7 +2448,7 @@ const GridKasGantungHeader = () => {
               onChange={(e) => {
                 handleInputChange(e);
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+              className="overflow m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
               placeholder="Type to search..."
             />
             {(filters.search !== '' || inputValue !== '') && (
@@ -2406,6 +2495,14 @@ const GridKasGantungHeader = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingData ? <LoadRowsRenderer /> : null}
           {contextMenu && (
