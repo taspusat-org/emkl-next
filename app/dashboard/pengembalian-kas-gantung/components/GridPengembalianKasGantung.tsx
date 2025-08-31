@@ -1456,7 +1456,7 @@ const GridPengembalianKasGantung = () => {
       const responseDetail = await getPengembalianKasGantungDetailFn(rowId);
       if (response.data === null || response.data.length === 0) {
         alert({
-          title: 'DATA TIDAK TERSEDIA!',
+          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
           variant: 'danger',
           submitText: 'OK'
         });
@@ -1469,6 +1469,11 @@ const GridPengembalianKasGantung = () => {
         tglcetak: new Date().toLocaleDateString(),
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      sessionStorage.setItem('dataId', JSON.stringify(rowId));
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
           const { Stimulsoft } = module;

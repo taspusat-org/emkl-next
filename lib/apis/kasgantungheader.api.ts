@@ -111,3 +111,21 @@ export const checkValidationKasGantungFn = async (fields: validationFields) => {
   );
   return response.data;
 };
+export const exportKasGantungFn = async (
+  id: string,
+  filters: any
+): Promise<Blob> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get(`/kasgantungheader/export/${id}`, {
+      params: queryParams,
+      responseType: 'blob' // backend return file (Excel)
+    });
+
+    return response.data; // ini sudah Blob
+  } catch (error) {
+    console.error('Error exporting data kas gantung:', error);
+    throw new Error('Failed to export data kas gantung');
+  }
+};
