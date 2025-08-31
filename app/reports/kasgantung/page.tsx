@@ -19,10 +19,11 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportShipperFn } from '@/lib/apis/shipper.api';
+import { exportKasGantungFn } from '@/lib/apis/kasgantungheader.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-
+  const [savedId, setSavedId] = useState<any>('');
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -44,12 +45,20 @@ const ReportMenuPage: React.FC = () => {
         setSavedFilters({});
       }
     }
+    const storedId = sessionStorage.getItem('dataId');
+    if (storedId) {
+      try {
+        setSavedId(storedId);
+      } catch {
+        setSavedId('');
+      }
+    }
   }, []);
 
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportShipperFn(exportPayload);
+      const response = await exportKasGantungFn(savedId, exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));

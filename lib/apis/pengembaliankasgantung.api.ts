@@ -98,3 +98,24 @@ export const deletePengembalianKasGantung = async (id: string) => {
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
+export const exportPengembalianKasGantungFn = async (
+  id: string,
+  filters: any
+): Promise<Blob> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get(
+      `/pengembaliankasgantungheader/export/${id}`,
+      {
+        params: queryParams,
+        responseType: 'blob' // backend return file (Excel)
+      }
+    );
+
+    return response.data; // ini sudah Blob
+  } catch (error) {
+    console.error('Error exporting data pengembalian kas gantung:', error);
+    throw new Error('Failed to export data pengembalian kas gantung');
+  }
+};

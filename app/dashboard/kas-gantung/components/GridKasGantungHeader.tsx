@@ -1874,6 +1874,14 @@ const GridKasGantungHeader = () => {
         rowId,
         filtersWithoutLimit
       );
+      if (response.data === null || response.data.length === 0) {
+        alert({
+          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
+          variant: 'danger',
+          submitText: 'OK'
+        });
+        return;
+      }
       const responseDetail = await getKasGantungDetailFn(rowId);
       const reportRows = response.data.map((row) => ({
         ...row,
@@ -1882,6 +1890,11 @@ const GridKasGantungHeader = () => {
         tglcetak: new Date().toLocaleDateString(),
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      sessionStorage.setItem('dataId', JSON.stringify(rowId));
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
           const { Stimulsoft } = module;
