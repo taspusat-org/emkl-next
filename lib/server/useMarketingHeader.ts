@@ -330,14 +330,18 @@ export const useUpdateMarketing = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const dispatch = useDispatch();
 
   return useMutation(updateMarketingFn, {
+    onMutate: () => {
+      dispatch(setProcessing());
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries('marketing');
+      dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-      console.log('errorResponse', errorResponse);
 
       if (errorResponse !== undefined) {
         const errorFields = errorResponse.message || [];
@@ -357,6 +361,9 @@ export const useUpdateMarketing = () => {
           });
         }
       }
+    },
+    onSettled: () => {
+      dispatch(setProcessed());
     }
   });
 };

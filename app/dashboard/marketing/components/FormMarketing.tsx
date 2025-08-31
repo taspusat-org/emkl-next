@@ -276,7 +276,7 @@ const FormMarketing = ({
       required: true,
       selectedRequired: false,
       endpoint: 'jenisbiayamarketing',
-      label: 'JENIS BIAYA MARKETING',
+      // label: 'JENIS BIAYA MARKETING',
       singleColumn: true,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
@@ -292,7 +292,7 @@ const FormMarketing = ({
       required: true,
       selectedRequired: false,
       endpoint: 'managermarketing',
-      label: 'MANAGER MARKETING',
+      // label: 'MANAGER MARKETING',
       singleColumn: true,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
@@ -773,13 +773,13 @@ const FormMarketing = ({
                           handleInputChangeMarketingOrderan(
                             props.rowIdx,
                             'statusaktifOrderan_nama',
-                            val.text
+                            val?.text
                           )
                         }
                         lookupNama={
                           props.row.statusaktifOrderan_nama
                             ? String(props.row.statusaktifOrderan_nama)
-                            : undefined
+                            : ''
                         }
                         inputLookupValue={Number(props.row.statusaktif)}
                       />
@@ -888,36 +888,45 @@ const FormMarketing = ({
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        renderCell: (props: any) => (
-          <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-            {props.row.isAddRow
-              ? ''
-              : lookupPropsJenisBiayaMarketing.map(
-                  (jenisbiayamarketingLookup, index) => (
-                    <LookUp
-                      key={index}
-                      {...jenisbiayamarketingLookup}
-                      label={`JENIS BIAYA MARKETING ${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
-                      lookupValue={(id) => {
-                        handleInputChangeMarketingBiaya(
-                          props.rowIdx,
-                          'jenisbiayamarketing_id',
-                          Number(id)
-                        ); // Use props.rowIdx to get the correct index
-                      }}
-                      lookupNama={
-                        props.row.jenisbiayamarketing_nama
-                          ? String(props.row.jenisbiayamarketing_nama)
-                          : undefined
-                      }
-                      inputLookupValue={Number(
-                        props.row.jenisbiayamarketing_id
-                      )}
-                    />
-                  )
-                )}
-          </div>
-        )
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow
+                ? ''
+                : lookupPropsJenisBiayaMarketing.map(
+                    (jenisbiayamarketingLookup, index) => (
+                      <LookUp
+                        key={index}
+                        {...jenisbiayamarketingLookup}
+                        label={`JENISBIAYAMARKETING ${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
+                        lookupValue={(id) => {
+                          handleInputChangeMarketingBiaya(
+                            props.rowIdx,
+                            'jenisbiayamarketing_id',
+                            Number(id)
+                          ); // Use props.rowIdx to get the correct index
+                        }}
+                        onSelectRow={(val) =>
+                          handleInputChangeMarketingBiaya(
+                            props.rowIdx,
+                            'jenisbiayamarketing_nama',
+                            val?.nama
+                          )
+                        }
+                        lookupNama={
+                          props.row.jenisbiayamarketing_nama
+                            ? String(props.row.jenisbiayamarketing_nama)
+                            : ''
+                        }
+                        inputLookupValue={Number(
+                          props.row.jenisbiayamarketing_id
+                        )}
+                      />
+                    )
+                  )}
+            </div>
+          );
+        }
       },
       {
         key: 'nominal',
@@ -940,14 +949,14 @@ const FormMarketing = ({
           const rowIdx = props.rowIdx;
           let raw = props.row.nominal ?? ''; // Nilai nominal awal
 
-          if (typeof raw === 'number') {
-            // Cek jika raw belum diformat dengan tanda koma, kemudian format
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
-          if (!raw.includes(',')) {
-            // Jika raw tidak mengandung tanda koma, format sebagai currency
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
+          // if (typeof raw === 'number') {
+          //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
+          //   raw = raw.toString(); // Mengonversi nominal menjadi string
+          // }
+          // if (!raw.includes(',')) {
+          //   // Jika raw tidak mengandung tanda koma, format sebagai currency
+          //   raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+          // }
 
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -1001,13 +1010,13 @@ const FormMarketing = ({
                       handleInputChangeMarketingBiaya(
                         props.rowIdx,
                         'statusaktifBiaya_nama',
-                        val.text
+                        val?.text
                       )
                     }
                     lookupNama={
                       props.row.statusaktifBiaya_nama
                         ? String(props.row.statusaktifBiaya_nama)
-                        : undefined
+                        : ''
                     }
                     inputLookupValue={Number(props.row.statusaktif)}
                   />
@@ -1132,10 +1141,17 @@ const FormMarketing = ({
                             Number(id)
                           ); // Use props.rowIdx to get the correct index
                         }}
+                        onSelectRow={(val) =>
+                          handleInputChangeMarketingManager(
+                            props.rowIdx,
+                            'managermarketing_nama',
+                            val?.nama
+                          )
+                        }
                         lookupNama={
                           props.row.managermarketing_nama
                             ? String(props.row.managermarketing_nama)
-                            : undefined
+                            : ''
                         }
                         inputLookupValue={Number(props.row.managermarketing_id)}
                       />
@@ -1183,13 +1199,13 @@ const FormMarketing = ({
                           handleInputChangeMarketingManager(
                             props.rowIdx,
                             'statusaktifManager_nama',
-                            val.text
+                            val?.text
                           )
                         }
                         lookupNama={
                           props.row.statusaktifManager_nama
                             ? String(props.row.statusaktifManager_nama)
-                            : undefined
+                            : ''
                         }
                         inputLookupValue={Number(props.row.statusaktif)}
                       />
@@ -1317,10 +1333,17 @@ const FormMarketing = ({
                               Number(id)
                             ); // Use props.rowIdx to get the correct index
                           }}
+                          onSelectRow={(val) =>
+                            handleInputChangeMarketingProsesFee(
+                              props.rowIdx,
+                              'jenisprosesfee_nama',
+                              val?.nama
+                            )
+                          }
                           lookupNama={
                             props.row.jenisprosesfee_nama
                               ? String(props.row.jenisprosesfee_nama)
-                              : undefined
+                              : ''
                           }
                           inputLookupValue={Number(props.row.jenisprosesfee_id)}
                         />
@@ -1364,10 +1387,17 @@ const FormMarketing = ({
                               Number(id)
                             ); // Use props.rowIdx to get the correct index
                           }}
+                          onSelectRow={(val) =>
+                            handleInputChangeMarketingProsesFee(
+                              props.rowIdx,
+                              'statuspotongbiayakantor_nama',
+                              val?.text
+                            )
+                          }
                           lookupNama={
                             props.row.statuspotongbiayakantor_nama
                               ? String(props.row.statuspotongbiayakantor_nama)
-                              : undefined
+                              : ''
                           }
                           inputLookupValue={Number(
                             props.row.statuspotongbiayakantor
@@ -1417,13 +1447,13 @@ const FormMarketing = ({
                             handleInputChangeMarketingProsesFee(
                               props.rowIdx,
                               'statusaktif_nama',
-                              val.text
+                              val?.text
                             )
                           }
                           lookupNama={
                             props.row.statusaktif_nama
                               ? String(props.row.statusaktif_nama)
-                              : undefined
+                              : ''
                           }
                           inputLookupValue={Number(props.row.statusaktif)}
                         />
@@ -1793,56 +1823,27 @@ const FormMarketing = ({
     if (tabFromValues == 'formMarketingOrderan') {
       refetchMarketingOrderan();
     }
-  }, [headerData.id, refetchMarketingOrderan]);
+  }, [headerData?.id, refetchMarketingOrderan]);
 
   useEffect(() => {
     if (tabFromValues == 'formMarketingBiaya') {
       refetchMarketingBiaya();
     }
-  }, [headerData.id, refetchMarketingBiaya]);
+  }, [headerData?.id, refetchMarketingBiaya]);
 
   useEffect(() => {
     if (tabFromValues == 'formMarketingManager') {
       refetchMarketingManager();
     }
-  }, [headerData.id, refetchMarketingManager]);
+  }, [headerData?.id, refetchMarketingManager]);
 
   useEffect(() => {
     if (tabFromValues == 'formMarketingProsesFee') {
       refetchMarketingProsesFee();
     }
-  }, [headerData.id, refetchMarketingProsesFee]);
+  }, [headerData?.id, refetchMarketingProsesFee]);
 
   useEffect(() => {
-    if (rowsMarketingProsesFee) {
-      const filteredRows = rowsMarketingProsesFee
-        .filter((row) => row.id !== 'add_row')
-        .map(({ isNew, ...rest }) => ({
-          ...rest
-        }));
-
-      forms.setValue('marketingprosesfee', filteredRows);
-    }
-  }, [rowsMarketingProsesFee]);
-
-  useEffect(() => {
-    console.log(
-      'forms.getValues() marketingorderan',
-      forms.getValues().marketingorderan
-    );
-    console.log(
-      'forms.getValues() marketingbiaya',
-      forms.getValues().marketingbiaya
-    );
-    console.log(
-      'forms.getValues() marketingmanager',
-      forms.getValues().marketingmanager
-    );
-    console.log(
-      'forms.getValues() marketingprosesfee',
-      forms.getValues().marketingprosesfee
-    );
-
     if (forms.getValues()?.marketingorderan?.length === 0) {
       setRowsMarketingOrderan([
         {
@@ -1910,8 +1911,7 @@ const FormMarketing = ({
         { isAddRow: true, id: 'add_row', isNew: false }
       ]);
     }
-  }, [forms, forms.getValues().marketingorderan]);
-  // }, [forms]);
+  }, [forms, forms.getValues()]);
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
@@ -2016,6 +2016,9 @@ const FormMarketing = ({
                             forms.setValue('statusaktif', id);
                             // forms.setValues('statusaktif_nama', id.)
                           }}
+                          onSelectRow={(val) => {
+                            forms.setValue('statusaktif_nama', val?.text);
+                          }}
                           inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_nama')}
                         />
@@ -2066,6 +2069,9 @@ const FormMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('karyawan_id', id)
                           }
+                          onSelectRow={(val) => {
+                            forms.setValue('karyawan_nama', val?.namakaryawan);
+                          }}
                           inputLookupValue={forms.getValues('karyawan_id')}
                           lookupNama={forms.getValues('karyawan_nama')}
                         />
@@ -2119,6 +2125,9 @@ const FormMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('statustarget', id)
                           }
+                          onSelectRow={(val) => {
+                            forms.setValue('statustarget_nama', val?.text);
+                          }}
                           inputLookupValue={forms.getValues('statustarget')}
                           lookupNama={forms.getValues('statustarget_nama')}
                         />
@@ -2143,6 +2152,9 @@ const FormMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('statusbagifee', id)
                           }
+                          onSelectRow={(val) => {
+                            forms.setValue('statusbagifee_nama', val?.text);
+                          }}
                           inputLookupValue={forms.getValues('statusbagifee')}
                           lookupNama={forms.getValues('statusbagifee_nama')}
                         />
@@ -2167,6 +2179,9 @@ const FormMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('statusfeemanager', id)
                           }
+                          onSelectRow={(val) => {
+                            forms.setValue('statusfeemanager_nama', val?.text);
+                          }}
                           inputLookupValue={forms.getValues('statusfeemanager')}
                           lookupNama={forms.getValues('statusfeemanager_nama')}
                         />
@@ -2191,6 +2206,12 @@ const FormMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('marketinggroup_id', Number(id))
                           }
+                          onSelectRow={(val) => {
+                            forms.setValue(
+                              'marketinggroup_nama',
+                              val?.marketing_nama
+                            );
+                          }}
                           inputLookupValue={forms.getValues(
                             'marketinggroup_id'
                           )}
@@ -2217,6 +2238,9 @@ const FormMarketing = ({
                           lookupValue={(id) =>
                             forms.setValue('statusprafee', id)
                           }
+                          onSelectRow={(val) => {
+                            forms.setValue('statusprafee_nama', val?.text);
+                          }}
                           inputLookupValue={forms.getValues('statusprafee')}
                           lookupNama={forms.getValues('statusprafee_nama')}
                         />
