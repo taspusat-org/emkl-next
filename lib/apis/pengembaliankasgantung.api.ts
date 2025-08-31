@@ -1,4 +1,5 @@
 import { GetParams } from '../types/all.type';
+import { IAllKasGantungHeader } from '../types/kasgantungheader.type';
 import {
   IAllPengembalianKasGantung,
   IAllPengembalianKasGantungDetail
@@ -26,6 +27,25 @@ export const getPengembalianKasGantungHeaderFn = async (
     throw new Error('Failed');
   }
 };
+
+export const getPengembalianKasGantungHeaderByIdFn = async (
+  id: number,
+  filters: GetParams = {}
+): Promise<IAllPengembalianKasGantung> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get(`/pengembaliankasgantungheader/${id}`, {
+      params: queryParams
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
+};
+
 export const getPengembalianKasGantungReportFn = async (
   filters: GetParams = {}
 ): Promise<IAllPengembalianKasGantung> => {

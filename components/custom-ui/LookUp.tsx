@@ -46,9 +46,15 @@ import IcClose from '@/public/image/x.svg';
 import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
+import { formatCurrency } from '@/lib/utils';
 
 interface LookUpProps {
-  columns: { key: string; name: string; width?: number }[];
+  columns: {
+    key: string;
+    name: string;
+    width?: number;
+    isCurrency?: boolean;
+  }[];
   endpoint?: string;
   label?: string;
   labelLookup?: string;
@@ -432,8 +438,8 @@ export default function LookUp({
       key: col.key,
 
       headerCellClass: 'column-headers',
-      // Set width to 100% if singleColumn is true, else use the default width
-      width: singleColumn ? '100%' : col.width ?? 250, // Default width if not specified
+      // Set width to 100% jika singleColumn true, jika tidak pakai default width
+      width: singleColumn ? '100%' : col.width ?? 250, // Default width jika tidak ada
       resizable: true,
       renderHeaderCell: () => (
         <div
@@ -492,13 +498,14 @@ export default function LookUp({
       ),
       renderCell: (props: any) => {
         const columnFilter = filters.filters[props.column.key] || '';
+        let cellValue = props.row[props.column.key as keyof Row] || '';
+        // Jika kolom punya property isCurrency, format sebagai currency
+        if (col.isCurrency) {
+          cellValue = formatCurrency(cellValue);
+        }
         return (
           <div className="m-0 flex h-full cursor-pointer items-center p-0  text-[12px]">
-            {highlightText(
-              props.row[props.column.key as keyof Row] || '', // Get the text value for the current row and column
-              filters.search, // Use the global search term
-              columnFilter // Use the column-specific filter
-            )}
+            {highlightText(cellValue, filters.search, columnFilter)}
           </div>
         );
       }
@@ -611,6 +618,7 @@ export default function LookUp({
     } else if (event.key === 'Enter') {
       dispatch(clearOpenName());
       setInputValue(classValue);
+
       const value = dataToPost ? clickedRow[dataToPost] : clickedRow.id;
       lookupValue?.(value);
       onSelectRow?.(value); // cukup satu kali, tanpa else

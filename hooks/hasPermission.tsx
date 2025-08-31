@@ -24,7 +24,6 @@ const usePermissions = () => {
     'PARAMETER',
     'KAS GANTUNG'
   ];
-  console.log('permissions', permissions);
 
   useEffect(() => {
     const fetchPermissions = async () => {

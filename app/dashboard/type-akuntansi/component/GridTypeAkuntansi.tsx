@@ -1603,6 +1603,7 @@ const GridTypeAkuntansi = () => {
         judullaporan: 'Laporan Type Akuntansi',
         usercetak: user.username,
         tglcetak: tglcetak,
+        detail: detailDataReport,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
       console.log('reportRows', reportRows);

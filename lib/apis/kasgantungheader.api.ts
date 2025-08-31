@@ -30,6 +30,23 @@ export const getKasGantungHeaderFn = async (
     throw new Error('Failed');
   }
 };
+export const getKasGantungHeaderByIdFn = async (
+  id: number,
+  filters: GetParams = {}
+): Promise<IAllKasGantungHeader> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get(`/kasgantungheader/${id}`, {
+      params: queryParams
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
+};
 export const getKasGantungDetailFn = async (
   id: number
 ): Promise<IAllKasGantungDetail> => {
