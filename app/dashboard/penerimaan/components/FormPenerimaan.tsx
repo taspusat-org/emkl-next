@@ -8,7 +8,6 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { useGetMenu } from '@/lib/server/useMenu';
 import { Button } from '@/components/ui/button';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
@@ -23,23 +22,7 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import {
-  formatCurrency,
-  formatDateCalendar,
-  formatDateToDDMMYYYY,
-  isLeapYear,
-  parseCurrency,
-  parseDateFromDDMMYYYY
-} from '@/lib/utils';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
-import { parse } from 'date-fns';
-import { Checkbox } from '@/components/ui/checkbox';
+import { formatCurrency, isLeapYear, parseCurrency } from '@/lib/utils';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import { KasGantungDetail } from '@/lib/types/kasgantungheader.type';
 import { FaRegSquarePlus } from 'react-icons/fa6';
@@ -47,16 +30,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
+import { PenerimaanDetail } from '@/lib/types/penerimaan.type';
 const FormPenerimaan = ({
   popOver,
   setPopOver,
   forms,
   onSubmit,
   mode,
-  handleClose,
-  isLoadingCreate,
-  isLoadingUpdate,
-  isLoadingDelete
+  handleClose
 }: any) => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [popOverTglSampai, setPopOverTglSampai] = useState<boolean>(false);
@@ -87,9 +68,9 @@ const FormPenerimaan = ({
   } = useGetKasGantungDetail(headerData?.id ?? 0);
 
   const [rows, setRows] = useState<
-    (KasGantungDetail | (Partial<KasGantungDetail> & { isNew: boolean }))[]
+    (PenerimaanDetail | (Partial<PenerimaanDetail> & { isNew: boolean }))[]
   >([]);
-  function handleCellClick(args: { row: KasGantungDetail }) {
+  function handleCellClick(args: { row: PenerimaanDetail }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -97,9 +78,9 @@ const FormPenerimaan = ({
     }
   }
   const addRow = () => {
-    const newRow: Partial<KasGantungDetail> & { isNew: boolean } = {
+    const newRow: Partial<PenerimaanDetail> & { isNew: boolean } = {
       id: 0, // Placeholder ID
-      nobukti: '',
+      coa: '',
       keterangan: '',
       nominal: '',
       isNew: true
@@ -157,7 +138,7 @@ const FormPenerimaan = ({
     0
   );
 
-  const columns = useMemo((): Column<KasGantungDetail>[] => {
+  const columns = useMemo((): Column<PenerimaanDetail>[] => {
     return [
       {
         key: 'aksi',
@@ -212,7 +193,7 @@ const FormPenerimaan = ({
         colSpan: (args) => {
           // If it's the "Add Row" row, span across multiple columns
           if (args.type === 'ROW' && args.row.isAddRow) {
-            return 2; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 3; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
@@ -232,6 +213,44 @@ const FormPenerimaan = ({
           return (
             <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-normal">
               {props.row.isAddRow ? 'TOTAL :' : props.rowIdx + 1}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'coa',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 300,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>COA</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'COA',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.coa}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(props.rowIdx, 'coa', e.target.value)
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
             </div>
           );
         }
@@ -328,6 +347,22 @@ const FormPenerimaan = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'nama'
+    }
+  ];
+  const lookupPropsCoaMasuk = [
+    {
+      columns: [
+        { key: 'coa', name: 'coa' },
+        { key: 'keterangancoa', name: 'keterangancoa' }
+      ],
+      selectedRequired: false,
+      label: 'COA KAS MASUK',
+      endpoint: 'akunpusat',
+      dataToPost: 'coa',
+      singleColumn: false,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'coa'
     }
   ];
   const lookUpPropsBank = [
@@ -457,7 +492,7 @@ const FormPenerimaan = ({
       if (allData?.data?.length > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
-          nobukti: item.nobukti ?? '',
+          coa: item.coa ?? '',
           nominal: item.nominal ?? '',
           keterangan: item.keterangan ?? '',
           isNew: false
@@ -473,7 +508,7 @@ const FormPenerimaan = ({
         setRows([
           {
             id: 0,
-            nobukti: '',
+            coa: '',
             nominal: '',
             keterangan: '',
             isNew: true
@@ -616,6 +651,95 @@ const FormPenerimaan = ({
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    name="noresi"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          NO RESI
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              disabled={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="postingdari"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          POSTING DARI
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              disabled={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="diterimadari"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          DITERIMA DARI
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              disabled={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        COA KAS MASUK
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsCoaMasuk.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          labelLookup="LOOKUP COA KAS MASUK"
+                          disabled={mode === 'view' || mode === 'delete'}
+                          onClear={forms.setValue('coakasmasuk', null)}
+                          lookupValue={(id) =>
+                            forms.setValue('coakasmasuk', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('coakasmasuk')}
+                          lookupNama={forms.getValues('coakasmasuk_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel className="text-sm font-semibold text-gray-700">
@@ -639,82 +763,113 @@ const FormPenerimaan = ({
                       ))}
                     </div>
                   </div>
-                  <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
-                    <p className="text-sm text-black">POSTING PENERIMAAN</p>
-
-                    <div className="flex flex-row lg:gap-3">
-                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <div className="w-full lg:w-[15%]">
-                          <FormLabel className="text-sm font-semibold text-gray-700">
-                            KAS/BANK
-                          </FormLabel>
-                        </div>
-                        <div className="w-full lg:w-[70%]">
-                          {lookUpPropsBank.map((props, index) => (
-                            <LookUp
-                              key={index}
-                              {...props}
-                              labelLookup="LOOKUP BANK"
-                              disabled={mode === 'view' || mode === 'delete'}
-                              lookupValue={(id) =>
-                                forms.setValue('bank_id', Number(id))
-                              }
-                              inputLookupValue={forms.getValues('bank_id')}
-                              lookupNama={forms.getValues('bank_nama')}
+                  <FormField
+                    name="nowarkat"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          NOMOR WARKAT
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
-                          ))}
+                          </FormControl>
+                          <FormMessage />
                         </div>
-                      </div>
-                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <div className="w-full lg:w-[15%]">
-                          <FormLabel className="text-sm font-semibold text-gray-700">
-                            ALAT BAYAR
-                          </FormLabel>
-                        </div>
-                        <div className="w-full lg:w-[70%]">
-                          {lookUpPropsAlatBayar.map((props, index) => (
-                            <LookUp
-                              key={index}
-                              {...props}
-                              labelLookup="LOOKUP ALAT BAYAR"
-                              disabled={mode === 'view' || mode === 'delete'}
-                              lookupValue={(id) =>
-                                forms.setValue('alatbayar_id', Number(id))
-                              }
-                              inputLookupValue={forms.getValues('alatbayar_id')}
-                              lookupNama={forms.getValues('alatbayar_nama')}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        KAS/BANK
+                      </FormLabel>
                     </div>
-                    <div>
-                      <FormField
-                        name="nobukti"
-                        control={forms.control}
-                        render={({ field }) => (
-                          <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                              NO BUKTI KAS KELUAR
-                            </FormLabel>
-                            <div className="flex flex-col lg:w-[35%]">
-                              <FormControl>
-                                <Input
-                                  disabled
-                                  value=""
-                                  type="text"
-                                  readOnly={
-                                    mode === 'view' || mode === 'delete'
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </div>
-                          </FormItem>
-                        )}
-                      />
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsBank.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          labelLookup="LOOKUP BANK"
+                          disabled={mode === 'view' || mode === 'delete'}
+                          lookupValue={(id) =>
+                            forms.setValue('bank_id', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('bank_id')}
+                          lookupNama={forms.getValues('bank_nama')}
+                        />
+                      ))}
                     </div>
                   </div>
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        ALAT BAYAR
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsAlatBayar.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          labelLookup="LOOKUP ALAT BAYAR"
+                          disabled={mode === 'view' || mode === 'delete'}
+                          lookupValue={(id) =>
+                            forms.setValue('alatbayar_id', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('alatbayar_id')}
+                          lookupNama={forms.getValues('alatbayar_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <FormField
+                    name="tgllunas"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          TANGGAL LUNAS
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <InputDatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={mode === 'view' || mode === 'delete'}
+                              showCalendar
+                              onSelect={(date) =>
+                                forms.setValue('tgllunas', date)
+                              }
+                            />
+                            {/* <InputDateTimePicker
+                                value={field.value} // '' saat kosong
+                                onChange={field.onChange} // string keluar (mis. "16-08-2025 09:25 AM")
+                                showCalendar
+                                showTime // aktifkan 12h + AM/PM
+                                minuteStep={1}
+                                fromYear={1960}
+                                toYear={2035}
+                                // outputFormat="dd-MM-yyyy hh:mm a" // default sudah begini saat showTime
+                              /> */}
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                   <div className="h-[400px] min-h-[400px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div
