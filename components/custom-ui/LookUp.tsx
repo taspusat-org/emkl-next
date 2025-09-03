@@ -115,7 +115,7 @@ export default function LookUp({
   isSubmitClicked = false,
   postData,
   disabled = false, // Default to false if not provided
-  clearDisabled = true, // Default to false if not provided
+  clearDisabled = false, // Default to false if not provided
   filterby,
   onSelectRow,
   onClear
@@ -126,6 +126,7 @@ export default function LookUp({
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [inputValue, setInputValue] = useState<string>('');
+  const [onPaste, setOnPaste] = useState<boolean>(false);
   const dispatch = useDispatch();
   const triggerRef = useRef<HTMLDivElement | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -138,7 +139,8 @@ export default function LookUp({
   const [deleteClicked, setDeleteClicked] = useState(false);
   const [showError, setShowError] = useState({
     label: label,
-    status: false
+    status: false,
+    message: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -244,7 +246,8 @@ export default function LookUp({
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled) return;
+    if (disabled || onPaste) return;
+    setOnPaste(false);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -264,6 +267,7 @@ export default function LookUp({
       setFilters(next);
       dispatch(setOpenName(label || ''));
       setFiltering(true);
+      setShowError({ label: label ?? '', status: false, message: '' });
 
       // UX focus
       setTimeout(() => {
@@ -362,8 +366,41 @@ export default function LookUp({
       />
     );
   }
+  const handlePaste = (event: string) => {
+    setOnPaste(true);
+    if (disabled) return;
+    try {
+      const pasted = event.trim();
+      // Misal kolom display dengan key 'text', sesuaikan dengan kolom utama di aplikasi Anda
+      const match = rows.find(
+        (row) => String(row[postData as string]) === pasted.toUpperCase()
+      );
+      setInputValue(pasted.toUpperCase());
 
+      if (match) {
+        lookupValue?.(match[dataToPost || 'id']);
+        onSelectRow?.(match);
+        setShowError({ label: label ?? '', status: false, message: '' });
+
+        setOpen(false);
+      } else {
+        setShowError({
+          label: label ?? '',
+          status: true,
+          message: 'DATA TIDAK DITEMUKAN'
+        });
+
+        // Bisa juga tampilkan pesan custom pada UI
+      }
+      setTimeout(() => {
+        setOnPaste(false);
+      }, 100);
+    } catch (error) {
+      console.log('error', error);
+    }
+  };
   const handleButtonClick = () => {
+    setOnPaste(false);
     if (disabled) return; // Jangan lakukan apa-apa jika disabled
 
     // Jika label sama dengan openName dan lookup sudah terbuka, tutup lookup
@@ -393,12 +430,15 @@ export default function LookUp({
   };
 
   const handleClearInput = () => {
+    setOnPaste(false);
     if (disabled && !clearDisabled) return; // Prevent input clear if disabled
     setFilters({ ...filters, search: '', filters: {} });
     setInputValue('');
     if (lookupValue) {
       lookupValue(null);
     }
+    setShowError({ label: label ?? '', status: false, message: '' });
+
     setDeleteClicked(true);
     dispatch(setSelectLookup({ key: label ?? '', data: {} }));
     dispatch(setSearchTerm(''));
@@ -827,7 +867,7 @@ export default function LookUp({
       const filteredRows = data ? applyFilters(data) : [];
 
       // Check if we're not clearing input and lookupNama is undefined
-      if (isdefault && !lookupNama && !deleteClicked) {
+      if (isdefault && !deleteClicked) {
         // Only set default value if inputValue is empty (cleared)
         if (isdefault === 'YA') {
           const defaultRow = filteredRows.find(
@@ -859,10 +899,8 @@ export default function LookUp({
         const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
 
         if (myRequestId !== requestIdRef.current) return;
-        console.log('masuk', newRows);
         setRows((prev) => {
           if (currentPage === 1) return newRows;
-          console.log('masuk22');
 
           // append + dedup by id
           const seen = new Set<number | string>();
@@ -966,14 +1004,20 @@ export default function LookUp({
   }, [filters.search, filters.filters, rows, postData, selectedRequired]); // Tambahka
   useEffect(() => {
     // Check if search is not empty and if we're not clicking outside
-    if (filters.search.trim() !== '' && !clickedOutside && filtering) {
+    if (
+      filters.search.trim() !== '' &&
+      !clickedOutside &&
+      filtering &&
+      !onPaste
+    ) {
       setOpen(true); // Open the lookup grid if there's search value and not clicking outside
       setSelectedRow(0); // Select the first row
     } else if (
       filters.search.trim() === '' &&
       !clickedOutside &&
       filtering &&
-      filters.filters
+      filters.filters &&
+      !onPaste
     ) {
       // Keep the lookup open if search is empty but we're still filtering
       setOpen(true);
@@ -986,7 +1030,7 @@ export default function LookUp({
     if (clickedOutside) {
       setClickedOutside(false);
     }
-  }, [filters.search, clickedOutside, filtering]);
+  }, [filters.search, clickedOutside, filtering, onPaste]);
 
   useEffect(() => {
     let newWidth = inputRef.current?.offsetWidth || 'auto';
@@ -1027,18 +1071,16 @@ export default function LookUp({
       document.removeEventListener('keydown', preventScrollOnSpace);
     };
   }, []);
-
   useEffect(() => {
     // Update status open jika openName sama dengan label
-    if (label === openName) {
+    if (label === openName && !onPaste) {
       setOpen(true); // Jika label sama dengan openName, buka lookup
     } else {
       setOpen(false); // Jika tidak sama, tutup lookup
       setCurrentPage(1);
       setFetchedPages(new Set());
-      setRows([]);
     }
-  }, [openName, label]); // Efek dijalankan setiap kali openName atau label berubah
+  }, [openName, label, onPaste]); // Efek dijalankan setiap kali openName atau label berubah
 
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
@@ -1059,22 +1101,34 @@ export default function LookUp({
         showError.label?.toLowerCase() === label?.toLowerCase() &&
         (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
-        setShowError({ label: label ?? '', status: true });
+        setShowError({
+          label: label ?? '',
+          status: true,
+          message: `${label} ${REQUIRED_FIELD}`
+        });
       } else {
-        // Jika ada nilai, set error menjadi false
-        setShowError({ label: label ?? '', status: false });
+        setShowError({ label: label ?? '', status: false, message: '' });
       }
     }
     dispatch(setSubmitClicked(false));
   }, [required, submitClicked, inputValue, lookupNama, label, dispatch]);
 
   useEffect(() => {
-    if (
-      (lookupNama !== undefined && String(label) === String(showError.label)) ||
-      inputValue !== ''
-    ) {
-      setShowError({ label: label ?? '', status: false });
+    // Jika sedang onPaste, jangan lakukan apapun
+    if (onPaste) return;
+
+    // Jika inputValue tidak kosong, set showError ke false
+    if (inputValue !== '') {
+      setShowError({ label: label ?? '', status: false, message: '' });
     }
+    // Jika lookupNama tidak undefined dan label sama dengan showError.label, set showError ke false
+    else if (
+      lookupNama !== undefined &&
+      String(label) === String(showError.label)
+    ) {
+      setShowError({ label: label ?? '', status: false, message: '' });
+    }
+    // Perubahan: Hapus onPaste dari dependency agar efek ini tidak berjalan saat onPaste berubah
   }, [lookupNama, inputValue, label, showError.label]);
   useEffect(() => {
     if (focus === name && submitClicked) {
@@ -1085,80 +1139,142 @@ export default function LookUp({
   }, [focus, name, inputRef, submitClicked]);
 
   return (
-    <Popover open={open} onOpenChange={() => ({})}>
+    <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
         <div className="flex w-full flex-col">
-          <FormField
-            name={String(name) ?? ''}
-            control={forms?.control}
-            render={({ field }) => (
-              <FormItem className="flex w-full flex-col justify-between ">
-                <FormControl>
-                  <div
-                    className="relative flex w-full flex-row items-center"
-                    ref={popoverRef}
-                  >
-                    <Input
-                      {...field}
-                      ref={inputRef}
-                      // autoFocus
-                      className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
-                        showOnButton ? 'rounded-r-none border-r-0' : ''
-                      } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
-                      disabled={disabled}
-                      value={inputValue}
-                      onKeyDown={handleInputKeydown}
-                      onChange={(e) => {
-                        handleInputChange(e);
-                        // if (e.target.value.trim() !== '') {
-                        //   setOpen(true);
-                        // }
-                      }}
-                    />
-
-                    {(filters.search !== '' || inputValue !== '') && (
-                      <Button
-                        type="button"
-                        disabled={disabled && !clearDisabled ? true : false}
-                        variant="ghost"
-                        className="absolute right-10 text-gray-500 hover:bg-transparent"
-                        onClick={handleClearInput}
-                      >
-                        <Image
-                          src={IcClose}
-                          width={15}
-                          height={15}
-                          alt="close"
-                        />
-                      </Button>
-                    )}
-
-                    {showOnButton && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
-                        onClick={handleButtonClick}
+          {/* 
+            Penjelasan:
+            Untuk menghindari error "TypeError: Cannot read properties of null (reading 'control')",
+            kita perlu memastikan bahwa props 'forms' dan 'forms.control' tidak null/undefined sebelum menggunakan FormField.
+          */}
+          {forms && forms.control ? (
+            <FormField
+              name={String(name) ?? ''}
+              control={forms?.control}
+              render={({ field }) => (
+                <FormItem className="flex w-full flex-col justify-between ">
+                  <FormControl>
+                    <div
+                      className="relative flex w-full flex-row items-center"
+                      ref={popoverRef}
+                    >
+                      <Input
+                        {...field}
+                        ref={inputRef}
+                        // autoFocus
+                        onPaste={(e) =>
+                          handlePaste(e.clipboardData.getData('text'))
+                        }
+                        className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
+                          showOnButton ? 'rounded-r-none border-r-0' : ''
+                        } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                         disabled={disabled}
-                      >
-                        <TbLayoutNavbarFilled />
-                      </Button>
-                    )}
-                  </div>
-                </FormControl>
-                {name ? (
-                  <FormMessage />
-                ) : (
-                  <p className="text-[0.8rem] text-destructive">
-                    {showError.status === true && label === showError.label
-                      ? `${label} ${REQUIRED_FIELD}`
-                      : null}
-                  </p>
+                        value={inputValue}
+                        onKeyDown={handleInputKeydown}
+                        onChange={(e) => {
+                          handleInputChange(e);
+                          // if (e.target.value.trim() !== '') {
+                          //   setOpen(true);
+                          // }
+                        }}
+                      />
+
+                      {(filters.search !== '' || inputValue !== '') && (
+                        <Button
+                          type="button"
+                          disabled={disabled && !clearDisabled ? true : false}
+                          variant="ghost"
+                          className="absolute right-10 text-gray-500 hover:bg-transparent"
+                          onClick={handleClearInput}
+                        >
+                          <Image
+                            src={IcClose}
+                            width={15}
+                            height={15}
+                            alt="close"
+                          />
+                        </Button>
+                      )}
+
+                      {showOnButton && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+                          onClick={handleButtonClick}
+                          disabled={disabled}
+                        >
+                          <TbLayoutNavbarFilled />
+                        </Button>
+                      )}
+                    </div>
+                  </FormControl>
+                  {name && forms && inputValue === '' ? (
+                    <FormMessage />
+                  ) : (
+                    <p className="text-[0.8rem] text-destructive">
+                      {showError.status === true && label === showError.label
+                        ? showError.message
+                        : null}
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
+          ) : (
+            // Jika forms/control tidak ada, render input manual
+            <div className="flex w-full flex-col justify-between ">
+              <div
+                className="relative flex w-full flex-row items-center"
+                ref={popoverRef}
+              >
+                <Input
+                  ref={inputRef}
+                  // autoFocus
+                  onPaste={(e) => handlePaste(e.clipboardData.getData('text'))}
+                  className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
+                    showOnButton ? 'rounded-r-none border-r-0' : ''
+                  } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+                  disabled={disabled}
+                  value={inputValue}
+                  onKeyDown={handleInputKeydown}
+                  onChange={(e) => {
+                    handleInputChange(e);
+                  }}
+                  name={String(name) ?? ''}
+                />
+
+                {(filters.search !== '' || inputValue !== '') && (
+                  <Button
+                    type="button"
+                    disabled={disabled && !clearDisabled ? true : false}
+                    variant="ghost"
+                    className="absolute right-10 text-gray-500 hover:bg-transparent"
+                    onClick={handleClearInput}
+                  >
+                    <Image src={IcClose} width={15} height={15} alt="close" />
+                  </Button>
                 )}
-                {/* <FormMessage /> */}
-              </FormItem>
-            )}
-          />
+
+                {showOnButton && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+                    onClick={handleButtonClick}
+                    disabled={disabled}
+                  >
+                    <TbLayoutNavbarFilled />
+                  </Button>
+                )}
+              </div>
+              <p className="text-[0.8rem] text-destructive">
+                {showError.status === true && label === showError.label
+                  ? showError.message
+                  : null}
+              </p>
+            </div>
+          )}
         </div>
       </PopoverTrigger>
       <PopoverContent

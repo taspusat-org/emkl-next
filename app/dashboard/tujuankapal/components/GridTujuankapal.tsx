@@ -138,7 +138,10 @@ const GridTujuankapal = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const forms = useForm<TujuankapalInput>({
-    resolver: zodResolver(tujuankapalSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(tujuankapalSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',

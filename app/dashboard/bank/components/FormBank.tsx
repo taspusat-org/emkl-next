@@ -68,7 +68,7 @@ const FormBank = ({
       required: false,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'akunpusat',
+      label: 'AKUNPUSAT',
       singleColumn: true,
       pageSize: 20,
       postData: 'keterangancoa',

@@ -762,7 +762,7 @@
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "Hal :{PageNumber} dari {TotalPageCount}"
+                "Value": "Hal : {PageNumber} dari {TotalPageCount}"
               },
               "HorAlignment": "Right",
               "Font": "Tahoma;;Italic;",
@@ -1174,6 +1174,12 @@
               "TextBrush": "solid:Black",
               "TextOptions": {
                 "WordWrap": true
+              },
+              "Margins": {
+                "Left": 3,
+                "Right": 0,
+                "Top": 0,
+                "Bottom": 0
               },
               "ShrinkFontToFit": true,
               "ShrinkFontToFitMinimumSize": 5,

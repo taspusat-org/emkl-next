@@ -56,7 +56,7 @@ const FormMenu = ({
       columns: [{ key: 'nama', name: 'TUJUANKAPAL' }],
       labelLookup: 'TUJUAN KAPAL LOOKUP',
       required: true,
-      selectedRequired: false,
+      selectedRequired: true,
       endpoint: 'tujuankapal',
       label: 'TUJUANKAPAL',
       singleColumn: true,

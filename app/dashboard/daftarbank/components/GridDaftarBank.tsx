@@ -128,7 +128,10 @@ const GridDaftarBank = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const forms = useForm<DaftarBankInput>({
-    resolver: zodResolver(daftarbankSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(daftarbankSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',

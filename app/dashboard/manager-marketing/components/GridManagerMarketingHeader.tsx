@@ -156,7 +156,10 @@ const GridManagerMarketingHeader = () => {
   );
   const getLookup = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<ManagerMarketingHeaderInput>({
-    resolver: zodResolver(managermarketingHeaderSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(managermarketingHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
@@ -1098,7 +1101,7 @@ const GridManagerMarketingHeader = () => {
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('menus');
+        queryClient.invalidateQueries('managermarketing');
       }
     } catch (error) {
       console.error(error);
@@ -1209,13 +1212,13 @@ const GridManagerMarketingHeader = () => {
             detail: detailItems.data.map((d: any) => ({
               nama: data.nama,
               keterangan: data.keterangan,
-              minimalprofit: data.minimalprofit,
+              minimalprofit: formatCurrency(data.minimalprofit),
               statusmentor_text: data.statusmentor_text,
               statusleader_text: data.statusleader_text,
               text_master: data.text,
-              nominalawal: d.nominalawal,
-              nominalakhir: d.nominalakhir,
-              persentase: d.persentase,
+              nominalawal: formatCurrency(d.nominalawal),
+              nominalakhir: formatCurrency(d.nominalakhir),
+              persentase: formatCurrency(d.persentase),
               text: d.text
             }))
           };
@@ -1239,9 +1242,13 @@ const GridManagerMarketingHeader = () => {
         .then((module) => {
           const { Stimulsoft } = module;
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
+            '/fonts/tahoma.ttf',
             'Tahoma'
-          );
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma Bold'
+          ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +

@@ -24,81 +24,150 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   disabled = false,
   placeholder = ''
 }) => {
-  useEffect(() => {
-    if (!value.includes(',')) {
-      setInputValue(formatCurrency(value) ?? '');
-    } else {
-      setInputValue(value ?? '');
-    }
-  }, [value]);
+  const [inputValue, setInputValue] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
 
-  const [inputValue, setInputValue] = useState(value);
-  useEffect(() => {
-    if (!value.includes(',')) {
-      setInputValue(formatCurrency(value) ?? '');
-    } else {
-      setInputValue(value ?? '');
-    }
-  }, [value]);
+  // Format number with thousand separators only (no decimal forcing)
+  const formatWithCommas = (rawValue: string): string => {
+    // Remove all non-numeric characters except dots
+    const cleaned = rawValue.replace(/[^0-9.]/g, '');
 
-  const formatCurrency = (rawValue: string) => {
-    const raw = rawValue.replace(/[^0-9.]/g, '');
-    const [intPartRaw = '', decPartRaw = ''] = raw.split('.');
-    const endsWithDot = raw.endsWith('.');
+    // Split by decimal point
+    const parts = cleaned.split('.');
 
-    if (endsWithDot) {
-      return `${intPartRaw}.`;
+    // Format integer part with commas
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Handle decimal part
+    if (parts.length > 1) {
+      // Limit decimal places to 2
+      parts[1] = parts[1].slice(0, 2);
+      return parts.join('.');
     }
 
-    const dec = decPartRaw.slice(0, 2);
-    if (dec) {
-      return `${intPartRaw.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`;
-    }
-    const formattedInt = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return formattedInt;
+    return parts[0];
   };
 
-  const beforeMaskedStateChange = ({ nextState }: any) => {
-    const formatted = formatCurrency(nextState.value || '');
-    return {
-      value: formatted,
-      selection: { start: formatted.length, end: formatted.length }
-    };
+  // Format with .00 decimal (for blur and initial value)
+  const formatWithDecimal = (rawValue: string): string => {
+    if (!rawValue || rawValue === '') return '';
+
+    // Remove all non-numeric characters except dots
+    const cleaned = rawValue.replace(/[^0-9.]/g, '');
+
+    if (cleaned === '') return '';
+
+    // Split by decimal point
+    const parts = cleaned.split('.');
+
+    // Format integer part with commas
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    // Handle decimal part
+    if (parts.length > 1) {
+      // Ensure 2 decimal places
+      const decimalPart = (parts[1] + '00').slice(0, 2);
+      return `${parts[0]}.${decimalPart}`;
+    } else {
+      // Add .00 if no decimal
+      return `${parts[0]}.00`;
+    }
   };
+
+  // Initialize value on mount or when external value changes
+  useEffect(() => {
+    if (!isFocused) {
+      const valueStr = String(value || '');
+
+      if (valueStr === '') {
+        setInputValue('');
+      } else {
+        // Check if value already has proper formatting
+        const hasDecimal = valueStr.includes('.');
+        const hasComma = valueStr.includes(',');
+
+        // If value doesn't have decimal or comma, format it with decimal
+        if (!hasDecimal && !hasComma && valueStr !== '') {
+          setInputValue(formatWithDecimal(valueStr));
+        } else if (!hasDecimal && valueStr !== '') {
+          // If only missing decimal, add it
+          setInputValue(formatWithDecimal(valueStr));
+        } else {
+          // Value already formatted, just ensure commas are in place
+          setInputValue(formatWithCommas(valueStr));
+        }
+      }
+    }
+  }, [value, isFocused]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let raw = e.target.value;
-    let formatted = formatCurrency(raw);
+    const raw = e.target.value;
 
-    // Jika isPercent adalah true, batasi agar nilai tidak lebih dari 100
+    // Check for percent validation
     if (isPercent) {
       const numericValue = parseFloat(raw.replace(/[^0-9.]/g, ''));
       if (numericValue > 100) {
-        // Jika nilai lebih dari 100, jangan update inputValue, hanya kembalikan nilai yang valid
-        return;
+        return; // Don't update if exceeds 100%
       }
     }
 
+    // Format with commas only (no forced decimal during typing)
+    const formatted = formatWithCommas(raw);
     setInputValue(formatted);
     onValueChange?.(formatted);
   };
 
-  const handleBlur = (formattedStr: string) => {
-    if (!formattedStr) {
+  const handleBlur = () => {
+    setIsFocused(false);
+
+    if (!inputValue || inputValue === '') {
       setInputValue('');
-    } else if (formattedStr.includes('.')) {
-      setInputValue(formattedStr);
+      onValueChange?.('');
     } else {
-      setInputValue(formattedStr + '.00');
+      // Format with decimal on blur
+      const formatted = formatWithDecimal(inputValue);
+      setInputValue(formatted);
+      onValueChange?.(formatted);
     }
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setIsFocused(true);
     e.target.select();
   };
 
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
+  };
+
+  // Custom beforeMaskedStateChange to handle cursor position
+  const beforeMaskedStateChange = ({ nextState }: any) => {
+    const { value: nextValue } = nextState;
+
+    // Only format with commas during typing (no decimal forcing)
+    const formatted = formatWithCommas(nextValue || '');
+
+    // Calculate cursor position
+    const oldLength = inputValue.length;
+    const newLength = formatted.length;
+    const diff = newLength - oldLength;
+
+    let cursorPosition = nextState.selection.start;
+
+    // Adjust cursor position if comma was added before cursor
+    if (diff > 0) {
+      const beforeCursor = nextValue.slice(0, nextState.selection.start);
+      const formattedBeforeCursor = formatWithCommas(beforeCursor);
+      cursorPosition = formattedBeforeCursor.length;
+    }
+
+    return {
+      value: formatted,
+      selection: {
+        start: cursorPosition,
+        end: cursorPosition
+      }
+    };
   };
 
   return (
@@ -116,7 +185,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         onKeyDown={inputStopPropagation}
         onClick={(e: any) => e.stopPropagation()}
         onFocus={handleFocus}
-        onBlur={() => handleBlur(inputValue)}
+        onBlur={handleBlur}
         placeholder={placeholder}
         className={`h-9 w-full rounded-sm border border-zinc-300 px-1 py-1 text-right text-sm focus:border-blue-500 focus:bg-[#ffffee] focus:outline-none focus:ring-0 ${className} ${
           readOnly || disabled ? 'text-zinc-400' : 'text-zinc-900'

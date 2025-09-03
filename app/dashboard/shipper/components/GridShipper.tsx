@@ -136,12 +136,14 @@ interface Filter {
     tglemailshipperjobminus: string;
     tgllahir: string;
     idshipperasal: string;
+    shipperasal_text: string;
     initial: string;
     tipe: string;
     idtipe: string;
     idinitial: string;
     nshipperprospek: string;
     parentshipper_id: string;
+    parentshipper_text: string;
     npwpnik: string;
     nitku: string;
     kodepajak: string;
@@ -203,7 +205,10 @@ const GridShipper = () => {
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const getCoa = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<ShipperInput>({
-    resolver: zodResolver(ShipperSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(ShipperSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
@@ -260,12 +265,14 @@ const GridShipper = () => {
       tglemailshipperjobminus: '',
       tgllahir: '',
       idshipperasal: null,
+      shipperasal_text: '',
       initial: '',
       tipe: '',
       idtipe: null,
       idinitial: null,
       nshipperprospek: '',
       parentshipper_id: null,
+      parentshipper_text: '',
       npwpnik: '',
       nitku: '',
       kodepajak: '',
@@ -338,12 +345,14 @@ const GridShipper = () => {
       tglemailshipperjobminus: '',
       tgllahir: '',
       idshipperasal: '',
+      shipperasal_text: '',
       initial: '',
       tipe: '',
       idtipe: '',
       idinitial: '',
       nshipperprospek: '',
       parentshipper_id: '',
+      parentshipper_text: '',
       npwpnik: '',
       nitku: '',
       kodepajak: '',
@@ -522,12 +531,14 @@ const GridShipper = () => {
         tglemailshipperjobminus: '',
         tgllahir: '',
         idshipperasal: '',
+        shipperasal_text: '',
         initial: '',
         tipe: '',
         idtipe: '',
         idinitial: '',
         nshipperprospek: '',
         parentshipper_id: '',
+        parentshipper_text: '',
         npwpnik: '',
         nitku: '',
         kodepajak: '',
@@ -689,12 +700,14 @@ const GridShipper = () => {
                     tglemailshipperjobminus: '',
                     tgllahir: '',
                     idshipperasal: '',
+                    shipperasal_text: '',
                     initial: '',
                     tipe: '',
                     idtipe: '',
                     idinitial: '',
                     nshipperprospek: '',
                     parentshipper_id: '',
+                    parentshipper_text: '',
                     npwpnik: '',
                     nitku: '',
                     kodepajak: '',
@@ -1087,19 +1100,38 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="akunpusat"
-                value="coa"
-                label="keterangancoa"
-                onChange={(value) => handleColumnFilterChange('coa', value)} // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coa_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coa_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coa_text', value);
+                }}
               />
+              {filters.filters.coa_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('coa_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.coa_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.coa_text || ''}
+              {highlightText(
+                props.row.coa_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -1116,6 +1148,7 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coapiutang')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1139,21 +1172,40 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="akunpusat"
-                value="coa"
-                label="keterangancoa"
-                onChange={(value) =>
-                  handleColumnFilterChange('coapiutang', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coapiutang_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coapiutang_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coapiutang_text', value);
+                }}
               />
+              {filters.filters.coapiutang_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('coapiutang_text', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.coapiutang_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.coapiutang_text || ''}
+              {highlightText(
+                props.row.coapiutang_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -1171,6 +1223,7 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coahutang')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1194,21 +1247,38 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="akunpusat"
-                value="coa"
-                label="keterangancoa"
-                onChange={(value) =>
-                  handleColumnFilterChange('coahutang', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coahutang_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coahutang_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coahutang_text', value);
+                }}
               />
+              {filters.filters.coahutang_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('coahutang_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.coahutang_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.coahutang_text || ''}
+              {highlightText(
+                props.row.coahutang_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -1973,17 +2043,31 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="akunpusat"
-                value="coa"
-                label="keterangancoa"
-                onChange={(value) => handleColumnFilterChange('coagiro', value)} // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coagiro_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coagiro_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coagiro_text', value);
+                }}
               />
+              {filters.filters.coagiro_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('coagiro_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.coagiro || '';
+          const columnFilter = filters.filters.coagiro_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
@@ -2602,19 +2686,31 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="marketing"
-                value="id"
-                label="nama"
-                onChange={(value) =>
-                  handleColumnFilterChange('marketing_id', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['marketing_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.marketing_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('marketing_text', value);
+                }}
               />
+              {filters.filters.marketing_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('marketing_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.marketing_id || '';
+          const columnFilter = filters.filters.marketing_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
@@ -3291,7 +3387,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                usertracing
+                usert racing
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'usertracing' &&
@@ -3350,7 +3446,7 @@ const GridShipper = () => {
         name: 'passwordtracing',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 170,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -3366,7 +3462,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                passwordtracing
+                password tracing
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'passwordtracing' &&
@@ -3443,7 +3539,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                kodeprospek
+                kode prospek
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'kodeprospek' &&
@@ -3518,7 +3614,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                namashipperprospek
+                nama shipper prospek
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'namashipperprospek' &&
@@ -3595,7 +3691,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                emaildelay
+                email delay
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'emaildelay' &&
@@ -4200,19 +4296,33 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="shipper"
-                value="id"
-                label="nama"
-                onChange={(value) =>
-                  handleColumnFilterChange('idshipperasal', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['shipperasal_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.shipperasal_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('shipperasal_text', value);
+                }}
               />
+              {filters.filters.shipperasal_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('shipperasal_text', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.idshipperasal || '';
+          const columnFilter = filters.filters.shipperasal_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
@@ -4302,7 +4412,7 @@ const GridShipper = () => {
         name: 'tipe',
         resizable: true,
         draggable: true,
-        width: 80,
+        width: 100,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -4628,19 +4738,33 @@ const GridShipper = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="shipper"
-                value="id"
-                label="nama"
-                onChange={(value) =>
-                  handleColumnFilterChange('parentshipper_id', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['parentshipper_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.parentshipper_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('parentshipper_text', value);
+                }}
               />
+              {filters.filters.parentshipper_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('parentshipper_text', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.parentshipper_id || '';
+          const columnFilter = filters.filters.parentshipper_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(

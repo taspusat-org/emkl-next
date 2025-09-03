@@ -71,15 +71,19 @@ const InputDatePicker: React.FC<DateInputProps> = ({
       <InputMask
         mask={dateMask}
         {...rest}
-        className={`h-9 w-full rounded-sm px-3 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 
-          ${disabled ? 'cursor-not-allowed bg-gray-100 text-gray-500' : ''}
+        className={`h-9 w-full rounded-sm px-3 text-sm focus:bg-[#ffffee] focus:outline-none focus:ring-0 
+          ${
+            disabled
+              ? 'cursor-not-allowed bg-gray-100 text-gray-500'
+              : 'text-zinc-900'
+          }
         `}
         onChange={onChange}
         maskPlaceholder="DD-MM-YYYY"
+        disabled={disabled}
         placeholder="DD-MM-YYYY"
         alwaysShowMask
         value={value}
-        onChange={onChange}
         beforeMaskedStateChange={({
           previousState,
           currentState,

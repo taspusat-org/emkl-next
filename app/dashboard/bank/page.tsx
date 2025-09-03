@@ -129,20 +129,16 @@ const Page = () => {
 
         if (getAkunpusatLookup.type === 'local') {
           dispatch(
-            setData({ key: 'KETERANGANCOA', data: getAkunpusatLookup.data })
+            setData({ key: 'AKUNPUSAT', data: getAkunpusatLookup.data })
           );
           const defaultValue =
             getAkunpusatLookup.data
               .map((item: any) => item.default)
               .find((val: any) => val !== null) || '';
 
-          dispatch(
-            setDefault({ key: 'KETERANGANCOA', isdefault: defaultValue })
-          );
+          dispatch(setDefault({ key: 'AKUNPUSAT', isdefault: defaultValue }));
         }
-        dispatch(
-          setType({ key: 'KETERANGANCOA', type: getAkunpusatLookup.type })
-        );
+        dispatch(setType({ key: 'AKUNPUSAT', type: getAkunpusatLookup.type }));
       } catch (err) {
         console.error('Error fetching lookup data:', err);
       }
