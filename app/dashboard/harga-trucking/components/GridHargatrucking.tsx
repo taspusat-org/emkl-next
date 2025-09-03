@@ -156,7 +156,10 @@ const GridHargatrucking = () => {
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const getLookup = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<IHargatrucking>({
-    resolver: zodResolver(hargatruckingSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(hargatruckingSchema),
     mode: 'onSubmit',
     defaultValues: {
       tujuankapal_id: 0,
@@ -550,32 +553,28 @@ const GridHargatrucking = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['tujuankapal_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.tujuankapal_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('tujuankapal_text', value);
                 }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['TUJUANKAPAL']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.nama}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              />
+              {filters.filters.tujuankapal_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('tujuankapal_text', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
@@ -583,7 +582,11 @@ const GridHargatrucking = () => {
           const columnFilter = filters.filters.tujuankapal_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.tujuankapal_text || ''}
+              {highlightText(
+                props.row.tujuankapal_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -622,40 +625,38 @@ const GridHargatrucking = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['emkl_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.emkl_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('emkl_text', value);
                 }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['EMKL']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.nama}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              />
+              {filters.filters.emkl_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('emkl_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.tujuankapal_text || '';
+          const columnFilter = filters.filters.emkl_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.emkl_text || ''}
+              {highlightText(
+                props.row.emkl_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -773,32 +774,26 @@ const GridHargatrucking = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['container_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.container_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('container_text', value);
                 }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['CONTAINER']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.nama}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              />
+              {filters.filters.container_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('container_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
@@ -851,32 +846,28 @@ const GridHargatrucking = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['jenisorderan_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.jenisorderan_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('jenisorderan_text', value);
                 }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="cursor-pointer text-xs" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    {getLookup['JENIS ORDERAN']?.map((item: any) => (
-                      <SelectItem
-                        key={item.id}
-                        className="cursor-pointer text-xs"
-                        value={item.id}
-                      >
-                        <p className="text-sm font-normal">{item.nama}</p>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              />
+              {filters.filters.jenisorderan_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('jenisorderan_text', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
@@ -959,7 +950,11 @@ const GridHargatrucking = () => {
           const columnFilter = filters.filters.nominal || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {formatCurrency(props.row.nominal)}
+              {highlightText(
+                formatCurrency(props.row.nominal) || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -1470,7 +1465,8 @@ const GridHargatrucking = () => {
         judullaporan: 'Laporan Harga Trucking',
         usercetak: user.username,
         tglcetak: tglcetak,
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA',
+        nominal: formatCurrency(row.nominal)
       }));
       sessionStorage.setItem(
         'filtersWithoutLimit',
@@ -1481,9 +1477,13 @@ const GridHargatrucking = () => {
         .then((module) => {
           const { Stimulsoft } = module;
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
+            '/fonts/tahoma.ttf',
             'Tahoma'
-          );
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma Bold'
+          ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +

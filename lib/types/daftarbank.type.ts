@@ -11,5 +11,6 @@ export interface IDaftarBank {
 
 export interface IAllDaftarBank {
   data: IDaftarBank[];
+  type: string;
   pagination: IMeta;
 }

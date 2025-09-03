@@ -42,13 +42,13 @@ import { CalendarIcon } from 'lucide-react';
 import { parse } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { ManagerMarketingDetail } from '@/lib/types/managermarketingheader.type';
+import { PengeluaranDetail } from '@/lib/types/pengeluaran.type';
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
-import { useGetManagerMarketingDetail } from '@/lib/server/useManagermarketing';
+import { useGetPengeluaranDetail } from '@/lib/server/usePengeluaran';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
-const FormManagerMarketing = ({
+const FormPengeluaran = ({
   popOver,
   setPopOver,
   forms,
@@ -83,15 +83,12 @@ const FormManagerMarketing = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetManagerMarketingDetail(headerData?.id ?? 0);
+  } = useGetPengeluaranDetail(headerData?.id ?? 0);
 
   const [rows, setRows] = useState<
-    (
-      | ManagerMarketingDetail
-      | (Partial<ManagerMarketingDetail> & { isNew: boolean })
-    )[]
+    (PengeluaranDetail | (Partial<PengeluaranDetail> & { isNew: boolean }))[]
   >([]);
-  function handleCellClick(args: { row: ManagerMarketingDetail }) {
+  function handleCellClick(args: { row: PengeluaranDetail }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -99,12 +96,16 @@ const FormManagerMarketing = ({
     }
   }
   const addRow = () => {
-    const newRow: Partial<ManagerMarketingDetail> & { isNew: boolean } = {
+    const newRow: Partial<PengeluaranDetail> & { isNew: boolean } = {
       id: 0, // Placeholder ID
-      nominalawal: '',
-      nominalakhir: '',
-      persentase: '',
-      statusaktif: null,
+      coadebet: '',
+      coadebet_text: '',
+      keterangan: '',
+      nominal: '',
+      dpp: '',
+      noinvoiceemkl: '',
+      nofakturpajakemkl: '',
+      perioderefund: '',
       isNew: true
     };
 
@@ -119,11 +120,15 @@ const FormManagerMarketing = ({
     setRows([
       {
         id: 0,
-        nominalawal: '',
-        nominalakhir: '',
-        persentase: '',
-        statusaktif: null,
-        text: '',
+        coadebet: '',
+        coadebet_text: '',
+        keterangan: '',
+        nominal: '',
+        dpp: '',
+        noinvoiceemkl: '',
+        tglinvoiceemkl: '',
+        nofakturpajakemkl: '',
+        perioderefund: '',
         isNew: true
       },
       { isAddRow: true, id: 'add_row', isNew: false }
@@ -132,10 +137,15 @@ const FormManagerMarketing = ({
     forms.setValue('details', [
       {
         id: 0,
-        nominalawal: '',
-        nominalakhir: '',
-        persentase: '',
-        statusaktif: '',
+        coadebet: '',
+        coadebet_text: '',
+        keterangan: '',
+        nominal: '',
+        dpp: '',
+        noinvoiceemkl: '',
+        tglinvoiceemkl: '',
+        nofakturpajakemkl: '',
+        perioderefund: '',
         text: ''
       }
     ]);
@@ -217,18 +227,18 @@ const FormManagerMarketing = ({
 
   // 2) handler onChange: format langsung & simpan ke state
   const handleCurrencyChange = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'nominalawal', rawInput);
+    handleInputChange(rowIdx, 'dpp', rawInput);
   };
 
   const handleCurrencyChange2 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'nominalakhir', rawInput);
+    handleInputChange(rowIdx, 'nominal', rawInput);
   };
   const handleCurrencyChange3 = (rowIdx: number, rawInput: string) => {
     handleInputChange(rowIdx, 'persentase', rawInput);
   };
 
   const handleCurrencyChange4 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'statusaktif', rawInput);
+    handleInputChange(rowIdx, 'coadebet', rawInput);
   };
 
   const handleCurrencyBlur = (formattedStr: string, rowIdx: number) => {
@@ -275,7 +285,7 @@ const FormManagerMarketing = ({
     });
   };
 
-  const columns = useMemo((): Column<ManagerMarketingDetail>[] => {
+  const columns = useMemo((): Column<PengeluaranDetail>[] => {
     return [
       {
         key: 'aksi',
@@ -352,63 +362,102 @@ const FormManagerMarketing = ({
           </div>
         )
       },
-
       {
-        key: 'nominalawal',
+        key: 'coadebet',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nominal Awal</p>
+              <p className={`text-sm font-normal`}>Coa Debet</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        name: 'nominalawal',
+        name: 'coadebet',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-
-          let raw = props.row.nominalawal ?? '';
-          if (typeof raw === 'number') raw = raw.toString();
-          if (!raw.includes(',')) raw = formatCurrency(parseFloat(raw));
-
           return (
-            <FormField
-              name={`details.${rowIdx}.nominalawal`}
-              control={forms.control}
-              render={({ field }) => (
-                <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-                  <div className="flex w-full flex-col">
-                    <FormControl>
-                      <InputCurrency
-                        {...field}
-                        readOnly={mode === 'view' || mode === 'delete'}
-                        value={String(props.row.nominalawal ?? '')}
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          handleCurrencyChange(rowIdx, value);
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </div>
-                </FormItem>
-              )}
-            />
+            <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+              <div className="w-full lg:w-[100%]">
+                {lookUpPropsCoaDebet.map((props, index) => (
+                  <LookUp
+                    label={`COA DEBET ${rowIdx + 1}`}
+                    key={index}
+                    {...props}
+                    lookupValue={(id) =>
+                      handleInputChange(rowIdx, 'coadebet', Number(id))
+                    }
+                    lookupNama={forms.getValues(
+                      `details[${rowIdx}].coadebet_text`
+                    )}
+                    onSelectRow={(value) => {
+                      handleInputChange(
+                        rowIdx,
+                        'coadebet_text',
+                        value.keterangancoa
+                      );
+                    }}
+                    disabled={mode === 'view' || mode === 'delete'}
+                  />
+                ))}
+              </div>
+            </div>
           );
         }
       },
       {
-        key: 'nominalakhir',
+        key: 'keterangan',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 250,
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>Keterangan</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'KETERANGAN',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.keterangan}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'keterangan',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
@@ -420,7 +469,7 @@ const FormManagerMarketing = ({
         name: 'nominal',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          let raw = props.row.nominalakhir ?? ''; // Nilai nominal awal
+          let raw = props.row.nominal ?? ''; // Nilai nominal awal
 
           // Cek jika raw belum diformat dengan tanda koma, kemudian format
           if (typeof raw === 'number') {
@@ -434,7 +483,7 @@ const FormManagerMarketing = ({
 
           return (
             <FormField
-              name={`details.${rowIdx}.nominalakhir`}
+              name={`details.${rowIdx}.nominal`}
               control={forms.control}
               render={({ field }) => (
                 <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -443,7 +492,7 @@ const FormManagerMarketing = ({
                       <InputCurrency
                         {...field}
                         readOnly={mode === 'view' || mode === 'delete'}
-                        value={String(props.row.nominalakhir ?? '')}
+                        value={String(props.row.nominal ?? '')}
                         onValueChange={(value) => {
                           field.onChange(value);
                           handleCurrencyChange2(rowIdx, value);
@@ -459,28 +508,28 @@ const FormManagerMarketing = ({
         }
       },
       {
-        key: 'persentase',
+        key: 'dpp',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 180,
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Persentase</p>
+              <p className={`text-sm font-normal`}>DPP</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        name: 'persentase',
+        name: 'dpp',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          let raw = props.row.persentase ?? ''; // Nilai nominal awal
+          let raw = props.row.dpp ?? ''; // Nilai dpp awal
 
           // Cek jika raw belum diformat dengan tanda koma, kemudian format
           if (typeof raw === 'number') {
-            raw = raw.toString(); // Mengonversi nominal menjadi string
+            raw = raw.toString(); // Mengonversi dpp menjadi string
           }
 
           // Jika raw tidak mengandung tanda koma, format sebagai currency
@@ -490,19 +539,19 @@ const FormManagerMarketing = ({
 
           return (
             <FormField
-              name={`details.${rowIdx}.persentase`}
+              name={`details.${rowIdx}.dpp`}
               control={forms.control}
               render={({ field }) => (
                 <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-                  <div className="flex flex-col">
+                  <div className="flex w-full flex-col">
                     <FormControl>
                       <InputCurrency
                         {...field}
                         readOnly={mode === 'view' || mode === 'delete'}
-                        value={String(props.row.persentase ?? '')}
+                        value={String(props.row.dpp ?? '')}
                         onValueChange={(value) => {
                           field.onChange(value);
-                          handleCurrencyChange3(rowIdx, value);
+                          handleCurrencyChange(rowIdx, value);
                         }}
                       />
                     </FormControl>
@@ -515,39 +564,181 @@ const FormManagerMarketing = ({
         }
       },
       {
-        key: 'statusaktif',
+        key: 'noinvoiceemkl',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 250,
+        width: 160,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Status Aktif</p>
+              <p className={`text-sm font-normal`}>nomor invoice emkl</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        name: 'statusaktif',
+        name: 'noinvoiceemkl',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.noinvoiceemkl}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'noinvoiceemkl',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'tglinvoiceemkl',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 170,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>TANGGAL INVOICE EMKL</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'tglinvoiceemkl',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
           return (
-            <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-              <div className="w-full lg:w-[100%]">
-                {lookUpPropsStatusAktifDetail.map((props, index) => (
-                  <LookUp
-                    label={`STATUS AKTIF ${rowIdx + 1}`}
-                    key={index}
-                    {...props}
-                    lookupValue={(id) =>
-                      handleCurrencyChange4(rowIdx, String(id))
-                    }
-                    lookupNama={forms.getValues(`details[${rowIdx + 1}].text`)}
-                    disabled={mode === 'view' || mode === 'delete'}
-                  />
-                ))}
-              </div>
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <FormField
+                  name={`details.${rowIdx}.tglinvoiceemkl`}
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                      <div className="flex flex-col">
+                        <FormControl>
+                          <InputDatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={mode === 'view' || mode === 'delete'}
+                            showCalendar
+                            onSelect={(date) =>
+                              handleInputChange(
+                                props.rowIdx,
+                                'tglinvoiceemkl',
+                                String(date)
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nofakturpajakemkl',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>nomor faktur pajak emkl</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'nofakturpajakemkl',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.nofakturpajakemkl}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'nofakturpajakemkl',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'perioderefund',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 170,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>periode refund</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'perioderefund',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.perioderefund}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'perioderefund',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
             </div>
           );
         }
@@ -555,69 +746,102 @@ const FormManagerMarketing = ({
     ];
   }, [rows, checkedRows, editingRowId, editableValues, dispatch]);
 
-  const lookUpPropsStatusMentor = [
+  const lookUpPropsRelasi = [
     {
-      columns: [{ key: 'text', name: 'STATUS MENTOR' }],
-      labelLookup: 'STATUS MENTOR LOOKUP',
+      columns: [{ key: 'nama', name: 'RELASI' }],
+      labelLookup: 'RELASI LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'parameter?grp=status+nilai',
-      label: 'STATUS MENTOR',
+      endpoint: 'relasi',
+      label: 'RELASI',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text',
+      postData: 'nama',
       dataToPost: 'id'
     }
   ];
 
-  const lookUpPropsStatusLeader = [
+  const lookUpPropsBank = [
     {
-      columns: [{ key: 'text', name: 'STATUS LEADER' }],
-      labelLookup: 'STATUS LEADER LOOKUP',
+      columns: [{ key: 'nama', name: 'BANK' }],
+      labelLookup: 'BANK LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'parameter?grp=status+nilai',
-      label: 'STATUS NILAI',
+      endpoint: 'bank',
+      label: 'BANK',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text',
+      postData: 'nama',
       dataToPost: 'id'
     }
   ];
 
-  const lookUpPropsStatusAktif = [
+  const lookUpPropsCoakredit = [
     {
-      columns: [{ key: 'text', name: 'STATUS' }],
-      labelLookup: 'STATUS AKTIF LOOKUP',
+      columns: [{ key: 'keterangancoa', name: 'KETERANGANCOA' }],
+      labelLookup: 'COA KREDIT LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'parameter?grp=status+aktif',
-      label: 'STATUS AKTIF',
+      endpoint: 'akunpusat',
+      label: 'KETERANGANCOA',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text',
+      postData: 'keterangancoa',
+      dataToPost: 'coa'
+    }
+  ];
+
+  const lookUpPropsAlatbayar = [
+    {
+      columns: [{ key: 'nama', name: 'ALAT BAYAR' }],
+      labelLookup: 'ALAT BAYAR LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'alatbayar',
+      label: 'ALAT BAYAR',
+      singleColumn: true,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'nama',
       dataToPost: 'id'
     }
   ];
 
-  const lookUpPropsStatusAktifDetail = [
+  const lookUpPropsDaftarbank = [
     {
-      columns: [{ key: 'text', name: 'STATUS', width: 250 }],
-      labelLookup: 'STATUS AKTIF DETAIL LOOKUP',
+      columns: [{ key: 'nama', name: 'DAFTAR BANK' }],
+      labelLookup: 'DAFTAR BANK LOOKUP',
       required: true,
-      selectedRequired: true,
-      endpoint: 'parameter?grp=status+aktif',
+      selectedRequired: false,
+      endpoint: 'daftarbank',
+      label: 'DAFTAR BANK',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text',
+      postData: 'nama',
       dataToPost: 'id'
     }
   ];
-  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
+
+  const lookUpPropsCoaDebet = [
+    {
+      columns: [{ key: 'keterangancoa', name: 'COA DEBET' }],
+      labelLookup: 'COA DEBET LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'akunpusat',
+      singleColumn: true,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'keterangancoa',
+      dataToPost: 'coa'
+    }
+  ];
+
+  const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
 
   useEffect(() => {
@@ -714,11 +938,15 @@ const FormManagerMarketing = ({
       if (allData?.data?.length > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
-          nominalawal: item.nominalawal ?? '',
-          nominalakhir: item.nominalakhir ?? '',
-          persentase: item.persentase ?? '',
-          statusaktif: item.statusaktif ?? '',
-          text: item.text ?? '',
+          coadebet: item.coadebet ?? '',
+          coadebet_text: item.coadebet_text ?? '',
+          keterangan: item.keterangan ?? '',
+          nominal: item.nominal ?? '',
+          dpp: item.dpp ?? '',
+          noinvoiceemkl: item.noinvoiceemkl ?? '',
+          tglinvoiceemkl: item.tglinvoiceemkl ?? '',
+          nofakturpajakemkl: item.nofakturpajakemkl ?? '',
+          perioderefund: item.perioderefund ?? '',
           isNew: false
         }));
 
@@ -732,11 +960,15 @@ const FormManagerMarketing = ({
         setRows([
           {
             id: 0,
-            nominalawal: '',
-            nominalakhir: '',
-            persentase: '',
-            statusaktif: null,
-            text: '',
+            coadebet: '',
+            coadebet_text: '',
+            keterangan: '',
+            nominal: '',
+            dpp: '',
+            noinvoiceemkl: '',
+            tglinvoiceemkl: '',
+            nofakturpajakemkl: '',
+            perioderefund: '',
             isNew: true
           },
           { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
@@ -753,19 +985,29 @@ const FormManagerMarketing = ({
         .map(
           ({
             isNew,
-            nominalawal,
-            nominalakhir,
-            persentase,
-            statusaktif,
-            text,
+            coadebet,
+            coadebet_text,
+            keterangan,
+            nominal,
+            dpp,
+            noinvoiceemkl,
+            tglinvoiceemkl,
+            nofakturpajakemkl,
+            perioderefund,
             ...rest
           }) => ({
             ...rest,
-            nominalawal: nominalawal ? String(nominalawal) : '',
-            nominalakhir: nominalakhir ? String(nominalakhir) : '',
-            persentase: persentase ? String(persentase) : '',
-            statusaktif: statusaktif ? String(statusaktif) : '',
-            text: text ? String(text) : ''
+            coadebet: coadebet ? String(coadebet) : '',
+            coadebet_text: coadebet_text ? String(coadebet_text) : '',
+            keterangan: keterangan ? String(keterangan) : '',
+            nominal: nominal ? String(nominal) : '',
+            dpp: dpp ? String(dpp) : '',
+            noinvoiceemkl: noinvoiceemkl ? String(noinvoiceemkl) : '',
+            tglinvoiceemkl: tglinvoiceemkl ? String(tglinvoiceemkl) : '',
+            nofakturpajakemkl: nofakturpajakemkl
+              ? String(nofakturpajakemkl)
+              : '',
+            perioderefund: perioderefund ? String(perioderefund) : ''
           })
         );
 
@@ -780,12 +1022,12 @@ const FormManagerMarketing = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Add Manager Marketing'
+              ? 'Add Pengeluaran'
               : mode === 'edit'
-              ? 'Edit Manager Marketing'
+              ? 'Edit Pengeluaran'
               : mode === 'delete'
-              ? 'Delete Manager Marketing'
-              : 'View Manager Marketing'}
+              ? 'Delete Pengeluaran'
+              : 'View Pengeluaran'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -806,32 +1048,92 @@ const FormManagerMarketing = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-                  <FormField
-                    name="nama"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          NAMA
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
+                  <div className="flex flex-row">
+                    <FormField
+                      name="nobukti"
+                      control={forms.control}
+                      render={({ field }) => (
+                        <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                            NO BUKTI
+                          </FormLabel>
+                          <div className="flex flex-col lg:w-[70%]">
+                            <FormControl>
+                              <Input
+                                {...field}
+                                disabled
+                                value={field.value ?? ''}
+                                type="text"
+                                readOnly={mode === 'view' || mode === 'delete'}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name="tglbukti"
+                      control={forms.control}
+                      render={({ field }) => (
+                        <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
+                          <FormLabel
+                            required={true}
+                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          >
+                            TANGGAL BUKTI
+                          </FormLabel>
+                          <div className="flex flex-col lg:w-[70%]">
+                            <FormControl>
+                              <InputDatePicker
+                                value={field.value}
+                                onChange={field.onChange}
+                                disabled={mode === 'view' || mode === 'delete'}
+                                showCalendar
+                                onSelect={(date) =>
+                                  forms.setValue('tglbukti', date)
+                                }
+                              />
+                              {/* <InputDateTimePicker
+                                value={field.value} // '' saat kosong
+                                onChange={field.onChange} // string keluar (mis. "16-08-2025 09:25 AM")
+                                showCalendar
+                                showTime // aktifkan 12h + AM/PM
+                                minuteStep={1}
+                                fromYear={1960}
+                                toYear={2035}
+                                // outputFormat="dd-MM-yyyy hh:mm a" // default sudah begini saat showTime
+                              /> */}
+                            </FormControl>
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        RELASI
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsRelasi.map((props, index) => (
+                        <LookUp
+                          disabled={mode === 'view' || mode === 'delete'}
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('relasi_id', Number(id))
+                          }
+                          lookupNama={forms.getValues('relasi_text')}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <FormField
                     name="keterangan"
                     control={forms.control}
@@ -857,8 +1159,35 @@ const FormManagerMarketing = ({
                       </FormItem>
                     )}
                   />
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        BANK
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsBank.map((props, index) => (
+                        <LookUp
+                          disabled={
+                            mode === 'view' ||
+                            mode === 'delete' ||
+                            mode === 'edit'
+                          }
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('bank_id', Number(id))
+                          }
+                          lookupNama={forms.getValues('bank_text')}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <FormField
-                    name="minimalprofit"
+                    name="postingdari"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
@@ -866,15 +1195,14 @@ const FormManagerMarketing = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          MINIMAL PROFIT
+                          POSTING DARI
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <InputCurrency
-                              value={field.value}
-                              onValueChange={(val) => {
-                                field.onChange(val);
-                              }}
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
@@ -889,70 +1217,148 @@ const FormManagerMarketing = ({
                         required={true}
                         className="text-sm font-semibold text-gray-700"
                       >
-                        STATUS MENTOR
+                        COA KREDIT
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsStatusMentor.map((props, index) => (
+                      {lookUpPropsCoakredit.map((props, index) => (
                         <LookUp
                           disabled={mode === 'view' || mode === 'delete'}
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('statusmentor', Number(id))
+                            forms.setValue('coakredit', Number(id))
                           }
-                          lookupNama={forms.getValues('statusmentor_text')}
+                          lookupNama={forms.getValues('coakredit_text')}
                         />
                       ))}
                     </div>
                   </div>
+                  <FormField
+                    name="dibayarke"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          DIBAYAR KE
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
                         className="text-sm font-semibold text-gray-700"
                       >
-                        STATUS LEADER
+                        ALAT BAYAR
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsStatusLeader.map((props, index) => (
+                      {lookUpPropsAlatbayar.map((props, index) => (
                         <LookUp
                           disabled={mode === 'view' || mode === 'delete'}
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('statusleader', Number(id))
+                            forms.setValue('alatbayar_id', Number(id))
                           }
-                          lookupNama={forms.getValues('statusleader_text')}
+                          lookupNama={forms.getValues('alatbayar_text')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <FormField
+                    name="nowarkat"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          NOMOR WARKAT
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="tgljatuhtempo"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          TANGGAL JATUH TEMPO
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <InputDatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={mode === 'view' || mode === 'delete'}
+                              showCalendar
+                              onSelect={(date) =>
+                                forms.setValue('tgljatuhtempo', date)
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        DAFTAR BANK
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsDaftarbank.map((props, index) => (
+                        <LookUp
+                          disabled={mode === 'view' || mode === 'delete'}
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('daftarbank_id', Number(id))
+                          }
+                          lookupNama={forms.getValues('daftarbank_text')}
                         />
                       ))}
                     </div>
                   </div>
 
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Status Aktif
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsStatusAktif.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) => {
-                            forms.setValue('statusaktif', id);
-                          }}
-                          lookupNama={forms.getValues('text')}
-                          disabled={mode === 'view' || mode === 'delete'}
-                        />
-                      ))}
-                    </div>
-                  </div>
                   <div className="h-[400px] min-h-[400px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div
@@ -1059,4 +1465,4 @@ const FormManagerMarketing = ({
   );
 };
 
-export default FormManagerMarketing;
+export default FormPengeluaran;

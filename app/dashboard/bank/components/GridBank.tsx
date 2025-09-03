@@ -171,7 +171,10 @@ const GridBank = () => {
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const getCoa = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<BankInput>({
-    resolver: zodResolver(BankSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(BankSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
@@ -737,6 +740,7 @@ const GridBank = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangancoa')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -760,21 +764,38 @@ const GridBank = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="akunpusat"
-                value="coa"
-                label="keterangancoa"
-                onChange={(value) =>
-                  handleColumnFilterChange('keterangancoa', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['keterangancoa'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.keterangancoa.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('keterangancoa', value);
+                }}
               />
+              {filters.filters.keterangancoa && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('keterangancoa', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.keterangancoa || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.keterangancoa || ''}
+              {highlightText(
+                props.row.keterangancoa || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -791,6 +812,7 @@ const GridBank = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangancoagantung')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -814,22 +836,40 @@ const GridBank = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="akunpusat"
-                value="coa"
-                label="keterangancoa"
-                onChange={(value) =>
-                  handleColumnFilterChange('keterangancoagantung', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['keterangancoagantung'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.keterangancoagantung.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('keterangancoagantung', value);
+                }}
               />
+              {filters.filters.keterangancoagantung && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('keterangancoagantung', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangancoagantung || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.keterangancoagantung || ''}
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.keterangancoagantung || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -846,6 +886,7 @@ const GridBank = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusbank')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -904,6 +945,7 @@ const GridBank = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusaktif')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -976,6 +1018,7 @@ const GridBank = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusdefault')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1024,7 +1067,7 @@ const GridBank = () => {
         name: 'Format Penerimaan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -1080,13 +1123,14 @@ const GridBank = () => {
         name: 'Format Pengeluaran',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatpengeluaran')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1136,13 +1180,14 @@ const GridBank = () => {
         name: 'Format Penerimaan Gantung',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatpenerimaangantung')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1196,13 +1241,14 @@ const GridBank = () => {
         name: 'Format Pengeluaran Gantung',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatpengeluarangantung')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1257,13 +1303,14 @@ const GridBank = () => {
         name: 'Format Pencairan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatpencairan')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1317,13 +1364,14 @@ const GridBank = () => {
         name: 'Format Rekap Penerimaan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatrekappenerimaan')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
@@ -1376,13 +1424,14 @@ const GridBank = () => {
         name: 'Format Rekap Pengeluaran',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatrekappengeluaran')}
+              onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${

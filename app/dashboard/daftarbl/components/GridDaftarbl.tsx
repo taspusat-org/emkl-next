@@ -141,7 +141,10 @@ const GridDaftarbl = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const forms = useForm<DaftarblInput>({
-    resolver: zodResolver(daftarblSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(daftarblSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',

@@ -128,7 +128,10 @@ const GridJenisOrderan = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const forms = useForm<JenisOrderanInput>({
-    resolver: zodResolver(jenisorderanSchema),
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(jenisorderanSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',

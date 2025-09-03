@@ -151,7 +151,7 @@ const GridAlatbayar = () => {
   const getLookup = useSelector((state: RootState) => state.lookup.data);
 
   const forms = useForm<AlatbayarInput>({
-    resolver: zodResolver(AlatbayarSchema),
+    resolver: mode === 'delete' ? undefined : zodResolver(AlatbayarSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',

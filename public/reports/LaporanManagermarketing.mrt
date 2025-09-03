@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "07af48fc993b038c96a12cc8b3c55db5",
+  "ReportGuid": "7cf5b614af0a667a959bd5d6cfdf8587",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "/reports/LaporanManagermarketing.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1756523131000+0700)/",
+  "ReportChanged": "/Date(1756695577000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -145,8 +145,7 @@
         },
         "NameInSource": "data_master",
         "Alias": "data",
-        "ParentSource": "data",
-        "ChildSource": "data_master"
+        "ParentSource": "data"
       },
       "3": {
         "Name": "data",
@@ -811,7 +810,7 @@
               "Ident": "StiText",
               "Name": "Text35",
               "Guid": "48f77e2510492c23c849676e128ec6bd",
-              "ClientRectangle": "60,46,42,6",
+              "ClientRectangle": "60,46,42,5",
               "ComponentPlacement": "gh.GroupHeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"

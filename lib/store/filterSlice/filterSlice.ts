@@ -6,6 +6,7 @@ interface FilterState {
   selectedKaryawan1: string;
   selectedKaryawan2: string;
   selectedYear: string;
+  selectedBank: string;
   onReload: boolean; // Add the new onReload property here
 }
 
@@ -15,6 +16,7 @@ const initialState: FilterState = {
   selectedKaryawan1: '',
   selectedKaryawan2: '',
   selectedYear: '',
+  selectedBank: '',
   onReload: false // Initialize the onReload with default value false
 };
 
@@ -37,6 +39,9 @@ const filterSlice = createSlice({
     setSelectedKaryawan2(state, action: PayloadAction<string>) {
       state.selectedKaryawan2 = action.payload;
     },
+    setSelectedBank(state, action: PayloadAction<string>) {
+      state.selectedBank = action.payload;
+    },
     setOnReload(state, action: PayloadAction<boolean>) {
       state.onReload = action.payload; // Handle the onReload state
     },
@@ -57,6 +62,7 @@ export const {
   setSelectedDate,
   setSelectedDate2,
   setSelectedYear,
+  setSelectedBank,
   setSelectedKaryawan1,
   setSelectedKaryawan2,
   setOnReload, // Export the action to update onReload

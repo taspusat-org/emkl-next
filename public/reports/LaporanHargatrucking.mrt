@@ -389,7 +389,7 @@
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "Hal:{PageNumber} dari {TotalPageCount}"
+                "Value": "Hal : {PageNumber} dari {TotalPageCount}"
               },
               "HorAlignment": "Right",
               "Font": "Tahoma;;Italic;",
