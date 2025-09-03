@@ -17,6 +17,7 @@ export const menuSchema = (mode: 'add' | 'edit' | 'delete') => {
     acos_nama: z.string().nullable().optional()
   });
   // Jika mode adalah delete, lewati validasi sama sekali
+  console.log(mode, 'mode');
   if (mode === 'delete') {
     return schema.partial(); // Menggunakan deepPartial untuk membebaskan semua field
   }

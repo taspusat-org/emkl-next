@@ -187,7 +187,6 @@ const ActionButton = ({
       // 2. Fetch user permissions (gunakan API permission yang sesuai)
       // Sesuaikan dengan endpoint permission Anda
       const res = await getPermissionFn(String(id));
-      console.log('res', res);
       if (hakApprovalResponse?.data) {
         setDataParameter(hakApprovalResponse.data);
       }
@@ -195,7 +194,6 @@ const ActionButton = ({
       if (res?.abilities) {
         setPermissions(res.abilities);
         const { hasYA, hasTIDAK } = checkPermissions(res.abilities);
-        console.log('hasYA', hasYA, hasTIDAK);
         // Filter data parameter berdasarkan permissions
         if (hakApprovalResponse?.data) {
           filterParameterByPermission(

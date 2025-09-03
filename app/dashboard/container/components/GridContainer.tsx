@@ -1743,7 +1743,7 @@ const GridContainer = () => {
           }}
         />
         <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+          className="over flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}

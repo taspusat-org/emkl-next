@@ -73,11 +73,6 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
-import FormKasGantung from './FormKasGantung';
-import {
-  filterKasGantung,
-  KasGantungHeader
-} from '@/lib/types/kasgantungheader.type';
 import {
   KasGantungHeaderInput,
   kasgantungHeaderSchema
@@ -97,12 +92,19 @@ import {
   getKasGantungHeaderFn
 } from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
+import FormPenerimaan from './FormPenerimaan';
+import { useGetPenerimaanHeader } from '@/lib/server/usePenerimaan';
+import {
+  filterPenerimaan,
+  PenerimaanHeader
+} from '@/lib/types/penerimaan.type';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterKasGantung;
+  filters: typeof filterPenerimaan;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
@@ -111,7 +113,7 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridKasGantungHeader = () => {
+const GridPenerimaanHeader = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -145,7 +147,7 @@ const GridKasGantungHeader = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<KasGantungHeader[]>([]);
+  const [rows, setRows] = useState<PenerimaanHeader[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -183,7 +185,7 @@ const GridKasGantungHeader = () => {
     page: 1,
     limit: 30,
     filters: {
-      ...filterKasGantung,
+      ...filterPenerimaan,
       tglDari: selectedDate,
       tglSampai: selectedDate2
     },
@@ -198,7 +200,7 @@ const GridKasGantungHeader = () => {
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetKasGantungHeader({
+  } = useGetPenerimaanHeader({
     ...filters,
     page: currentPage
   });
@@ -252,7 +254,7 @@ const GridKasGantungHeader = () => {
       setCurrentPage(1);
       setFilters((prev) => ({
         ...prev,
-        filters: filterKasGantung, // Gunakan filter yang relevan
+        filters: filterPenerimaan, // Gunakan filter yang relevan
         search: searchValue,
         page: 1
       }));
@@ -381,7 +383,7 @@ const GridKasGantungHeader = () => {
     setInputValue('');
   };
 
-  const columns = useMemo((): Column<KasGantungHeader>[] => {
+  const columns = useMemo((): Column<PenerimaanHeader>[] => {
     return [
       {
         key: 'nomor',
@@ -402,7 +404,7 @@ const GridKasGantungHeader = () => {
                 setFilters({
                   ...filters,
                   search: '',
-                  filters: filterKasGantung
+                  filters: filterPenerimaan
                 }),
                   setInputValue('');
                 setTimeout(() => {
@@ -441,7 +443,7 @@ const GridKasGantungHeader = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: KasGantungHeader }) => (
+        renderCell: ({ row }: { row: PenerimaanHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -633,35 +635,12 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('bank_id', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="bank"
+                value="id"
+                label="nama"
+                onChange={(value) => handleColumnFilterChange('bank_id', value)} // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -680,8 +659,8 @@ const GridKasGantungHeader = () => {
         }
       },
       {
-        key: 'pengeluaran_nobukti',
-        name: 'Pengeluaran Nomor Bukti',
+        key: 'noresi',
+        name: 'No Resi',
         resizable: true,
         draggable: true,
         width: 300,
@@ -690,23 +669,21 @@ const GridKasGantungHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('pengeluaran_nobukti')}
+              onClick={() => handleSort('noresi')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'pengeluaran_nobukti'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'noresi' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Pengeluaran Nomor Bukti
+                No Resi
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'pengeluaran_nobukti' &&
+                {filters.sortBy === 'noresi' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'pengeluaran_nobukti' &&
+                ) : filters.sortBy === 'noresi' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -717,26 +694,24 @@ const GridKasGantungHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['pengeluaran_nobukti'] = el;
+                  inputColRefs.current['noresi'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.pengeluaran_nobukti
-                    ? filters.filters.pengeluaran_nobukti?.toUpperCase()
+                  filters.filters.noresi
+                    ? filters.filters.noresi?.toUpperCase()
                     : ''
                 }
                 type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('pengeluaran_nobukti', value);
+                  handleColumnFilterChange('noresi', value);
                 }}
               />
-              {filters.filters.pengeluaran_nobukti && (
+              {filters.filters.noresi && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('pengeluaran_nobukti', '')
-                  }
+                  onClick={() => handleColumnFilterChange('noresi', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -746,11 +721,11 @@ const GridKasGantungHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.pengeluaran_nobukti || '';
+          const columnFilter = filters.filters.noresi || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.pengeluaran_nobukti || '',
+                props.row.noresi || '',
                 filters.search,
                 columnFilter
               )}
@@ -759,8 +734,8 @@ const GridKasGantungHeader = () => {
         }
       },
       {
-        key: 'coakaskeluar',
-        name: 'COA Kas Keluar',
+        key: 'coakasmasuk',
+        name: 'COA Kas Masuk',
         resizable: true,
         draggable: true,
         width: 300,
@@ -769,23 +744,23 @@ const GridKasGantungHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coakaskeluar')}
+              onClick={() => handleSort('coakasmasuk')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coakaskeluar'
+                  filters.sortBy === 'coakasmasuk'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                COA Kas Keluar
+                COA Kas Masuk
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'coakaskeluar' &&
+                {filters.sortBy === 'coakasmasuk' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'coakaskeluar' &&
+                ) : filters.sortBy === 'coakasmasuk' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -796,24 +771,24 @@ const GridKasGantungHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['coakaskeluar'] = el;
+                  inputColRefs.current['coakasmasuk'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.coakaskeluar
-                    ? filters.filters.coakaskeluar?.toUpperCase()
+                  filters.filters.coakasmasuk
+                    ? filters.filters.coakasmasuk?.toUpperCase()
                     : ''
                 }
                 type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coakaskeluar', value);
+                  handleColumnFilterChange('coakasmasuk', value);
                 }}
               />
-              {filters.filters.coakaskeluar && (
+              {filters.filters.coakasmasuk && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coakaskeluar', '')}
+                  onClick={() => handleColumnFilterChange('coakasmasuk', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -823,11 +798,11 @@ const GridKasGantungHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.coakaskeluar || '';
+          const columnFilter = filters.filters.coakasmasuk || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.coakaskeluar || '',
+                props.row.coakasmasuk || '',
                 filters.search,
                 columnFilter
               )}
@@ -872,35 +847,14 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('bank_id', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="relasi"
+                value="id"
+                label="nama"
+                onChange={(value) =>
+                  handleColumnFilterChange('relasi_id', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -919,79 +873,8 @@ const GridKasGantungHeader = () => {
         }
       },
       {
-        key: 'dibayarke',
-        name: 'DIBAYAR KE',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
-              onClick={() => handleSort('dibayarke')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'dibayarke' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                DIBAYAR KE
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'dibayarke' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'dibayarke' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['dibayarke'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.dibayarke || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('dibayarke', value);
-                }}
-              />
-              {filters.filters.dibayarke && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('dibayarke', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.dibayarke || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.dibayarke || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
         key: 'alatbayar_nama',
-        name: 'Alat Bayar',
+        name: 'ALAT BAYAR',
         resizable: true,
         draggable: true,
         width: 150,
@@ -1010,7 +893,7 @@ const GridKasGantungHeader = () => {
                     : 'font-normal'
                 }`}
               >
-                Alat Bayar
+                ALAT BAYAR
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'alatbayar_nama' &&
@@ -1058,6 +941,62 @@ const GridKasGantungHeader = () => {
                 filters.search,
                 columnFilter
               )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'alatbayar_nama',
+        name: 'Alat Bayar',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('alatbayar_nama')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'alatbayar_nama'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                Alat Bayar
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'alatbayar_nama' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'alatbayar_nama' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="alatbayar"
+                value="id"
+                label="nama"
+                onChange={(value) =>
+                  handleColumnFilterChange('alatbayar_id', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(props.row.alatbayar_nama || '', filters.search)}
             </div>
           );
         }
@@ -1134,8 +1073,8 @@ const GridKasGantungHeader = () => {
         }
       },
       {
-        key: 'tgljatuhtempo',
-        name: 'TGL JATUH TEMPO',
+        key: 'diterimadari',
+        name: 'DITERIMA DARI',
         resizable: true,
         draggable: true,
         width: 150,
@@ -1145,22 +1084,22 @@ const GridKasGantungHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onContextMenu={handleContextMenu}
-              onClick={() => handleSort('tgljatuhtempo')}
+              onClick={() => handleSort('diterimadari')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tgljatuhtempo'
+                  filters.sortBy === 'diterimadari'
                     ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
-                TGL JATUH TEMPO
+                DITERIMA DARI
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'tgljatuhtempo' &&
+                {filters.sortBy === 'diterimadari' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tgljatuhtempo' &&
+                ) : filters.sortBy === 'diterimadari' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -1172,19 +1111,19 @@ const GridKasGantungHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['tgljatuhtempo'] = el;
+                  inputColRefs.current['diterimadari'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.tgljatuhtempo || ''}
+                value={filters.filters.diterimadari || ''}
                 onChange={(e) => {
                   const value = e.target.value;
-                  handleColumnFilterChange('tgljatuhtempo', value);
+                  handleColumnFilterChange('diterimadari', value);
                 }}
               />
-              {filters.filters.tgljatuhtempo && (
+              {filters.filters.diterimadari && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tgljatuhtempo', '')}
+                  onClick={() => handleColumnFilterChange('diterimadari', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -1194,11 +1133,11 @@ const GridKasGantungHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.tgljatuhtempo || '';
+          const columnFilter = filters.filters.diterimadari || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.tgljatuhtempo || '',
+                props.row.diterimadari || '',
                 filters.search,
                 columnFilter
               )}
@@ -1207,8 +1146,8 @@ const GridKasGantungHeader = () => {
         }
       },
       {
-        key: 'gantungorderan_nobukti',
-        name: 'GANTUNG ORDERAN NOBUKTI',
+        key: 'tgllunas',
+        name: 'TGL LUNAS',
         resizable: true,
         draggable: true,
         width: 150,
@@ -1218,22 +1157,20 @@ const GridKasGantungHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onContextMenu={handleContextMenu}
-              onClick={() => handleSort('gantungorderan_nobukti')}
+              onClick={() => handleSort('tgllunas')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'gantungorderan_nobukti'
-                    ? 'font-bold'
-                    : 'font-normal'
+                  filters.sortBy === 'tgllunas' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                GANTUNG ORDERAN NOBUKTI
+                TGL LUNAS
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'gantungorderan_nobukti' &&
+                {filters.sortBy === 'tgllunas' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'gantungorderan_nobukti' &&
+                ) : filters.sortBy === 'tgllunas' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -1245,21 +1182,19 @@ const GridKasGantungHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['gantungorderan_nobukti'] = el;
+                  inputColRefs.current['tgllunas'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.gantungorderan_nobukti || ''}
+                value={filters.filters.tgllunas || ''}
                 onChange={(e) => {
                   const value = e.target.value;
-                  handleColumnFilterChange('gantungorderan_nobukti', value);
+                  handleColumnFilterChange('tgllunas', value);
                 }}
               />
-              {filters.filters.gantungorderan_nobukti && (
+              {filters.filters.tgllunas && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('gantungorderan_nobukti', '')
-                  }
+                  onClick={() => handleColumnFilterChange('tgllunas', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -1269,11 +1204,82 @@ const GridKasGantungHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.gantungorderan_nobukti || '';
+          const columnFilter = filters.filters.tgllunas || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.gantungorderan_nobukti || '',
+                props.row.tgllunas || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'postingdari',
+        name: 'POSTING DARI',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('postingdari')}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'postingdari' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                POSTING DARI
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'postingdari' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'postingdari' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['postingdari'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.postingdari || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleColumnFilterChange('postingdari', value);
+                }}
+              />
+              {filters.filters.postingdari && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('postingdari', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.postingdari || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.postingdari || '',
                 filters.search,
                 columnFilter
               )}
@@ -1521,7 +1527,7 @@ const GridKasGantungHeader = () => {
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridKasGantungHeader',
+        'GridPenerimaanHeader',
         [...columnsOrder],
         newWidthMap
       );
@@ -1541,7 +1547,7 @@ const GridKasGantungHeader = () => {
 
       saveGridConfig(
         user.id,
-        'GridKasGantungHeader',
+        'GridPenerimaanHeader',
         [...newOrder],
         columnsWidth
       );
@@ -1588,7 +1594,7 @@ const GridKasGantungHeader = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<KasGantungHeader>) {
+  function handleCellClick(args: CellClickArgs<PenerimaanHeader>) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
@@ -1598,7 +1604,7 @@ const GridKasGantungHeader = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<KasGantungHeader>,
+    args: CellKeyDownArgs<PenerimaanHeader>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -2030,12 +2036,12 @@ const GridKasGantungHeader = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: KasGantungHeader) {
+  function getRowClass(row: PenerimaanHeader) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: KasGantungHeader) {
+  function rowKeyGetter(row: PenerimaanHeader) {
     return row.id;
   }
 
@@ -2126,7 +2132,7 @@ const GridKasGantungHeader = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridKasGantungHeader',
+        'GridPenerimaanHeader',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -2211,7 +2217,7 @@ const GridKasGantungHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridKasGantungHeader');
+    loadGridConfig(user.id, 'GridPenerimaanHeader');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -2503,7 +2509,7 @@ const GridKasGantungHeader = () => {
           )}
         </div>
       </div>
-      <FormKasGantung
+      <FormPenerimaan
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -2518,4 +2524,4 @@ const GridKasGantungHeader = () => {
   );
 };
 
-export default GridKasGantungHeader;
+export default GridPenerimaanHeader;

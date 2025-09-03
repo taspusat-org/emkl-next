@@ -15,14 +15,22 @@ interface validationFields {
 }
 
 export const getAllTypeAkuntansiFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllTypeAkuntansi> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('type-akuntansi', { params: queryParams });
+    const response = await api2.get('type-akuntansi', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
+    // Jika error karena abort, jangan log sebagai error
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
     console.error('Error fetching Type Akuntansi data:', error);
     throw new Error('Failed to fetch Type Akuntansi data');
   }

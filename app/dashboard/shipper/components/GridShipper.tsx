@@ -6144,7 +6144,7 @@ const GridShipper = () => {
           }}
         >
           <ActionButton
-            module="BANK"
+            module="SHIPPER"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}

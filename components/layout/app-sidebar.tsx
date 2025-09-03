@@ -110,6 +110,7 @@ export default function AppSidebar({
   });
 
   const { data: allMenu, isLoading: isLoadingMenu } = useGetSearchMenu(filters);
+
   React.useEffect(() => {
     if (filters.search) {
       setSearchResults(allMenu || []);
@@ -195,7 +196,7 @@ export default function AppSidebar({
             <Input
               value={search}
               onChange={handleSearchChange}
-              className="h-8 rounded-sm border bg-transparent text-white focus:bg-transparent"
+              className="h-8 rounded-sm border bg-transparent text-white placeholder:text-white focus:bg-transparent"
               placeholder="Search.."
             />
 
@@ -211,17 +212,23 @@ export default function AppSidebar({
             {filters.search ? (
               searchResults.length > 0 ? (
                 <div className="absolute top-full z-50 mt-2 h-fit w-full overflow-y-auto rounded bg-white shadow-md">
-                  {searchResults.map((menu) => (
-                    <Link
-                      key={menu.id}
-                      onClick={handleClickSearch}
-                      href={`/dashboard/${menu.title.toLowerCase()}`}
-                      className="flex cursor-pointer items-center bg-gray-500 px-4 py-2 hover:bg-gray-400"
-                    >
-                      {menu.icon && <span className="mr-2"></span>}
-                      <span className="text-sm">{menu.title}</span>
-                    </Link>
-                  ))}
+                  {searchResults.map((menu) => {
+                    // Ganti spasi dengan '-' pada title
+                    const formattedTitle = menu.title
+                      .toLowerCase()
+                      .replace(/\s+/g, '-');
+                    return (
+                      <Link
+                        key={menu.id}
+                        onClick={handleClickSearch}
+                        href={`/dashboard/${formattedTitle}`}
+                        className="flex cursor-pointer items-center bg-gray-500 px-4 py-2 hover:bg-gray-400"
+                      >
+                        {menu.icon && <span className="mr-2"></span>}
+                        <span className="text-sm">{menu.title}</span>
+                      </Link>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="absolute top-full z-50 mt-2 h-fit w-full overflow-y-auto rounded bg-white shadow-md">
