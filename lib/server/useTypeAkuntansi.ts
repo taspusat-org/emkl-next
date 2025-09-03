@@ -28,11 +28,15 @@ export const useGetAllTypeAkuntansi = (
       created_at?: string;
       updated_at?: string;
     };
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['typeakuntansi', filters],
-    async () => await getAllTypeAkuntansiFn(filters)
+    async () => await getAllTypeAkuntansiFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 
@@ -50,7 +54,9 @@ export const useCreateTypeAkuntansi = () => {
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
 
-        const errorFields = errorResponse.message || [];
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
         if (errorResponse.statusCode === 400) {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
@@ -84,7 +90,9 @@ export const useUpdateTypeAkuntansi = () => {
 
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
-        const errorFields = errorResponse.message || [];
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
 
         if (errorResponse.statusCode === 400) {
           // Iterasi error message dan set error di form

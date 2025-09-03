@@ -10,15 +10,22 @@ interface UpdateMenuParams {
 }
 
 export const getAkunpusatFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllAkunpusat> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/akunpusat', { params: queryParams });
+    const response = await api2.get('/akunpusat', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
     console.error('Error fetching Akun Pusat:', error);
     throw new Error('Failed to fetch Akun Pusat');
   }
@@ -42,7 +49,20 @@ export const storeAkunpusatFn = async (fields: AkunpusatInput) => {
 
   return response.data;
 };
+export const exportAkunPusatFn = async (filters: any): Promise<any> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+    const response = await api2.get('/akunpusat/export', {
+      params: queryParams,
+      responseType: 'blob' // Pastikan respon dalam bentuk Blob
+    });
 
+    return response.data; // Return the Blob file from response
+  } catch (error) {
+    console.error('Error exporting data akun pusat:', error);
+    throw new Error('Failed to export data akun pusat');
+  }
+};
 // export const exportMenuFn = async (filters: any): Promise<any> => {
 //   try {
 //     const queryParams = buildQueryParams(filters);

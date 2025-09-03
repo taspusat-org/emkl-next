@@ -49,7 +49,6 @@ const DialogApproval: React.FC = ({}) => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const { toast } = useToast();
-
   const handleButtonClick = async (item: any) => {
     // Validasi checkedRows terlebih dahulu
     if ((checkedRows?.size ?? 0) <= 0) {
@@ -70,6 +69,7 @@ const DialogApproval: React.FC = ({}) => {
       id: item.id,
       transaksi_id: Array.from(checkedRows || []),
       value: mode === 'APPROVAL' ? item.nilai_ya : item.nilai_tidak,
+      mode: mode,
       text: item.text
     };
     try {
@@ -81,7 +81,6 @@ const DialogApproval: React.FC = ({}) => {
       const checkResponse = await checkApproveFn(checkPayload);
 
       // Jika status 400 atau ada error, tampilkan alert
-      console.log('checkResponse', checkResponse);
       if (checkResponse.status === 400 || !checkResponse.isValid) {
         alert({
           title: checkResponse.message || 'Data tidak valid untuk diproses',
@@ -209,7 +208,13 @@ const DialogApproval: React.FC = ({}) => {
     const data = await getParameterApprovalFn({
       filters: { grp: 'DATA PENDUKUNG', subgrp: formattedModule }
     });
-    setDataParameter(data.data);
+    // Filter data agar hanya yang subgrp-nya sama persis dengan formattedModule
+    const filteredData = (data.data || []).filter(
+      (item: any) =>
+        (item.subgrp || '').toString().toUpperCase() ===
+        (formattedModule || '').toString().toUpperCase()
+    );
+    setDataParameter(filteredData);
   };
   useEffect(() => {
     if (formattedModule) {
@@ -271,8 +276,8 @@ const DialogApproval: React.FC = ({}) => {
                 <IoMdClose className="h-5 w-5 font-bold text-white" />
               </div>
             </div>
-            <div className="flex h-full w-full overflow-hidden bg-white px-5 py-5">
-              <div className="flex h-full w-full flex-col gap-1 overflow-y-auto bg-white">
+            <div className="flex h-fit max-h-[500px] w-full overflow-hidden bg-white px-5 py-5">
+              <div className="flex h-fit max-h-[450px] w-full flex-col gap-1 overflow-y-auto bg-white">
                 {dataParameter.map((item: any, index: any) => (
                   <Button
                     key={index}

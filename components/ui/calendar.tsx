@@ -76,8 +76,7 @@ function Calendar({
         ),
         day_selected:
           'bg-[#2694e8] text-white hover:bg-blue-400 hover:text-primary-foreground focus:bg-blue-400 focus:text-white',
-        day_today:
-          'h-7 w-8 bg-[#ffef8f] border border-[#f9dd34] text-accent-foreground',
+        day_today: 'h-7 w-8 bg-[#ffef8f] border border-[#f9dd34] text-black',
         day_outside: 'opacity-50',
         day_disabled: 'text-muted-foreground opacity-50',
         day_range_middle:

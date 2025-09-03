@@ -1,5 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useGetAllTypeAkuntansi } from '@/lib/server/useTypeAkuntansi';
+import { RootState } from '@/lib/store/store';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { IoMdClose } from 'react-icons/io';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { FaSave } from 'react-icons/fa';
+import LookUp from '@/components/custom-ui/LookUp';
 import {
   Form,
   FormControl,
@@ -8,20 +16,15 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { useGetMenu } from '@/lib/server/useMenu';
-import { Button } from '@/components/ui/button';
-import { useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store/store';
-import LookUp from '@/components/custom-ui/LookUp';
-import { Input } from '@/components/ui/input';
-import { IoMdClose } from 'react-icons/io';
-import { FaSave } from 'react-icons/fa';
+import { useDispatch } from 'react-redux';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import InputNumeric from '@/components/custom-ui/InputNumeric';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 
-const FormMenu = ({
+const FormAkunPusat = ({
+  forms,
   popOver,
   setPopOver,
-  forms,
   onSubmit,
   mode,
   handleClose,
@@ -29,55 +32,60 @@ const FormMenu = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const lookUpProps = [
-    {
-      columns: [
-        { key: 'method', name: 'METHOD' },
-        { key: 'nama', name: 'NAMA' }
-      ],
-      // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
-      endpoint: 'acos/get-all',
-      label: 'ACOS',
-      singleColumn: false,
-      pageSize: 20,
-      dataToPost: 'id',
-      showOnButton: true,
-      postData: 'nama'
-    }
-  ];
-  const lookUpPropsMenu = [
-    {
-      columns: [{ key: 'title', name: 'Judul' }],
-      // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
-      endpoint: 'menu',
-      label: 'MENU PARENT',
-      singleColumn: true,
-      pageSize: 20,
-      dataToPost: 'id',
-      showOnButton: true,
-      postData: 'title'
-    }
-  ];
-  const lookUpPropsStatusAktif = [
+  const { errors, setError } = useFormError(); // Mengakses errors dan setError
+  const lookupPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
-      // filterby: { class: 'system', method: 'get' },
       labelLookup: 'STATUS AKTIF LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=status+aktif',
-      label: 'status aktif',
+      label: 'STATUS AKTIF',
       singleColumn: true,
       pageSize: 20,
-      dataToPost: 'id',
-      showOnButton: true,
-      postData: 'text'
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
-  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
+
+  const lookupPropsTypeAkuntansi = [
+    {
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      labelLookup: 'TYPE AKUNTANSI LOOKUP',
+
+      selectedRequired: false,
+      endpoint: 'type-akuntansi',
+      label: 'TYPE AKUNTANSI',
+      singleColumn: true,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'nama',
+      dataToPost: 'id'
+    }
+  ];
+  const lookupPropsCabang = [
+    {
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      labelLookup: 'CABANG LOOKUP',
+
+      selectedRequired: false,
+      endpoint: 'cabang',
+      label: 'CABANG',
+      singleColumn: true,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'nama',
+      dataToPost: 'id'
+    }
+  ];
+
+  const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const selectLookup = useSelector(
+    (state: RootState) => state.selectLookup.selectLookup
+  );
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -156,13 +164,20 @@ const FormMenu = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Form
+            {mode === 'add'
+              ? 'Add Type Akuntansi'
+              : mode === 'edit'
+              ? 'Edit Type Akuntansi'
+              : mode === 'delete'
+              ? 'Delete Type Akuntansi'
+              : 'View Type Akuntansi'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -184,7 +199,7 @@ const FormMenu = ({
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
                   <FormField
-                    name="title"
+                    name="coa"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
@@ -192,7 +207,7 @@ const FormMenu = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          TITLE
+                          COA
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -201,6 +216,7 @@ const FormMenu = ({
                               value={field.value ?? ''}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -208,34 +224,40 @@ const FormMenu = ({
                       </FormItem>
                     )}
                   />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Acos
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpProps.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('aco_id', Number(id))
-                          }
-                          inputLookupValue={forms.getValues('aco_id')}
-                          lookupNama={forms.getValues('acos_nama')}
-                        />
-                      ))}
-                    </div>
-                  </div>
 
                   <FormField
-                    name="icon"
+                    name="parent"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          PARENT
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="keterangancoa"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                          Icon
+                          KETERANGANCOA
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -244,6 +266,40 @@ const FormMenu = ({
                               value={field.value ?? ''}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="level"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          LEVEL
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <InputNumeric
+                              {...field}
+                              value={field.value ?? ''}
+                              onValueChange={(value: any) => {
+                                // Jika value null atau string kosong, simpan null
+                                if (value === null || value === '') {
+                                  forms.setValue('level', null); // atau '' jika form Anda butuh string kosong
+                                } else {
+                                  forms.setValue('level', Number(value));
+                                }
+                              }}
+                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -253,36 +309,74 @@ const FormMenu = ({
                   />
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Menu Parent
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        TYPE AKUNTANSI
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsMenu.map((props, index) => (
+                      {lookupPropsTypeAkuntansi.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
-                          filterby={{ aco_id: 0 }}
-                          lookupValue={(id) => forms.setValue('parentId', id)}
-                          inputLookupValue={forms.getValues('parentId')}
-                          lookupNama={forms.getValues('parent_nama')}
+                          name="type_id"
+                          forms={forms}
+                          lookupValue={(id) =>
+                            forms.setValue('type_id', Number(id))
+                          }
+                          required={true}
+                          inputLookupValue={forms.getValues('type_id')}
+                          lookupNama={forms.getValues('type_nama')}
                         />
                       ))}
                     </div>
                   </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        Status Aktif
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        CABANG
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsStatusAktif.map((props, index) => (
+                      {lookupPropsCabang.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('statusaktif', id)
+                            forms.setValue('cabang_id', Number(id))
+                          }
+                          name="cabang_id"
+                          forms={forms}
+                          required={true}
+                          inputLookupValue={forms.getValues('cabang_id')}
+                          lookupNama={forms.getValues('cabang_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Aktif
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsStatusAktif.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          name="statusaktif"
+                          forms={forms}
+                          lookupValue={(id) =>
+                            forms.setValue('statusaktif', Number(id))
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_nama')}
@@ -298,15 +392,45 @@ const FormMenu = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={onSubmit}
+            // onClick={onSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              onSubmit(false);
+              dispatch(setSubmitClicked(true));
+            }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
+            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
           </Button>
+
+          {mode === 'add' && (
+            <div>
+              <Button
+                type="submit"
+                variant="success"
+                // onClick={onSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSubmit(true);
+                  dispatch(setSubmitClicked(true));
+                }}
+                disabled={mode === 'view'}
+                className="flex w-fit items-center gap-1 text-sm"
+                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+              >
+                <FaSave />
+                <p className="text-center">
+                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
+                </p>
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             variant="secondary"
@@ -321,4 +445,4 @@ const FormMenu = ({
   );
 };
 
-export default FormMenu;
+export default FormAkunPusat;

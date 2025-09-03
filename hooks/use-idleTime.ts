@@ -49,15 +49,14 @@ export const useIdleTimer = () => {
       const now = Date.now();
 
       // 1) Token sudah kadaluarsa -> logout (kecuali sedang refresh)
-      if (now >= expMs) {
-        console.log('masuk');
-        // console.log('Token expired -> auto logout');
-        dispatch(clearCredentials());
-        deleteCookie(); // hapus cookie custom milikmu; NextAuth cookie httpOnly dikelola server
-        router.push('/auth/signin');
-        if (intervalRef.current) clearInterval(intervalRef.current);
-        return;
-      }
+      // if (now >= expMs) {
+      //   // console.log('Token expired -> auto logout');
+      //   dispatch(clearCredentials());
+      //   deleteCookie(); // hapus cookie custom milikmu; NextAuth cookie httpOnly dikelola server
+      //   router.push('/auth/signin');
+      //   if (intervalRef.current) clearInterval(intervalRef.current);
+      //   return;
+      // }
 
       // 2) Token masih valid tapi user idle terlalu lama -> logout
       if (now - autoLogoutExpires > IDLE_TIMEOUT) {

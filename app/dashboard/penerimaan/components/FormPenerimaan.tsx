@@ -47,7 +47,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
-const FormKasGantung = ({
+const FormPenerimaan = ({
   popOver,
   setPopOver,
   forms,
@@ -791,4 +791,4 @@ const FormKasGantung = ({
   );
 };
 
-export default FormKasGantung;
+export default FormPenerimaan;

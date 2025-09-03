@@ -16,7 +16,7 @@ const nextConfig = {
   //     }
   //   ];
   // },
-  swcMinify: false,
+  swcMinify: true,
   images: {
     remotePatterns: [
       {

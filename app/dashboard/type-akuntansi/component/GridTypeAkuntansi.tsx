@@ -87,6 +87,10 @@ const GridTypeAkuntansi = () => {
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
+  const searchDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk search
+  const columnFilterDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk column filter
+  const sortDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk sort
   const [rows, setRows] = useState<ITypeAkuntansi[]>([]);
   const [mode, setMode] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -134,7 +138,10 @@ const GridTypeAkuntansi = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
   const { data: allTypeAkuntansi, isLoading: isLoadingTypeAkuntansi } =
-    useGetAllTypeAkuntansi({ ...filters, page: currentPage });
+    useGetAllTypeAkuntansi(
+      { ...filters, page: currentPage },
+      abortControllerRef.current?.signal
+    );
   // console.log(allTypeAkuntansi, 'INI DATANYAA');
 
   const { mutateAsync: createTypeAkuntansi, isLoading: isLoadingCreate } =
@@ -165,10 +172,23 @@ const GridTypeAkuntansi = () => {
 
   // console.log(forms.getValues());
 
+  // Fungsi untuk cancel request yang sedang berjalan
+  const cancelPreviousRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Buat AbortController baru untuk request berikutnya
+    abortControllerRef.current = new AbortController();
+  };
+
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
+    // Set timeout baru untuk debounce
+    // Cancel request sebelumnya jika ada
+    cancelPreviousRequest();
+
     // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
 
@@ -574,7 +594,7 @@ const GridTypeAkuntansi = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.order;
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.order !== null && props.row.order !== undefined
                   ? props.row.order
@@ -1603,7 +1623,7 @@ const GridTypeAkuntansi = () => {
         judullaporan: 'Laporan Type Akuntansi',
         usercetak: user.username,
         tglcetak: tglcetak,
-        detail: detailDataReport,
+
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
       console.log('reportRows', reportRows);
