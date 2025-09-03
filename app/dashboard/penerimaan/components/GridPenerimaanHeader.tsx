@@ -93,12 +93,19 @@ import {
 } from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
 import FormPenerimaan from './FormPenerimaan';
-import { useGetPenerimaanHeader } from '@/lib/server/usePenerimaan';
+import {
+  useCreatePenerimaan,
+  useGetPenerimaanHeader
+} from '@/lib/server/usePenerimaan';
 import {
   filterPenerimaan,
   PenerimaanHeader
 } from '@/lib/types/penerimaan.type';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
+import {
+  PenerimaanHeaderInput,
+  penerimaanHeaderSchema
+} from '@/lib/validations/penerimaan.validation';
 
 interface Filter {
   page: number;
@@ -120,8 +127,8 @@ const GridPenerimaanHeader = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createKasGantung, isLoading: isLoadingCreate } =
-    useCreateKasGantung();
+  const { mutateAsync: createPenerimaan, isLoading: isLoadingCreate } =
+    useCreatePenerimaan();
   const { mutateAsync: updateKasGantung, isLoading: isLoadingUpdate } =
     useUpdatePengembalianKasGantung();
   const [currentPage, setCurrentPage] = useState(1);
@@ -158,17 +165,25 @@ const GridPenerimaanHeader = () => {
   const { user, cabang_id, token } = useSelector(
     (state: RootState) => state.auth
   );
-  const forms = useForm<KasGantungHeaderInput>({
-    resolver: zodResolver(kasgantungHeaderSchema),
+  const forms = useForm<PenerimaanHeaderInput>({
+    resolver: zodResolver(penerimaanHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
       nobukti: '',
       tglbukti: '',
       keterangan: null,
       bank_id: null,
-      pengeluaran_nobukti: '',
-      coakaskeluar: '',
+      bank_nama: '',
+      postingdari: '',
+      diterimadari: '',
+      coakasmasuk: '',
       relasi_id: null,
+      alatbayar_id: null,
+      alatbayar_nama: '',
+      nowarkat: '',
+      tgllunas: '',
+      noresi: '',
+      coakaskeluar: '',
       details: []
     }
   });
@@ -470,7 +485,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nobukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nomor Bukti
@@ -478,10 +493,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nobukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -545,7 +560,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglbukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'tglbukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Tanggal Bukti
@@ -553,10 +568,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglbukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglbukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -616,7 +631,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'bank_id' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'bank_id' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama Bank
@@ -624,10 +639,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'bank_id' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'bank_id' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -674,7 +689,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'noresi' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'noresi' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 No Resi
@@ -682,10 +697,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'noresi' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'noresi' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -749,9 +764,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coakasmasuk'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'coakasmasuk' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 COA Kas Masuk
@@ -759,10 +772,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coakasmasuk' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coakasmasuk' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -826,9 +839,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'relasi_id'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'relasi_id' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Relasi
@@ -836,10 +847,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'relasi_id' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'relasi_id' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1374,9 +1385,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -1384,10 +1393,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1449,9 +1458,7 @@ const GridPenerimaanHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -1459,10 +1466,10 @@ const GridPenerimaanHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1684,7 +1691,7 @@ const GridPenerimaanHeader = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: KasGantungHeaderInput) => {
+  const onSubmit = async (values: PenerimaanHeaderInput) => {
     const selectedRowId = rows[selectedRow]?.id;
 
     if (mode === 'delete') {
@@ -2353,8 +2360,12 @@ const GridPenerimaanHeader = () => {
       forms.setValue('tglbukti', row.tglbukti);
       forms.setValue('keterangan', row.keterangan ?? '');
       forms.setValue('bank_id', row.bank_id ?? null);
-      forms.setValue('pengeluaran_nobukti', row.pengeluaran_nobukti ?? '');
-      forms.setValue('coakaskeluar', row.coakaskeluar ?? '');
+      forms.setValue('postingdari', row.postingdari ?? '');
+      forms.setValue('diterimadari', row.diterimadari ?? '');
+      forms.setValue('noresi', row.noresi ?? '');
+      forms.setValue('tgllunas', row.tgllunas ?? '');
+      forms.setValue('nowarkat', row.nowarkat ?? '');
+      forms.setValue('coakasmasuk', row.coakasmasuk ?? '');
       forms.setValue('relasi_id', row.relasi_id ?? null);
       forms.setValue('alatbayar_id', row.alatbayar_id ?? null);
       forms.setValue('bank_nama', row.bank_nama);
@@ -2369,8 +2380,8 @@ const GridPenerimaanHeader = () => {
       forms.setValue('relasi_nama', '');
       forms.setValue('alatbayar_nama', '');
       forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
-      forms.setValue('pengeluaran_nobukti', '');
-      forms.setValue('coakaskeluar', '');
+      forms.setValue('tgllunas', formatDateToDDMMYYYY(currentDate));
+      forms.setValue('coakasmasuk', '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
