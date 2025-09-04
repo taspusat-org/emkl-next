@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useDispatch } from 'react-redux';
 import {
   getPenerimaanHeaderFn,
-  storePenerimaanFn
+  getPenerimaanDetailFn,
+  storePenerimaanFn,
+  updatePenerimaanFn
 } from '../apis/penerimaan.api';
 import {
   setProcessed,
@@ -103,5 +105,39 @@ export const useCreatePenerimaan = () => {
     // onSettled: () => {
     //   dispatch(clearProcessing());
     // }
+  });
+};
+export const useGetPenerimaanDetail = (id?: number) => {
+  return useQuery(
+    ['penerimaan', id],
+    async () => await getPenerimaanDetailFn(id!),
+    {
+      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+    }
+  );
+};
+
+export const useUpdatePenerimaan = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(updatePenerimaanFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('penerimaan');
+      //   toast({
+      //     title: 'Proses Berhasil.',
+      //     description: 'Data Berhasil Diubah.'
+      //   });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
+    }
   });
 };
