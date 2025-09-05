@@ -76,6 +76,7 @@ const ReportMenuPage: React.FC = () => {
             GoToFirstPage,
             GoToPreviousPage,
             GoToNextPage,
+
             GoToLastPage,
             ZoomOut: DefaultZoomOut,
             ZoomIn: DefaultZoomIn,

@@ -95,7 +95,8 @@ import { formatDateToDDMMYYYY } from '@/lib/utils';
 import FormPenerimaan from './FormPenerimaan';
 import {
   useCreatePenerimaan,
-  useGetPenerimaanHeader
+  useGetPenerimaanHeader,
+  useUpdatePenerimaan
 } from '@/lib/server/usePenerimaan';
 import {
   filterPenerimaan,
@@ -129,8 +130,8 @@ const GridPenerimaanHeader = () => {
   const [popOver, setPopOver] = useState<boolean>(false);
   const { mutateAsync: createPenerimaan, isLoading: isLoadingCreate } =
     useCreatePenerimaan();
-  const { mutateAsync: updateKasGantung, isLoading: isLoadingUpdate } =
-    useUpdatePengembalianKasGantung();
+  const { mutateAsync: updatePenerimaan, isLoading: isLoadingUpdate } =
+    useUpdatePenerimaan();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -183,7 +184,6 @@ const GridPenerimaanHeader = () => {
       nowarkat: '',
       tgllunas: '',
       noresi: '',
-      coakaskeluar: '',
       details: []
     }
   });
@@ -1666,7 +1666,7 @@ const GridPenerimaanHeader = () => {
       setIsFetchingManually(true);
       setRows([]);
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/kasgantungheader-allItems`);
+        const response = await api2.get(`/redis/get/penerimaanheader-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1718,7 +1718,7 @@ const GridPenerimaanHeader = () => {
       return;
     }
     if (mode === 'add') {
-      const newOrder = await createKasGantung(
+      const newOrder = await createPenerimaan(
         {
           ...values,
           details: values.details.map((detail: any) => ({
@@ -1738,14 +1738,14 @@ const GridPenerimaanHeader = () => {
     }
 
     if (selectedRowId && mode === 'edit') {
-      await updateKasGantung(
+      await updatePenerimaan(
         {
           id: selectedRowId as unknown as string,
           fields: { ...values, ...filters }
         },
         { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
       );
-      queryClient.invalidateQueries('menus');
+      queryClient.invalidateQueries('penerimaan');
     }
   };
 

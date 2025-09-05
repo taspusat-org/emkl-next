@@ -14,9 +14,9 @@ import ActionButton from '@/components/custom-ui/ActionButton';
 import { FaPen } from 'react-icons/fa';
 import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
-import { IPengembalianKasGantungDetail } from '@/lib/types/pengembaliankasgantung.type';
-import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import { formatCurrency } from '@/lib/utils';
+import { PenerimaanDetail } from '@/lib/types/penerimaan.type';
+import { useGetPenerimaanDetail } from '@/lib/server/usePenerimaan';
 
 interface GridConfig {
   columnsOrder: number[];
@@ -28,8 +28,9 @@ const GridPenerimaanDetail = () => {
     data: detail,
     isLoading,
     refetch
-  } = useGetKasGantungDetail(headerData?.id ?? 0);
-  const [rows, setRows] = useState<IPengembalianKasGantungDetail[]>([]);
+  } = useGetPenerimaanDetail(headerData?.id ?? 0);
+  console.log('detail', detail);
+  const [rows, setRows] = useState<PenerimaanDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -47,7 +48,7 @@ const GridPenerimaanDetail = () => {
     x: number;
     y: number;
   } | null>(null);
-  const columns = useMemo((): Column<IPengembalianKasGantungDetail>[] => {
+  const columns = useMemo((): Column<PenerimaanDetail>[] => {
     return [
       {
         key: 'nobukti',
@@ -68,6 +69,29 @@ const GridPenerimaanDetail = () => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.nobukti}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'coa',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">coa</p>
+          </div>
+        ),
+        name: 'coa',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.coa}
             </div>
           );
         }
@@ -118,6 +142,99 @@ const GridPenerimaanDetail = () => {
           );
         }
       },
+      {
+        key: 'transaksibiaya_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">NO BUKTI TRANSAKSI BIAYA</p>
+          </div>
+        ),
+        name: 'transaksibiaya_nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
+              {props.row.transaksibiaya_nobukti}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'transaksilain_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">NO BUKTI TRANSAKSI LAIN</p>
+          </div>
+        ),
+        name: 'transaksilain_nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
+              {props.row.transaksilain_nobukti}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'pengeluaranheader_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">PENGELUARAN HEADER NO BUKTI</p>
+          </div>
+        ),
+        name: 'pengeluaranheader_nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
+              {props.row.pengeluaranheader_nobukti}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'penerimaanheader_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">PENERIMAAN HEADER NO BUKTI</p>
+          </div>
+        ),
+        name: 'penerimaanheader_nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
+              {props.row.penerimaanheader_nobukti}
+            </div>
+          );
+        }
+      },
+
       {
         key: 'modifiedby',
         headerCellClass: 'column-headers',
@@ -378,7 +495,7 @@ const GridPenerimaanDetail = () => {
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
         .map((orderIndex) => columns[orderIndex])
-        .filter((col) => col !== undefined);
+        .filter((col): col is Column<PenerimaanDetail> => !!col);
     }
     return columns;
   }, [columns, columnsOrder]);
@@ -405,12 +522,16 @@ const GridPenerimaanDetail = () => {
       const formattedRows = detail?.data?.map((item: any) => ({
         id: item.id,
         nobukti: item.nobukti, // Updated to match the field name
+        penerimaan_id: item.penerimaan_id, // Updated to match the field name
+        coa: item.coa, // Updated to match the field name
         keterangan: item.keterangan, // Updated to match the field name
         nominal: item.nominal, // Updated to match the field name
+        transaksibiaya_nobukti: item.transaksibiaya_nobukti, // Updated to match the field name
+        transaksilain_nobukti: item.transaksilain_nobukti, // Updated to match the field name
+        pengeluaranheader_nobukti: item.pengeluaranheader_nobukti, // Updated to match the field name
+        penerimaanheader_nobukti: item.penerimaanheader_nobukti, // Updated to match the field name
         info: item.info, // Updated to match the field name
         modifiedby: item.modifiedby, // Updated to match the field name
-        editing_by: item.editing_by, // Updated to match the field name
-        editing_at: item.editing_at, // Updated to match the field name
         created_at: item.created_at, // Updated to match the field name
         updated_at: item.updated_at // Updated to match the field name
       }));
@@ -422,7 +543,7 @@ const GridPenerimaanDetail = () => {
   }, [detail, headerData?.id]);
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<IPengembalianKasGantungDetail>,
+    args: CellKeyDownArgs<PenerimaanDetail>,
     event: React.KeyboardEvent
   ) {
     if (event.key === 'ArrowUp' && args.rowIdx === 0) {
@@ -457,7 +578,7 @@ const GridPenerimaanDetail = () => {
           columns={finalColumns}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          rows={rows}
+          rows={rows ?? []}
           headerRowHeight={null}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}

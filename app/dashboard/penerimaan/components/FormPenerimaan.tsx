@@ -31,6 +31,7 @@ import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
 import { PenerimaanDetail } from '@/lib/types/penerimaan.type';
+import { useGetPenerimaanDetail } from '@/lib/server/usePenerimaan';
 const FormPenerimaan = ({
   popOver,
   setPopOver,
@@ -65,7 +66,7 @@ const FormPenerimaan = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetKasGantungDetail(headerData?.id ?? 0);
+  } = useGetPenerimaanDetail(headerData?.id ?? 0);
 
   const [rows, setRows] = useState<
     (PenerimaanDetail | (Partial<PenerimaanDetail> & { isNew: boolean }))[]
