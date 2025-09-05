@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const penerimaanDetailSchema = z.object({
-  id: z.number().optional(),
+  id: z.string().optional(),
   coa: z.string().nullable(),
   keterangan: z.string().nullable(),
   nominal: z.string().nullable()

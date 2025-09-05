@@ -602,7 +602,8 @@ export default function LookUp({
       setSelectedRow(rowIndex);
     }
     const value = clickedRow[dataToPost as any];
-
+    console.log('value', value);
+    console.log('clickedRow', clickedRow);
     lookupValue?.(value);
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());

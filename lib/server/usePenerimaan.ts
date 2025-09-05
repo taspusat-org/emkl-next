@@ -6,7 +6,8 @@ import {
   getPenerimaanHeaderFn,
   getPenerimaanDetailFn,
   storePenerimaanFn,
-  updatePenerimaanFn
+  updatePenerimaanFn,
+  deletePenerimaanFn
 } from '../apis/penerimaan.api';
 import {
   setProcessed,
@@ -128,6 +129,30 @@ export const useUpdatePenerimaan = () => {
       //     title: 'Proses Berhasil.',
       //     description: 'Data Berhasil Diubah.'
       //   });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
+    }
+  });
+};
+export const useDeletePenerimaan = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(deletePenerimaanFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('penerimaan');
+      toast({
+        title: 'Proses Berhasil.',
+        description: 'Data Berhasil Dihapus.'
+      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
