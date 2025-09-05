@@ -95,6 +95,7 @@ import { formatDateToDDMMYYYY } from '@/lib/utils';
 import FormPenerimaan from './FormPenerimaan';
 import {
   useCreatePenerimaan,
+  useDeletePenerimaan,
   useGetPenerimaanHeader,
   useUpdatePenerimaan
 } from '@/lib/server/usePenerimaan';
@@ -136,8 +137,8 @@ const GridPenerimaanHeader = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteKasGantung, isLoading: isLoadingDelete } =
-    useDeleteKasGantung();
+  const { mutateAsync: deletePenerimaan, isLoading: isLoadingDelete } =
+    useDeletePenerimaan();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -1696,7 +1697,7 @@ const GridPenerimaanHeader = () => {
 
     if (mode === 'delete') {
       if (selectedRowId) {
-        await deleteKasGantung(selectedRowId as unknown as string, {
+        await deletePenerimaan(selectedRowId as unknown as string, {
           onSuccess: () => {
             setPopOver(false);
             setRows((prevRows) =>
@@ -1768,11 +1769,7 @@ const GridPenerimaanHeader = () => {
         alert({
           title: result.message,
           variant: 'danger',
-          submitText: 'OK',
-          isForceEdit: true,
-          valueForceEdit: rowData.id,
-          tableNameForceEdit: 'kasgantungheader',
-          clickableText: 'LANJUT EDIT'
+          submitText: 'OK'
         });
       } else {
         setPopOver(true);
@@ -2359,15 +2356,15 @@ const GridPenerimaanHeader = () => {
       forms.setValue('nobukti', row.nobukti);
       forms.setValue('tglbukti', row.tglbukti);
       forms.setValue('keterangan', row.keterangan ?? '');
-      forms.setValue('bank_id', row.bank_id ?? null);
+      forms.setValue('bank_id', Number(row.bank_id) ?? null);
       forms.setValue('postingdari', row.postingdari ?? '');
       forms.setValue('diterimadari', row.diterimadari ?? '');
       forms.setValue('noresi', row.noresi ?? '');
       forms.setValue('tgllunas', row.tgllunas ?? '');
       forms.setValue('nowarkat', row.nowarkat ?? '');
       forms.setValue('coakasmasuk', row.coakasmasuk ?? '');
-      forms.setValue('relasi_id', row.relasi_id ?? null);
-      forms.setValue('alatbayar_id', row.alatbayar_id ?? null);
+      forms.setValue('relasi_id', Number(row.relasi_id) ?? null);
+      forms.setValue('alatbayar_id', Number(row.alatbayar_id) ?? null);
       forms.setValue('bank_nama', row.bank_nama);
       forms.setValue('relasi_nama', row.relasi_nama);
       forms.setValue('alatbayar_nama', row.alatbayar_nama);

@@ -40,3 +40,12 @@ export const updatePenerimaanFn = async ({ id, fields }: UpdateParams) => {
   const response = await api2.put(`/penerimaanheader/${id}`, fields);
   return response.data;
 };
+export const deletePenerimaanFn = async (id: string) => {
+  try {
+    const response = await api2.delete(`/penerimaanheader/${id}`);
+    return response.data; // Optionally return response data if needed
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error; // Re-throw the error if you want to handle it in the calling function
+  }
+};

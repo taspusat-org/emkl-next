@@ -534,6 +534,8 @@ const FormPenerimaan = ({
     }
   }, [rows]);
 
+  console.log(forms.getValues());
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -731,12 +733,11 @@ const FormPenerimaan = ({
                           {...props}
                           labelLookup="LOOKUP COA KAS MASUK"
                           disabled={mode === 'view' || mode === 'delete'}
-                          onClear={forms.setValue('coakasmasuk', null)}
                           lookupValue={(id) =>
-                            forms.setValue('coakasmasuk', Number(id))
+                            forms.setValue('coakasmasuk', id)
                           }
                           inputLookupValue={forms.getValues('coakasmasuk')}
-                          lookupNama={forms.getValues('coakasmasuk_nama')}
+                          lookupNama={forms.getValues('coakasmasuk')}
                         />
                       ))}
                     </div>
@@ -754,7 +755,6 @@ const FormPenerimaan = ({
                           {...props}
                           labelLookup="LOOKUP RELASI"
                           disabled={mode === 'view' || mode === 'delete'}
-                          onClear={forms.setValue('relasi_id', null)}
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
                           }
