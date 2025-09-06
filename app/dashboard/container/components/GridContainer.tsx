@@ -1152,7 +1152,6 @@ const GridContainer = () => {
             title: 'Apakah anda yakin ingin menghapus data ini ?',
             variant: 'danger',
             submitText: 'YA',
-            cancelText: 'TIDAK',
             catchOnCancel: true
           });
 

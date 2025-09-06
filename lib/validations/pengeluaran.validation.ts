@@ -23,7 +23,7 @@ export const pengeluaranHeaderSchema = z.object({
   bank_id: z.coerce.number().nullable(),
   bank_text: z.string().nullable().optional(),
   postingdari: z.string().nullable().optional(),
-  coakredit: z.coerce.number().nullable(),
+  coakredit: z.string().nullable(),
   coakredit_text: z.string().nullable().optional(),
   dibayarke: z.string().nullable(),
   alatbayar_id: z.coerce.number().nullable(),

@@ -1783,7 +1783,9 @@ const GridShipper = () => {
           const columnFilter = filters.filters.creditlimit || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {formatCurrency(props.row.creditlimit)}
+              {props.row.creditlimit != null && props.row.creditlimit !== ''
+                ? formatCurrency(props.row.creditlimit)
+                : ''}
             </div>
           );
         }

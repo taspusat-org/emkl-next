@@ -45,7 +45,7 @@ const Page = () => {
           getRelasiFn({ isLookUp: 'true' }),
           getBankFn({ isLookUp: 'true' }),
           getAkunpusatFn({ isLookUp: 'true' }),
-          getBankFn({ isLookUp: 'true' }),
+          getAlatbayarFn({ isLookUp: 'true' }),
           getDaftarBankFn({ isLookUp: 'true' })
         ]);
 

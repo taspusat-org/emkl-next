@@ -629,18 +629,18 @@ const FormKasGantung = ({
                           {...props}
                           labelLookup="LOOKUP RELASI"
                           disabled={mode === 'view' || mode === 'delete'}
-                          onClear={forms.setValue('relasi_id', null)}
+                          // onClear={forms.setValue('relasi_id', null)}
                           lookupValue={(id) =>
                             forms.setValue('relasi_id', Number(id))
                           }
-                          inputLookupValue={forms.getValues('relasi_id')}
+                          // inputLookupValue={forms.getValues('relasi_id')}
                           lookupNama={forms.getValues('relasi_nama')}
                         />
                       ))}
                     </div>
                   </div>
                   <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
-                    <p className="text-sm text-black">POSTING PENERIMAAN</p>
+                    <p className="text-sm text-black">POSTING PENGELUARAN</p>
 
                     <div className="flex flex-row lg:gap-3">
                       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">

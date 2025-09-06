@@ -149,9 +149,7 @@ const GridPengeluaranHeader = () => {
   const getLookup = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<PengeluaranHeaderInput>({
     resolver:
-      mode === 'delete'
-        ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(pengeluaranHeaderSchema),
+      mode === 'delete' ? undefined : zodResolver(pengeluaranHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
       nobukti: '',
@@ -1179,7 +1177,7 @@ const GridPengeluaranHeader = () => {
       },
       {
         key: 'tgljatuhtempo',
-        name: 'Created At',
+        name: 'tgljatuhtempo',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -2126,7 +2124,7 @@ const GridPengeluaranHeader = () => {
       forms.setValue('bank_id', Number(row.bank_id));
       forms.setValue('bank_text', row.bank_text);
       forms.setValue('postingdari', row.postingdari);
-      forms.setValue('coakredit', Number(row.coakredit));
+      forms.setValue('coakredit', row.coakredit);
       forms.setValue('coakredit_text', row.coakredit_text);
       forms.setValue('dibayarke', row.dibayarke);
       forms.setValue('alatbayar_id', Number(row.alatbayar_id));

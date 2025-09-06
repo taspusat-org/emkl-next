@@ -951,7 +951,9 @@ const GridHargatrucking = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
-                formatCurrency(props.row.nominal) || '',
+                props.row.nominal != null
+                  ? formatCurrency(props.row.nominal)
+                  : '',
                 filters.search,
                 columnFilter
               )}

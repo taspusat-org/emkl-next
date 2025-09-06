@@ -2258,7 +2258,7 @@ const GridKasGantungHeader = () => {
       }
     }
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
-
+  console.log(forms.getValues(), 'iniformms');
   useEffect(() => {
     if (!allData || isDataUpdated) return;
     console.log('masuk3');

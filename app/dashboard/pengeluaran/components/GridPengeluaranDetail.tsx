@@ -50,6 +50,29 @@ const GridPengeluaranDetail = () => {
   const columns = useMemo((): Column<PengeluaranDetail>[] => {
     return [
       {
+        key: 'nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">Nomor Bukti</p>
+          </div>
+        ),
+        name: 'nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.nobukti || ''}
+            </div>
+          );
+        }
+      },
+      {
         key: 'coadebet',
         headerCellClass: 'column-headers',
         resizable: true,
@@ -67,7 +90,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.coadebet_text}
+              {props.row.coadebet_text || ''}
             </div>
           );
         }
@@ -113,7 +136,9 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
-              {formatCurrency(props.row.nominal)}
+              {props.row.nominal != null
+                ? formatCurrency(props.row.nominal)
+                : ''}
             </div>
           );
         }
@@ -136,7 +161,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
-              {formatCurrency(props.row.dpp)}
+              {props.row.dpp != null ? formatCurrency(props.row.dpp) : ''}
             </div>
           );
         }
@@ -159,7 +184,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.noinvoiceemkl}
+              {props.row.noinvoiceemkl || ''}
             </div>
           );
         }
@@ -182,7 +207,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.tglinvoiceemkl}
+              {props.row.tglinvoiceemkl || ''}
             </div>
           );
         }
@@ -205,7 +230,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.nofakturpajakemkl}
+              {props.row.nofakturpajakemkl || ''}
             </div>
           );
         }
@@ -228,7 +253,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.perioderefund}
+              {props.row.perioderefund || ''}
             </div>
           );
         }
@@ -252,7 +277,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.created_at}
+              {props.row.created_at || ''}
             </div>
           );
         }
@@ -275,7 +300,7 @@ const GridPengeluaranDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.updated_at}
+              {props.row.updated_at || ''}
             </div>
           );
         }

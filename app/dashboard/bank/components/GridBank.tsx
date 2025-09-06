@@ -2356,13 +2356,10 @@ const GridBank = () => {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
-      forms.setValue('coa', rowData.coa !== null ? Number(rowData.coa) : null);
+      forms.setValue('coa', rowData.coa);
       forms.setValue('keterangancoa', rowData.keterangancoa);
 
-      forms.setValue(
-        'coagantung',
-        rowData.coagantung !== null ? Number(rowData.coagantung) : null
-      );
+      forms.setValue('coagantung', rowData.coagantung);
       forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
 
       forms.setValue('statusbank', Number(rowData.statusbank));

@@ -1,20 +1,6 @@
 {
   "GridCutiApprovalCuti-1665": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -32,17 +18,7 @@
     }
   },
   "GridUser-1541": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -56,19 +32,7 @@
     }
   },
   "GridPengembalianKasGantung-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -84,16 +48,7 @@
     }
   },
   "GridMenu-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -106,16 +61,7 @@
     }
   },
   "GridContainer-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -128,15 +74,7 @@
     }
   },
   "GridOpenLocks-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -148,14 +86,7 @@
     }
   },
   "GridKasGantungDetail-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5],
     "columnsWidth": {
       "nobukti": 200,
       "keterangan": 150,
@@ -166,19 +97,7 @@
     }
   },
   "GridHargatrucking-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -194,18 +113,7 @@
     }
   },
   "GridAlatbayar-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -220,16 +128,7 @@
     }
   },
   "GridManagerMarketingHeader-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -242,14 +141,7 @@
     }
   },
   "GridManagerMarketingDetail-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5],
     "columnsWidth": {
       "nominalawal": 150,
       "nominalakhir": 199,
@@ -261,69 +153,10 @@
   },
   "GridShipper-1": {
     "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      13,
-      14,
-      15,
-      16,
-      17,
-      18,
-      19,
-      20,
-      21,
-      22,
-      23,
-      24,
-      25,
-      26,
-      27,
-      28,
-      29,
-      30,
-      31,
-      32,
-      33,
-      34,
-      35,
-      36,
-      37,
-      38,
-      39,
-      40,
-      41,
-      42,
-      43,
-      44,
-      45,
-      46,
-      47,
-      48,
-      49,
-      50,
-      51,
-      52,
-      53,
-      54,
-      55,
-      56,
-      57,
-      58,
-      59,
-      60,
-      61,
-      62
+      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38,
+      39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+      57, 58, 59, 60, 61, 62
     ],
     "columnsWidth": {
       "no": 50,
@@ -392,17 +225,7 @@
     }
   },
   "GridCabang-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -436,9 +259,10 @@
     }
   },
   "GridPengeluaranDetail-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "columnsWidth": {
       "coadebet": 150,
+      "keterangan": 250,
       "nominal": 150,
       "dpp": 150,
       "noinvoiceemkl": 250,
