@@ -5,10 +5,10 @@ export interface IBank {
   nama: string;
   keterangan: string;
 
-  coa: number | null;
+  coa: string | null;
   keterangancoa: string | null;
 
-  coagantung: number | null;
+  coagantung: string | null;
   keterangancoagantung: string | null;
 
   statusbank: number;

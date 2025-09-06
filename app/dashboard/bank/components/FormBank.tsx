@@ -425,7 +425,7 @@ const FormBank = ({
                           key={index}
                           {...props}
                           lookupValue={(value: any) => {
-                            forms.setValue('coa', Number(value));
+                            forms.setValue('coa', value);
                           }}
                           lookupNama={forms.getValues('keterangancoa')}
                           disabled={['view', 'delete'].includes(mode)}
@@ -448,7 +448,7 @@ const FormBank = ({
                               key={index}
                               {...props}
                               lookupValue={(value: any) => {
-                                field.onChange(Number(value));
+                                field.onChange(value);
                               }}
                               lookupNama={forms.getValues(
                                 'keterangancoagantung'

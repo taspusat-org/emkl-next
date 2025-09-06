@@ -10,7 +10,7 @@ export interface PengeluaranHeader {
   bank_id: number | null;
   bank_text: string;
   postingdari: string;
-  coakredit: number;
+  coakredit: string;
   coakredit_text: string;
   dibayarke: string;
   alatbayar_id: number;

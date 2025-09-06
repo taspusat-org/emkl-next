@@ -19,6 +19,7 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportPengeluaranFn } from '@/lib/apis/pengeluaranheader.api';
+
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
@@ -31,6 +32,37 @@ const ReportMenuPage: React.FC = () => {
   // Zoom plugin
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
+
+  // Function to handle print action
+  const handlePrintAction = () => {
+    console.log('user sedang print');
+
+    // Add a small delay to ensure the print dialog opens first
+    setTimeout(() => {
+      // Close the page/tab after print dialog
+      // window.close();
+      console.log('ditutp');
+    }, 1000);
+  };
+
+  // // Handle keyboard shortcut Ctrl+P
+  // useEffect(() => {
+  //   const handleKeyDown = (event: KeyboardEvent) => {
+  //     if (event.ctrlKey && event.key === 'p') {
+  //       event.preventDefault(); // Prevent default browser print
+  //       handlePrintAction();
+
+  //       // Trigger the print functionality
+  //       window.print();
+  //     }
+  //   };
+
+  //   document.addEventListener('keydown', handleKeyDown);
+
+  //   return () => {
+  //     document.removeEventListener('keydown', handleKeyDown);
+  //   };
+  // }, []);
 
   // Default layout with custom toolbar
   useEffect(() => {
@@ -57,7 +89,6 @@ const ReportMenuPage: React.FC = () => {
   }, []);
 
   const handleExport = async () => {
-    console.log(savedId, 'inidaisdasjhgdasj');
     try {
       const exportPayload = { ...savedFilters };
       const response = await exportPengeluaranFn(
@@ -77,7 +108,7 @@ const ReportMenuPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting  data:', error);
+      console.error('Error exporting data:', error);
     }
   };
 
@@ -134,13 +165,17 @@ const ReportMenuPage: React.FC = () => {
                 <Print>
                   {(props: RenderPrintProps) => (
                     <button
-                      onClick={props.onClick}
+                      onClick={() => {
+                        handlePrintAction();
+                        props.onClick();
+                      }}
                       className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
                     >
                       <FaPrint /> Print
                     </button>
                   )}
                 </Print>
+
                 <button
                   onClick={() => handleExport()}
                   className="flex flex-row items-center gap-2 rounded bg-orange-500 px-3 py-1 text-white hover:bg-cyan-700"
@@ -195,102 +230,258 @@ const ReportMenuPage: React.FC = () => {
 };
 
 export default ReportMenuPage;
-
 // 'use client';
+// import React, { ReactElement, useEffect, useState } from 'react';
+// import { Worker, Viewer } from '@react-pdf-viewer/core';
+// import '@react-pdf-viewer/core/lib/styles/index.css';
+// import { pdfjs } from 'react-pdf';
 
-// import 'stimulsoft-reports-js/Css/stimulsoft.designer.office2013.whiteblue.css';
-// import 'stimulsoft-reports-js/Css/stimulsoft.viewer.office2013.whiteblue.css';
-// import React, { useEffect, useState } from 'react';
-// import { useSelector } from 'react-redux';
-// import { RootState } from '@/lib/store/store';
-// import { getTujuankapalFn } from '@/lib/apis/tujuankapal.api';
-// import { getFn } from '@/lib/apis/.api';
-// import { getMenuFn } from '@/lib/apis/menu.api';
-// import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
-// import { getHargatruckingFn } from '@/lib/apis/hargatrucking.api';
-// import { getShipperFn } from '@/lib/apis/shipper.api';
+// import {
+//   defaultLayoutPlugin,
+//   ToolbarProps,
+//   ToolbarSlot
+// } from '@react-pdf-viewer/default-layout';
+// import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
-// const ReportDesigner = () => {
-//   const { token } = useSelector((state: RootState) => state.auth);
-//   const [reportData, setReportData] = useState<any>(null);
+// import { printPlugin, RenderPrintProps } from '@react-pdf-viewer/print';
+// import '@react-pdf-viewer/print/lib/styles/index.css';
 
+// import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
+// import '@react-pdf-viewer/zoom/lib/styles/index.css';
+// import { MdOutlineZoomOut } from 'react-icons/md';
+// import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
+// import { exportPengeluaranFn } from '@/lib/apis/pengeluaranheader.api';
+
+// const ReportMenuPage: React.FC = () => {
+//   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+//   const [savedFilters, setSavedFilters] = useState<any>({});
+//   const [savedId, setSavedId] = useState<number | null>();
+
+//   // Print plugin
+//   const printPluginInstance = printPlugin();
+//   const { Print } = printPluginInstance;
+
+//   // Zoom plugin
+//   const zoomPluginInstance = zoomPlugin();
+//   const { ZoomPopover } = zoomPluginInstance;
+
+//   // Function to handle print action
+//   const handlePrintAction = () => {
+//     console.log('user sedang print');
+
+//     let printStartTime = Date.now();
+
+//     const handleBeforePrint = () => {
+//       printStartTime = Date.now();
+//       console.log('Print dialog opened');
+//     };
+
+//     const handleAfterPrint = () => {
+//       const duration = Date.now() - printStartTime;
+
+//       // Delay untuk beri waktu user kembali fokus ke tab
+//       setTimeout(() => {
+//         if (document.hasFocus()) {
+//           if (duration < 800) {
+//             console.log('❌ tidak jadi (Cancel)');
+//           } else {
+//             console.log('✅ jadi (Print/Save)');
+//           }
+//         } else {
+//           console.log('✅ jadi (Print/Save, focus hilang)');
+//         }
+//       }, 500);
+
+//       window.removeEventListener('beforeprint', handleBeforePrint);
+//       window.removeEventListener('afterprint', handleAfterPrint);
+//     };
+
+//     window.addEventListener('beforeprint', handleBeforePrint);
+//     window.addEventListener('afterprint', handleAfterPrint);
+//   };
+
+//   // Handle keyboard shortcut Ctrl+P
 //   useEffect(() => {
-//     // Ambil data dari API
-//     const fetchData = async () => {
-//       try {
-//         const res = await getShipperFn({ page: 1, limit: 50 }); // sesuaikan filter
-//         setReportData(res.data); // simpan ke state
-//       } catch (err) {
-//         console.error('Gagal ambil data :', err);
+//     const handleKeyDown = (event: KeyboardEvent) => {
+//       if (event.ctrlKey && event.key === 'p') {
+//         event.preventDefault(); // Prevent default browser print
+//         handlePrintAction();
+
+//         // Trigger the print functionality
+//         window.print();
 //       }
 //     };
-//     fetchData();
+
+//     document.addEventListener('keydown', handleKeyDown);
+
+//     return () => {
+//       document.removeEventListener('keydown', handleKeyDown);
+//     };
+//   }, []);
+
+//   // Default layout with custom toolbar
+//   useEffect(() => {
+//     const storedPdf = sessionStorage.getItem('pdfUrl');
+//     if (storedPdf) setPdfUrl(storedPdf);
+
+//     const storedFilters = sessionStorage.getItem('filtersWithoutLimit');
+//     if (storedFilters) {
+//       try {
+//         setSavedFilters(JSON.parse(storedFilters));
+//       } catch {
+//         setSavedFilters({});
+//       }
+//     }
+//     const storedId = sessionStorage.getItem('dataId');
+//     if (storedId) {
+//       try {
+//         setSavedId(Number(storedId));
+//       } catch {
+//         setSavedId(null);
+//       }
+//     }
+//     console.log(storedId, 'storeid');
+//   }, []);
+
+//   const handleExport = async () => {
+//     try {
+//       const exportPayload = { ...savedFilters };
+//       const response = await exportPengeluaranFn(
+//         Number(savedId),
+//         exportPayload
+//       );
+
+//       // Buat link download dari Blob
+//       const url = window.URL.createObjectURL(new Blob([response]));
+//       const link = document.createElement('a');
+//       link.href = url;
+//       link.download = `laporan_pengeluaran_${Date.now()}.xlsx`;
+//       document.body.appendChild(link);
+//       link.click();
+
+//       // Bersihkan URL object
+//       window.URL.revokeObjectURL(url);
+//       document.body.removeChild(link);
+//     } catch (error) {
+//       console.error('Error exporting data:', error);
+//     }
+//   };
+
+//   const layoutPluginInstance = defaultLayoutPlugin({
+//     sidebarTabs: (defaultTabs) => [defaultTabs[0]],
+//     renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
+//       <Toolbar>
+//         {(slots: ToolbarSlot) => {
+//           const {
+//             GoToFirstPage,
+//             GoToPreviousPage,
+//             GoToNextPage,
+//             GoToLastPage,
+//             ZoomOut: DefaultZoomOut,
+//             ZoomIn: DefaultZoomIn,
+//             CurrentScale,
+//             CurrentPageInput,
+//             Download,
+//             SwitchTheme,
+//             EnterFullScreen
+//           } = slots;
+//           return (
+//             <div className="relative grid w-full grid-cols-3 items-center gap-4 overflow-visible bg-white px-4 py-2 shadow dark:bg-red-500">
+//               {/* Column 1: page navigation */}
+//               <div className="flex items-center justify-start gap-2">
+//                 <GoToFirstPage />
+//                 <GoToPreviousPage />
+//                 <CurrentPageInput />
+//                 <GoToNextPage />
+//                 <GoToLastPage />
+//               </div>
+
+//               {/* Column 2: zoom controls */}
+//               <div className="relative flex items-center justify-center gap-2 text-black">
+//                 <DefaultZoomOut />
+//                 <ZoomPopover />
+//                 <DefaultZoomIn />
+//                 {/* Zoom popover from zoom plugin */}
+//               </div>
+
+//               {/* Column 3: download, print, theme, fullscreen */}
+//               <div className="flex items-center justify-end gap-2">
+//                 <Download>
+//                   {(props) => (
+//                     <button
+//                       onClick={props.onClick}
+//                       className="flex flex-row items-center gap-2 rounded bg-green-600 px-3 py-1 text-white hover:bg-green-800"
+//                     >
+//                       <FaDownload /> Download
+//                     </button>
+//                   )}
+//                 </Download>
+
+//                 <Print>
+//                   {(props: RenderPrintProps) => (
+//                     <button
+//                       onClick={() => {
+//                         handlePrintAction();
+//                         props.onClick();
+//                       }}
+//                       className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
+//                     >
+//                       <FaPrint /> Print
+//                     </button>
+//                   )}
+//                 </Print>
+
+//                 <button
+//                   onClick={() => handleExport()}
+//                   className="flex flex-row items-center gap-2 rounded bg-orange-500 px-3 py-1 text-white hover:bg-cyan-700"
+//                 >
+//                   <FaFileExport /> Export
+//                 </button>
+
+//                 <EnterFullScreen />
+//               </div>
+//             </div>
+//           );
+//         }}
+//       </Toolbar>
+//     )
+//   });
+
+//   useEffect(() => {
+//     const stored = sessionStorage.getItem('pdfUrl');
+//     if (stored) setPdfUrl(stored);
 //   }, []);
 
 //   useEffect(() => {
-//     if (!reportData) return;
-
-//     // Render report jika data sudah ada
-//     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-//       .then((module) => {
-//         const { Stimulsoft } = module;
-
-//         // Set license
-//         Stimulsoft.Base.StiLicense.Key =
-//           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-//           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-//           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-//           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-//           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-//           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-//           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-//         // Viewer
-//         const viewerOptions = new Stimulsoft.Viewer.StiViewerOptions();
-//         const viewer = new Stimulsoft.Viewer.StiViewer(
-//           viewerOptions,
-//           'StiViewer',
-//           false
-//         );
-
-//         // Report
-//         const report = new Stimulsoft.Report.StiReport();
-//         report.loadFile('/reports/LaporanManagermarketing.mrt');
-
-//         // Designer
-//         const options = new Stimulsoft.Designer.StiDesignerOptions();
-//         options.appearance.fullScreenMode = true;
-//         const designer = new Stimulsoft.Designer.StiDesigner(
-//           options,
-//           'Designer',
-//           false
-//         );
-
-//         // Dataset
-//         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-//         dataSet.readJson({ data: reportData });
-//         report.dictionary.dataSources.clear();
-//         report.regData(dataSet.dataSetName, '', dataSet);
-//         report.dictionary.synchronize();
-
-//         // Render
-//         viewer.renderHtml('content');
-//         designer.report = report;
-//         designer.renderHtml('content');
-//         viewer.report = report;
-//       })
-//       .catch((error) => {
-//         console.error('Failed to load Stimulsoft:', error);
-//       });
-//   }, [reportData, token]);
+//     if (typeof window !== 'undefined') {
+//       pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+//     }
+//   }, []);
 
 //   return (
-//     <div
-//       id="content"
-//       className="report"
-//       style={{ textTransform: 'none', fontSize: 'unset' }}
-//     />
+//     <div className="flex h-screen w-screen flex-col">
+//       <main className="flex-1 overflow-hidden">
+//         {pdfUrl ? (
+//           <Worker workerUrl="/pdf.worker.min.js">
+//             <Viewer
+//               fileUrl={pdfUrl}
+//               defaultScale={1}
+//               plugins={[
+//                 printPluginInstance,
+//                 layoutPluginInstance,
+//                 zoomPluginInstance
+//               ]}
+//               theme="light"
+//             />
+//           </Worker>
+//         ) : (
+//           <div className="flex h-full items-center justify-center text-gray-500">
+//             Loading PDF…
+//           </div>
+//         )}
+//       </main>
+//     </div>
 //   );
 // };
 
-// export default ReportDesigner;
+// export default ReportMenuPage;

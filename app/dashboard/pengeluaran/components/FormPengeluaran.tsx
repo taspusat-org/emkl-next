@@ -388,8 +388,8 @@ const FormPengeluaran = ({
                     label={`COA DEBET ${rowIdx + 1}`}
                     key={index}
                     {...props}
-                    lookupValue={(id) =>
-                      handleInputChange(rowIdx, 'coadebet', Number(id))
+                    lookupValue={(value: any) =>
+                      handleInputChange(rowIdx, 'coadebet', value)
                     }
                     lookupNama={forms.getValues(
                       `details[${rowIdx}].coadebet_text`
@@ -1226,9 +1226,7 @@ const FormPengeluaran = ({
                           disabled={mode === 'view' || mode === 'delete'}
                           key={index}
                           {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('coakredit', Number(id))
-                          }
+                          lookupValue={(id) => forms.setValue('coakredit', id)}
                           lookupNama={forms.getValues('coakredit_text')}
                         />
                       ))}
