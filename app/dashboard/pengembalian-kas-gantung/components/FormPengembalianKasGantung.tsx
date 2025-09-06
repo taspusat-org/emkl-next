@@ -295,6 +295,22 @@ const FormPengembalianKasGantung = ({
       );
     });
   }, [rows, filters]);
+  const lookupPropsCoaMasuk = [
+    {
+      columns: [
+        { key: 'coa', name: 'coa' },
+        { key: 'keterangancoa', name: 'keterangancoa' }
+      ],
+      selectedRequired: false,
+      label: 'COA KAS MASUK',
+      endpoint: 'akunpusat',
+      dataToPost: 'coa',
+      singleColumn: false,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'coa'
+    }
+  ];
   function highlightText(
     text: string | number | null | undefined,
     search: string,
@@ -1045,6 +1061,28 @@ const FormPengembalianKasGantung = ({
                       </FormItem>
                     )}
                   />
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        COA KAS MASUK
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsCoaMasuk.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          labelLookup="LOOKUP COA KAS MASUK"
+                          disabled={mode === 'view' || mode === 'delete'}
+                          lookupValue={(id) =>
+                            forms.setValue('coakasmasuk', id)
+                          }
+                          inputLookupValue={forms.getValues('coakasmasuk')}
+                          lookupNama={forms.getValues('coakasmasuk')}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel className="text-sm font-semibold text-gray-700">
