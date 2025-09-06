@@ -49,3 +49,15 @@ export const deletePenerimaanFn = async (id: string) => {
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
+export const getPenerimaanHeaderByIdFn = async (
+  id: number
+): Promise<IAllPenerimaanHeader> => {
+  try {
+    const response = await api2.get(`/penerimaanheader/${id}`);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
+};

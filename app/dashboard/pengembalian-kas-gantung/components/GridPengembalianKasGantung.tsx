@@ -718,7 +718,7 @@ const GridPengembalianKasGantung = () => {
       },
       {
         key: 'coakasmasuk',
-        name: 'Nomor Bukti',
+        name: 'COA KAS MASUK',
         resizable: true,
         draggable: true,
         width: 300,
@@ -737,7 +737,7 @@ const GridPengembalianKasGantung = () => {
                     : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                COA KAS MASUK
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'coakasmasuk' &&

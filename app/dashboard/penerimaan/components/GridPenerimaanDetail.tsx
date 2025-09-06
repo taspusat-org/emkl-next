@@ -29,7 +29,7 @@ const GridPenerimaanDetail = () => {
     isLoading,
     refetch
   } = useGetPenerimaanDetail(headerData?.id ?? 0);
-  console.log('detail', detail);
+
   const [rows, setRows] = useState<PenerimaanDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);

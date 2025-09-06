@@ -80,7 +80,7 @@ const FormPenerimaan = ({
   }
   const addRow = () => {
     const newRow: Partial<PenerimaanDetail> & { isNew: boolean } = {
-      id: 0, // Placeholder ID
+      id: '0', // Placeholder ID
       coa: '',
       keterangan: '',
       nominal: '',
@@ -508,7 +508,7 @@ const FormPenerimaan = ({
         // If no data, add one editable row and the "Add Row" button row at the end
         setRows([
           {
-            id: 0,
+            id: '0',
             coa: '',
             nominal: '',
             keterangan: '',
