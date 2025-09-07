@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "887dc95995c1fb11f04818c800b0a0de",
+  "ReportGuid": "e0070a79c683db6bded5a7a69ae960ae",
   "ReportName": "Report",
   "ReportAlias": "Report",
-  "ReportFile": "/reports/LaporanPengeluaran.mrt",
+  "ReportFile": "/reports/LaporanPenerimaan.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1757133801000+0700)/",
+  "ReportChanged": "/Date(1757240646000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -173,6 +173,12 @@
             "Type": "System.String"
           },
           "24": {
+            "Name": "terbilang",
+            "NameInSource": "terbilang",
+            "Alias": "terbilang",
+            "Type": "System.String"
+          },
+          "25": {
             "Name": "judul",
             "NameInSource": "judul",
             "Alias": "judul",
@@ -229,15 +235,15 @@
             "Type": "System.String"
           },
           "7": {
-            "Name": "pengeluaranheader_nobukti",
-            "NameInSource": "pengeluaranheader_nobukti",
-            "Alias": "pengeluaranheader_nobukti",
+            "Name": "pengeluaranemklheader_nobukti",
+            "NameInSource": "pengeluaranemklheader_nobukti",
+            "Alias": "pengeluaranemklheader_nobukti",
             "Type": "System.String"
           },
           "8": {
-            "Name": "penerimaanheader_nobukti",
-            "NameInSource": "penerimaanheader_nobukti",
-            "Alias": "penerimaanheader_nobukti",
+            "Name": "penerimaanemklheader_nobukti",
+            "NameInSource": "penerimaanemklheader_nobukti",
+            "Alias": "penerimaanemklheader_nobukti",
             "Type": "System.String"
           },
           "9": {
@@ -482,7 +488,7 @@
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "NAMA PERKIRAAN"
+                "Value": "COA"
               },
               "HorAlignment": "Center",
               "VertAlignment": "Center",

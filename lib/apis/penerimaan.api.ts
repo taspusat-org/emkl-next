@@ -61,3 +61,21 @@ export const getPenerimaanHeaderByIdFn = async (
     throw new Error('Failed');
   }
 };
+export const exportPenerimaanFn = async (
+  id: number,
+  filters: any
+): Promise<Blob> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get(`/penerimaanheader/export/${id}`, {
+      params: queryParams,
+      responseType: 'blob' // backend return file (Excel)
+    });
+
+    return response.data; // ini sudah Blob
+  } catch (error) {
+    console.error('Error exporting data penerimaan:', error);
+    throw new Error('Failed to export data penerimaan');
+  }
+};
