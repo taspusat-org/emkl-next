@@ -62,11 +62,11 @@ export const useGetPengeluaranHeader = (
       } catch (error) {
         // Show error toast and dispatch processed
         dispatch(setProcessed());
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // toast({
+        //   variant: 'destructive',
+        //   title: 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda.'
+        // });
         throw error;
       } finally {
         // Regardless of success or failure, we dispatch setProcessed after the query finishes
@@ -114,11 +114,11 @@ export const useCreatePengeluaran = () => {
     // on error, toast + clear loading
     onError: (error: AxiosError) => {
       const err = (error.response?.data as IErrorResponse) ?? {};
-      toast({
-        variant: 'destructive',
-        title: err.message ?? 'Gagal',
-        description: 'Terjadi masalah dengan permintaan Anda.'
-      });
+      // toast({
+      //   variant: 'destructive',
+      //   title: err.message ?? 'Gagal',
+      //   description: 'Terjadi masalah dengan permintaan Anda.'
+      // });
       dispatch(setProcessed());
     }
     // alternatively: always clear loading, whether success or fail
@@ -142,11 +142,11 @@ export const useGetPengeluaranHeaderList = (
         return data;
       } catch (error) {
         // Show error toast
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // toast({
+        //   variant: 'destructive',
+        //   title: 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda.'
+        // });
         throw error; // Re-throw to ensure the query is marked as failed
       }
     },
@@ -194,11 +194,11 @@ export const useDeletePengeluaran = () => {
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // toast({
+        //   variant: 'destructive',
+        //   title: errorResponse.message ?? 'Gagal',
+        //   description: 'Terjadi masalah dengan permintaan Anda.'
+        // });
       }
     }
   });

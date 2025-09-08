@@ -30,6 +30,11 @@ export const FormErrorProvider: React.FC<FormErrorProviderProps> = ({
   const setError = (field: string, message: string) => {
     setErrors((prevErrors) => {
       const next = { ...prevErrors, [field]: message };
+      console.log(`%c[FormError] Set Error`, 'color: red; font-weight: bold;', {
+        field,
+        message,
+        next
+      });
       return next;
     });
   };

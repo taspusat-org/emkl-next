@@ -73,20 +73,16 @@ const Page = () => {
 
         if (getAkunpusatLookup.type === 'local') {
           dispatch(
-            setData({ key: 'KETERANGANCOA', data: getAkunpusatLookup.data })
+            setData({ key: 'COA KREDIT', data: getAkunpusatLookup.data })
           );
           const defaultValue =
             getAkunpusatLookup.data
               .map((item: any) => item.default)
               .find((val: any) => val !== null) || '';
 
-          dispatch(
-            setDefault({ key: 'KETERANGANCOA', isdefault: defaultValue })
-          );
+          dispatch(setDefault({ key: 'COA KREDIT', isdefault: defaultValue }));
         }
-        dispatch(
-          setType({ key: 'KETERANGANCOA', type: getAkunpusatLookup.type })
-        );
+        dispatch(setType({ key: 'COA KREDIT', type: getAkunpusatLookup.type }));
 
         if (getAlatbayarLookup.type === 'local') {
           dispatch(

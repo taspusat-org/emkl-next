@@ -22,7 +22,8 @@ const usePermissions = () => {
     'ROLE',
     'USERS',
     'PARAMETER',
-    'KAS GANTUNG'
+    'KAS GANTUNG',
+    'BIAYA'
   ];
 
   useEffect(() => {

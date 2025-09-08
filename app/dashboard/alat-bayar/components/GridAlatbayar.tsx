@@ -642,7 +642,7 @@ const GridAlatbayar = () => {
         name: 'Status Langsung Cair',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
