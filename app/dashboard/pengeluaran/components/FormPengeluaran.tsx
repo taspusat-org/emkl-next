@@ -727,6 +727,7 @@ const FormPengeluaran = ({
                   type="text"
                   disabled={mode === 'view' || mode === 'delete'}
                   value={props.row.perioderefund}
+                  maxLength={10}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) =>
@@ -780,12 +781,12 @@ const FormPengeluaran = ({
 
   const lookUpPropsCoakredit = [
     {
-      columns: [{ key: 'keterangancoa', name: 'KETERANGANCOA' }],
+      columns: [{ key: 'keterangancoa', name: 'COA KREDIT' }],
       labelLookup: 'COA KREDIT LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'KETERANGANCOA',
+      label: 'COA KREDIT',
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,

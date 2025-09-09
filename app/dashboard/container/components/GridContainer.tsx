@@ -1152,6 +1152,7 @@ const GridContainer = () => {
             title: 'Apakah anda yakin ingin menghapus data ini ?',
             variant: 'danger',
             submitText: 'YA',
+            cancelText: 'TIDAK',
             catchOnCancel: true
           });
 
@@ -1219,66 +1220,13 @@ const GridContainer = () => {
       });
     }
   };
+
   const handleView = () => {
     if (selectedRow !== null) {
       setMode('view');
       setPopOver(true);
     }
   };
-
-  // const handleExport = async () => {
-  //   try {
-  //     const { page, limit, ...filtersWithoutLimit } = filters;
-
-  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
-
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
-
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting user data:', error);
-  //   }
-  // };
-
-  // const handleExportBySelect = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
-
-  //   // Mengubah checkedRows menjadi format JSON
-  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-  //   try {
-  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
-
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
-
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting menu data:', error);
-  //     alert({
-  //       title: 'Failed to generate the export. Please try again.',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
 
   const handleReport = async () => {
     try {
@@ -1309,9 +1257,13 @@ const GridContainer = () => {
         .then((module) => {
           const { Stimulsoft } = module;
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahomabd.ttf',
             'Tahoma'
-          );
+          ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +

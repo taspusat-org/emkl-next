@@ -3,29 +3,23 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteBankFn,
-  getBankFn,
-  storeBankFn,
-  updateBankFn
-} from '../apis/bank.api';
+  deleteBiayaFn,
+  getBiayaFn,
+  storeBiayaFn,
+  updateBiayaFn
+} from '../apis/biaya.api';
 import { useAlert } from '../store/client/useAlert';
 import { useFormError } from '../hooks/formErrorContext';
 
-export const useGetBank = (
+export const useGetBiaya = (
   filters: {
     filters?: {
       nama?: string;
       keterangan?: string;
-      keterangancoa?: string;
-      keterangancoagantung?: string;
-      textbank?: string;
+      coa_text?: string;
+      coahut_text?: string;
+      jenisorderan_text?: string;
       text?: string;
-      formatpenerimaantext?: string;
-      formatpenerimaangantungtext?: string;
-      formatpengeluarangantungtext?: string;
-      formatpencairantext?: string;
-      formatrekappenerimaantext?: string;
-      formatrekappengeluarantext?: string;
       created_at?: string;
       updated_at?: string;
     };
@@ -36,18 +30,18 @@ export const useGetBank = (
     search?: string; // Kata kunci pencarian
   } = {}
 ) => {
-  return useQuery(['bank', filters], async () => await getBankFn(filters));
+  return useQuery(['biaya', filters], async () => await getBiayaFn(filters));
 };
 
-export const useCreateBank = () => {
+export const useCreateBiaya = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeBankFn, {
+  return useMutation(storeBiayaFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('biaya');
       // toast({
       //   title: 'Proses Berhasil',
       //   description: 'Data Berhasil Ditambahkan'
@@ -80,14 +74,14 @@ export const useCreateBank = () => {
   });
 };
 
-export const useDeleteBank = () => {
+export const useDeleteBiaya = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteBankFn, {
+  return useMutation(deleteBiayaFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('biaya');
       // toast({
       //   title: 'Proses Berhasil.',
       //   description: 'Data Berhasil Dihapus.'
@@ -114,14 +108,14 @@ export const useDeleteBank = () => {
     }
   });
 };
-export const useUpdateBank = () => {
+export const useUpdateBiayak = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateBankFn, {
+  return useMutation(updateBiayaFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('bank');
+      void queryClient.invalidateQueries('biaya');
       // toast({
       //   title: 'Proses Berhasil.',
       //   description: 'Data Berhasil Diubah.'

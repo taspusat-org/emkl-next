@@ -50,7 +50,7 @@ const FormShipper = ({
     {
       columns: [{ key: 'nama', name: 'SHIPPER ASAL' }],
       labelLookup: 'SHIPPER ASAL LOOKUP',
-      required: true,
+      required: false,
       selectedRequired: false,
       endpoint: 'shipper',
       label: 'SHIPPER ASAL',
@@ -58,8 +58,7 @@ const FormShipper = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'nama',
-      useReduxStore: true
+      postData: 'nama'
     }
   ];
 
@@ -75,8 +74,7 @@ const FormShipper = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'nama',
-      useReduxStore: true
+      postData: 'nama'
     }
   ];
 
@@ -92,79 +90,83 @@ const FormShipper = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
   const lookUpPropsCOA = [
     {
       columns: [
-        { key: 'keterangancoa', name: 'KETERANGANCOA' },
-        { key: 'coa', name: 'COA' }
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
       ],
       labelLookup: 'COA LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'akunpusat',
-      singleColumn: true,
+      label: 'coa',
+      singleColumn: false,
       pageSize: 20,
       postData: 'keterangancoa',
       dataToPost: 'coa',
-      showOnButton: true,
-      useReduxStore: true
+      showOnButton: true
     }
   ];
 
   const lookUpPropsCOAPiutang = [
     {
-      columns: [{ key: 'keterangancoa', name: 'COA PIUTANG' }],
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
       labelLookup: 'COA PIUTANG LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'COA PIUTANG',
-      singleColumn: true,
+      label: 'coapiutang',
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'keterangancoa',
-      dataToPost: 'coa',
-      useReduxStore: true
+      dataToPost: 'coa'
     }
   ];
 
   const lookUpPropsCOAHutang = [
     {
-      columns: [{ key: 'keterangancoa', name: 'COA HUTANG' }],
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
       labelLookup: 'COA HUTANG LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'COA HUTANG',
-      singleColumn: true,
+      label: 'coahutang',
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'keterangancoa',
-      dataToPost: 'coa',
-      useReduxStore: true
+      dataToPost: 'coa'
     }
   ];
 
   const lookUpPropsCOAGiro = [
     {
-      columns: [{ key: 'keterangancoa', name: 'COA GIRO' }],
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
       labelLookup: 'COA GIRO LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'COA GIRO',
-      singleColumn: true,
+      label: 'coagiro',
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'keterangancoa',
-      dataToPost: 'coa',
-      useReduxStore: true
+      dataToPost: 'coa'
     }
   ];
 
@@ -180,8 +182,7 @@ const FormShipper = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'nama',
-      dataToPost: 'id',
-      useReduxStore: true
+      dataToPost: 'id'
     }
   ];
 
@@ -404,7 +405,7 @@ const FormShipper = ({
                           key={index}
                           {...props}
                           lookupValue={(value: any) => {
-                            forms.setValue('coa', Number(value));
+                            forms.setValue('coa', value);
                           }}
                           name="coa"
                           forms={forms}
@@ -430,7 +431,7 @@ const FormShipper = ({
                           key={index}
                           {...props}
                           lookupValue={(value: any) => {
-                            forms.setValue('coapiutang', Number(value));
+                            forms.setValue('coapiutang', value);
                           }}
                           name="coapiutang"
                           forms={forms}
@@ -456,7 +457,7 @@ const FormShipper = ({
                           key={index}
                           {...props}
                           lookupValue={(value: any) => {
-                            forms.setValue('coahutang', Number(value));
+                            forms.setValue('coahutang', value);
                           }}
                           name="coahutang"
                           forms={forms}
@@ -547,13 +548,6 @@ const FormShipper = ({
                   <FormField
                     name="email"
                     control={forms.control}
-                    rules={{
-                      required: 'Email wajib diisi',
-                      pattern: {
-                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                        message: 'Format email tidak valid'
-                      }
-                    }}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
@@ -755,7 +749,7 @@ const FormShipper = ({
                           key={index}
                           {...props}
                           lookupValue={(value: any) => {
-                            forms.setValue('coagiro', Number(value));
+                            forms.setValue('coagiro', value);
                           }}
                           name="coagiro"
                           forms={forms}
@@ -1491,10 +1485,7 @@ const FormShipper = ({
 
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
+                      <FormLabel className="text-sm font-semibold text-gray-700">
                         SHIPPER ASAL
                       </FormLabel>
                     </div>

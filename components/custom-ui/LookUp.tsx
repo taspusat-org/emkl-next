@@ -1148,7 +1148,7 @@ export default function LookUp({
             Untuk menghindari error "TypeError: Cannot read properties of null (reading 'control')",
             kita perlu memastikan bahwa props 'forms' dan 'forms.control' tidak null/undefined sebelum menggunakan FormField.
           */}
-          {forms && forms.control ? (
+          {forms ? (
             <FormField
               name={String(name) ?? ''}
               control={forms?.control}
@@ -1210,7 +1210,7 @@ export default function LookUp({
                       )}
                     </div>
                   </FormControl>
-                  {name && forms && inputValue === '' ? (
+                  {name && forms ? (
                     <FormMessage />
                   ) : (
                     <p className="text-[0.8rem] text-destructive">

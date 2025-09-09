@@ -8,11 +8,11 @@ export interface IShipper {
   keterangan: string | null;
   contactperson: string | null;
   alamat: string | null;
-  coa: number;
+  coa: string;
   coa_text: string | null;
-  coapiutang: number;
+  coapiutang: string;
   coapiutang_text: string | null;
-  coahutang: number;
+  coahutang: string;
   coahutang_text: string | null;
   kota: string | null;
   kodepos: string | null;
@@ -24,7 +24,7 @@ export interface IShipper {
   creditterm: number;
   credittermplus: number;
   npwp: string;
-  coagiro: number | null;
+  coagiro: string;
   coagiro_text: string | null;
   ppn: string;
   titipke: string | null;

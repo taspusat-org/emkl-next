@@ -53,45 +53,45 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
   const lookUpPropsCOA = [
     {
       columns: [
-        { key: 'keterangancoa', name: 'KETERANGANCOA' },
-        { key: 'coa', name: 'COA' }
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
       ],
       labelLookup: 'COA LOOKUP',
       required: false,
       selectedRequired: false,
       endpoint: 'akunpusat',
       label: 'AKUNPUSAT',
-      singleColumn: true,
+      singleColumn: false,
       pageSize: 20,
       postData: 'keterangancoa',
       dataToPost: 'coa',
-      showOnButton: true,
-      useReduxStore: true
+      showOnButton: true
     }
   ];
 
   const lookUpPropsCOAGantung = [
     {
-      columns: [{ key: 'keterangancoa', name: 'KETERANGANCOAGANTUNG' }],
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
       labelLookup: 'COA GANTUNG LOOKUP',
       required: false,
       selectedRequired: false,
       endpoint: 'akunpusat',
       label: 'COA GANTUNG',
-      singleColumn: true,
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'keterangancoa',
-      dataToPost: 'coa',
-      useReduxStore: true
+      dataToPost: 'coa'
     }
   ];
 
@@ -107,8 +107,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -124,8 +123,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -141,8 +139,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -158,8 +155,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -176,8 +172,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -194,8 +189,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -211,8 +205,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -228,8 +221,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -246,8 +238,7 @@ const FormBank = ({
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text',
-      useReduxStore: true
+      postData: 'text'
     }
   ];
 
@@ -427,7 +418,7 @@ const FormBank = ({
                           lookupValue={(value: any) => {
                             forms.setValue('coa', value);
                           }}
-                          lookupNama={forms.getValues('keterangancoa')}
+                          lookupNama={forms.getValues('coa_text')}
                           disabled={['view', 'delete'].includes(mode)}
                         />
                       ))}

@@ -12,9 +12,18 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import FormBiaya from './FormBiaya';
 import { useQueryClient } from 'react-query';
-import { MenuInput, menuSchema } from '@/lib/validations/menu.validation';
-import { useDeleteMenu, useUpdateMenu } from '@/lib/server/useMenu';
+import { BiayaInput, BiayaSchema } from '@/lib/validations/biaya.validation';
+import { Checkbox } from '@/components/ui/checkbox';
+
+import {
+  useCreateBiaya,
+  useDeleteBiaya,
+  useGetBiaya,
+  useUpdateBiayak
+} from '@/lib/server/useBiaya';
+
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
@@ -30,69 +39,48 @@ import {
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter } from 'next/navigation';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { HiDocument } from 'react-icons/hi2';
-import {
-  setDetailDataReport,
-  setReportData
-} from '@/lib/store/reportSlice/reportSlice';
-import { useDispatch } from 'react-redux';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useAlert } from '@/lib/store/client/useAlert';
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import IcClose from '@/public/image/x.svg';
-import ReportDesignerMenu from '@/app/reports/menu/page';
 
-import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
-import FormManagerMarketing from './FormPengeluaran';
-import {
-  PengeluaranHeader,
-  filterPengeluaran
-} from '@/lib/types/pengeluaran.type';
-import {
-  PengeluaranHeaderInput,
-  pengeluaranHeaderSchema
-} from '@/lib/validations/pengeluaran.validation';
-import {
-  useCreatePengeluaran,
-  useDeletePengeluaran,
-  useGetPengeluaranHeader,
-  useUpdatePengeluaran
-} from '@/lib/server/usePengeluaran';
-
+import { IBiaya } from '@/lib/types/biaya.type';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
-import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
-import { formatCurrency, formatDateToDDMMYYYY } from '@/lib/utils';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { exportBiayaFn, getBiayaFn } from '@/lib/apis/biaya.api';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import {
-  getPengeluaranDetailFn,
-  getPengeluaranHeaderByIdFn,
-  getPengeluaranHeaderFn
-} from '@/lib/apis/pengeluaranheader.api';
-import { numberToTerbilang } from '@/lib/utils/terbilang';
+import { useDispatch } from 'react-redux';
+import { useAlert } from '@/lib/store/client/useAlert';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import IcClose from '@/public/image/x.svg';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterPengeluaran;
+
+  filters: {
+    nama: string;
+    keterangan: string;
+    created_at: string;
+    updated_at: string;
+
+    coa: string;
+    coa_text: string;
+
+    coahut: string;
+    coahut_text: string;
+
+    jenisorderan_id: string;
+    jenisorderan_text: string;
+
+    statusaktif: string;
+    text: string;
+  };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
@@ -101,28 +89,28 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridPengeluaranHeader = () => {
+
+const GridBiaya = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createPengeluaran, isLoading: isLoadingCreate } =
-    useCreatePengeluaran();
-  const { mutateAsync: updateManagerMarketing, isLoading: isLoadingUpdate } =
-    useUpdatePengeluaran();
+  const { mutateAsync: createBiaya, isLoading: isLoadingCreate } =
+    useCreateBiaya();
+  const { mutateAsync: updateBiaya, isLoading: isLoadingUpdate } =
+    useUpdateBiayak();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteManagerMarketing, isLoading: isLoadingDelete } =
-    useDeletePengeluaran();
+  const { mutateAsync: deleteBiaya, isLoading: isLoadingDelete } =
+    useDeleteBiaya();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
-
   const [mode, setMode] = useState<string>('');
 
   const [dataGridKey, setDataGridKey] = useState(0);
@@ -135,7 +123,7 @@ const GridPengeluaranHeader = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<PengeluaranHeader[]>([]);
+  const [rows, setRows] = useState<IBiaya[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -143,35 +131,29 @@ const GridPengeluaranHeader = () => {
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
-  const { user, cabang_id, token } = useSelector(
-    (state: RootState) => state.auth
-  );
-  const getLookup = useSelector((state: RootState) => state.lookup.data);
-  const forms = useForm<PengeluaranHeaderInput>({
+  const { user, cabang_id } = useSelector((state: RootState) => state.auth);
+
+  const forms = useForm<BiayaInput>({
     resolver:
-      mode === 'delete' ? undefined : zodResolver(pengeluaranHeaderSchema),
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(BiayaSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nobukti: '',
-      tglbukti: '',
-      relasi_id: null,
-      relasi_text: '',
-      keterangan: null,
-      bank_id: null,
-      bank_text: '',
-      postingdari: '',
-      coakredit: null,
-      coakredit_text: '',
-      dibayarke: '',
-      alatbayar_id: null,
-      alatbayar_text: null,
-      nowarkat: '',
-      tgljatuhtempo: '',
-      daftarbank_id: null,
-      daftarbank_text: '',
-      statusformat: '',
+      nama: '',
+      keterangan: '',
 
-      details: []
+      coa: '',
+      coa_text: '',
+
+      coahut: '',
+      coahut_text: '',
+
+      jenisorderan_id: 1,
+      jenisorderan_text: '',
+
+      statusaktif: 1,
+      text: ''
     }
   });
   const {
@@ -179,29 +161,31 @@ const GridPengeluaranHeader = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  const gridRef = useRef<DataGridHandle>(null);
   const router = useRouter();
-  const { selectedDate, selectedDate2, selectedBank, onReload } = useSelector(
-    (state: RootState) => state.filter
-  );
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
-    filters: {
-      ...filterPengeluaran
-    },
     search: '',
-    sortBy: 'nobukti',
+    filters: {
+      nama: '',
+      keterangan: '',
+      created_at: '',
+      updated_at: '',
+      coa: '',
+      coa_text: '',
+      coahut: '',
+      coahut_text: '',
+      jenisorderan_id: '',
+      jenisorderan_text: '',
+      statusaktif: '',
+      text: ''
+    },
+    sortBy: 'nama',
     sortDirection: 'asc'
   });
-
+  const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-
-  const {
-    data: allData,
-    isLoading: isLoadingData,
-    refetch
-  } = useGetPengeluaranHeader({
+  const { data: allBiaya, isLoading: isLoadingBiaya } = useGetBiaya({
     ...filters,
     page: currentPage
   });
@@ -243,6 +227,21 @@ const GridPengeluaranHeader = () => {
       ref?.focus();
     }, 200);
 
+    setSelectedRow(0);
+  };
+  const handleDropdownFilterChange = (
+    colKey: keyof Filter['filters'],
+    value: string
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: value },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
     setSelectedRow(0);
   };
 
@@ -296,10 +295,24 @@ const GridPengeluaranHeader = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterPengeluaran,
+      filters: {
+        nama: '',
+        keterangan: '',
+        created_at: '',
+        updated_at: '',
+        coa: '',
+        coa_text: '',
+        coahut: '',
+        coahut_text: '',
+        jenisorderan_id: '',
+        jenisorderan_text: '',
+        statusaktif: '',
+        text: ''
+      },
       search: searchValue,
       page: 1
     }));
+
     setCheckedRows(new Set());
     setIsAllSelected(false);
     setTimeout(() => {
@@ -337,11 +350,7 @@ const GridPengeluaranHeader = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      requestAnimationFrame(() => setFocus('tglbukti'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
+
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -375,8 +384,9 @@ const GridPengeluaranHeader = () => {
     }));
     setInputValue('');
   };
+  console.log(forms.getValues());
 
-  const columns = useMemo((): Column<PengeluaranHeader>[] => {
+  const columns = useMemo((): Column<IBiaya>[] => {
     return [
       {
         key: 'nomor',
@@ -397,7 +407,20 @@ const GridPengeluaranHeader = () => {
                 setFilters({
                   ...filters,
                   search: '',
-                  filters: filterPengeluaran
+                  filters: {
+                    nama: '',
+                    keterangan: '',
+                    created_at: '',
+                    updated_at: '',
+                    coa: '',
+                    coa_text: '',
+                    coahut: '',
+                    coahut_text: '',
+                    jenisorderan_id: '',
+                    jenisorderan_text: '',
+                    statusaktif: '',
+                    text: ''
+                  }
                 }),
                   setInputValue('');
                 setTimeout(() => {
@@ -424,7 +447,7 @@ const GridPengeluaranHeader = () => {
         width: 50,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
@@ -436,7 +459,7 @@ const GridPengeluaranHeader = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: PengeluaranHeader }) => (
+        renderCell: ({ row }: { row: IBiaya }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -448,8 +471,8 @@ const GridPengeluaranHeader = () => {
       },
 
       {
-        key: 'nobukti',
-        name: 'nobukti',
+        key: 'nama',
+        name: 'Nama',
         resizable: true,
         draggable: true,
         width: 300,
@@ -458,21 +481,21 @@ const GridPengeluaranHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nobukti')}
+              onClick={() => handleSort('nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nobukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                nomor bukti
+                Nama
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'nobukti' &&
+                {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'nobukti' &&
+                ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -483,24 +506,22 @@ const GridPengeluaranHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['nobukti'] = el;
+                  inputColRefs.current['nama'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.nobukti
-                    ? filters.filters.nobukti.toUpperCase()
-                    : ''
+                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
                 }
                 type="text"
                 onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nobukti', value);
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('nama', value);
                 }}
               />
-              {filters.filters.nobukti && (
+              {filters.filters.nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nobukti', '')}
+                  onClick={() => handleColumnFilterChange('nama', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -510,155 +531,11 @@ const GridPengeluaranHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.nobukti || '';
+          const columnFilter = filters.filters.nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.nobukti || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'tglbukti',
-        name: 'Tanggal Bukti',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('tglbukti')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'tglbukti' ? 'text-red-500' : 'font-normal'
-                }`}
-              >
-                Tanggal Bukti
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'tglbukti' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'tglbukti' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['tglbukti'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.tglbukti.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('tglbukti', value);
-                }}
-              />
-              {filters.filters.tglbukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tglbukti', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.tglbukti || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tglbukti || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'relasi_id',
-        name: 'relasi',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('relasi_id')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'relasi_id'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Relasi
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'relasi_id' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'relasi_id' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['relasi_text'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.relasi_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('relasi_text', value);
-                }}
-              />
-              {filters.filters.relasi_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('relasi_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.relasi_text || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.relasi_text || '',
+                props.row.nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -671,12 +548,12 @@ const GridPengeluaranHeader = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
+        width: 200,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
+              className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
               onContextMenu={handleContextMenu}
             >
@@ -701,14 +578,18 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.keterangan
+                    ? filters.filters.keterangan.toUpperCase()
+                    : ''
+                }
+                type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
                   handleColumnFilterChange('keterangan', value);
@@ -729,7 +610,7 @@ const GridPengeluaranHeader = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.keterangan || '',
                 filters.search,
@@ -740,31 +621,31 @@ const GridPengeluaranHeader = () => {
         }
       },
       {
-        key: 'bank_id',
-        name: 'bank_id',
+        key: 'coa',
+        name: 'COA',
         resizable: true,
         draggable: true,
+        width: 200,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('bank_id')}
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('coa_text')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'bank_id' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'coa_text' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                BANK
+                COA
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'bank_id' &&
+                {filters.sortBy === 'coa_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'bank_id' &&
+                ) : filters.sortBy === 'coa_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -772,23 +653,22 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['bank_text'] = el;
+                  inputColRefs.current['coa_text'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.bank_text.toUpperCase() || ''}
+                value={filters.filters.coa_text.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('bank_text', value);
+                  handleColumnFilterChange('coa_text', value);
                 }}
               />
-              {filters.filters.bank_text && (
+              {filters.filters.coa_text && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('bank_text', '')}
+                  onClick={() => handleColumnFilterChange('coa_text', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -798,11 +678,11 @@ const GridPengeluaranHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.bank_text || '';
+          const columnFilter = filters.filters.coa_text || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.bank_text || '',
+                props.row.coa_text || '',
                 filters.search,
                 columnFilter
               )}
@@ -811,33 +691,33 @@ const GridPengeluaranHeader = () => {
         }
       },
       {
-        key: 'postingdari',
-        name: 'postingdari',
+        key: 'coahut',
+        name: 'COA HUTANG',
         resizable: true,
         draggable: true,
+        width: 200,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('postingdari')}
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('coahut_text')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'postingdari'
+                  filters.sortBy === 'coahut_text'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                posting dari
+                COA HUTANG
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'postingdari' &&
+                {filters.sortBy === 'coahut_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'postingdari' &&
+                ) : filters.sortBy === 'coahut_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -845,23 +725,22 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['postingdari'] = el;
+                  inputColRefs.current['coahut_text'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.postingdari.toUpperCase() || ''}
+                value={filters.filters.coahut_text.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('postingdari', value);
+                  handleColumnFilterChange('coahut_text', value);
                 }}
               />
-              {filters.filters.postingdari && (
+              {filters.filters.coahut_text && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('postingdari', '')}
+                  onClick={() => handleColumnFilterChange('coahut_text', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -871,11 +750,11 @@ const GridPengeluaranHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.postingdari || '';
+          const columnFilter = filters.filters.coahut_text || '';
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.postingdari || '',
+                props.row.coahut_text || '',
                 filters.search,
                 columnFilter
               )}
@@ -883,35 +762,34 @@ const GridPengeluaranHeader = () => {
           );
         }
       },
-
       {
-        key: 'coakredit',
-        name: 'coakredit',
+        key: 'jenisorderan_id',
+        name: 'Jenis Orderan',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('coakredit')}
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('jenisorderan_id')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coakredit'
+                  filters.sortBy === 'jenisorderan_id'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                coa kredit
+                Jenis Orderan
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'coakredit' &&
+                {filters.sortBy === 'jenisorderan_id' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'coakredit' &&
+                ) : filters.sortBy === 'jenisorderan_id' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -919,72 +797,72 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['coakredit_text'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coakredit_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coakredit_text', value);
-                }}
-              />
-              {filters.filters.coakredit_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coakredit_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
+              <div className="relative h-[50%] w-full px-1">
+                <Input
+                  ref={(el) => {
+                    inputColRefs.current['jenisorderan_text'] = el;
+                  }}
+                  className="filter-input z-[999999] h-8 rounded-none"
+                  value={filters.filters.jenisorderan_text.toUpperCase() || ''}
+                  onChange={(e) => {
+                    const value = e.target.value.toUpperCase();
+                    handleColumnFilterChange('jenisorderan_text', value);
+                  }}
+                />
+                {filters.filters.jenisorderan_text && (
+                  <button
+                    className="absolute right-2 top-2 text-xs text-gray-500"
+                    onClick={() =>
+                      handleColumnFilterChange('jenisorderan_text', '')
+                    }
+                    type="button"
+                  >
+                    <FaTimes />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.coakredit_text || '';
+          const columnFilter = filters.filters.jenisorderan_text || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coakredit_text || '',
-                filters.search,
-                columnFilter
-              )}
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {props.row.jenisorderan_text || ''}
             </div>
           );
         }
       },
+
       {
-        key: 'dibayarke',
-        name: 'dibayarke',
+        key: 'statusaktif',
+        name: 'Status Aktif',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('dibayarke')}
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusaktif')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'dibayarke'
+                  filters.sortBy === 'statusaktif'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
               >
-                dibayar ke
+                Status Aktif
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'dibayarke' &&
+                {filters.sortBy === 'statusaktif' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'dibayarke' &&
+                ) : filters.sortBy === 'statusaktif' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -992,335 +870,42 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['dibayarke'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.dibayarke.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('dibayarke', value);
-                }}
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
               />
-              {filters.filters.dibayarke && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('dibayarke', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.dibayarke || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.dibayarke || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
+          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
 
-      {
-        key: 'alatbayar_id',
-        name: 'alatbayar_id',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('alatbayar_id')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'alatbayar_id'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                alat bayar
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'alatbayar_id' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'alatbayar_id' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['alatbayar_text'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.alatbayar_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('alatbayar_text', value);
-                }}
-              />
-              {filters.filters.alatbayar_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('alatbayar_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.alatbayar_text || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.alatbayar_text || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'nowarkat',
-        name: 'nowarkat',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('nowarkat')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'nowarkat' ? 'text-red-500' : 'font-normal'
-                }`}
-              >
-                nomor warkat
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'nowarkat' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'nowarkat' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['nowarkat'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.nowarkat.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('nowarkat', value);
-                }}
-              />
-              {filters.filters.nowarkat && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nowarkat', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.nowarkat || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nowarkat || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'tgljatuhtempo',
-        name: 'tgljatuhtempo',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('tgljatuhtempo')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'tgljatuhtempo'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                Tanggal Jatuh Tempo
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'tgljatuhtempo' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'tgljatuhtempo' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['tgljatuhtempo'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.tgljatuhtempo.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('tgljatuhtempo', value);
-                }}
-              />
-              {filters.filters.tgljatuhtempo && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tgljatuhtempo', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.tgljatuhtempo || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tgljatuhtempo || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'daftarbank_id',
-        name: 'daftarbank_id',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('daftarbank_id')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'daftarbank_id'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                daftar bank
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'daftarbank_id' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'daftarbank_id' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['daftarbank_text'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.daftarbank_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('daftarbank_text', value);
-                }}
-              />
-              {filters.filters.daftarbank_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('daftarbank_text', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.daftarbank_text || '';
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.daftarbank_text || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
+            );
+          }
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
@@ -1472,7 +1057,7 @@ const GridPengeluaranHeader = () => {
         }
       }
     ];
-  }, [filters, rows, checkedRows, getLookup]);
+  }, [filters, checkedRows, isAllSelected, rows]);
 
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
@@ -1490,12 +1075,7 @@ const GridPengeluaranHeader = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridPengeluaranHeader',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridBiaya', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1510,12 +1090,7 @@ const GridPengeluaranHeader = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(
-        user.id,
-        'GridPengeluaranHeader',
-        [...newOrder],
-        columnsWidth
-      );
+      saveGridConfig(user.id, 'GridBiaya', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1532,7 +1107,7 @@ const GridPengeluaranHeader = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingData || !hasMore || rows.length === 0) return;
+    if (isLoadingBiaya || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1559,17 +1134,15 @@ const GridPengeluaranHeader = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<PengeluaranHeader>) {
+  function handleCellClick(args: { row: IBiaya }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    const foundRow = rows.find((r) => r.id === clickedRow?.id);
-    if (rowIndex !== -1 && foundRow) {
+    if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
-      dispatch(setHeaderData(foundRow));
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<PengeluaranHeader>,
+    args: CellKeyDownArgs<IBiaya>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1622,8 +1195,9 @@ const GridPengeluaranHeader = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    clearError();
+    console.log('sdadsakjhdjkhsa');
     dispatch(setClearLookup(true));
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1634,9 +1208,7 @@ const GridPengeluaranHeader = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(
-            `/redis/get/managermarketing-allItems`
-          );
+          const response = await api2.get(`/redis/get/biaya-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1662,18 +1234,14 @@ const GridPengeluaranHeader = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (
-    values: PengeluaranHeaderInput,
-    keepOpenModal = false
-  ) => {
+  const onSubmit = async (values: BiayaInput, keepOpenModal = false) => {
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
-
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteManagerMarketing(selectedRowId as unknown as string, {
+          await deleteBiaya(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1682,15 +1250,12 @@ const GridPengeluaranHeader = () => {
               if (selectedRow === 0) {
                 setSelectedRow(selectedRow);
                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-              } else if (selectedRow === rows.length - 1) {
+              } else {
                 setSelectedRow(selectedRow - 1);
                 gridRef?.current?.selectCell({
                   rowIdx: selectedRow - 1,
                   idx: 1
                 });
-              } else {
-                setSelectedRow(selectedRow);
-                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
               }
             }
           });
@@ -1698,13 +1263,9 @@ const GridPengeluaranHeader = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createPengeluaran(
+        const newOrder = await createBiaya(
           {
             ...values,
-            details: values.details.map((detail: any) => ({
-              ...detail,
-              id: 0 // Ubah id setiap detail menjadi 0
-            })),
             ...filters // Kirim filter ke body/payload
           },
           {
@@ -1717,16 +1278,17 @@ const GridPengeluaranHeader = () => {
         }
         return;
       }
-
       if (selectedRowId && mode === 'edit') {
-        await updateManagerMarketing(
+        await updateBiaya(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
-          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+          {
+            onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
+          }
         );
-        queryClient.invalidateQueries('managermarketing');
+        queryClient.invalidateQueries('biaya');
       }
     } catch (error) {
       console.error(error);
@@ -1735,27 +1297,19 @@ const GridPengeluaranHeader = () => {
     }
   };
 
-  const handleEdit = async () => {
+  const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-
       setPopOver(true);
       setMode('edit');
     }
   };
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-
-      try {
-        setMode('delete');
-        setPopOver(true);
-      } catch (error) {
-        console.error('Error during delete validation:', error);
-      }
+      setMode('delete');
+      setPopOver(true);
     }
   };
-
   const handleView = () => {
     if (selectedRow !== null) {
       setMode('view');
@@ -1763,29 +1317,63 @@ const GridPengeluaranHeader = () => {
     }
   };
 
-  const handleReport = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    if (checkedRows.size > 1) {
-      alert({
-        title: 'HANYA BISA MEMILIH SATU DATA!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    const rowId = Array.from(checkedRows)[0];
+  const handleExport = async () => {
+    try {
+      const { page, limit, ...filtersWithoutLimit } = filters;
 
+      const response = await exportBiayaFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+      // Buat link untuk mendownload file
+      const link = document.createElement('a');
+      const url = window.URL.createObjectURL(response);
+      link.href = url;
+      link.download = `laporan_biaya${Date.now()}.xlsx`; // Nama file yang diunduh
+      link.click(); // Trigger download
+
+      // Revoke URL setelah download
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting biaya data:', error);
+    }
+  };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
+  const handleReport = async () => {
     try {
       dispatch(setProcessing());
-
-      //TANGGAL
       const now = new Date();
       const pad = (n: any) => n.toString().padStart(2, '0');
       const tglcetak = `${pad(now.getDate())}-${pad(
@@ -1793,42 +1381,21 @@ const GridPengeluaranHeader = () => {
       )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
-
       const { page, limit, ...filtersWithoutLimit } = filters;
-      const response = await getPengeluaranHeaderByIdFn(
-        rowId,
-        filtersWithoutLimit
-      );
-      if (!response.data?.length) {
-        alert({
-          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
-          variant: 'danger',
-          submitText: 'OK'
-        });
-        return;
-      }
-
-      const responseDetail = await getPengeluaranDetailFn(rowId);
-      const totalNominal = responseDetail.data.reduce(
-        (sum: number, i: any) => sum + Number(i.nominal || 0),
-        0
-      );
-
-      const reportRows = response.data.map((row: any) => ({
+      const response = await getBiayaFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Pengeluaran',
+        judullaporan: 'Laporan Biaya',
         usercetak: user.username,
-        tglcetak,
-        terbilang: numberToTerbilang(totalNominal),
-        judul: `Bukti Pengeluaran KAS EMKL`
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
 
       sessionStorage.setItem(
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataId', String(rowId));
-      // Dynamically import Stimulsoft and generate the PDF report
+
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
           const { Stimulsoft } = module;
@@ -1838,7 +1405,7 @@ const GridPengeluaranHeader = () => {
           ); // Regular
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahomabd.ttf',
-            'TahomaBD'
+            'Tahoma'
           ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
@@ -1853,15 +1420,13 @@ const GridPengeluaranHeader = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanPengeluaran.mrt');
+          report.loadFile('/reports/LaporanBiaya.mrt');
           report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows, detail: responseDetail.data });
-
+          dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
           report.dictionary.synchronize();
 
           // Render the report asynchronously
-
           report.renderAsync(() => {
             // Export the report to PDF asynchronously
             report.exportDocumentAsync((pdfData: any) => {
@@ -1874,7 +1439,7 @@ const GridPengeluaranHeader = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/pengeluaran', '_blank');
+              window.open('/reports/biaya', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1888,70 +1453,47 @@ const GridPengeluaranHeader = () => {
     }
   };
 
-  // const handleReport = async () => {
-  //   const rowId = Array.from(checkedRows)[0];
-  //   const now = new Date();
-  //   const pad = (n: any) => n.toString().padStart(2, '0');
-  //   const tglcetak = `${pad(now.getDate())}-${pad(
-  //     now.getMonth() + 1
-  //   )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-  //     now.getMinutes()
-  //   )}:${pad(now.getSeconds())}`;
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   dispatch(setProcessing()); // Show loading overlay when the request starts
-
-  //   try {
-  //     const response = await getPengeluaranHeaderByIdFn(
-  //       rowId,
-  //       filtersWithoutLimit
-  //     );
-
-  //     const responseDetail = await getPengeluaranDetailFn(rowId);
-  //     const totalNominal = responseDetail.data.reduce(
-  //       (sum: number, i: any) => sum + Number(i.nominal || 0),
-  //       0
-  //     );
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'DATA TIDAK TERSEDIA!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //     } else {
-  //       const reportRows = response.data.map((row: any) => ({
-  //         ...row,
-  //         judullaporan: 'Laporan Pengeluaran',
-  //         usercetak: user.username,
-  //         tglcetak,
-  //         terbilang: numberToTerbilang(totalNominal),
-  //         judul: `Bukti Pengeluaran KAS EMKL`
-  //       }));
-  //       console.log('reportRows', reportRows);
-  //       dispatch(setReportData(reportRows));
-  //       dispatch(setDetailDataReport(responseDetail.data));
-  //       window.open('/reports/designer', '_blank');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
   //     alert({
-  //       title: 'Terjadi kesalahan saat memuat data!',
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
   //       variant: 'danger',
   //       submitText: 'OK'
   //     });
-  //   } finally {
-  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
   //   }
   // };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: PengeluaranHeader) {
+  function getRowClass(row: IBiaya) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: PengeluaranHeader) {
+  function rowKeyGetter(row: IBiaya) {
     return row.id;
   }
 
@@ -1988,7 +1530,7 @@ const GridPengeluaranHeader = () => {
 
       setPopOver(true);
 
-      forms.reset();
+      // forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
     }
@@ -2042,12 +1584,32 @@ const GridPengeluaranHeader = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridPengeluaranHeader',
+        'GridBiaya',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
     }
   };
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        clearError();
+        dispatch(clearOpenName());
+      }
+    };
+
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
 
   const loadGridConfig = async (userId: string, gridName: string) => {
     try {
@@ -2127,7 +1689,7 @@ const GridPengeluaranHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPengeluaranHeader');
+    loadGridConfig(user.id, 'GridBiaya');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -2136,59 +1698,16 @@ const GridPengeluaranHeader = () => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-      dispatch(setHeaderData(rows[0]));
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  useEffect(() => {
-    // Cek jika ini pertama kali load dan update filter dengan tanggal yang dipilih
-    if (isFirstLoad) {
-      if (
-        selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai ||
-        selectedBank !== filters.filters.bank_id
-      ) {
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            bank_id: selectedBank
-          }
-        }));
-      }
-    }
-    // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
-    else if (
-      selectedDate !== filters.filters.tglDari ||
-      selectedDate2 !== filters.filters.tglSampai ||
-      (selectedBank !== filters.filters.bank_id && onReload && !isFirstLoad)
-    ) {
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        filters: {
-          ...prevFilters.filters,
-          tglDari: selectedDate,
-          tglSampai: selectedDate2,
-          bank_id: selectedBank
-        }
-      }));
-    }
-  }, [
-    selectedDate,
-    selectedDate2,
-    selectedBank,
-    filters,
-    onReload,
-    isFirstLoad
-  ]);
-  useEffect(() => {
-    if (!allData || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allData.data || [];
+  useEffect(() => {
+    if (!allBiaya || isFetchingManually || isDataUpdated) return;
 
-    setRows((prevRows) => {
+    const newRows = allBiaya.data || [];
+
+    setRows((prevRows: any) => {
       // Reset data if filter changes (first page)
       if (currentPage === 1 || filters !== prevFilters) {
         setCurrentPage(1); // Reset currentPage to 1
@@ -2204,34 +1723,29 @@ const GridPengeluaranHeader = () => {
       return prevRows;
     });
 
-    if (allData.pagination.totalPages) {
-      setTotalPages(allData.pagination.totalPages);
+    if (allBiaya.pagination.totalPages) {
+      setTotalPages(allBiaya.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allData, currentPage, filters, isFetchingManually, isDataUpdated]);
-  useEffect(() => {
-    if (rows.length > 0 && selectedRow !== null) {
-      const selectedRowData = rows[selectedRow];
-      dispatch(setHeaderData(selectedRowData)); // Pastikan data sudah benar
-    }
-  }, [rows, selectedRow, dispatch]);
+  }, [allBiaya, currentPage, filters, isFetchingManually, isDataUpdated]);
+
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-  // useEffect(() => {
-  //   if (gridRef.current && dataGridKey) {
-  //     setTimeout(() => {
-  //       gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-  //       setIsFirstLoad(false);
-  //     }, 0);
-  //   }
-  // }, [dataGridKey]);
+  useEffect(() => {
+    if (gridRef.current && dataGridKey) {
+      setTimeout(() => {
+        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
+        setIsFirstLoad(false);
+      }, 0);
+    }
+  }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
@@ -2261,37 +1775,33 @@ const GridPengeluaranHeader = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      const row = rows[selectedRow];
-      forms.setValue('nobukti', row.nobukti);
-      forms.setValue('tglbukti', row.tglbukti);
-      forms.setValue('relasi_id', Number(row.relasi_id));
-      forms.setValue('relasi_text', row.relasi_text);
-      forms.setValue('keterangan', row.keterangan);
-      forms.setValue('bank_id', Number(row.bank_id));
-      forms.setValue('bank_text', row.bank_text);
-      forms.setValue('postingdari', row.postingdari);
-      forms.setValue('coakredit', row.coakredit);
-      forms.setValue('coakredit_text', row.coakredit_text);
-      forms.setValue('dibayarke', row.dibayarke);
-      forms.setValue('alatbayar_id', Number(row.alatbayar_id));
-      forms.setValue('alatbayar_text', row.alatbayar_text);
-      forms.setValue('nowarkat', row.nowarkat);
-      forms.setValue('tgljatuhtempo', row.tgljatuhtempo);
-      forms.setValue('daftarbank_id', Number(row.daftarbank_id));
-      forms.setValue('daftarbank_text', row.daftarbank_text);
-      forms.setValue('statusformat', row.statusformat);
-      forms.setValue('details', []);
-    } else {
-      const currentDate = new Date();
-      // Clear or set defaults when adding a new record
-      forms.setValue('relasi_text', '');
-      forms.setValue('bank_text', '');
-      forms.setValue('coakredit_text', '');
-      forms.setValue('alatbayar_text', '');
-      forms.setValue('daftarbank_text', '');
-      forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
+    const rowData = rows[selectedRow];
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' &&
+      mode !== ''
+    ) {
+      console.log(rowData);
+      forms.setValue('nama', rowData.nama);
+      forms.setValue('keterangan', rowData.keterangan);
+
+      forms.setValue('coa', rowData.coa);
+      forms.setValue('coa_text', rowData.coa_text);
+
+      forms.setValue('coahut', rowData.coahut);
+      forms.setValue('coahut_text', rowData.coahut_text);
+
+      forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id));
+      forms.setValue('jenisorderan_text', rowData.jenisorderan_text);
+
+      forms.setValue('statusaktif', Number(rowData.statusaktif));
+      forms.setValue('text', rowData.text);
+    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
+      // If in addMode, ensure the form values are cleared
+      forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
   console.log(forms.getValues());
@@ -2304,33 +1814,12 @@ const GridPengeluaranHeader = () => {
     });
   }, []);
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        clearError();
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
-  useEffect(() => {
-    // Memastikan refetch dilakukan saat filters berubah
-    if (filters !== prevFilters) {
-      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
-      setPrevFilters(filters); // Simpan filters terbaru
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
     }
-  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
-  console.log('filters', filters);
-  console.log('prevFilters', prevFilters);
+  }, [isSubmitSuccessful, setFocus]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -2378,20 +1867,22 @@ const GridPengeluaranHeader = () => {
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           renderers={{
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
         <div
-          className="mt-1 flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
           <ActionButton
-            module="MANAGER-MARKETING"
+            module="BIAYA"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
@@ -2405,8 +1896,55 @@ const GridPengeluaranHeader = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
+            // customActions={[
+            //   {
+            //     label: 'Resequence',
+            //     icon: <FaPlus />, // Custom icon
+            //     onClick: () => handleResequence(),
+            //     variant: 'success', // Optional styling variant
+            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
+            //   }
+            // ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Report',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: [
+            //       {
+            //         label: 'REPORT ALL',
+            //         onClick: () => handleReport(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       }
+            //       // ,
+            //       // {
+            //       //   label: 'REPORT BY SELECT',
+            //       //   onClick: () => handleReportBySelect(),
+            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       // }
+            //     ]
+            //   },
+            //   {
+            //     label: 'Export',
+            //     icon: <FaFileExport />,
+            //     className: 'bg-green-600 hover:bg-green-700',
+            //     actions: [
+            //       {
+            //         label: 'EXPORT ALL',
+            //         onClick: () => handleExport(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       }
+            //       // ,
+            //       // {
+            //       //   label: 'EXPORT BY SELECT',
+            //       //   // onClick: () => handleExportBySelect(),
+            //       //   className: 'bg-green-600 hover:bg-green-700'
+            //       // }
+            //     ]
+            //   }
+            // ]}
           />
-          {isLoadingData ? <LoadRowsRenderer /> : null}
+          {isLoadingBiaya ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -2428,14 +1966,14 @@ const GridPengeluaranHeader = () => {
           )}
         </div>
       </div>
-      <FormManagerMarketing
+      <FormBiaya
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
         forms={forms}
-        mode={mode}
+        mode={mode as any}
         onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
@@ -2443,4 +1981,4 @@ const GridPengeluaranHeader = () => {
   );
 };
 
-export default GridPengeluaranHeader;
+export default GridBiaya;

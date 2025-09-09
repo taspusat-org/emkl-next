@@ -8,13 +8,17 @@ export const ShipperSchema = z.object({
   contactperson: z.string().nullable().optional(),
   alamat: z.string().nullable().optional(),
 
-  coa: z.number().min(1, { message: REQUIRED_FIELD }),
+  coa: z.string().nonempty({ message: dynamicRequiredMessage('COA') }),
   coa_text: z.string().nullable().optional(),
 
-  coapiutang: z.number().min(1, { message: REQUIRED_FIELD }),
+  coapiutang: z
+    .string()
+    .nonempty({ message: dynamicRequiredMessage('COA PIUTANG') }),
   coapiutang_text: z.string().nullable().optional(),
 
-  coahutang: z.number().min(1, { message: REQUIRED_FIELD }),
+  coahutang: z
+    .string()
+    .nonempty({ message: dynamicRequiredMessage('COA HUTANG') }),
   coahutang_text: z.string().nullable().optional(),
 
   kota: z.string().nullable().optional(),
@@ -53,7 +57,7 @@ export const ShipperSchema = z.object({
 
   npwp: z.string().nonempty({ message: dynamicRequiredMessage('NPWP') }),
 
-  coagiro: z.number().min(1, { message: REQUIRED_FIELD }),
+  coagiro: z.string().nonempty({ message: dynamicRequiredMessage('COA GIRO') }),
   coagiro_text: z.string().nullable().optional(),
 
   ppn: z.string().nullable().optional(),
@@ -82,10 +86,10 @@ export const ShipperSchema = z.object({
 
   kodeprospek: z
     .string()
-    .nonempty({ message: dynamicRequiredMessage('KODEPROSPEK') }),
+    .nonempty({ message: dynamicRequiredMessage('KODE PROSPEK') }),
   namashipperprospek: z
     .string()
-    .nonempty({ message: dynamicRequiredMessage('NAMASHIPPERPROSPEK') }),
+    .nonempty({ message: dynamicRequiredMessage('NAMA SHIPPER PROSPEK') }),
 
   emaildelay: z
     .string()

@@ -205,21 +205,18 @@ const GridShipper = () => {
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const getCoa = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<ShipperInput>({
-    resolver:
-      mode === 'delete'
-        ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(ShipperSchema),
+    resolver: mode === 'delete' ? undefined : zodResolver(ShipperSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
       contactperson: '',
       alamat: '',
-      coa: 1,
+      coa: '',
       coa_text: '',
-      coapiutang: 1,
+      coapiutang: '',
       coapiutang_text: '',
-      coahutang: 1,
+      coahutang: '',
       coahutang_text: '',
       kota: '',
       kodepos: '',
@@ -231,7 +228,7 @@ const GridShipper = () => {
       creditterm: undefined,
       credittermplus: undefined,
       npwp: '',
-      coagiro: 1,
+      coagiro: '',
       coagiro_text: '',
       ppn: undefined,
       titipke: '',
@@ -5564,9 +5561,13 @@ const GridShipper = () => {
         .then((module) => {
           const { Stimulsoft } = module;
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahomabd.ttf',
             'Tahoma'
-          );
+          ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
@@ -5994,13 +5995,13 @@ const GridShipper = () => {
       );
       forms.setValue('tgllahir', rowData.tgllahir);
 
-      forms.setValue('coa', Number(rowData.coa));
-      forms.setValue('coapiutang', Number(rowData.coapiutang));
-      forms.setValue('coahutang', Number(rowData.coahutang));
+      forms.setValue('coa', rowData.coa);
+      forms.setValue('coapiutang', rowData.coapiutang);
+      forms.setValue('coahutang', rowData.coahutang);
       forms.setValue('creditlimit', formatCurrency(rowData.creditlimit));
       forms.setValue('creditterm', rowData.creditterm);
       forms.setValue('credittermplus', rowData.credittermplus);
-      forms.setValue('coagiro', Number(rowData.coagiro));
+      forms.setValue('coagiro', rowData.coagiro);
       forms.setValue(
         'ppn',
         rowData.ppn == null ? undefined : formatCurrency(rowData.ppn)

@@ -2,7 +2,7 @@
 
 import PageContainer from '@/components/layout/page-container';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import GridShipper from './components/GridShipper';
+import GridBank from './components/GridBiaya';
 import { fieldLength } from '@/lib/apis/field-length.api';
 
 import React, { useEffect } from 'react';
@@ -15,9 +15,8 @@ import {
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
 import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
-import { getMarketingHeaderFn } from '@/lib/apis/marketingheader.api';
 import { IParameter } from '@/lib/types/parameter.type';
-import { getShipperFn } from '@/lib/apis/shipper.api';
+import { getJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
 
 interface ApiResponse {
   type: string;
@@ -37,19 +36,17 @@ const Page = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const fieldLengthResult = await fieldLength('shipper');
+        const fieldLengthResult = await fieldLength('bank');
         dispatch(setFieldLength(fieldLengthResult.data));
 
         const [
           getStatusAktifLookup,
           getAkunpusatLookup,
-          getMarketingLookup,
-          getShipperLookup
+          getJenisorderanLookup
         ] = await Promise.all([
           getParameterFn({ isLookUp: 'true' }),
           getAkunpusatFn({ isLookUp: 'true' }),
-          getMarketingHeaderFn({ isLookUp: 'true' }),
-          getShipperFn({ isLookUp: 'true' })
+          getJenisOrderanFn({ isLookUp: 'true' })
         ]);
 
         // Process Parameter lookup data dengan type safety
@@ -73,7 +70,6 @@ const Page = () => {
         }
 
         if (getAkunpusatLookup.type === 'local') {
-          // COA
           dispatch(setData({ key: 'coa', data: getAkunpusatLookup.data }));
           const defaultCOA =
             getAkunpusatLookup.data
@@ -81,65 +77,34 @@ const Page = () => {
               .find((val: any) => val !== null) || '';
           dispatch(setDefault({ key: 'coa', isdefault: defaultCOA }));
 
-          // COA PIUTANG
-          dispatch(
-            setData({ key: 'coapiutang', data: getAkunpusatLookup.data })
-          );
-          const defaultPiutang =
-            getAkunpusatLookup.data
-              .map((item: any) => item.defaultPiutang)
-              .find((val: any) => val !== null) || '';
-          dispatch(
-            setDefault({ key: 'coapiutang', isdefault: defaultPiutang })
-          );
-
           // COA HUTANG
-          dispatch(
-            setData({ key: 'coahutang', data: getAkunpusatLookup.data })
-          );
+          dispatch(setData({ key: 'coahut', data: getAkunpusatLookup.data }));
           const defaultHutang =
             getAkunpusatLookup.data
               .map((item: any) => item.defaultHutang)
               .find((val: any) => val !== null) || '';
-          dispatch(setDefault({ key: 'coahutang', isdefault: defaultHutang }));
-
-          // COA GIRO
-          dispatch(setData({ key: 'coagiro', data: getAkunpusatLookup.data }));
-          const defaultGiro =
-            getAkunpusatLookup.data
-              .map((item: any) => item.defaultGiro)
-              .find((val: any) => val !== null) || '';
-          dispatch(setDefault({ key: 'coagiro', isdefault: defaultGiro }));
+          dispatch(setDefault({ key: 'coahut', isdefault: defaultHutang }));
         }
 
         dispatch(setType({ key: 'coa', type: getAkunpusatLookup.type }));
-        dispatch(setType({ key: 'coapiutang', type: getAkunpusatLookup.type }));
-        dispatch(setType({ key: 'coahutang', type: getAkunpusatLookup.type }));
-        dispatch(setType({ key: 'coagiro', type: getAkunpusatLookup.type }));
+        dispatch(setType({ key: 'coahut', type: getAkunpusatLookup.type }));
 
-        if (getMarketingLookup.type === 'local') {
+        if (getJenisorderanLookup.type === 'local') {
           dispatch(
-            setData({ key: 'MARKETING', data: getMarketingLookup.data })
+            setData({ key: 'JENISORDERAN', data: getJenisorderanLookup.data })
           );
           const defaultValue =
-            getMarketingLookup.data
+            getJenisorderanLookup.data
               .map((item: any) => item.default)
               .find((val: any) => val !== null) || '';
 
-          dispatch(setDefault({ key: 'MARKETING', isdefault: defaultValue }));
+          dispatch(
+            setDefault({ key: 'JENISORDERAN', isdefault: defaultValue })
+          );
         }
-        dispatch(setType({ key: 'MARKETING', type: getMarketingLookup.type }));
-
-        if (getShipperLookup.type === 'local') {
-          dispatch(setData({ key: 'SHIPPER', data: getShipperLookup.data }));
-          const defaultValue =
-            getShipperLookup.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
-
-          dispatch(setDefault({ key: 'SHIPPER', isdefault: defaultValue }));
-        }
-        dispatch(setType({ key: 'SHIPPER', type: getShipperLookup.type }));
+        dispatch(
+          setType({ key: 'JENISORDERAN', type: getJenisorderanLookup.type })
+        );
       } catch (err) {
         console.error('Error fetching lookup data:', err);
       }
@@ -152,7 +117,7 @@ const Page = () => {
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-7 h-[600px]">
-          <GridShipper />
+          <GridBank />
         </div>
       </div>
     </PageContainer>

@@ -1216,7 +1216,7 @@
               },
               "ShrinkFontToFit": true,
               "ShrinkFontToFitMinimumSize": 5,
-              "Type": "SystemVariables"
+              "Type": "DataColumn"
             },
             "6": {
               "Ident": "StiText",
