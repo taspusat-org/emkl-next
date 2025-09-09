@@ -409,7 +409,7 @@
               "Text": {
                 "Value": "{data.judul}"
               },
-              "Font": "TahomaBD;10;Bold;",
+              "Font": "Tahoma;10;Bold;",
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",

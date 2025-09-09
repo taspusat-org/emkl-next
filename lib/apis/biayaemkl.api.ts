@@ -1,52 +1,55 @@
 import { GetParams } from '../types/all.type';
-import { IAllBiaya } from '../types/biaya.type';
+import { IAllBiayaemkl } from '../types/biayaemkl.type';
 import { buildQueryParams } from '../utils';
 import { api, api2 } from '../utils/AxiosInstance';
-import { BiayaInput } from '../validations/biaya.validation';
+import { BiayaemklInput } from '../validations/biayaemkl.validation';
 
-interface UpdateBiayaParams {
+interface UpdateBiayaemklParams {
   id: string;
-  fields: BiayaInput;
+  fields: BiayaemklInput;
 }
 
-export const getBiayaFn = async (
+export const getBiayaemklFn = async (
   filters: GetParams = {}
-): Promise<IAllBiaya> => {
+): Promise<IAllBiayaemkl> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/biaya', { params: queryParams });
+    const response = await api2.get('/biayaemkl', { params: queryParams });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Biaya:', error);
-    throw new Error('Failed to fetch Biaya');
+    console.error('Error fetching Biaya emkl:', error);
+    throw new Error('Failed to fetch Biaya emkl');
   }
 };
-export const deleteBiayaFn = async (id: string) => {
+export const deleteBiayaemklFn = async (id: string) => {
   try {
-    const response = await api2.delete(`/biaya/${id}`);
+    const response = await api2.delete(`/biayaemkl/${id}`);
     return response.data; // Optionally return response data if needed
   } catch (error) {
-    console.error('Error deleting order:', error);
+    console.error('Error deleting biaya emkl:', error);
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
-export const updateBiayaFn = async ({ id, fields }: UpdateBiayaParams) => {
-  const response = await api2.put(`/biaya/update/${id}`, fields);
+export const updateBiayaemklFn = async ({
+  id,
+  fields
+}: UpdateBiayaemklParams) => {
+  const response = await api2.put(`/biayaemkl/update/${id}`, fields);
   return response.data;
 };
 
-export const storeBiayaFn = async (fields: BiayaInput) => {
-  const response = await api2.post(`/biaya`, fields);
+export const storeBiayaemklFn = async (fields: BiayaemklInput) => {
+  const response = await api2.post(`/biayaemkl`, fields);
 
   return response.data;
 };
 
-export const exportBiayaFn = async (filters: any): Promise<any> => {
+export const exportBiayaemklFn = async (filters: any): Promise<any> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/biaya/export', {
+    const response = await api2.get('/biayaemkl/export', {
       params: queryParams,
       responseType: 'blob' // Pastikan respon dalam bentuk Blob
     });

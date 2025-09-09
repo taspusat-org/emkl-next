@@ -2,7 +2,7 @@
 
 import PageContainer from '@/components/layout/page-container';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import GridBank from './components/GridBiaya';
+import GridBank from './components/GridBiayaemkl';
 import { fieldLength } from '@/lib/apis/field-length.api';
 
 import React, { useEffect } from 'react';
@@ -17,6 +17,7 @@ import {
 import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
 import { IParameter } from '@/lib/types/parameter.type';
 import { getJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
+import { getBiayaFn } from '@/lib/apis/biaya.api';
 
 const Page = () => {
   const dispatch = useDispatch();
@@ -24,18 +25,60 @@ const Page = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const fieldLengthResult = await fieldLength('biaya');
+        const fieldLengthResult = await fieldLength('biayaemkl');
         dispatch(setFieldLength(fieldLengthResult.data));
 
         const [
-          getStatusAktifLookup,
+          getBiayaLookup,
           getAkunpusatLookup,
-          getJenisorderanLookup
+          getJenisorderanLookup,
+          getStatusAktifLookup
         ] = await Promise.all([
-          getParameterFn({ isLookUp: 'true' }),
+          getBiayaFn({ isLookUp: 'true' }),
           getAkunpusatFn({ isLookUp: 'true' }),
-          getJenisOrderanFn({ isLookUp: 'true' })
+          getJenisOrderanFn({ isLookUp: 'true' }),
+          getParameterFn({ isLookUp: 'true' })
         ]);
+
+        if (getBiayaLookup.type === 'local') {
+          dispatch(setData({ key: 'BIAYA', data: getBiayaLookup.data }));
+          const defaultValue =
+            getBiayaLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          dispatch(setDefault({ key: 'BIAYA', isdefault: defaultValue }));
+        }
+        dispatch(setType({ key: 'BIAYA', type: getBiayaLookup.type }));
+
+        if (getAkunpusatLookup.type === 'local') {
+          // COA HUTANG
+          dispatch(setData({ key: 'coahut', data: getAkunpusatLookup.data }));
+          const defaultHutang =
+            getAkunpusatLookup.data
+              .map((item: any) => item.defaultHutang)
+              .find((val: any) => val !== null) || '';
+          dispatch(setDefault({ key: 'coahut', isdefault: defaultHutang }));
+        }
+
+        dispatch(setType({ key: 'coahut', type: getAkunpusatLookup.type }));
+
+        if (getJenisorderanLookup.type === 'local') {
+          dispatch(
+            setData({ key: 'JENISORDERAN', data: getJenisorderanLookup.data })
+          );
+          const defaultValue =
+            getJenisorderanLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          dispatch(
+            setDefault({ key: 'JENISORDERAN', isdefault: defaultValue })
+          );
+        }
+        dispatch(
+          setType({ key: 'JENISORDERAN', type: getJenisorderanLookup.type })
+        );
 
         // Process Parameter lookup data dengan type safety
         if (getStatusAktifLookup.type === 'local') {
@@ -56,43 +99,6 @@ const Page = () => {
             dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
           });
         }
-
-        if (getAkunpusatLookup.type === 'local') {
-          dispatch(setData({ key: 'coa', data: getAkunpusatLookup.data }));
-          const defaultCOA =
-            getAkunpusatLookup.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
-          dispatch(setDefault({ key: 'coa', isdefault: defaultCOA }));
-
-          // COA HUTANG
-          dispatch(setData({ key: 'coahut', data: getAkunpusatLookup.data }));
-          const defaultHutang =
-            getAkunpusatLookup.data
-              .map((item: any) => item.defaultHutang)
-              .find((val: any) => val !== null) || '';
-          dispatch(setDefault({ key: 'coahut', isdefault: defaultHutang }));
-        }
-
-        dispatch(setType({ key: 'coa', type: getAkunpusatLookup.type }));
-        dispatch(setType({ key: 'coahut', type: getAkunpusatLookup.type }));
-
-        if (getJenisorderanLookup.type === 'local') {
-          dispatch(
-            setData({ key: 'JENISORDERAN', data: getJenisorderanLookup.data })
-          );
-          const defaultValue =
-            getJenisorderanLookup.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
-
-          dispatch(
-            setDefault({ key: 'JENISORDERAN', isdefault: defaultValue })
-          );
-        }
-        dispatch(
-          setType({ key: 'JENISORDERAN', type: getJenisorderanLookup.type })
-        );
       } catch (err) {
         console.error('Error fetching lookup data:', err);
       }

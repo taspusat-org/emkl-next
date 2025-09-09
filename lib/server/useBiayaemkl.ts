@@ -3,20 +3,20 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteBiayaFn,
-  getBiayaFn,
-  storeBiayaFn,
-  updateBiayaFn
-} from '../apis/biaya.api';
+  deleteBiayaemklFn,
+  getBiayaemklFn,
+  storeBiayaemklFn,
+  updateBiayaemklFn
+} from '../apis/biayaemkl.api';
 import { useAlert } from '../store/client/useAlert';
 import { useFormError } from '../hooks/formErrorContext';
 
-export const useGetBiaya = (
+export const useGetBiayaemkl = (
   filters: {
     filters?: {
       nama?: string;
       keterangan?: string;
-      coa_text?: string;
+      biaya_text?: string;
       coahut_text?: string;
       jenisorderan_text?: string;
       text?: string;
@@ -30,18 +30,21 @@ export const useGetBiaya = (
     search?: string; // Kata kunci pencarian
   } = {}
 ) => {
-  return useQuery(['biaya', filters], async () => await getBiayaFn(filters));
+  return useQuery(
+    ['biayaemkl', filters],
+    async () => await getBiayaemklFn(filters)
+  );
 };
 
-export const useCreateBiaya = () => {
+export const useCreateBiayaemkl = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeBiayaFn, {
+  return useMutation(storeBiayaemklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('biaya');
+      void queryClient.invalidateQueries('biayaemkl');
       // toast({
       //   title: 'Proses Berhasil',
       //   description: 'Data Berhasil Ditambahkan'
@@ -49,24 +52,19 @@ export const useCreateBiaya = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-
       if (errorResponse !== undefined) {
+        const errorFields = errorResponse.message || [];
         if (errorResponse.statusCode === 400) {
-          // Normalisasi pesan error agar konsisten array
-          console.log(errorResponse);
-          const messages = Array.isArray(errorResponse.message)
-            ? errorResponse.message
-            : [{ path: ['form'], message: errorResponse.message }];
-
-          messages.forEach((err) => {
-            const path = err.path?.[0] ?? 'form';
-            setError(path, err.message);
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
           });
         } else {
           // toast({
           //   variant: 'destructive',
           //   title: errorResponse.message ?? 'Gagal',
-          //   description: 'Terjadi masalah dengan permintaan Anda'
+          //   description: 'Terjadi masalah dengan permintaan Anda.'
           // });
         }
       }
@@ -74,14 +72,14 @@ export const useCreateBiaya = () => {
   });
 };
 
-export const useDeleteBiaya = () => {
+export const useDeleteBiayaemkl = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteBiayaFn, {
+  return useMutation(deleteBiayaemklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('biaya');
+      void queryClient.invalidateQueries('biayaemkl');
       // toast({
       //   title: 'Proses Berhasil.',
       //   description: 'Data Berhasil Dihapus.'
@@ -108,14 +106,14 @@ export const useDeleteBiaya = () => {
     }
   });
 };
-export const useUpdateBiaya = () => {
+export const useUpdateBiayaemkl = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateBiayaFn, {
+  return useMutation(updateBiayaemklFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('biaya');
+      void queryClient.invalidateQueries('biayaemkl');
       // toast({
       //   title: 'Proses Berhasil.',
       //   description: 'Data Berhasil Diubah.'
@@ -123,23 +121,19 @@ export const useUpdateBiaya = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-
       if (errorResponse !== undefined) {
+        const errorFields = errorResponse.message || [];
         if (errorResponse.statusCode === 400) {
-          // Normalisasi pesan error agar konsisten array
-          const messages = Array.isArray(errorResponse.message)
-            ? errorResponse.message
-            : [{ path: ['form'], message: errorResponse.message }];
-
-          messages.forEach((err) => {
-            const path = err.path?.[0] ?? 'form';
-            setError(path, err.message);
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            console.log('path', path);
+            setError(path, err.message); // Update error di context
           });
         } else {
           // toast({
           //   variant: 'destructive',
           //   title: errorResponse.message ?? 'Gagal',
-          //   description: 'Terjadi masalah dengan permintaan Anda'
+          //   description: 'Terjadi masalah dengan permintaan Anda.'
           // });
         }
       }
