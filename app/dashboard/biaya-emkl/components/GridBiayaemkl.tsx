@@ -12,17 +12,17 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormBiaya from './FormBiaya';
+import FormBiayaemkl from './FormBiayaemkl';
 import { useQueryClient } from 'react-query';
-import { BiayaInput, BiayaSchema } from '@/lib/validations/biaya.validation';
+
 import { Checkbox } from '@/components/ui/checkbox';
 
 import {
-  useCreateBiaya,
-  useDeleteBiaya,
-  useGetBiaya,
-  useUpdateBiaya
-} from '@/lib/server/useBiaya';
+  useCreateBiayaemkl,
+  useDeleteBiayaemkl,
+  useGetBiayaemkl,
+  useUpdateBiayaemkl
+} from '@/lib/server/useBiayaemkl';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -40,7 +40,7 @@ import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter } from 'next/navigation';
 
-import { IBiaya } from '@/lib/types/biaya.type';
+import { IBiayaemkl } from '@/lib/types/biayaemkl.type';
 import {
   clearOpenName,
   setClearLookup
@@ -49,7 +49,7 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-import { exportBiayaFn, getBiayaFn } from '@/lib/apis/biaya.api';
+import { exportBiayaemklFn, getBiayaemklFn } from '@/lib/apis/biayaemkl.api';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import { useDispatch } from 'react-redux';
@@ -57,6 +57,10 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
+import {
+  BiayaemklInput,
+  BiayaemklSchema
+} from '@/lib/validations/biayaemkl.validation';
 
 interface Filter {
   page: number;
@@ -69,8 +73,8 @@ interface Filter {
     created_at: string;
     updated_at: string;
 
-    coa: string;
-    coa_text: string;
+    biaya_id: string;
+    biaya_text: string;
 
     coahut: string;
     coahut_text: string;
@@ -90,23 +94,23 @@ interface GridConfig {
   columnsWidth: { [key: string]: number };
 }
 
-const GridBiaya = () => {
+const GridBiayaemkl = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createBiaya, isLoading: isLoadingCreate } =
-    useCreateBiaya();
-  const { mutateAsync: updateBiaya, isLoading: isLoadingUpdate } =
-    useUpdateBiaya();
+  const { mutateAsync: createBiayaemkl, isLoading: isLoadingCreate } =
+    useCreateBiayaemkl();
+  const { mutateAsync: updateBiayaemkl, isLoading: isLoadingUpdate } =
+    useUpdateBiayaemkl();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteBiaya, isLoading: isLoadingDelete } =
-    useDeleteBiaya();
+  const { mutateAsync: deleteBiayaemkl, isLoading: isLoadingDelete } =
+    useDeleteBiayaemkl();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -123,7 +127,7 @@ const GridBiaya = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IBiaya[]>([]);
+  const [rows, setRows] = useState<IBiayaemkl[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -133,18 +137,18 @@ const GridBiaya = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
 
-  const forms = useForm<BiayaInput>({
+  const forms = useForm<BiayaemklInput>({
     resolver:
       mode === 'delete'
         ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(BiayaSchema),
+        : zodResolver(BiayaemklSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
 
-      coa: '',
-      coa_text: '',
+      biaya_id: 1,
+      biaya_text: '',
 
       coahut: '',
       coahut_text: '',
@@ -171,8 +175,8 @@ const GridBiaya = () => {
       keterangan: '',
       created_at: '',
       updated_at: '',
-      coa: '',
-      coa_text: '',
+      biaya_id: '',
+      biaya_text: '',
       coahut: '',
       coahut_text: '',
       jenisorderan_id: '',
@@ -185,7 +189,7 @@ const GridBiaya = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allBiaya, isLoading: isLoadingBiaya } = useGetBiaya({
+  const { data: allBiaya, isLoading: isLoadingBiaya } = useGetBiayaemkl({
     ...filters,
     page: currentPage
   });
@@ -300,8 +304,8 @@ const GridBiaya = () => {
         keterangan: '',
         created_at: '',
         updated_at: '',
-        coa: '',
-        coa_text: '',
+        biaya_id: '',
+        biaya_text: '',
         coahut: '',
         coahut_text: '',
         jenisorderan_id: '',
@@ -386,7 +390,7 @@ const GridBiaya = () => {
   };
   console.log(forms.getValues());
 
-  const columns = useMemo((): Column<IBiaya>[] => {
+  const columns = useMemo((): Column<IBiayaemkl>[] => {
     return [
       {
         key: 'nomor',
@@ -412,8 +416,8 @@ const GridBiaya = () => {
                     keterangan: '',
                     created_at: '',
                     updated_at: '',
-                    coa: '',
-                    coa_text: '',
+                    biaya_id: '',
+                    biaya_text: '',
                     coahut: '',
                     coahut_text: '',
                     jenisorderan_id: '',
@@ -459,7 +463,7 @@ const GridBiaya = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IBiaya }) => (
+        renderCell: ({ row }: { row: IBiayaemkl }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -621,8 +625,8 @@ const GridBiaya = () => {
         }
       },
       {
-        key: 'coa',
-        name: 'COA',
+        key: 'biaya',
+        name: 'biaya',
         resizable: true,
         draggable: true,
         width: 200,
@@ -631,21 +635,23 @@ const GridBiaya = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coa_text')}
+              onClick={() => handleSort('biaya_text')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coa_text' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'biaya_text'
+                    ? 'text-red-500'
+                    : 'font-normal'
                 }`}
               >
-                COA
+                BIAYA
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'coa_text' &&
+                {filters.sortBy === 'biaya_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'coa_text' &&
+                ) : filters.sortBy === 'biaya_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -656,19 +662,19 @@ const GridBiaya = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['coa_text'] = el;
+                  inputColRefs.current['biaya_text'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coa_text.toUpperCase() || ''}
+                value={filters.filters.biaya_text.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coa_text', value);
+                  handleColumnFilterChange('biaya_text', value);
                 }}
               />
-              {filters.filters.coa_text && (
+              {filters.filters.biaya_text && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coa_text', '')}
+                  onClick={() => handleColumnFilterChange('biaya_text', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -678,11 +684,11 @@ const GridBiaya = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.coa_text || '';
+          const columnFilter = filters.filters.biaya_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.coa_text || '',
+                props.row.biaya_text || '',
                 filters.search,
                 columnFilter
               )}
@@ -829,7 +835,11 @@ const GridBiaya = () => {
           const columnFilter = filters.filters.jenisorderan_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.jenisorderan_text || ''}
+              {highlightText(
+                props.row.jenisorderan_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -1075,7 +1085,7 @@ const GridBiaya = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridBiaya', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridBiayaemkl', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1090,7 +1100,7 @@ const GridBiaya = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridBiaya', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridBiayaemkl', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1134,7 +1144,7 @@ const GridBiaya = () => {
     }
   }
 
-  function handleCellClick(args: { row: IBiaya }) {
+  function handleCellClick(args: { row: IBiayaemkl }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1142,7 +1152,7 @@ const GridBiaya = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IBiaya>,
+    args: CellKeyDownArgs<IBiayaemkl>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1234,14 +1244,14 @@ const GridBiaya = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: BiayaInput, keepOpenModal = false) => {
+  const onSubmit = async (values: BiayaemklInput, keepOpenModal = false) => {
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteBiaya(selectedRowId as unknown as string, {
+          await deleteBiayaemkl(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1263,7 +1273,7 @@ const GridBiaya = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createBiaya(
+        const newOrder = await createBiayaemkl(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1279,7 +1289,7 @@ const GridBiaya = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateBiaya(
+        await updateBiayaemkl(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
@@ -1321,7 +1331,7 @@ const GridBiaya = () => {
     try {
       const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await exportBiayaFn(filtersWithoutLimit); // Kirim data tanpa pagination
+      const response = await exportBiayaemklFn(filtersWithoutLimit); // Kirim data tanpa pagination
 
       // Buat link untuk mendownload file
       const link = document.createElement('a');
@@ -1382,10 +1392,10 @@ const GridBiaya = () => {
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
-      const response = await getBiayaFn(filtersWithoutLimit);
+      const response = await getBiayaemklFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Biaya',
+        judullaporan: 'Laporan Biaya Emkl',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1420,7 +1430,7 @@ const GridBiaya = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanBiaya.mrt');
+          report.loadFile('/reports/LaporanBiayaemkl.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1439,7 +1449,7 @@ const GridBiaya = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/biaya', '_blank');
+              window.open('/reports/biayaemkl', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1488,12 +1498,12 @@ const GridBiaya = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IBiaya) {
+  function getRowClass(row: IBiayaemkl) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IBiaya) {
+  function rowKeyGetter(row: IBiayaemkl) {
     return row.id;
   }
 
@@ -1584,7 +1594,7 @@ const GridBiaya = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridBiaya',
+        'GridBiayaemkl',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1689,7 +1699,7 @@ const GridBiaya = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridBiaya');
+    loadGridConfig(user.id, 'GridBiayaemkl');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1788,8 +1798,8 @@ const GridBiaya = () => {
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
-      forms.setValue('coa', rowData.coa);
-      forms.setValue('coa_text', rowData.coa_text);
+      forms.setValue('biaya_id', Number(rowData.biaya_id));
+      forms.setValue('biaya_text', rowData.biaya_text);
 
       forms.setValue('coahut', rowData.coahut);
       forms.setValue('coahut_text', rowData.coahut_text);
@@ -1882,7 +1892,7 @@ const GridBiaya = () => {
           }}
         >
           <ActionButton
-            module="BIAYA"
+            module="BIAYA-EMKL"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
@@ -1966,7 +1976,7 @@ const GridBiaya = () => {
           )}
         </div>
       </div>
-      <FormBiaya
+      <FormBiayaemkl
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1981,4 +1991,4 @@ const GridBiaya = () => {
   );
 };
 
-export default GridBiaya;
+export default GridBiayaemkl;

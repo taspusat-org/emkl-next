@@ -368,7 +368,7 @@ const FormPengeluaran = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 200,
+        width: 350,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
@@ -781,13 +781,16 @@ const FormPengeluaran = ({
 
   const lookUpPropsCoakredit = [
     {
-      columns: [{ key: 'keterangancoa', name: 'COA KREDIT' }],
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
       labelLookup: 'COA KREDIT LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
       label: 'COA KREDIT',
-      singleColumn: true,
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'keterangancoa',
@@ -829,12 +832,15 @@ const FormPengeluaran = ({
 
   const lookUpPropsCoaDebet = [
     {
-      columns: [{ key: 'keterangancoa', name: 'COA DEBET' }],
+      columns: [
+        { key: 'coa', name: 'COA', width: 100 },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
       labelLookup: 'COA DEBET LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      singleColumn: true,
+      singleColumn: false,
       pageSize: 20,
       showOnButton: true,
       postData: 'keterangancoa',

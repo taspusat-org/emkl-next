@@ -18,7 +18,7 @@ import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
-interface FormBiayaProps {
+interface FormBiayaemklProps {
   popOver: boolean;
   setPopOver: (value: boolean) => void;
   forms: any;
@@ -30,7 +30,7 @@ interface FormBiayaProps {
   isLoadingDelete: boolean;
 }
 
-const FormBiaya = ({
+const FormBiayaemkl = ({
   popOver,
   setPopOver,
   forms,
@@ -40,39 +40,20 @@ const FormBiaya = ({
   isLoadingCreate,
   isLoadingUpdate,
   isLoadingDelete
-}: FormBiayaProps) => {
-  const lookUpPropsStatusAktif = [
+}: FormBiayaemklProps) => {
+  const lookUpPropsBiaya = [
     {
-      columns: [{ key: 'text', name: 'STATUS' }],
-      labelLookup: 'STATUS AKTIF LOOKUP',
+      columns: [{ key: 'nama', name: 'BIAYA' }],
+      labelLookup: 'BIAYA LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'parameter?grp=status+aktif',
-      label: 'STATUS AKTIF',
+      endpoint: 'biaya',
+      label: 'BIAYA',
       singleColumn: true,
       pageSize: 20,
       dataToPost: 'id',
       showOnButton: true,
-      postData: 'text'
-    }
-  ];
-
-  const lookUpPropsCOA = [
-    {
-      columns: [
-        { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
-      ],
-      labelLookup: 'COA LOOKUP',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'akunpusat',
-      label: 'AKUNPUSAT',
-      singleColumn: false,
-      pageSize: 20,
-      postData: 'keterangancoa',
-      dataToPost: 'coa',
-      showOnButton: true
+      postData: 'nama'
     }
   ];
 
@@ -86,7 +67,7 @@ const FormBiaya = ({
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
-      label: 'coahut',
+      label: 'COAHUT',
       singleColumn: false,
       pageSize: 20,
       postData: 'keterangancoa',
@@ -101,13 +82,29 @@ const FormBiaya = ({
       labelLookup: 'JENIS ORDERAN LOOKUP',
       required: false,
       selectedRequired: false,
-      endpoint: 'akunpusat',
+      endpoint: 'jenisorderan',
       label: 'JENISORDERAN',
       singleColumn: true,
       pageSize: 20,
       postData: 'nama',
       dataToPost: 'id',
       showOnButton: true
+    }
+  ];
+
+  const lookUpPropsStatusAktif = [
+    {
+      columns: [{ key: 'text', name: 'STATUS' }],
+      labelLookup: 'STATUS AKTIF LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=status+aktif',
+      label: 'STATUS AKTIF',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
     }
   ];
 
@@ -279,20 +276,18 @@ const FormBiaya = ({
                         required={true}
                         className="text-sm font-semibold text-gray-700"
                       >
-                        COA
+                        BIAYA
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsCOA.map((props, index) => (
+                      {lookUpPropsBiaya.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
-                          lookupValue={(value: any) => {
-                            forms.setValue('coa', value);
+                          lookupValue={(id) => {
+                            forms.setValue('biaya_id', Number(id));
                           }}
-                          name="coa"
-                          forms={forms}
-                          lookupNama={forms.getValues('coa_text')}
+                          lookupNama={forms.getValues('biaya_text')}
                           disabled={['view', 'delete'].includes(mode)}
                         />
                       ))}
@@ -431,4 +426,4 @@ const FormBiaya = ({
   );
 };
 
-export default FormBiaya;
+export default FormBiayaemkl;
