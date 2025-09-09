@@ -6,7 +6,7 @@
       "select": 50,
       "nama": 300,
       "keterangan": 200,
-      "statuslangsungcair": 150,
+      "statuslangsungcair": 200,
       "statusdefault": 150,
       "statusbank": 150,
       "statusaktif": 150,

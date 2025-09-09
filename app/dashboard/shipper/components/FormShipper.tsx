@@ -50,7 +50,7 @@ const FormShipper = ({
     {
       columns: [{ key: 'nama', name: 'SHIPPER ASAL' }],
       labelLookup: 'SHIPPER ASAL LOOKUP',
-      required: true,
+      required: false,
       selectedRequired: false,
       endpoint: 'shipper',
       label: 'SHIPPER ASAL',
@@ -1485,10 +1485,7 @@ const FormShipper = ({
 
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
+                      <FormLabel className="text-sm font-semibold text-gray-700">
                         SHIPPER ASAL
                       </FormLabel>
                     </div>
