@@ -20,6 +20,7 @@ export const penerimaanHeaderSchema = z.object({
   postingdari: z.string().nullable(),
   diterimadari: z.string().nullable(),
   coakasmasuk: z.string().nullable(),
+  coakasmasuk_nama: z.string().nullable(),
   relasi_id: z.number().nullable(),
   alatbayar_id: z.number().nullable(),
   relasi_nama: z.string().nullable().optional(),

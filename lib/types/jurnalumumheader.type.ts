@@ -1,70 +1,46 @@
 import { IMeta } from './error.type';
 
-export interface KasGantungHeader {
+export interface JurnalUmumHeader {
   id: number;
   nobukti: string;
   tglbukti: string | null; // Nullable date field
   keterangan: string | null;
-  bank_id: number | null;
-  relasi_id: number | null;
-  alatbayar_id: number | null;
-  pengeluaran_nobukti: string | null;
-  relasi_nama: string | null;
-  alatbayar_nama: string | null;
-  bank_nama: string | null;
-  coakaskeluar: string | null;
-  nominal: string | null;
-  dibayarke: string | null;
-  sisa: string | null;
-  nowarkat: string | null;
-  tgljatuhtempo: string | null; // Nullable date field
-  gantungorderan_nobukti: string | null;
+  postingdari: string | null;
+  statusformat: string | null;
   info: string | null;
   modifiedby: string | null;
-  editing_by: string | null;
-  editing_at: string | null; // Nullable datetime field
   created_at: string;
   updated_at: string;
 }
-export interface KasGantungDetail {
+export interface JurnalUmumDetail {
   id: number | string;
-  kasgantung_id: string;
+  jurnalumum_id: string;
   nobukti: string;
+  tglbukti: string | null;
+  coa: string;
   keterangan: string | null;
-  nominal: string | null;
+  nominaldebet: string | null;
+  nominalkredit: string | null;
   info: string | null;
   modifiedby: string | null;
-  editing_by: string | null;
-  editing_at: string | null; // Nullable datetime field
   created_at: string;
   updated_at: string;
   [key: string]: string | number | boolean | null | undefined;
 }
-export interface IAllKasGantungHeader {
-  data: KasGantungHeader[];
+export interface IAllJurnalUmumHeader {
+  data: JurnalUmumHeader[];
   pagination: IMeta;
 }
-export interface IAllKasGantungDetail {
-  data: KasGantungDetail[];
+export interface IAllJurnalUmumDetail {
+  data: JurnalUmumDetail[];
   pagination: IMeta;
 }
-export const filterKasGantung = {
+export const filterJurnalUmum = {
   nobukti: '',
   tglbukti: '',
-  bank_nama: '',
-  relasi_nama: '',
-  alatbayar_nama: '',
-  keterangan: null,
-  bank_id: null,
-  pengeluaran_nobukti: '',
-  coakaskeluar: '',
-  relasi_id: null,
-  nominal: '',
-  dibayarke: '',
-  nowarkat: '',
-  tgljatuhtempo: '',
-  gantungorderan_nobukti: '',
-  modifiedby: null,
+  postingdari: '',
+  keterangan: '',
+  modifiedby: '',
   created_at: '',
   updated_at: '',
   tglDari: '',

@@ -48,6 +48,8 @@ import {
   useGetKasGantungHeaderPengembalian
 } from '@/lib/server/useKasGantung';
 import { useGetPengembalianKasGantungDetail } from '@/lib/server/usePengembalianKasGantung';
+import { PengembalianKasGantungHeader } from '@/lib/types/pengembaliankasgantung.type';
+import { useAlert } from '@/lib/store/client/useAlert';
 const FormPengembalianKasGantung = ({
   popOver,
   setPopOver,
@@ -111,6 +113,7 @@ const FormPengembalianKasGantung = ({
     },
     popOver // Mengoper popOver ke dalam hook
   );
+  const { alert } = useAlert();
   const [rows, setRows] = useState<KasGantungHeader[]>([]);
   function handleCellClick(args: { row: KasGantungHeader }) {
     const clickedRow = args.row;
@@ -216,10 +219,6 @@ const FormPengembalianKasGantung = ({
     };
   };
   const handleBlur = (formattedStr: string, rowId: number) => {
-    if (!formattedStr.includes(',')) {
-      return;
-    }
-
     setEditingRowId(null);
 
     const finalValue = formattedStr + '.00';
@@ -308,7 +307,7 @@ const FormPengembalianKasGantung = ({
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
-      postData: 'coa'
+      postData: 'keterangancoa'
     }
   ];
   function highlightText(
@@ -368,7 +367,7 @@ const FormPengembalianKasGantung = ({
       (acc, row) =>
         acc +
         (row.sisa
-          ? parseCurrency(String(row.sisa)) - parseCurrency(row.nominal)
+          ? parseCurrency(String(row.sisa)) - parseCurrency(row.nominal ?? '0')
           : 0),
       0
     );
@@ -437,7 +436,7 @@ const FormPengembalianKasGantung = ({
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
-              onCheckedChange={() => handleRowSelect(row.id, row)}
+              onCheckedChange={() => handleRowSelect(row.id)}
               id={`row-checkbox-${row.id}`}
             />
           </div>
@@ -566,6 +565,15 @@ const FormPengembalianKasGantung = ({
           const parsedNominal = parseCurrency(props.row.nominal);
           const newSisa =
             parseCurrency(props.row.sisa) - (parsedNominal ? parsedNominal : 0);
+
+          if (newSisa < 0) {
+            alert({
+              title: 'Sisa tidak boleh minus',
+              variant: 'danger',
+              submitText: 'OK'
+            });
+            props.row.nominal = '';
+          }
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {/* {lookUpPropsRelasi.map((props, index) => (
@@ -719,7 +727,6 @@ const FormPengembalianKasGantung = ({
       }
     ];
   }, [rows, checkedRows, editingRowId, filteredRows, summaryRows]);
-  console.log('forms.getValues', forms.getValues());
   const lookUpPropsRelasi = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
@@ -966,7 +973,13 @@ const FormPengembalianKasGantung = ({
       <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Menu Form
+            {mode === 'add'
+              ? 'ADD Pengembalian Kas Gantung'
+              : mode === 'edit'
+              ? 'Edit Pengembalian Kas Gantung'
+              : mode === 'delete'
+              ? 'Delete Pengembalian Kas Gantung'
+              : 'View Pengembalian Kas Gantung'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -1027,6 +1040,11 @@ const FormPengembalianKasGantung = ({
                               <InputDatePicker
                                 value={field.value}
                                 onChange={field.onChange}
+                                disabled={
+                                  mode === 'view' ||
+                                  mode === 'delete' ||
+                                  mode === 'edit'
+                                }
                                 showCalendar
                                 onSelect={(date) =>
                                   forms.setValue('tglbukti', date)
@@ -1073,12 +1091,16 @@ const FormPengembalianKasGantung = ({
                           key={index}
                           {...props}
                           labelLookup="LOOKUP COA KAS MASUK"
-                          disabled={mode === 'view' || mode === 'delete'}
+                          disabled={
+                            mode === 'view' ||
+                            mode === 'delete' ||
+                            mode === 'edit'
+                          }
                           lookupValue={(id) =>
                             forms.setValue('coakasmasuk', id)
                           }
                           inputLookupValue={forms.getValues('coakasmasuk')}
-                          lookupNama={forms.getValues('coakasmasuk')}
+                          lookupNama={forms.getValues('coakasmasuk_nama')}
                         />
                       ))}
                     </div>
@@ -1275,6 +1297,11 @@ const FormPengembalianKasGantung = ({
                               lookupValue={(id) =>
                                 forms.setValue('bank_id', Number(id))
                               }
+                              disabled={
+                                mode === 'view' ||
+                                mode === 'delete' ||
+                                mode === 'edit'
+                              }
                               labelLookup="LOOKUP BANK"
                               inputLookupValue={forms.getValues('bank_id')}
                               lookupNama={forms.getValues('bank_nama')}
@@ -1293,6 +1320,11 @@ const FormPengembalianKasGantung = ({
                             <LookUp
                               key={index}
                               {...props}
+                              disabled={
+                                mode === 'view' ||
+                                mode === 'delete' ||
+                                mode === 'edit'
+                              }
                               labelLookup="LOOKUP ALAT BAYAR"
                               lookupValue={(id) =>
                                 forms.setValue('alatbayar_id', Number(id))
@@ -1389,7 +1421,10 @@ const FormPengembalianKasGantung = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={onSubmit}
+            onClick={() => {
+              onSubmit();
+              setEditingRowId(null);
+            }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}

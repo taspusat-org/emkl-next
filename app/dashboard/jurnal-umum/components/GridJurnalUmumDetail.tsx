@@ -14,22 +14,22 @@ import ActionButton from '@/components/custom-ui/ActionButton';
 import { FaPen } from 'react-icons/fa';
 import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
-import { IPengembalianKasGantungDetail } from '@/lib/types/pengembaliankasgantung.type';
-import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import { formatCurrency } from '@/lib/utils';
+import { useGetJurnalUmumDetail } from '@/lib/server/useJurnalUmum';
+import { JurnalUmumDetail } from '@/lib/types/jurnalumumheader.type';
 
 interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridKasGantungDetail = () => {
+const GridJurnalUmumDetail = () => {
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const {
     data: detail,
     isLoading,
     refetch
-  } = useGetKasGantungDetail(headerData?.id ?? 0);
-  const [rows, setRows] = useState<IPengembalianKasGantungDetail[]>([]);
+  } = useGetJurnalUmumDetail(headerData?.id ?? 0);
+  const [rows, setRows] = useState<JurnalUmumDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -47,7 +47,7 @@ const GridKasGantungDetail = () => {
     x: number;
     y: number;
   } | null>(null);
-  const columns = useMemo((): Column<IPengembalianKasGantungDetail>[] => {
+  const columns = useMemo((): Column<JurnalUmumDetail>[] => {
     return [
       {
         key: 'nobukti',
@@ -68,6 +68,29 @@ const GridKasGantungDetail = () => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.nobukti}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'tglbukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">TGL BUKTI</p>
+          </div>
+        ),
+        name: 'TGL BUKTI',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.tglbukti}
             </div>
           );
         }
@@ -96,7 +119,7 @@ const GridKasGantungDetail = () => {
         }
       },
       {
-        key: 'nominal',
+        key: 'coa',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -106,14 +129,60 @@ const GridKasGantungDetail = () => {
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={handleContextMenu}
           >
-            <p className="text-sm font-normal">nominal</p>
+            <p className="text-sm font-normal">coa</p>
           </div>
         ),
-        name: 'nominal',
+        name: 'coa',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {formatCurrency(props.row.nominal)}
+              {props.row.keterangancoa}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominaldebet',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">nominal debet</p>
+          </div>
+        ),
+        name: 'nominaldebet',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {formatCurrency(props.row.nominaldebet)}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominalkredit',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">nominal kredit</p>
+          </div>
+        ),
+        name: 'nominalkredit',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {formatCurrency(props.row.nominalkredit)}
             </div>
           );
         }
@@ -207,7 +276,7 @@ const GridKasGantungDetail = () => {
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridKasGantungDetail',
+        'GridJurnalUmumDetail',
         [...columnsOrder],
         newWidthMap
       );
@@ -228,7 +297,7 @@ const GridKasGantungDetail = () => {
 
       saveGridConfig(
         user.id,
-        'GridKasGantungDetail',
+        'GridJurnalUmumDetail',
         [...newOrder],
         columnsWidth
       );
@@ -308,7 +377,7 @@ const GridKasGantungDetail = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridKasGantungDetail',
+        'GridJurnalUmumDetail',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -392,7 +461,7 @@ const GridKasGantungDetail = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridKasGantungDetail');
+    loadGridConfig(user.id, 'GridJurnalUmumDetail');
   }, []);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
@@ -404,13 +473,17 @@ const GridKasGantungDetail = () => {
     if (detail) {
       const formattedRows = detail?.data?.map((item: any) => ({
         id: item.id,
+        jurnalumum_id: item.jurnalumum_id, // Updated to match the field name
         nobukti: item.nobukti, // Updated to match the field name
+        tglbukti: item.tglbukti, // Updated to match the field name
+        coa: item.coa, // Updated to match the field name
         keterangan: item.keterangan, // Updated to match the field name
+        keterangancoa: item.keterangancoa, // Updated to match the field name
         nominal: item.nominal, // Updated to match the field name
+        nominaldebet: item.nominaldebet, // Updated to match the field name
+        nominalkredit: item.nominalkredit, // Updated to match the field name
         info: item.info, // Updated to match the field name
         modifiedby: item.modifiedby, // Updated to match the field name
-        editing_by: item.editing_by, // Updated to match the field name
-        editing_at: item.editing_at, // Updated to match the field name
         created_at: item.created_at, // Updated to match the field name
         updated_at: item.updated_at // Updated to match the field name
       }));
@@ -422,7 +495,7 @@ const GridKasGantungDetail = () => {
   }, [detail, headerData?.id]);
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<IPengembalianKasGantungDetail>,
+    args: CellKeyDownArgs<JurnalUmumDetail>,
     event: React.KeyboardEvent
   ) {
     if (event.key === 'ArrowUp' && args.rowIdx === 0) {
@@ -496,4 +569,4 @@ const GridKasGantungDetail = () => {
   );
 };
 
-export default GridKasGantungDetail;
+export default GridJurnalUmumDetail;

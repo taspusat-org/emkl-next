@@ -47,6 +47,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
+import { useGetJurnalUmumDetail } from '@/lib/server/useJurnalUmum';
+import { JurnalUmumDetail } from '@/lib/types/jurnalumumheader.type';
 const FormKasGantung = ({
   popOver,
   setPopOver,
@@ -70,24 +72,18 @@ const FormKasGantung = ({
 
   const [dataGridKey, setDataGridKey] = useState(0);
 
-  const [filters, setFilters] = useState({
-    nobukti: '',
-    keterangan: '',
-    sisa: '',
-    nominal: ''
-  });
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const gridRef = useRef<DataGridHandle>(null);
   const {
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetKasGantungDetail(headerData?.id ?? 0);
+  } = useGetJurnalUmumDetail(headerData?.id ?? 0);
 
   const [rows, setRows] = useState<
-    (KasGantungDetail | (Partial<KasGantungDetail> & { isNew: boolean }))[]
+    (JurnalUmumDetail | (Partial<JurnalUmumDetail> & { isNew: boolean }))[]
   >([]);
-  function handleCellClick(args: { row: KasGantungDetail }) {
+  function handleCellClick(args: { row: JurnalUmumDetail }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -95,11 +91,13 @@ const FormKasGantung = ({
     }
   }
   const addRow = () => {
-    const newRow: Partial<KasGantungDetail> & { isNew: boolean } = {
+    const newRow: Partial<JurnalUmumDetail> & { isNew: boolean } = {
       id: 0, // Placeholder ID
       nobukti: '',
       keterangan: '',
-      nominal: '',
+      nominaldebet: '',
+      coa: '',
+      nominalkredit: '',
       isNew: true
     };
 
@@ -145,17 +143,42 @@ const FormKasGantung = ({
   };
 
   // 2) handler onChange: format langsung & simpan ke state
-  const handleCurrencyChange = (rowIdx: number, rawInput: string) => {
+  const handleCurrencyChangeKredit = (rowIdx: number, rawInput: string) => {
     // const formatted = formatWithCommas(rawInput);
-    handleInputChange(rowIdx, 'nominal', rawInput);
+    handleInputChange(rowIdx, 'nominalkredit', rawInput);
+  };
+  const handleCurrencyChangeDebet = (rowIdx: number, rawInput: string) => {
+    // const formatted = formatWithCommas(rawInput);
+    handleInputChange(rowIdx, 'nominaldebet', rawInput);
   };
 
-  const totalNominal = rows.reduce(
-    (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
+  const totalNominalDebet = rows.reduce(
+    (acc, row) =>
+      acc + (row.nominaldebet ? parseCurrency(row.nominaldebet) : 0),
     0
   );
-
-  const columns = useMemo((): Column<KasGantungDetail>[] => {
+  const totalNominalKredit = rows.reduce(
+    (acc, row) =>
+      acc + (row.nominalkredit ? parseCurrency(row.nominalkredit) : 0),
+    0
+  );
+  const lookupPropsCoaMasuk = [
+    {
+      columns: [
+        { key: 'coa', name: 'coa', width: 100 },
+        { key: 'keterangancoa', name: 'keterangancoa' }
+      ],
+      extendSize: '200',
+      selectedRequired: false,
+      endpoint: 'akunpusat',
+      dataToPost: 'coa',
+      singleColumn: false,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'keterangancoa'
+    }
+  ];
+  const columns = useMemo((): Column<JurnalUmumDetail>[] => {
     return [
       {
         key: 'aksi',
@@ -210,7 +233,7 @@ const FormKasGantung = ({
         colSpan: (args) => {
           // If it's the "Add Row" row, span across multiple columns
           if (args.type === 'ROW' && args.row.isAddRow) {
-            return 3; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 2; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
@@ -235,33 +258,155 @@ const FormKasGantung = ({
         }
       },
       {
-        key: 'nobukti',
+        key: 'coa',
         headerCellClass: 'column-headers',
         resizable: true,
         cellClass: 'form-input',
         draggable: true,
 
-        width: 200,
+        width: 300,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nomor Bukti</p>
+              <p className={`text-sm font-normal`}>COA</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        name: 'NOMOR BUKTI',
+        name: 'COA',
         renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow
+                ? ''
+                : lookupPropsCoaMasuk.map((propsLookupCoaMasuk, index) => (
+                    <LookUp
+                      key={index}
+                      {...propsLookupCoaMasuk}
+                      labelLookup="LOOKUP COA KAS MASUK"
+                      label={`COA KAS MASUK ${rowIdx}`}
+                      disabled={mode === 'view' || mode === 'delete'}
+                      lookupValue={(id) =>
+                        handleInputChange(rowIdx, 'coa', String(id))
+                      }
+                      inputLookupValue={props.row.coa}
+                      lookupNama={props.row.keterangancoa}
+                    />
+                  ))}
+            </div>
+          );
+        }
+      },
+
+      {
+        key: 'nominaldebet',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>Nominal (DEBET)</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'nominaldebet',
+        renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          let raw = props.row.nominaldebet ?? ''; // Nilai nominal awal
+
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
-                ''
+                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+                  {formatCurrency(totalNominalDebet)}
+                </div>
               ) : (
-                <Input
-                  type="text"
-                  disabled
-                  value={props.row.nobukti}
-                  className="w-full rounded border border-gray-300 px-2 py-1"
+                // <InputMask
+                //   mask="" // biar kita yang atur formatting
+                //   maskPlaceholder={null}
+                //   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
+                //   onKeyDown={inputStopPropagation}
+                //   onClick={(e: any) => e.stopPropagation()}
+                //   value={String(raw)} // Menampilkan nilai setelah diformat
+                //   beforeMaskedStateChange={beforeMaskedStateChange}
+                //   onChange={(e: any) =>
+                //     handleCurrencyChange(rowIdx, e.target.value)
+                //   }
+                //   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
+                //   onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
+                // />
+                <InputCurrency
+                  value={String(raw)}
+                  disabled={
+                    mode === 'view' ||
+                    mode === 'delete' ||
+                    Number(props.row.nominalkredit) > 0
+                  }
+                  onValueChange={(value) =>
+                    handleCurrencyChangeDebet(rowIdx, value)
+                  }
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominalkredit',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm font-normal`}>Nominal (KREDIT)</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1"></div>
+          </div>
+        ),
+        name: 'nominalkredit',
+        renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          let raw = props.row.nominalkredit ?? '';
+
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+                  {formatCurrency(totalNominalKredit)}
+                </div>
+              ) : (
+                // <InputMask
+                //   mask="" // biar kita yang atur formatting
+                //   maskPlaceholder={null}
+                //   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
+                //   onKeyDown={inputStopPropagation}
+                //   onClick={(e: any) => e.stopPropagation()}
+                //   value={String(raw)} // Menampilkan nilai setelah diformat
+                //   beforeMaskedStateChange={beforeMaskedStateChange}
+                //   onChange={(e: any) =>
+                //     handleCurrencyChange(rowIdx, e.target.value)
+                //   }
+                //   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
+                //   onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
+                // />
+                <InputCurrency
+                  value={String(raw)}
+                  disabled={
+                    mode === 'view' ||
+                    mode === 'delete' ||
+                    Number(props.row.nominaldebet) > 0
+                  }
+                  onValueChange={(value) =>
+                    handleCurrencyChangeKredit(rowIdx, value)
+                  }
                 />
               )}
             </div>
@@ -308,100 +453,9 @@ const FormKasGantung = ({
             </div>
           );
         }
-      },
-      {
-        key: 'nominal',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
-          </div>
-        ),
-        name: 'nominal',
-        renderCell: (props: any) => {
-          const rowIdx = props.rowIdx;
-          let raw = props.row.nominal ?? ''; // Nilai nominal awal
-
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
-                  {formatCurrency(totalNominal)}
-                </div>
-              ) : (
-                // <InputMask
-                //   mask="" // biar kita yang atur formatting
-                //   maskPlaceholder={null}
-                //   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
-                //   onKeyDown={inputStopPropagation}
-                //   onClick={(e: any) => e.stopPropagation()}
-                //   value={String(raw)} // Menampilkan nilai setelah diformat
-                //   beforeMaskedStateChange={beforeMaskedStateChange}
-                //   onChange={(e: any) =>
-                //     handleCurrencyChange(rowIdx, e.target.value)
-                //   }
-                //   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
-                //   onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
-                // />
-                <InputCurrency
-                  value={String(raw)}
-                  onValueChange={(value) => handleCurrencyChange(rowIdx, value)}
-                />
-              )}
-            </div>
-          );
-        }
       }
     ];
   }, [rows, checkedRows, editingRowId, editableValues]);
-  const lookUpPropsRelasi = [
-    {
-      columns: [{ key: 'nama', name: 'NAMA' }],
-      selectedRequired: false,
-      label: 'RELASI',
-      endpoint: 'relasi',
-      dataToPost: 'id',
-      singleColumn: true,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama'
-    }
-  ];
-  const lookUpPropsBank = [
-    {
-      columns: [{ key: 'nama', name: 'NAMA' }],
-      selectedRequired: false,
-      endpoint: 'bank',
-      label: 'BANK',
-      singleColumn: true,
-      dataToPost: 'id',
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama'
-    }
-  ];
-  const lookUpPropsAlatBayar = [
-    {
-      columns: [{ key: 'nama', name: 'NAMA' }],
-      // filterby: { class: 'system', method: 'get' },
-      selectedRequired: false,
-      endpoint: 'alatbayar',
-
-      label: 'ALAT BAYAR',
-      dataToPost: 'id',
-      singleColumn: true,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama'
-    }
-  ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
 
@@ -498,9 +552,11 @@ const FormKasGantung = ({
       // If there is data, add the data rows and the "Add Row" button row at the end
       if (allData?.data?.length > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
-          id: item.id,
+          id: Number(item.id),
+          coa: item.coa ?? '',
           nobukti: item.nobukti ?? '',
-          nominal: item.nominal ?? '',
+          nominaldebet: item.nominaldebet ?? '',
+          nominalkredit: item.nominalkredit ?? '',
           keterangan: item.keterangan ?? '',
           isNew: false
         }));
@@ -515,8 +571,10 @@ const FormKasGantung = ({
         setRows([
           {
             id: 0,
+            coa: '',
             nobukti: '',
-            nominal: '',
+            nominaldebet: '',
+            nominalkredit: '',
             keterangan: '',
             isNew: true
           },
@@ -525,21 +583,34 @@ const FormKasGantung = ({
       }
     }
   }, [allData, headerData?.id, popOver, mode]);
-
   useEffect(() => {
     if (rows) {
       // Filter out the `isNew` field and any object with `id: "add_row"`
       const filteredRows = rows
         .filter((row) => row.id !== 'add_row') // Exclude rows with id "add_row"
-        .map(({ isNew, nominal, ...rest }) => ({
+        .map(({ isNew, nominaldebet, nominalkredit, ...rest }) => ({
           ...rest,
-          nominal: nominal ? String(nominal) : '' // Convert nominal to string (empty string if null or undefined)
+          nominaldebet: nominaldebet ? String(nominaldebet) : '',
+          nominalkredit: nominalkredit ? String(nominalkredit) : '' // Convert nominal to string (empty string if null or undefined)
+        }));
+      forms.setValue('details', filteredRows);
+    }
+  }, [rows]);
+  useEffect(() => {
+    if (rows) {
+      // Filter out the `isNew` field and any object with `id: "add_row"`
+      const filteredRows = rows
+        .filter((row) => row.id !== 'add_row') // Exclude rows with id "add_row"
+        .map(({ isNew, nominaldebet, nominalkredit, ...rest }) => ({
+          ...rest,
+          nominaldebet: nominaldebet ? String(nominaldebet) : '',
+          nominalkredit: nominalkredit ? String(nominalkredit) : '' // Convert nominal to string (empty string if null or undefined)
         }));
 
       forms.setValue('details', filteredRows);
     }
   }, [rows]);
-
+  console.log(forms.getValues());
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -657,101 +728,6 @@ const FormKasGantung = ({
                       </FormItem>
                     )}
                   />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
-                        RELASI
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsRelasi.map((props, index) => (
-                        <LookUp
-                          key={index}
-                          {...props}
-                          clearDisabled
-                          disabled={forms.getValues('relasi_id')}
-                          onClear={forms.setValue('relasi_id', null)}
-                          lookupValue={(id) =>
-                            forms.setValue('relasi_id', Number(id))
-                          }
-                          inputLookupValue={forms.getValues('relasi_id')}
-                          lookupNama={forms.getValues('relasi_nama')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
-                    <p className="text-sm text-black">POSTING PENERIMAAN</p>
-
-                    <div className="flex flex-row lg:gap-3">
-                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <div className="w-full lg:w-[15%]">
-                          <FormLabel className="text-sm font-semibold text-gray-700">
-                            KAS/BANK
-                          </FormLabel>
-                        </div>
-                        <div className="w-full lg:w-[70%]">
-                          {lookUpPropsBank.map((props, index) => (
-                            <LookUp
-                              key={index}
-                              {...props}
-                              lookupValue={(id) =>
-                                forms.setValue('bank_id', Number(id))
-                              }
-                              inputLookupValue={forms.getValues('bank_id')}
-                              lookupNama={forms.getValues('bank_nama')}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <div className="w-full lg:w-[15%]">
-                          <FormLabel className="text-sm font-semibold text-gray-700">
-                            ALAT BAYAR
-                          </FormLabel>
-                        </div>
-                        <div className="w-full lg:w-[70%]">
-                          {lookUpPropsAlatBayar.map((props, index) => (
-                            <LookUp
-                              key={index}
-                              {...props}
-                              lookupValue={(id) =>
-                                forms.setValue('alatbayar_id', Number(id))
-                              }
-                              inputLookupValue={forms.getValues('alatbayar_id')}
-                              lookupNama={forms.getValues('alatbayar_nama')}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <FormField
-                        name="nobukti"
-                        control={forms.control}
-                        render={({ field }) => (
-                          <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                              NO BUKTI KAS KELUAR
-                            </FormLabel>
-                            <div className="flex flex-col lg:w-[35%]">
-                              <FormControl>
-                                <Input
-                                  disabled
-                                  value=""
-                                  type="text"
-                                  readOnly={
-                                    mode === 'view' || mode === 'delete'
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </div>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
                   <div className="h-[400px] min-h-[400px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div

@@ -235,23 +235,27 @@ const FormPenerimaan = ({
         ),
         name: 'COA',
         renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                  value={props.row.coa}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'coa', e.target.value)
-                  }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
+              {props.row.isAddRow
+                ? ''
+                : lookupPropsCoaMasukDetail.map(
+                    (propsLookupCoaMasuk, index) => (
+                      <LookUp
+                        key={index}
+                        {...propsLookupCoaMasuk}
+                        labelLookup="LOOKUP COA KAS MASUK"
+                        label={`COA KAS MASUK ${rowIdx}`}
+                        disabled={mode === 'view' || mode === 'delete'}
+                        lookupValue={(id) =>
+                          handleInputChange(rowIdx, 'coa', String(id))
+                        }
+                        inputLookupValue={props.row.coa}
+                        lookupNama={props.row.coa_nama}
+                      />
+                    )
+                  )}
             </div>
           );
         }
@@ -363,7 +367,23 @@ const FormPenerimaan = ({
       singleColumn: false,
       pageSize: 20,
       showOnButton: true,
-      postData: 'coa'
+      postData: 'keterangancoa'
+    }
+  ];
+  const lookupPropsCoaMasukDetail = [
+    {
+      columns: [
+        { key: 'coa', name: 'coa', width: 100 },
+        { key: 'keterangancoa', name: 'keterangancoa' }
+      ],
+      extendSize: '200',
+      selectedRequired: false,
+      endpoint: 'akunpusat',
+      dataToPost: 'coa',
+      singleColumn: false,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'keterangancoa'
     }
   ];
   const lookUpPropsBank = [
@@ -494,6 +514,7 @@ const FormPenerimaan = ({
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
           coa: item.coa ?? '',
+          coa_nama: item.coa_nama ?? '',
           nominal: item.nominal ?? '',
           keterangan: item.keterangan ?? '',
           isNew: false
@@ -510,6 +531,7 @@ const FormPenerimaan = ({
           {
             id: '0',
             coa: '',
+            coa_nama: '',
             nominal: '',
             keterangan: '',
             isNew: true
@@ -525,7 +547,7 @@ const FormPenerimaan = ({
       // Filter out the `isNew` field and any object with `id: "add_row"`
       const filteredRows = rows
         .filter((row) => row.id !== 'add_row') // Exclude rows with id "add_row"
-        .map(({ isNew, nominal, ...rest }) => ({
+        .map(({ isNew, nominal, coa_nama, ...rest }) => ({
           ...rest,
           nominal: nominal ? String(nominal) : '' // Convert nominal to string (empty string if null or undefined)
         }));
@@ -533,8 +555,6 @@ const FormPenerimaan = ({
       forms.setValue('details', filteredRows);
     }
   }, [rows]);
-
-  console.log(forms.getValues());
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
@@ -677,28 +697,6 @@ const FormPenerimaan = ({
                     )}
                   />
                   <FormField
-                    name="postingdari"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-                          POSTING DARI
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              disabled={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
                     name="diterimadari"
                     control={forms.control}
                     render={({ field }) => (
@@ -737,7 +735,7 @@ const FormPenerimaan = ({
                             forms.setValue('coakasmasuk', id)
                           }
                           inputLookupValue={forms.getValues('coakasmasuk')}
-                          lookupNama={forms.getValues('coakasmasuk')}
+                          lookupNama={forms.getValues('coakasmasuk_nama')}
                         />
                       ))}
                     </div>

@@ -16,16 +16,20 @@ import { useToast } from '@/hooks/use-toast';
 import { useDispatch } from 'react-redux';
 import { AxiosError } from 'axios';
 import { IErrorResponse } from '../types/user.type';
+import {
+  deleteJurnalUmumFn,
+  getJurnalUmumDetailFn,
+  getJurnalUmumHeaderFn,
+  storeJurnalUmumFn,
+  updateJurnalUmumFn
+} from '../apis/jurnalumumheader.api';
 
-export const useGetKasGantungHeader = (
+export const useGetJurnalUmumHeader = (
   filters: {
     filters?: {
       nobukti?: string;
       tglbukti?: string;
       keterangan?: string | null;
-      bank_id?: number | null;
-      pengeluaran_nobukti?: string | null;
-      coakaskeluar?: string | null;
       tglDari?: string | null;
       tglSampai?: string | null;
     };
@@ -41,7 +45,7 @@ export const useGetKasGantungHeader = (
   const queryClient = useQueryClient();
 
   return useQuery(
-    ['kasgantung', filters],
+    ['jurnalumum', filters],
     async () => {
       // Only trigger processing if the page is 1
       if (filters.page === 1) {
@@ -49,7 +53,7 @@ export const useGetKasGantungHeader = (
       }
 
       try {
-        const data = await getKasGantungHeaderFn(filters);
+        const data = await getJurnalUmumHeaderFn(filters);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -75,28 +79,28 @@ export const useGetKasGantungHeader = (
     }
   );
 };
-export const useGetKasGantungDetail = (id?: number) => {
+export const useGetJurnalUmumDetail = (id?: number) => {
   return useQuery(
-    ['kasgantung', id],
-    async () => await getKasGantungDetailFn(id!),
+    ['jurnalumum', id],
+    async () => await getJurnalUmumDetailFn(id!),
     {
       enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
   );
 };
-export const useCreateKasGantung = () => {
+export const useCreateJurnalUmum = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  return useMutation(storeKasGantungFn, {
+  return useMutation(storeJurnalUmumFn, {
     // before the mutation fn runs
     onMutate: () => {
       dispatch(setProcessing());
     },
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
-      void queryClient.invalidateQueries(['kasgantung']);
+      void queryClient.invalidateQueries(['jurnalumum']);
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -183,13 +187,13 @@ export const useGetKasGantungHeaderPengembalian = (
     }
   );
 };
-export const useUpdatePengembalianKasGantung = () => {
+export const useUpdateJurnalUmum = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateKasGantungFn, {
+  return useMutation(updateJurnalUmumFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('kasgantung');
+      void queryClient.invalidateQueries('jurnalumum');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'
@@ -207,13 +211,13 @@ export const useUpdatePengembalianKasGantung = () => {
     }
   });
 };
-export const useDeleteKasGantung = () => {
+export const useDeleteJurnalUmum = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteKasGantungFn, {
+  return useMutation(deleteJurnalUmumFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('kasgantung');
+      void queryClient.invalidateQueries('jurnalumum');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'

@@ -14,8 +14,8 @@ import {
   setDefault,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
-import GridKasGantungHeader from './components/GridJurnalUmumHeader';
-import GridKasGantungDetail from './components/GridJurnalUmumDetail';
+import GridJurnalUmumHeader from './components/GridJurnalUmumHeader';
+import GridJurnalUmumDetail from './components/GridJurnalUmumDetail';
 import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 interface ApiResponse {
@@ -95,10 +95,10 @@ const Page = () => {
           <FilterGrid />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridKasGantungHeader />
+          <GridJurnalUmumHeader />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridKasGantungDetail />
+          <GridJurnalUmumDetail />
         </div>
       </div>
     </PageContainer>

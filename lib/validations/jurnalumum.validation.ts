@@ -1,25 +1,19 @@
 import { z } from 'zod';
 
-export const kasgantungDetailSchema = z.object({
+export const jurnalumumDetailSchema = z.object({
   id: z.number().optional(),
-  nobukti: z.string().nullable(),
   keterangan: z.string().nullable(),
-  nominal: z.string().nullable()
+  coa: z.string().nullable(),
+  keterangancoa: z.string().nullable().optional(),
+  nominaldebet: z.string().nullable(),
+  nominalkredit: z.string().nullable()
 });
-export type KasGantungDetailInput = z.infer<typeof kasgantungDetailSchema>;
+export type JurnalUmumDetailInput = z.infer<typeof jurnalumumDetailSchema>;
 
-export const kasgantungHeaderSchema = z.object({
+export const jurnalumumHeaderSchema = z.object({
   nobukti: z.string().nullable(),
   tglbukti: z.string().nullable(),
   keterangan: z.string().nullable(),
-  bank_id: z.number().nullable(),
-  bank_nama: z.string().nullable().optional(),
-  pengeluaran_nobukti: z.string().nullable(),
-  coakaskeluar: z.string().nullable(),
-  relasi_id: z.number().nullable(),
-  alatbayar_id: z.number().nullable(),
-  relasi_nama: z.string().nullable().optional(),
-  alatbayar_nama: z.string().nullable().optional(),
-  details: z.array(kasgantungDetailSchema).min(1)
+  details: z.array(jurnalumumDetailSchema).min(1)
 });
-export type KasGantungHeaderInput = z.infer<typeof kasgantungHeaderSchema>;
+export type JurnalUmumHeaderInput = z.infer<typeof jurnalumumHeaderSchema>;

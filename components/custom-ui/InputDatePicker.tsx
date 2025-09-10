@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import InputMask from '@mona-health/react-input-mask';
 import { Calendar } from '@/components/ui/calendar';
 import { FaCalendarAlt } from 'react-icons/fa';
@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover';
+
 export interface DateInputProps
   extends Omit<
     React.ComponentProps<typeof InputMask>,
@@ -52,6 +53,33 @@ const InputDatePicker: React.FC<DateInputProps> = ({
   ...rest
 }) => {
   const [open, setOpen] = useState(false);
+
+  // Internal state untuk display di input
+  const [internalValue, setInternalValue] = useState<string>('');
+
+  // Flag untuk track apakah perubahan dari internal
+  const isInternalChange = useRef(false);
+
+  // Sync external value ke internal value HANYA saat:
+  // 1. Initial mount
+  // 2. Value berubah dari luar (bukan dari typing user)
+  useEffect(() => {
+    // Skip jika perubahan dari internal (user typing)
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+
+    // Sync dari external ke internal
+    if (value) {
+      setInternalValue(value);
+    } else {
+      // Hanya clear internal value jika memang di-clear dari luar
+      // Bukan karena user sedang mengetik
+      setInternalValue('');
+    }
+  }, [value]);
+
   const dateMask = [
     /[0-3]/, // D1
     /\d/, // D2
@@ -64,6 +92,46 @@ const InputDatePicker: React.FC<DateInputProps> = ({
     /\d/, // Y3
     /\d/ // Y4
   ];
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+
+    // Set flag bahwa ini perubahan internal
+    isInternalChange.current = true;
+
+    // Update internal value untuk display (tetap tampilkan apa yang user ketik)
+    setInternalValue(inputValue);
+
+    // Check apakah tanggal sudah lengkap (format DD-MM-YYYY dengan angka semua)
+    const isComplete = /^\d{2}-\d{2}-\d{4}$/.test(inputValue);
+
+    // Kirim ke parent: value lengkap atau empty string
+    const externalValue = isComplete ? inputValue : '';
+
+    onChange?.({
+      ...e,
+      target: {
+        ...e.target,
+        value: externalValue
+      }
+    } as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  // Handler untuk calendar selection
+  const handleCalendarSelect = (date: Date | undefined) => {
+    if (date) {
+      const formatted = formatDateCalendar(date);
+
+      // Tidak perlu set flag karena ini memang perubahan yang valid
+      setInternalValue(formatted);
+
+      // Send to parent
+      onChange?.({ target: { value: formatted } } as any);
+      onSelect?.(formatted as unknown as Date);
+      setOpen(false);
+    }
+  };
+
   return (
     <div
       className={`relative flex flex-row items-center rounded-sm border border-zinc-300 focus-within:border-blue-500 ${className}`}
@@ -78,12 +146,12 @@ const InputDatePicker: React.FC<DateInputProps> = ({
               : 'text-zinc-900'
           }
         `}
-        onChange={onChange}
+        onChange={handleChange}
         maskPlaceholder="DD-MM-YYYY"
         disabled={disabled}
         placeholder="DD-MM-YYYY"
         alwaysShowMask
-        value={value}
+        value={internalValue} // Gunakan internal value untuk display
         beforeMaskedStateChange={({
           previousState,
           currentState,
@@ -112,6 +180,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
                 };
               }
             }
+
             if (parts[1].length === 2) {
               const [fc, sc] = monthStr.split('') as [string, string];
               if (fc === '1' && Number(sc) > 2) {
@@ -133,6 +202,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
                 };
               }
             }
+
             if (
               parts[0] === '29' &&
               parts[1] === '02' &&
@@ -146,6 +216,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
               }
             }
           }
+
           return { value: nextState.value, selection: nextState.selection };
         }}
       />
@@ -176,21 +247,20 @@ const InputDatePicker: React.FC<DateInputProps> = ({
               fromYear={fromYear}
               toYear={toYear}
               defaultMonth={
-                value && value !== 'DD-MM-YYYY'
-                  ? parse(value, 'dd-MM-yyyy', new Date())
+                internalValue &&
+                internalValue !== '' &&
+                /^\d{2}-\d{2}-\d{4}$/.test(internalValue)
+                  ? parse(internalValue, 'dd-MM-yyyy', new Date())
                   : new Date()
               }
               selected={
-                value ? parse(value, 'dd-MM-yyyy', new Date()) : undefined
+                internalValue &&
+                internalValue !== '' &&
+                /^\d{2}-\d{2}-\d{4}$/.test(internalValue)
+                  ? parse(internalValue, 'dd-MM-yyyy', new Date())
+                  : undefined
               }
-              onSelect={(date) => {
-                if (date) {
-                  const formatted = formatDateCalendar(date);
-                  onChange?.({ target: { value: formatted } } as any);
-                  onSelect?.(formatted as unknown as Date);
-                  setOpen(false);
-                }
-              }}
+              onSelect={handleCalendarSelect}
             />
           </PopoverContent>
         </Popover>
