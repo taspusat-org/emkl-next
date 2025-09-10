@@ -42,13 +42,13 @@ import { CalendarIcon } from 'lucide-react';
 import { parse } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { PengeluaranDetail } from '@/lib/types/pengeluaran.type';
+import { HutangDetail } from '@/lib/types/hutang.type';
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
-import { useGetPengeluaranDetail } from '@/lib/server/usePengeluaran';
+import { useGetHutangDetail } from '@/lib/server/useHutang';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
-const FormPengeluaran = ({
+const FormHutang = ({
   popOver,
   setPopOver,
   forms,
@@ -57,6 +57,7 @@ const FormPengeluaran = ({
   handleClose,
   isLoadingCreate,
   isLoadingUpdate,
+  isSubmitSuccessful,
   isLoadingDelete
 }: any) => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -71,24 +72,24 @@ const FormPengeluaran = ({
 
   const [dataGridKey, setDataGridKey] = useState(0);
   const dispatch = useDispatch();
-  const [filters, setFilters] = useState({
-    nobukti: '',
-    keterangan: '',
-    sisa: '',
-    nominal: ''
-  });
+  // const [filters, setFilters] = useState({
+  //   nobukti: '',
+  //   keterangan: '',
+  //   sisa: '',
+  //   nominal: ''
+  // });
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const gridRef = useRef<DataGridHandle>(null);
   const {
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetPengeluaranDetail(headerData?.id ?? 0);
+  } = useGetHutangDetail(headerData?.id ?? 0);
 
   const [rows, setRows] = useState<
-    (PengeluaranDetail | (Partial<PengeluaranDetail> & { isNew: boolean }))[]
+    (HutangDetail | (Partial<HutangDetail> & { isNew: boolean }))[]
   >([]);
-  function handleCellClick(args: { row: PengeluaranDetail }) {
+  function handleCellClick(args: { row: HutangDetail }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -96,16 +97,18 @@ const FormPengeluaran = ({
     }
   }
   const addRow = () => {
-    const newRow: Partial<PengeluaranDetail> & { isNew: boolean } = {
+    const newRow: Partial<HutangDetail> & { isNew: boolean } = {
       id: 0, // Placeholder ID
-      coadebet: '',
-      coadebet_text: '',
+      coa: '',
+      coa_text: '',
       keterangan: '',
       nominal: '',
       dpp: '',
       noinvoiceemkl: '',
+      tglinvoiceemkl: '',
       nofakturpajakemkl: '',
-      perioderefund: '',
+      disableNominal: false,
+      disableDpp: false,
       isNew: true
     };
 
@@ -120,15 +123,14 @@ const FormPengeluaran = ({
     setRows([
       {
         id: 0,
-        coadebet: '',
-        coadebet_text: '',
+        coa: '',
+        coa_text: '',
         keterangan: '',
         nominal: '',
         dpp: '',
         noinvoiceemkl: '',
         tglinvoiceemkl: '',
         nofakturpajakemkl: '',
-        perioderefund: '',
         isNew: true
       },
       { isAddRow: true, id: 'add_row', isNew: false }
@@ -137,16 +139,14 @@ const FormPengeluaran = ({
     forms.setValue('details', [
       {
         id: 0,
-        coadebet: '',
-        coadebet_text: '',
+        coa: '',
+        coa_text: '',
         keterangan: '',
         nominal: '',
         dpp: '',
         noinvoiceemkl: '',
         tglinvoiceemkl: '',
-        nofakturpajakemkl: '',
-        perioderefund: '',
-        text: ''
+        nofakturpajakemkl: ''
       }
     ]);
 
@@ -233,13 +233,6 @@ const FormPengeluaran = ({
   const handleCurrencyChange2 = (rowIdx: number, rawInput: string) => {
     handleInputChange(rowIdx, 'nominal', rawInput);
   };
-  const handleCurrencyChange3 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'persentase', rawInput);
-  };
-
-  const handleCurrencyChange4 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'coadebet', rawInput);
-  };
 
   const totalNominal = rows.reduce(
     (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
@@ -295,7 +288,55 @@ const FormPengeluaran = ({
     });
   };
 
-  const columns = useMemo((): Column<PengeluaranDetail>[] => {
+  const PERSENTASE = 2 / 100;
+
+  const handleNominalChange = (rowIdx: number, value: string) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
+
+      const parsedValue = parseCurrency(value);
+
+      current.nominal = value;
+      current.dpp = '0';
+
+      if (parsedValue === 0 && parseCurrency(current.dpp) === 0) {
+        current.disableNominal = false;
+        current.disableDpp = false;
+      } else {
+        current.disableNominal = false;
+        current.disableDpp = true;
+      }
+
+      return updated;
+    });
+  };
+
+  const handleDppChange = (rowIdx: number, value: string) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
+
+      const parsedDpp = parseCurrency(value);
+
+      current.dpp = value;
+
+      const nominalValue = parsedDpp * PERSENTASE;
+      current.nominal = formatCurrency(nominalValue);
+
+      if (parsedDpp === 0 && parseCurrency(current.nominal) === 0) {
+        current.disableNominal = false;
+        current.disableDpp = false;
+      } else {
+        current.disableNominal = true;
+        current.disableDpp = false;
+      }
+
+      return updated;
+    });
+  };
+
+  const columns = useMemo((): Column<HutangDetail>[] => {
     return [
       {
         key: 'aksi',
@@ -380,7 +421,7 @@ const FormPengeluaran = ({
         }
       },
       {
-        key: 'coadebet',
+        key: 'coa',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -389,32 +430,30 @@ const FormPengeluaran = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Coa Debet</p>
+              <p className={`text-sm font-normal`}>Coa</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        name: 'coadebet',
+        name: 'coa',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
           return (
             <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
               <div className="w-full lg:w-[100%]">
-                {lookUpPropsCoaDebet.map((props, index) => (
+                {lookUpPropscoaDetail.map((props, index) => (
                   <LookUp
-                    label={`COA DEBET ${rowIdx + 1}`}
+                    label={`COA ${rowIdx + 1}`}
                     key={index}
                     {...props}
                     lookupValue={(value: any) =>
-                      handleInputChange(rowIdx, 'coadebet', value)
+                      handleInputChange(rowIdx, 'coa', value)
                     }
-                    lookupNama={forms.getValues(
-                      `details[${rowIdx}].coadebet_text`
-                    )}
+                    lookupNama={forms.getValues(`details[${rowIdx}].coa_text`)}
                     onSelectRow={(value) => {
                       handleInputChange(
                         rowIdx,
-                        'coadebet_text',
+                        'coa_text',
                         value.keterangancoa
                       );
                     }}
@@ -432,36 +471,53 @@ const FormPengeluaran = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Keterangan</p>
+              <p className="text-sm font-normal">Keterangan</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
         ),
-        name: 'KETERANGAN',
+        name: 'keterangan',
         renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
                 ''
               ) : (
-                <Input
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                  value={props.row.keterangan}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'keterangan',
-                      e.target.value
-                    )
-                  }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                <FormField
+                  name={`details.${rowIdx}.keterangan`}
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                      <div className="flex w-full flex-col">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="text"
+                            readOnly={mode === 'view' || mode === 'delete'}
+                            value={field.value ?? ''}
+                            onKeyDown={inputStopPropagation}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              handleInputChange(
+                                rowIdx,
+                                'keterangan',
+                                e.target.value
+                              );
+                            }}
+                            className="h-2 min-h-9 w-full rounded border border-gray-300"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
                 />
               )}
             </div>
@@ -515,10 +571,11 @@ const FormPengeluaran = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={props.row.disableNominal}
                             value={String(props.row.nominal ?? '')}
                             onValueChange={(value) => {
                               field.onChange(value);
-                              handleCurrencyChange2(rowIdx, value);
+                              handleNominalChange(rowIdx, value);
                             }}
                           />
                         </FormControl>
@@ -579,10 +636,11 @@ const FormPengeluaran = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={props.row.disableDpp}
                             value={String(props.row.dpp ?? '')}
                             onValueChange={(value) => {
                               field.onChange(value);
-                              handleCurrencyChange(rowIdx, value);
+                              handleDppChange(rowIdx, value);
                             }}
                           />
                         </FormControl>
@@ -606,7 +664,7 @@ const FormPengeluaran = ({
         colSpan: (args) => {
           // If it's the "Add Row" row, span across multiple columns
           if (args.type === 'ROW' && args.row.isAddRow) {
-            return 4; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+            return 3; // Spanning the "Add Row" button across 3 columns (adjust as needed)
           }
           return undefined; // For other rows, no column spanning
         },
@@ -740,49 +798,6 @@ const FormPengeluaran = ({
             </div>
           );
         }
-      },
-      {
-        key: 'perioderefund',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 170,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>periode refund</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
-          </div>
-        ),
-        name: 'perioderefund',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                  value={props.row.perioderefund}
-                  maxLength={10}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'perioderefund',
-                      e.target.value
-                    )
-                  }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
-            </div>
-          );
-        }
       }
     ];
   }, [rows, checkedRows, editingRowId, editableValues, dispatch]);
@@ -803,80 +818,13 @@ const FormPengeluaran = ({
     }
   ];
 
-  const lookUpPropsBank = [
-    {
-      columns: [{ key: 'nama', name: 'BANK' }],
-      labelLookup: 'BANK LOOKUP',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'bank',
-      label: 'BANK',
-      singleColumn: true,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama',
-      dataToPost: 'id'
-    }
-  ];
-
-  const lookUpPropsCoakredit = [
-    {
-      columns: [
-        { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
-      ],
-      labelLookup: 'COA KREDIT LOOKUP',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'akunpusat',
-      label: 'COA KREDIT',
-      singleColumn: false,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'keterangancoa',
-      dataToPost: 'coa'
-    }
-  ];
-
-  const lookUpPropsAlatbayar = [
-    {
-      columns: [{ key: 'nama', name: 'ALAT BAYAR' }],
-      labelLookup: 'ALAT BAYAR LOOKUP',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'alatbayar',
-      label: 'ALAT BAYAR',
-      singleColumn: true,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama',
-      dataToPost: 'id'
-    }
-  ];
-
-  const lookUpPropsDaftarbank = [
-    {
-      columns: [{ key: 'nama', name: 'DAFTAR BANK' }],
-      labelLookup: 'DAFTAR BANK LOOKUP',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'daftarbank',
-      label: 'DAFTAR BANK',
-      singleColumn: true,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama',
-      dataToPost: 'id'
-    }
-  ];
-
-  const lookUpPropsCoaDebet = [
+  const lookUpPropscoaDetail = [
     {
       columns: [
         { key: 'coa', name: 'COA', width: 100 },
         { key: 'keterangancoa', name: 'KETERANGANCOA' }
       ],
-      labelLookup: 'COA DEBET LOOKUP',
+      labelLookup: 'COA LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
@@ -985,8 +933,8 @@ const FormPengeluaran = ({
       if (allData?.data?.length > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
-          coadebet: item.coadebet ?? '',
-          coadebet_text: item.coadebet_text ?? '',
+          coa: item.coa ?? '',
+          coa_text: item.coa_text ?? '',
           keterangan: item.keterangan ?? '',
           nominal: item.nominal ?? '',
           dpp: item.dpp ?? '',
@@ -1007,8 +955,8 @@ const FormPengeluaran = ({
         setRows([
           {
             id: 0,
-            coadebet: '',
-            coadebet_text: '',
+            coa: '',
+            coa_text: '',
             keterangan: '',
             nominal: '',
             dpp: '',
@@ -1032,20 +980,19 @@ const FormPengeluaran = ({
         .map(
           ({
             isNew,
-            coadebet,
-            coadebet_text,
+            coa,
+            coa_text,
             keterangan,
             nominal,
             dpp,
             noinvoiceemkl,
             tglinvoiceemkl,
             nofakturpajakemkl,
-            perioderefund,
             ...rest
           }) => ({
             ...rest,
-            coadebet: coadebet ? String(coadebet) : '',
-            coadebet_text: coadebet_text ? String(coadebet_text) : '',
+            coa: coa ? String(coa) : '',
+            coa_text: coa_text ? String(coa_text) : '',
             keterangan: keterangan ? String(keterangan) : '',
             nominal: nominal ? String(nominal) : '',
             dpp: dpp ? String(dpp) : '',
@@ -1053,14 +1000,19 @@ const FormPengeluaran = ({
             tglinvoiceemkl: tglinvoiceemkl ? String(tglinvoiceemkl) : '',
             nofakturpajakemkl: nofakturpajakemkl
               ? String(nofakturpajakemkl)
-              : '',
-            perioderefund: perioderefund ? String(perioderefund) : ''
+              : ''
           })
         );
 
       forms.setValue('details', filteredRows);
     }
   }, [rows]);
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      resetDetailAndAddNewRow();
+    }
+  }, [isSubmitSuccessful]);
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
@@ -1069,12 +1021,12 @@ const FormPengeluaran = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Add Pengeluaran'
+              ? 'Add Hutang'
               : mode === 'edit'
-              ? 'Edit Pengeluaran'
+              ? 'Edit Hutang'
               : mode === 'delete'
-              ? 'Delete Pengeluaran'
-              : 'View Pengeluaran'}
+              ? 'Delete Hutang'
+              : 'View Hutang'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -1101,7 +1053,10 @@ const FormPengeluaran = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                          <FormLabel
+                            required={true}
+                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          >
                             NOMOR BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -1158,200 +1113,6 @@ const FormPengeluaran = ({
                       )}
                     />
                   </div>
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        RELASI
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsRelasi.map((props, index) => (
-                        <LookUp
-                          disabled={mode === 'view' || mode === 'delete'}
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('relasi_id', Number(id))
-                          }
-                          lookupNama={forms.getValues('relasi_text')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <FormField
-                    name="keterangan"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          KETERANGAN
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        BANK
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsBank.map((props, index) => (
-                        <LookUp
-                          disabled={
-                            mode === 'view' ||
-                            mode === 'delete' ||
-                            mode === 'edit'
-                          }
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('bank_id', Number(id))
-                          }
-                          lookupNama={forms.getValues('bank_text')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <FormField
-                    name="postingdari"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          POSTING DARI
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        COA KREDIT
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsCoakredit.map((props, index) => (
-                        <LookUp
-                          disabled={mode === 'view' || mode === 'delete'}
-                          key={index}
-                          {...props}
-                          lookupValue={(id) => forms.setValue('coakredit', id)}
-                          lookupNama={forms.getValues('coakredit_text')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <FormField
-                    name="dibayarke"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          DIBAYAR KE
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        ALAT BAYAR
-                      </FormLabel>
-                    </div>
-                    <div className="w-full lg:w-[85%]">
-                      {lookUpPropsAlatbayar.map((props, index) => (
-                        <LookUp
-                          disabled={mode === 'view' || mode === 'delete'}
-                          key={index}
-                          {...props}
-                          lookupValue={(id) =>
-                            forms.setValue('alatbayar_id', Number(id))
-                          }
-                          lookupNama={forms.getValues('alatbayar_text')}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <FormField
-                    name="nowarkat"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          NOMOR WARKAT
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
                   <FormField
                     name="tgljatuhtempo"
                     control={forms.control}
@@ -1374,6 +1135,38 @@ const FormPengeluaran = ({
                                 forms.setValue('tgljatuhtempo', date)
                               }
                             />
+                            {/* <InputDateTimePicker
+                                value={field.value} // '' saat kosong
+                                onChange={field.onChange} // string keluar (mis. "16-08-2025 09:25 AM")
+                                showCalendar
+                                showTime // aktifkan 12h + AM/PM
+                                minuteStep={1}
+                                fromYear={1960}
+                                toYear={2035}
+                                // outputFormat="dd-MM-yyyy hh:mm a" // default sudah begini saat showTime
+                              /> */}
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="keterangan"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          KETERANGAN
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
                           </FormControl>
                           <FormMessage />
                         </div>
@@ -1386,24 +1179,27 @@ const FormPengeluaran = ({
                         required={true}
                         className="text-sm font-semibold text-gray-700"
                       >
-                        DAFTAR BANK
+                        RELASI
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookUpPropsDaftarbank.map((props, index) => (
+                      {lookUpPropsRelasi.map((props, index) => (
                         <LookUp
-                          disabled={mode === 'view' || mode === 'delete'}
+                          disabled={
+                            mode === 'view' ||
+                            mode === 'delete' ||
+                            mode === 'edit'
+                          }
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('daftarbank_id', Number(id))
+                            forms.setValue('relasi_id', Number(id))
                           }
-                          lookupNama={forms.getValues('daftarbank_text')}
+                          lookupNama={forms.getValues('relasi_text')}
                         />
                       ))}
                     </div>
                   </div>
-
                   <div className="h-[400px] min-h-[400px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div
@@ -1482,7 +1278,6 @@ const FormPengeluaran = ({
                   e.preventDefault();
                   onSubmit(true);
                   dispatch(setSubmitClicked(true));
-                  resetDetailAndAddNewRow();
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"
@@ -1510,4 +1305,4 @@ const FormPengeluaran = ({
   );
 };
 
-export default FormPengeluaran;
+export default FormHutang;

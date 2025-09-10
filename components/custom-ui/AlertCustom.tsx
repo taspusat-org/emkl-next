@@ -151,15 +151,6 @@ export default function Alert({
               >
                 {submitText}
               </Button>
-              {cancelText && (
-                <Button
-                  variant="secondary"
-                  className="w-fit rounded-sm border border-blue-500 bg-white px-3 py-2 font-bold capitalize text-blue-500 transition-all hover:bg-blue-500 hover:text-white md:w-fit"
-                  onClick={onClose}
-                >
-                  {cancelText}
-                </Button>
-              )}
             </div>
           )}
         </div>

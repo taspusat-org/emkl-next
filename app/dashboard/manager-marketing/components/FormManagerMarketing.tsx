@@ -54,6 +54,7 @@ const FormManagerMarketing = ({
   forms,
   onSubmit,
   mode,
+  isSubmitSuccessful,
   handleClose,
   isLoadingCreate,
   isLoadingUpdate,
@@ -772,7 +773,11 @@ const FormManagerMarketing = ({
       forms.setValue('details', filteredRows);
     }
   }, [rows]);
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      resetDetailAndAddNewRow();
+    }
+  }, [isSubmitSuccessful]);
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1031,7 +1036,6 @@ const FormManagerMarketing = ({
                   e.preventDefault();
                   onSubmit(true);
                   dispatch(setSubmitClicked(true));
-                  resetDetailAndAddNewRow();
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"

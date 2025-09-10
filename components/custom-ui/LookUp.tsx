@@ -1106,6 +1106,8 @@ export default function LookUp({
         showError.label?.toLowerCase() === label?.toLowerCase() &&
         (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
+        console.log('masuk', label);
+
         setShowError({
           label: label ?? '',
           status: true,
@@ -1143,6 +1145,8 @@ export default function LookUp({
     }
   }, [focus, name, inputRef, submitClicked]);
 
+  console.log(submitClicked);
+  console.log(showError);
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>

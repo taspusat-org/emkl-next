@@ -1798,6 +1798,7 @@ const GridManagerMarketingHeader = () => {
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
+        isSubmitSuccessful={isSubmitSuccessful}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
         forms={forms}
