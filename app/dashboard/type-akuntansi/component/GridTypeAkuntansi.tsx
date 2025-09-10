@@ -1164,7 +1164,7 @@ const GridTypeAkuntansi = () => {
             title: 'Apakah anda yakin ingin menghapus data ini ?',
             variant: 'danger',
             submitText: 'YA',
-            cancelText: 'TIDAK',
+            // cancelText: 'TIDAK',
             catchOnCancel: true
           });
 

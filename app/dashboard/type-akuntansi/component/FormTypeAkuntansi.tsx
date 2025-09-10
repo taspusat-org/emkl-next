@@ -351,9 +351,7 @@ const FormTypeAkuntansi = ({
                 loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
               >
                 <FaSave />
-                <p className="text-center">
-                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
-                </p>
+                <p className="text-center">SAVE & ADD</p>
               </Button>
             </div>
           )}
