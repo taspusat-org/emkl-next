@@ -10,6 +10,7 @@ export interface PenerimaanHeader {
   bank_nama: string | null;
   postingdari: string | null;
   coakasmasuk: string | null;
+  coakasmasuk_nama: string | null;
   diterimadari: string | null;
   alatbayar_id: number | null;
   alatbayar_nama: string | null;
@@ -27,6 +28,7 @@ export interface PenerimaanDetail {
   id: number | string;
   penerimaan_id: string;
   coa: string;
+  coa_nama: string | null;
   keterangan: string | null;
   nominal: string | null;
   transaksibiaya_nobukti: string | null;
@@ -57,6 +59,7 @@ export const filterPenerimaan = {
   bank_nama: '',
   postingdari: '',
   coakasmasuk: '',
+  coakasmasuk_nama: '',
   diterimadari: '',
   alatbayar_id: null,
   alatbayar_nama: '',

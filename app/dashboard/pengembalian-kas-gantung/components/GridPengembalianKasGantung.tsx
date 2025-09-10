@@ -717,7 +717,7 @@ const GridPengembalianKasGantung = () => {
         }
       },
       {
-        key: 'coakasmasuk',
+        key: 'coakasmasuk_nama',
         name: 'COA KAS MASUK',
         resizable: true,
         draggable: true,
@@ -727,12 +727,12 @@ const GridPengembalianKasGantung = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coakasmasuk')}
+              onClick={() => handleSort('coakasmasuk_nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coakasmasuk'
+                  filters.sortBy === 'coakasmasuk_nama'
                     ? 'text-red-500'
                     : 'font-normal'
                 }`}
@@ -740,10 +740,10 @@ const GridPengembalianKasGantung = () => {
                 COA KAS MASUK
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'coakasmasuk' &&
+                {filters.sortBy === 'coakasmasuk_nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'coakasmasuk' &&
+                ) : filters.sortBy === 'coakasmasuk_nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -754,24 +754,26 @@ const GridPengembalianKasGantung = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['coakasmasuk'] = el;
+                  inputColRefs.current['coakasmasuk_nama'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.coakasmasuk
-                    ? filters.filters.coakasmasuk?.toUpperCase()
+                  filters.filters.coakasmasuk_nama
+                    ? filters.filters.coakasmasuk_nama?.toUpperCase()
                     : ''
                 }
                 type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coakasmasuk', value);
+                  handleColumnFilterChange('coakasmasuk_nama', value);
                 }}
               />
-              {filters.filters.coakasmasuk && (
+              {filters.filters.coakasmasuk_nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coakasmasuk', '')}
+                  onClick={() =>
+                    handleColumnFilterChange('coakasmasuk_nama', '')
+                  }
                   type="button"
                 >
                   <FaTimes />
@@ -781,11 +783,11 @@ const GridPengembalianKasGantung = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.coakasmasuk || '';
+          const columnFilter = filters.filters.coakasmasuk_nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.coakasmasuk || '',
+                props.row.coakasmasuk_nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -1360,59 +1362,6 @@ const GridPengembalianKasGantung = () => {
       setPopOver(true);
     }
   };
-  const handleExport = async () => {
-    try {
-      const { page, limit, ...filtersWithoutLimit } = filters;
-
-      const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
-
-      // Buat link untuk mendownload file
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(response);
-      link.href = url;
-      link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-      link.click(); // Trigger download
-
-      // Revoke URL setelah download
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting user data:', error);
-    }
-  };
-
-  const handleExportBySelect = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-
-    // Mengubah checkedRows menjadi format JSON
-    const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-    try {
-      const response = await exportMenuBySelectFn(jsonCheckedRows);
-
-      // Buat link untuk mendownload file
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(response);
-      link.href = url;
-      link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-      link.click(); // Trigger download
-
-      // Revoke URL setelah download
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting menu data:', error);
-      alert({
-        title: 'Failed to generate the export. Please try again.',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    }
-  };
 
   const handleReport = async () => {
     if (checkedRows.size === 0) {
@@ -1881,7 +1830,6 @@ const GridPengembalianKasGantung = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk1');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -1897,7 +1845,6 @@ const GridPengembalianKasGantung = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk2');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -1919,11 +1866,12 @@ const GridPengembalianKasGantung = () => {
       forms.setValue('bank_id', row.bank_id ?? null);
       forms.setValue('penerimaan_nobukti', row.penerimaan_nobukti ?? null);
       forms.setValue('coakasmasuk', row.coakasmasuk ?? null);
+      forms.setValue('coakasmasuk_nama', row.coakasmasuk_nama ?? null);
       forms.setValue('relasi_id', row.relasi_id ?? null);
       forms.setValue('bank_nama', row.bank_nama);
       forms.setValue('relasi_nama', row.relasi_nama);
       // Saat form pertama kali di-render
-      forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
+      forms.setValue('details', []);
     } else {
       // Clear or set defaults when adding a new record
       const currentDate = new Date(); // Dapatkan tanggal sekarang

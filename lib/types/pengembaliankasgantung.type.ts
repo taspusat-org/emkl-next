@@ -9,6 +9,7 @@ export interface PengembalianKasGantungHeader {
   bank_id: number | null;
   penerimaan_nobukti: string | null;
   coakasmasuk: string | null;
+  coakasmasuk_nama: string | null;
   relasi_nama: string | null;
   relasi_id: number | null;
   info: string | null;
@@ -30,6 +31,7 @@ export interface IPengembalianKasGantungDetail {
   editing_at: string | null;
   created_at: string;
   updated_at: string;
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface IAllPengembalianKasGantung {
@@ -48,6 +50,7 @@ export const filterPengembalianKasGantung = {
   bank_id: null,
   penerimaan_nobukti: '',
   coakasmasuk: '',
+  coakasmasuk_nama: '',
   relasi_id: null,
   modifiedby: null,
   created_at: '',

@@ -91,7 +91,7 @@ const GridPenerimaanDetail = () => {
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.coa}
+              {props.row.coa_nama}
             </div>
           );
         }
@@ -525,6 +525,7 @@ const GridPenerimaanDetail = () => {
         penerimaan_id: item.penerimaan_id, // Updated to match the field name
         coa: item.coa, // Updated to match the field name
         keterangan: item.keterangan, // Updated to match the field name
+        coa_nama: item.coa_nama, // Updated to match the field name
         nominal: item.nominal, // Updated to match the field name
         transaksibiaya_nobukti: item.transaksibiaya_nobukti, // Updated to match the field name
         transaksilain_nobukti: item.transaksilain_nobukti, // Updated to match the field name

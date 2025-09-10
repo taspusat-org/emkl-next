@@ -1149,7 +1149,6 @@ const GridTypeAkuntansi = () => {
           const cannotDeleteIds = cannotDeleteItems
             .map((item) => item.id)
             .join(', ');
-          console.log(cannotDeleteIds);
 
           alert({
             title: 'Beberapa data tidak dapat dihapus!',
@@ -1165,7 +1164,8 @@ const GridTypeAkuntansi = () => {
             variant: 'danger',
             submitText: 'YA',
             // cancelText: 'TIDAK',
-            catchOnCancel: true
+            catchOnCancel: true,
+            cancelText: 'TIDAK'
           });
 
           await handleMultipleDelete(checkedRowsArray);

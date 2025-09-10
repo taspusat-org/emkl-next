@@ -765,21 +765,23 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coakasmasuk')}
+              onClick={() => handleSort('coakasmasuk_nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coakasmasuk' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'coakasmasuk_nama'
+                    ? 'font-bold'
+                    : 'font-normal'
                 }`}
               >
                 COA Kas Masuk
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'coakasmasuk' &&
+                {filters.sortBy === 'coakasmasuk_nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'coakasmasuk' &&
+                ) : filters.sortBy === 'coakasmasuk_nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -790,24 +792,26 @@ const GridPenerimaanHeader = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['coakasmasuk'] = el;
+                  inputColRefs.current['coakasmasuk_nama'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none text-sm"
                 value={
-                  filters.filters.coakasmasuk
-                    ? filters.filters.coakasmasuk?.toUpperCase()
+                  filters.filters.coakasmasuk_nama
+                    ? filters.filters.coakasmasuk_nama?.toUpperCase()
                     : ''
                 }
                 type="text"
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coakasmasuk', value);
+                  handleColumnFilterChange('coakasmasuk_nama', value);
                 }}
               />
-              {filters.filters.coakasmasuk && (
+              {filters.filters.coakasmasuk_nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coakasmasuk', '')}
+                  onClick={() =>
+                    handleColumnFilterChange('coakasmasuk_nama', '')
+                  }
                   type="button"
                 >
                   <FaTimes />
@@ -817,11 +821,11 @@ const GridPenerimaanHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.coakasmasuk || '';
+          const columnFilter = filters.filters.coakasmasuk_nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.coakasmasuk || '',
+                props.row.coakasmasuk_nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -2310,6 +2314,7 @@ const GridPenerimaanHeader = () => {
       forms.setValue('tgllunas', row.tgllunas ?? '');
       forms.setValue('nowarkat', row.nowarkat ?? '');
       forms.setValue('coakasmasuk', row.coakasmasuk ?? '');
+      forms.setValue('coakasmasuk_nama', row.coakasmasuk_nama ?? '');
       forms.setValue('relasi_id', Number(row.relasi_id) ?? null);
       forms.setValue('alatbayar_id', Number(row.alatbayar_id) ?? null);
       forms.setValue('bank_nama', row.bank_nama);

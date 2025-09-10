@@ -544,7 +544,11 @@ export default function LookUp({
           cellValue = formatCurrency(cellValue);
         }
         return (
-          <div className="m-0 flex h-full cursor-pointer items-center p-0  text-[12px]">
+          <div
+            className={`m-0 flex h-full cursor-pointer items-center p-0  text-[12px] ${
+              col.isCurrency ? 'justify-end' : 'justify-start'
+            }`}
+          >
             {highlightText(cellValue, filters.search, columnFilter)}
           </div>
         );
