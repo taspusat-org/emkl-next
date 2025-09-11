@@ -19,7 +19,7 @@ const ReportDesigner = () => {
         // Set your license and initialize the designer here
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
           '/fonts/tahomabd.ttf',
-          'TahomaBD'
+          'Tahoma'
         );
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
           '/fonts/tahoma.ttf',
@@ -54,7 +54,7 @@ const ReportDesigner = () => {
         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
         viewer.renderHtml('content');
-        report.loadFile('/reports/LaporanBank.mrt');
+        report.loadFile('/reports/LaporanHutang.mrt');
 
         report.dictionary.dataSources.clear();
         dataSet.readJson({

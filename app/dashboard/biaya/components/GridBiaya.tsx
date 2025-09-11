@@ -829,7 +829,11 @@ const GridBiaya = () => {
           const columnFilter = filters.filters.jenisorderan_text || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {props.row.jenisorderan_text || ''}
+              {highlightText(
+                props.row.jenisorderan_text || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
