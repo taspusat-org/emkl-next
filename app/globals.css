@@ -522,6 +522,13 @@ table {
   gap: 0.5rem;
 }
 
+.link-color{
+  color:#007bff;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
 /* Slider input mengambil seluruh lebar container */
 .zoom-slider input[type='range'] {
   flex: 1;

@@ -29,7 +29,7 @@ import {
 } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -113,7 +113,8 @@ const GridJurnalUmumHeader = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-
+  const searchParams = useSearchParams();
+  const [nobukti, setNobukti] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { mutateAsync: createJurnalUmum, isLoading: isLoadingCreate } =
@@ -275,33 +276,25 @@ const GridJurnalUmumHeader = () => {
     const textValue = text != null ? String(text) : '';
     if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) {
+    // Priority: columnFilter over search
+    const searchTerm = columnFilter?.trim() || search?.trim() || '';
+
+    if (!searchTerm) {
       return textValue;
     }
 
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
-
-    // 1. Fungsi untuk escape regex‐meta chars
     const escapeRegExp = (s: string) =>
       s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-    const pattern = combined
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
+    // Create regex for continuous string match
+    const escapedTerm = escapeRegExp(searchTerm);
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
 
-    // 3. Build regex-nya
-    const regex = new RegExp(`(${pattern})`, 'gi');
-
-    // 4. Replace dengan <span>
+    // Replace all occurrences
     const highlighted = textValue.replace(
       regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+      (match) =>
+        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
     );
 
     return (
@@ -1735,6 +1728,26 @@ const GridJurnalUmumHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [onReload, refetch]); // Dependency array termasuk filters dan ref
+  useEffect(() => {
+    // Ambil parameter nobukti dari URL
+    const rawNobukti = searchParams.get('nobukti');
+
+    // Set filters
+    setFilters((prevFilters: Filter) => ({
+      ...prevFilters,
+      filters: {
+        ...prevFilters.filters,
+        nobukti: rawNobukti ?? ''
+      }
+    }));
+
+    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
+  }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

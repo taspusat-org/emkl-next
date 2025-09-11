@@ -73,6 +73,7 @@ import {
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   page: number;
@@ -221,33 +222,25 @@ const GridPengembalianKasGantung = () => {
     const textValue = text != null ? String(text) : '';
     if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) {
+    // Priority: columnFilter over search
+    const searchTerm = columnFilter?.trim() || search?.trim() || '';
+
+    if (!searchTerm) {
       return textValue;
     }
 
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
-
-    // 1. Fungsi untuk escape regex‐meta chars
     const escapeRegExp = (s: string) =>
       s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-    const pattern = combined
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
+    // Create regex for continuous string match
+    const escapedTerm = escapeRegExp(searchTerm);
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
 
-    // 3. Build regex-nya
-    const regex = new RegExp(`(${pattern})`, 'gi');
-
-    // 4. Replace dengan <span>
+    // Replace all occurrences
     const highlighted = textValue.replace(
       regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+      (match) =>
+        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
     );
 
     return (
@@ -426,7 +419,7 @@ const GridPengembalianKasGantung = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nobukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nomor Bukti
@@ -434,10 +427,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nobukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -501,7 +494,7 @@ const GridPengembalianKasGantung = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglbukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'tglbukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Tanggal Bukti
@@ -509,10 +502,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglbukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglbukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -572,7 +565,7 @@ const GridPengembalianKasGantung = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'bank_id' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'bank_id' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama Bank
@@ -580,10 +573,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'bank_id' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'bank_id' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -654,7 +647,7 @@ const GridPengembalianKasGantung = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'penerimaan_nobukti'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -663,10 +656,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'penerimaan_nobukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'penerimaan_nobukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -705,13 +698,18 @@ const GridPengembalianKasGantung = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.penerimaan_nobukti || '';
+          const value = props.row.penerimaan_nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search, columnFilter);
+          };
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.penerimaan_nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
             </div>
           );
         }
@@ -733,7 +731,7 @@ const GridPengembalianKasGantung = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'coakasmasuk_nama'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -742,10 +740,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coakasmasuk_nama' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coakasmasuk_nama' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -811,9 +809,7 @@ const GridPengembalianKasGantung = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'relasi_id'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'relasi_id' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Relasi
@@ -821,10 +817,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'relasi_id' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'relasi_id' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -832,35 +828,26 @@ const GridPengembalianKasGantung = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('bank_id', value);
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['relasi_nama'] = el;
                 }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.relasi_nama || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleColumnFilterChange('relasi_nama', value);
+                }}
+              />
+              {filters.filters.relasi_nama && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('relasi_nama', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
@@ -965,9 +952,7 @@ const GridPengembalianKasGantung = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -975,10 +960,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1040,9 +1025,7 @@ const GridPengembalianKasGantung = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -1050,10 +1033,10 @@ const GridPengembalianKasGantung = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
