@@ -22,13 +22,18 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridPengembalianKasGantungDetail = () => {
+const GridPengembalianKasGantungDetail = ({
+  activeTab
+}: {
+  activeTab: string;
+}) => {
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const {
     data: detail,
     isLoading,
     refetch
-  } = useGetPengembalianKasGantungDetail(headerData?.id ?? 0);
+  } = useGetPengembalianKasGantungDetail(headerData?.nobukti);
+  console.log('headerData', headerData.nobukti);
   const [rows, setRows] = useState<IPengembalianKasGantungDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);

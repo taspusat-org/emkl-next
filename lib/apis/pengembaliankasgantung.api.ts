@@ -72,10 +72,10 @@ export const storePengembalianKasGantungFn = async (
 
   return response.data;
 };
-export const getPengembalianKasGantungDetailFn = async (
-  id: number
-): Promise<IAllPengembalianKasGantungDetail> => {
-  const response = await api2.get(`/pengembaliankasgantungdetail/${id}`);
+export const getPengembalianKasGantungDetailFn = async (data: {
+  nobukti: string;
+}): Promise<IAllPengembalianKasGantungDetail> => {
+  const response = await api2.get(`/pengembaliankasgantungdetail/detail`, data);
 
   return response.data;
 };

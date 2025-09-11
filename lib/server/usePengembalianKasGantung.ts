@@ -110,12 +110,13 @@ export const useCreatePengembalianKasGantung = () => {
     // }
   });
 };
-export const useGetPengembalianKasGantungDetail = (id?: number) => {
+export const useGetPengembalianKasGantungDetail = (nobukti?: string) => {
+  console.log('nobukti', nobukti);
   return useQuery(
-    ['pengembaliankasgantung', id],
-    async () => await getPengembalianKasGantungDetailFn(id!),
+    ['pengembaliankasgantung', nobukti],
+    async () => await getPengembalianKasGantungDetailFn(nobukti!),
     {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      enabled: !!nobukti // Hanya aktifkan query jika tab aktif adalah "pengembaliankasgantung"
     }
   );
 };
