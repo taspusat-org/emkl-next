@@ -22,12 +22,11 @@ export interface PengembalianKasGantungHeader {
 export interface IPengembalianKasGantungDetail {
   id: number;
   nobukti: string;
+  kasgantung_nobukti: string;
   keterangan: string | null;
   nominal: string | null; // Adjusted to 'string' since money type in the schema could be treated as string in TypeScript
   info: string | null;
   modifiedby: string | null;
-  editing_by: string | null;
-  editing_at: string | null;
   created_at: string;
   updated_at: string;
   [key: string]: string | number | boolean | null | undefined;
@@ -56,4 +55,13 @@ export const filterPengembalianKasGantung = {
   updated_at: '',
   tglDari: '',
   tglSampai: ''
+};
+export const filterPengembalianKasGantungDetail = {
+  nobukti: '',
+  kasgantung_nobukti: '',
+  nominal: '',
+  keterangan: '',
+  modifiedby: '',
+  created_at: '',
+  updated_at: ''
 };

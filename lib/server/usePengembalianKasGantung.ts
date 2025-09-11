@@ -110,13 +110,23 @@ export const useCreatePengembalianKasGantung = () => {
     // }
   });
 };
-export const useGetPengembalianKasGantungDetail = (nobukti?: string) => {
-  console.log('nobukti', nobukti);
+export const useGetPengembalianKasGantungDetail = (
+  filters: {
+    filters?: {
+      nobukti?: string;
+      tglbukti?: string;
+      keterangan?: string | null;
+    };
+    sortBy?: string;
+    sortDirection?: string;
+    search?: string; // Kata kunci pencarian
+  } = {}
+) => {
   return useQuery(
-    ['pengembaliankasgantung', nobukti],
-    async () => await getPengembalianKasGantungDetailFn(nobukti!),
+    ['pengembaliankasgantung', filters],
+    async () => await getPengembalianKasGantungDetailFn(filters),
     {
-      enabled: !!nobukti // Hanya aktifkan query jika tab aktif adalah "pengembaliankasgantung"
+      enabled: !!filters.filters?.nobukti // Hanya aktifkan query jika tab aktif adalah "pengembaliankasgantung"
     }
   );
 };
