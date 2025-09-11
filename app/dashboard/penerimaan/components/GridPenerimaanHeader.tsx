@@ -29,7 +29,7 @@ import {
 } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -113,6 +113,8 @@ import {
   getPenerimaanHeaderByIdFn
 } from '@/lib/apis/penerimaan.api';
 import { numberToTerbilang } from '@/lib/utils/terbilang';
+import Link from 'next/link';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   page: number;
@@ -131,6 +133,7 @@ const GridPenerimaanHeader = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const searchParams = useSearchParams();
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -304,33 +307,25 @@ const GridPenerimaanHeader = () => {
     const textValue = text != null ? String(text) : '';
     if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) {
+    // Priority: columnFilter over search
+    const searchTerm = columnFilter?.trim() || search?.trim() || '';
+
+    if (!searchTerm) {
       return textValue;
     }
 
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
-
-    // 1. Fungsi untuk escape regex‐meta chars
     const escapeRegExp = (s: string) =>
       s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-    const pattern = combined
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
+    // Create regex for continuous string match
+    const escapedTerm = escapeRegExp(searchTerm);
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
 
-    // 3. Build regex-nya
-    const regex = new RegExp(`(${pattern})`, 'gi');
-
-    // 4. Replace dengan <span>
+    // Replace all occurrences
     const highlighted = textValue.replace(
       regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+      (match) =>
+        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
     );
 
     return (
@@ -539,13 +534,18 @@ const GridPenerimaanHeader = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
+          const value = props.row.nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search, columnFilter);
+          };
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
             </div>
           );
         }
@@ -834,7 +834,7 @@ const GridPenerimaanHeader = () => {
         }
       },
       {
-        key: 'relasi_id',
+        key: 'relasi_nama',
         name: 'Relasi',
         resizable: true,
         draggable: true,
@@ -844,21 +844,21 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('relasi_id')}
+              onClick={() => handleSort('relasi_nama')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'relasi_id' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'relasi_nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Relasi
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'relasi_id' &&
+                {filters.sortBy === 'relasi_nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'relasi_id' &&
+                ) : filters.sortBy === 'relasi_nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -868,26 +868,42 @@ const GridPenerimaanHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="relasi"
-                value="id"
-                label="nama"
-                onChange={(value) =>
-                  handleColumnFilterChange('relasi_id', value)
-                } // Menangani perubahan nilai di parent
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['relasi_nama'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.relasi_nama
+                    ? filters.filters.relasi_nama.toUpperCase()
+                    : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('relasi_nama', value);
+                }}
               />
+              {filters.filters.relasi_nama && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('relasi_nama', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.relasi_nama || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.relasi_nama !== null &&
-                  props.row.relasi_nama !== undefined
-                  ? props.row.relasi_nama
-                  : '',
-                filters.search
+                props.row.relasi_nama || '',
+                filters.search,
+                columnFilter
               )}
             </div>
           );
@@ -962,62 +978,6 @@ const GridPenerimaanHeader = () => {
                 filters.search,
                 columnFilter
               )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'alatbayar_nama',
-        name: 'Alat Bayar',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
-              onClick={() => handleSort('alatbayar_nama')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'alatbayar_nama'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                Alat Bayar
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'alatbayar_nama' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'alatbayar_nama' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="alatbayar"
-                value="id"
-                label="nama"
-                onChange={(value) =>
-                  handleColumnFilterChange('alatbayar_id', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.alatbayar_nama || '', filters.search)}
             </div>
           );
         }
@@ -2172,10 +2132,26 @@ const GridPenerimaanHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPenerimaanHeader');
-  }, []);
-  useEffect(() => {
     setIsFirstLoad(true);
+    loadGridConfig(user.id, 'GridPenerimaanHeader');
+
+    const rawNobukti = searchParams.get('penerimaan_nobukti');
+
+    // Set filters
+    setFilters((prevFilters: Filter) => ({
+      ...prevFilters,
+      filters: {
+        ...prevFilters.filters,
+        nobukti: rawNobukti ?? ''
+      }
+    }));
+
+    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('penerimaan_nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
   }, []);
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
@@ -2222,7 +2198,6 @@ const GridPenerimaanHeader = () => {
 
   useEffect(() => {
     if (!allData || isDataUpdated) return;
-    console.log('masuk3');
 
     const newRows = allData.data || [];
 

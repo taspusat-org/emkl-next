@@ -14,10 +14,9 @@ export interface PengembalianKasGantungHeader {
   relasi_id: number | null;
   info: string | null;
   modifiedby: string | null;
-  editing_by: string | null;
-  editing_at: string | null;
   created_at: string;
   updated_at: string;
+  link: string | null;
 }
 
 export interface IPengembalianKasGantungDetail {

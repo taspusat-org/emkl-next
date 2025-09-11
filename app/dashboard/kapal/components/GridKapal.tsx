@@ -222,33 +222,25 @@ const GridKapal = () => {
     const textValue = text != null ? String(text) : '';
     if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) {
+    // Priority: columnFilter over search
+    const searchTerm = columnFilter?.trim() || search?.trim() || '';
+
+    if (!searchTerm) {
       return textValue;
     }
 
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
-
-    // 1. Fungsi untuk escape regex‐meta chars
     const escapeRegExp = (s: string) =>
       s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-    const pattern = combined
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
+    // Create regex for continuous string match
+    const escapedTerm = escapeRegExp(searchTerm);
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
 
-    // 3. Build regex-nya
-    const regex = new RegExp(`(${pattern})`, 'gi');
-
-    // 4. Replace dengan <span>
+    // Replace all occurrences
     const highlighted = textValue.replace(
       regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
+      (match) =>
+        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
     );
 
     return (

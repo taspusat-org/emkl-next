@@ -22,6 +22,7 @@ export interface PenerimaanHeader {
   modifiedby: string | null;
   created_at: string;
   updated_at: string;
+  link: string | null;
 }
 
 export interface PenerimaanDetail {

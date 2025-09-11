@@ -618,12 +618,12 @@ const FormKasGantung = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Tambah Kas Gantung'
+              ? 'Tambah Jurnal Umum'
               : mode === 'edit'
-              ? 'Edit Kas Gantung'
+              ? 'Edit Jurnal Umum'
               : mode === 'delete'
-              ? 'Delete Kas Gantung'
-              : 'View Kas Gantung'}
+              ? 'Delete Jurnal Umum'
+              : 'View Jurnal Umum'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
