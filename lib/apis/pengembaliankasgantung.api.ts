@@ -72,12 +72,21 @@ export const storePengembalianKasGantungFn = async (
 
   return response.data;
 };
-export const getPengembalianKasGantungDetailFn = async (data: {
-  nobukti: string;
-}): Promise<IAllPengembalianKasGantungDetail> => {
-  const response = await api2.get(`/pengembaliankasgantungdetail/detail`, data);
+export const getPengembalianKasGantungDetailFn = async (
+  filters: GetParams = {}
+): Promise<IAllPengembalianKasGantungDetail> => {
+  try {
+    const queryParams = buildQueryParams(filters);
 
-  return response.data;
+    const response = await api2.get('/pengembaliankasgantungdetail', {
+      params: queryParams
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
 };
 export const updatePengembalianKasGantungFn = async ({
   id,
