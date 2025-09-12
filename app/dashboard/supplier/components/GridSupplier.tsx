@@ -132,10 +132,11 @@ const GridSupplier = () => {
     resolver: zodResolver(supplierSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nama: ''
-      // keterangan: '',
+      nama: '',
+      statusaktif: 1
     }
   });
+
   const {
     setFocus,
     reset,
@@ -2954,13 +2955,14 @@ const GridSupplier = () => {
       console.error('Error during onSuccess:', error);
       setIsDataUpdated(false);
     } finally {
-      dispatch(setClearLookup(true));
+      // dispatch(setClearLookup(true));
       setIsDataUpdated(false);
     }
   };
 
   const onSubmit = async (values: supplierInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
+    clearError();
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
@@ -3441,7 +3443,7 @@ const GridSupplier = () => {
       forms.reset();
       forms.setValue('id', 0);
     }
-  }, [forms, selectedRow, rows, mode]);
+  }, [forms, selectedRow, rows, mode, popOver]);
 
   useEffect(() => {
     // Initialize the refs based on columns dynamically
