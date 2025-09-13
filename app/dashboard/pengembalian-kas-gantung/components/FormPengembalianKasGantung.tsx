@@ -66,7 +66,9 @@ const FormPengembalianKasGantung = ({
     data: detail,
     isLoading,
     refetch: refetchDetail
-  } = useGetPengembalianKasGantungDetail(headerData?.id ?? 0);
+  } = useGetPengembalianKasGantungDetail({
+    filters: { nobukti: headerData?.nobukti ?? '' }
+  });
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [isReload, setIsReload] = useState<boolean>(false);
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);

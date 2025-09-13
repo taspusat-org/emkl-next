@@ -18,6 +18,7 @@ import {
 } from '@/lib/store/lookupSlice/lookupSlice';
 import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
+import { GridTabs } from './components/GridTabs';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -98,7 +99,7 @@ const Page = () => {
           <GridPengembalianKasGantung />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridPengembalianKasGantungDetail />
+          <GridTabs />
         </div>
       </div>
     </PageContainer>

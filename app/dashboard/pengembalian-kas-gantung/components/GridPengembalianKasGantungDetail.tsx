@@ -21,6 +21,8 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import { FaTimes } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
+import IcClose from '@/public/image/x.svg';
+import Image from 'next/image';
 
 interface GridConfig {
   columnsOrder: number[];
@@ -55,12 +57,13 @@ const GridPengembalianKasGantungDetail = ({
     sortDirection: 'asc'
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-
   const {
     data: detail,
     isLoading,
     refetch
-  } = useGetPengembalianKasGantungDetail(filters);
+  } = useGetPengembalianKasGantungDetail(
+    activeTab === 'pengembaliankasgantungdetail' ? filters : {}
+  );
 
   const [rows, setRows] = useState<IPengembalianKasGantungDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -102,8 +105,7 @@ const GridPengembalianKasGantungDetail = ({
         [colKey]: value,
         nobukti: headerData.nobukti
       },
-      search: '',
-      page: 1
+      search: ''
     }));
     setInputValue('');
 
@@ -166,8 +168,7 @@ const GridPengembalianKasGantungDetail = ({
         ...filterPengembalianKasGantungDetail,
         nobukti: headerData.nobukti
       },
-      search: searchValue,
-      page: 1
+      search: searchValue
     }));
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
@@ -182,6 +183,16 @@ const GridPengembalianKasGantungDetail = ({
     setSelectedRow(0);
     setRows([]);
   };
+  const handleClearInput = () => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters
+      },
+      search: ''
+    }));
+    setInputValue('');
+  };
   const handleSort = (column: string) => {
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
@@ -191,8 +202,7 @@ const GridPengembalianKasGantungDetail = ({
     setFilters((prevFilters) => ({
       ...prevFilters,
       sortBy: column,
-      sortDirection: newSortOrder,
-      page: 1
+      sortDirection: newSortOrder
     }));
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
@@ -259,26 +269,7 @@ const GridPengembalianKasGantungDetail = ({
               onClick={() => handleSort('kasgantung_nobukti')}
               onContextMenu={handleContextMenu}
             >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'kasgantung_nobukti'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                Nomor Bukti
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'kasgantung_nobukti' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'kasgantung_nobukti' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
+              <p className={`text-sm font-normal`}>Nomor Bukti</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
@@ -312,7 +303,7 @@ const GridPengembalianKasGantungDetail = ({
                     : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                No.Bukti Kas Gantung
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'kasgantung_nobukti' &&
@@ -390,7 +381,7 @@ const GridPengembalianKasGantungDetail = ({
                   filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                Keterangan
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
@@ -465,7 +456,7 @@ const GridPengembalianKasGantungDetail = ({
                   filters.sortBy === 'nominal' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                Nominal
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nominal' &&
@@ -511,9 +502,9 @@ const GridPengembalianKasGantungDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
-                props.row.nominal || '',
+                formatCurrency(props.row.nominal) || '',
                 filters.search,
                 columnFilter
               )}
@@ -540,7 +531,7 @@ const GridPengembalianKasGantungDetail = ({
                   filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                Modified By
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
@@ -615,7 +606,7 @@ const GridPengembalianKasGantungDetail = ({
                   filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                Created At
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
@@ -690,7 +681,7 @@ const GridPengembalianKasGantungDetail = ({
                   filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                Updated At
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
@@ -747,7 +738,7 @@ const GridPengembalianKasGantungDetail = ({
         }
       }
     ];
-  }, [rows]);
+  }, [rows, filters]);
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
@@ -818,6 +809,11 @@ const GridPengembalianKasGantungDetail = ({
       </div>
     );
   }
+  function getRowClass(row: IPengembalianKasGantungDetail) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+
   const saveGridConfig = async (
     userId: string, // userId sebagai identifier
     gridName: string,
@@ -1003,7 +999,13 @@ const GridPengembalianKasGantungDetail = ({
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-
+  useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
+    if (filters !== prevFilters) {
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
+    }
+  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1012,13 +1014,39 @@ const GridPengembalianKasGantungDetail = ({
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
-        ></div>
+        >
+          <label htmlFor="" className="text-xs text-zinc-600">
+            SEARCH :
+          </label>
+          <div className="relative flex w-[200px] flex-row items-center">
+            <Input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => {
+                handleInputChange(e);
+              }}
+              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+              placeholder="Type to search..."
+            />
+            {(filters.search !== '' || inputValue !== '') && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="absolute right-2 text-gray-500 hover:bg-transparent"
+                onClick={handleClearInput}
+              >
+                <Image src={IcClose} width={15} height={15} alt="close" />
+              </Button>
+            )}
+          </div>
+        </div>
         <DataGrid
           key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
+          rowClass={getRowClass}
           rows={rows}
           headerRowHeight={70}
           onCellKeyDown={handleKeyDown}

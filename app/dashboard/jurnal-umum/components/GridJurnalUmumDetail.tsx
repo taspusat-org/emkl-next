@@ -11,12 +11,14 @@ import DataGrid, {
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import ActionButton from '@/components/custom-ui/ActionButton';
-import { FaPen } from 'react-icons/fa';
 import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/lib/utils';
+import {
+  filterJurnalUmumDetail,
+  JurnalUmumDetail
+} from '@/lib/types/jurnalumumheader.type';
 import { useGetJurnalUmumDetail } from '@/lib/server/useJurnalUmum';
-import { JurnalUmumDetail } from '@/lib/types/jurnalumumheader.type';
 import { filterJurnalumumDetail } from '@/lib/types/pengeluaran.type';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
@@ -37,16 +39,22 @@ interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterJurnalumumDetail;
+  filters: typeof filterJurnalUmumDetail;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
-const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
+const GridJurnalUmumDetail = ({
+  activeTab,
+  nobukti
+}: {
+  activeTab: string;
+  nobukti?: string;
+}) => {
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
     search: '',
-    filters: filterJurnalumumDetail,
+    filters: filterJurnalUmumDetail,
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
@@ -57,16 +65,9 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
     data: detail,
     isLoading,
     refetch
-  } = useGetJurnalUmumDetail(
-    headerData?.pengeluaran_nobukti || headerData?.nobukti || '',
-    activeTab,
-    '',
-    {
-      ...filters,
-      page: 1
-    }
-  );
+  } = useGetJurnalUmumDetail(activeTab === 'jurnalumumdetail' ? filters : {});
 
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const [rows, setRows] = useState<JurnalUmumDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -116,7 +117,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
     setInputValue(searchValue);
     setFilters((prev) => ({
       ...prev,
-      filters: filterJurnalumumDetail,
+      filters: filterJurnalUmumDetail,
       search: searchValue,
       page: 1
     }));
@@ -173,11 +174,54 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
   const columns = useMemo((): Column<JurnalUmumDetail>[] => {
     return [
       {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm font-normal">No.</p>
+            </div>
+
+            <div
+              className="flex h-[50%] w-full cursor-pointer items-center justify-center"
+              onClick={() => {
+                setFilters({
+                  ...filters,
+                  filters: {
+                    ...filterJurnalUmumDetail,
+                    nobukti: nobukti ?? headerData.nobukti
+                  }
+                }),
+                  setInputValue('');
+                setTimeout(() => {
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+                }, 0);
+              }}
+            >
+              <FaTimes className="bg-red-500 text-white" />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {rowIndex + 1}
+            </div>
+          );
+        }
+      },
+      {
         key: 'nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         width: 200,
+        name: 'NO BUKTI',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -200,7 +244,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'NO BUKTI',
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
@@ -215,6 +258,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 200,
+        name: 'TGL BUKTI',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -260,7 +304,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'tglbukti',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglbukti || '';
           return (
@@ -280,6 +323,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 150,
+        name: 'keterangan',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -325,7 +369,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'keterangan',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
           return (
@@ -340,23 +383,25 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         }
       },
       {
-        key: 'coa',
+        key: 'coa_nama',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         width: 150,
+        name: 'coa_nama',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coa')}
+              onClick={() => handleSort('coa_nama')}
               onContextMenu={handleContextMenu}
             >
               <p className="text-sm font-normal">Coa</p>
               <div className="ml-2">
-                {filters.sortBy === 'coa' && filters.sortDirection === 'asc' ? (
+                {filters.sortBy === 'coa_nama' &&
+                filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'coa' &&
+                ) : filters.sortBy === 'coa_nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -368,19 +413,19 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['keterangancoa'] = el;
+                  inputColRefs.current['coa_nama'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangancoa.toUpperCase() || ''}
+                value={filters.filters.coa_nama.toUpperCase() || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangancoa', value);
+                  handleColumnFilterChange('coa_nama', value);
                 }}
               />
-              {filters.filters.keterangancoa && (
+              {filters.filters.coa_nama && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangancoa', '')}
+                  onClick={() => handleColumnFilterChange('coa_nama', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -389,13 +434,12 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'coa',
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangancoa || '';
+          const columnFilter = filters.filters.coa_nama || '';
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {highlightText(
-                props.row.keterangancoa || '',
+                props.row.coa_nama || '',
                 filters.search,
                 columnFilter
               )}
@@ -409,6 +453,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 150,
+        name: 'nominaldebet',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -454,7 +499,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'nominaldebet',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominaldebet || '';
           return (
@@ -476,6 +520,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 150,
+        name: 'nominalkredit',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -521,7 +566,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'nominalkredit',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominalkredit || '';
           return (
@@ -543,6 +587,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 150,
+        name: 'modified by',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -588,7 +633,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'modified by',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
           return (
@@ -608,6 +652,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 200,
+        name: 'Created At',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -653,7 +698,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'Created At',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
           return (
@@ -673,6 +717,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         resizable: true,
         draggable: true,
         width: 200,
+        name: 'Updated At',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -718,7 +763,6 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
             </div>
           </div>
         ),
-        name: 'Updated At',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
           return (
@@ -959,6 +1003,12 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
     };
   }, []);
   useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+    }));
+  }, [headerData.nobukti, nobukti]);
+  useEffect(() => {
     if (detail) {
       const formattedRows = detail?.data?.map((item: any) => ({
         id: item.id,
@@ -966,6 +1016,7 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
         nobukti: item.nobukti, // Updated to match the field name
         tglbukti: item.tglbukti, // Updated to match the field name
         coa: item.coa, // Updated to match the field name
+        coa_nama: item.coa_nama, // Updated to match the field name
         keterangan: item.keterangan, // Updated to match the field name
         keterangancoa: item.keterangancoa, // Updated to match the field name
         nominal: item.nominal, // Updated to match the field name
@@ -978,10 +1029,10 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
       }));
 
       setRows(formattedRows);
-    } else if (!headerData?.id) {
+    } else if (!headerData?.id || !nobukti) {
       setRows([]);
     }
-  }, [detail, headerData?.id]);
+  }, [detail, headerData?.id, nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<JurnalUmumDetail>,
@@ -999,8 +1050,10 @@ const GridJurnalUmumDetail = ({ activeTab }: GridProps) => {
     });
   }, []);
   useEffect(() => {
-    if (headerData) {
-      refetch();
+    // Memastikan refetch dilakukan saat filters berubah
+    if (filters !== prevFilters) {
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [headerData]);
 

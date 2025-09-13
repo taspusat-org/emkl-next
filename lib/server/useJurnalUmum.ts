@@ -80,40 +80,26 @@ export const useGetJurnalUmumHeader = (
   );
 };
 export const useGetJurnalUmumDetail = (
-  nobukti?: string,
-  activeTab?: string,
-  tabFromValues?: string,
   filters: {
-    page?: number;
-    limit?: number;
-    search?: string;
-    sortBy?: string;
-    sortDirection?: string;
     filters?: {
       nobukti?: string;
       tglbukti?: string;
-      coa?: string;
-      keterangancoa?: string;
-      keterangan?: string;
-      nominal?: string;
-      modifiedby?: string;
-      created_at?: string;
-      updated_at?: string;
+      keterangan?: string | null;
     };
+    sortBy?: string;
+    sortDirection?: string;
+    search?: string; // Kata kunci pencarian
   } = {}
 ) => {
   return useQuery(
-    ['jurnalumumdetail', nobukti, filters],
-    async () => await getJurnalUmumDetailFn(nobukti!, filters),
+    ['jurnalumum', filters],
+    async () => await getJurnalUmumDetailFn(filters),
     {
-      keepPreviousData: true,
-      enabled:
-        !!nobukti ||
-        activeTab === 'jurnalumumdetail' ||
-        tabFromValues === 'formjurnalumum'
+      enabled: !!filters.filters?.nobukti
     }
   );
 };
+
 export const useCreateJurnalUmum = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
