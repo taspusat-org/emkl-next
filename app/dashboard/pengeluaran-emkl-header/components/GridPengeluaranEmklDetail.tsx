@@ -34,7 +34,7 @@ interface Filter {
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
-const GridPenerimaanDetail = ({
+const GridPengeluaranEmklDetail = ({
   activeTab,
   nobukti
 }: {
@@ -51,7 +51,7 @@ const GridPenerimaanDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterPenerimaanDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData.nobukti
     },
     search: '',
     sortBy: 'nobukti',
@@ -63,11 +63,7 @@ const GridPenerimaanDetail = ({
     data: detail,
     isLoading,
     refetch
-  } = useGetPenerimaanDetail(
-    activeTab === 'penerimaandetail'
-      ? filters
-      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
-  );
+  } = useGetPenerimaanDetail(activeTab === 'penerimaandetail' ? filters : {});
 
   const [rows, setRows] = useState<PenerimaanDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -1085,7 +1081,7 @@ const GridPenerimaanDetail = ({
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridPenerimaanDetail',
+        'GridPengeluaranEmklDetail',
         [...columnsOrder],
         newWidthMap
       );
@@ -1106,7 +1102,7 @@ const GridPenerimaanDetail = ({
 
       saveGridConfig(
         user.id,
-        'GridPenerimaanDetail',
+        'GridPengeluaranEmklDetail',
         [...newOrder],
         columnsWidth
       );
@@ -1186,7 +1182,7 @@ const GridPenerimaanDetail = ({
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridPenerimaanDetail',
+        'GridPengeluaranEmklDetail',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1274,20 +1270,13 @@ const GridPenerimaanDetail = ({
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPenerimaanDetail');
+    loadGridConfig(user.id, 'GridPengeluaranEmklDetail');
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
-      setFilters((prev) => ({
-        ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
-      }));
-    } else {
-      setFilters((prev) => ({
-        ...prev,
-        filters: { ...prev.filters, nobukti: '' }
-      }));
-    }
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+    }));
   }, [headerData.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
@@ -1423,4 +1412,4 @@ const GridPenerimaanDetail = ({
   );
 };
 
-export default GridPenerimaanDetail;
+export default GridPengeluaranEmklDetail;

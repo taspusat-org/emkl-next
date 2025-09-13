@@ -48,20 +48,27 @@ const GridJurnalUmumDetail = ({
   activeTab: string;
   nobukti?: string;
 }) => {
+  const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
     search: '',
-    filters: filterJurnalUmumDetail,
+    filters: {
+      ...filterJurnalUmumDetail,
+      nobukti: nobukti ?? headerData.nobukti ?? ''
+    },
+
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
-
-  const headerData = useSelector((state: RootState) => state.header.headerData);
 
   const {
     data: detail,
     isLoading,
     refetch
-  } = useGetJurnalUmumDetail(activeTab === 'jurnalumumdetail' ? filters : {});
+  } = useGetJurnalUmumDetail(
+    activeTab === 'jurnalumumdetail'
+      ? filters
+      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
+  );
 
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const [rows, setRows] = useState<JurnalUmumDetail[]>([]);

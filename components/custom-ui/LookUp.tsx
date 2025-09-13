@@ -156,7 +156,6 @@ export default function LookUp({
   const isdefault = useSelector(
     (state: RootState) => state.lookup.isdefault[label || '']
   );
-
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const focus = useSelector((state: RootState) => state.lookup.focus);
   const clearLookup = useSelector(
