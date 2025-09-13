@@ -1194,11 +1194,7 @@ const GridJurnalUmumHeader = () => {
         alert({
           title: result.message,
           variant: 'danger',
-          submitText: 'OK',
-          isForceEdit: true,
-          valueForceEdit: rowData.id,
-          tableNameForceEdit: 'kasgantungheader',
-          clickableText: 'LANJUT EDIT'
+          submitText: 'OK'
         });
       } else {
         setPopOver(true);
