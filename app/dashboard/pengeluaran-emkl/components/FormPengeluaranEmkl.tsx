@@ -55,13 +55,16 @@ const FormPengeluaranEmkl = ({
 
   const lookupPropsFormat = [
     {
-      columns: [{ key: 'text', name: 'NAMA' }],
+      columns: [
+        { key: 'subgrp', name: 'SUB GRUP' },
+        { key: 'text', name: 'FORMAT' }
+      ],
       labelLookup: 'FORMAT LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: `parameter?exclude=true&kelompok=`,
       label: 'FORMAT',
-      singleColumn: true,
+      singleColumn: false,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
       postData: 'text',
