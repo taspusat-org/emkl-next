@@ -52,6 +52,7 @@ export const filterHutang = {
   coa_text: '',
   tglDari: '',
   tglSampai: '',
+  modifiedby: '',
   created_at: '',
   updated_at: ''
 };

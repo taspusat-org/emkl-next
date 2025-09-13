@@ -28,5 +28,44 @@
       "created_at": 250,
       "updated_at": 250
     }
+  },
+  "GridPengeluaranDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "columnsWidth": {
+      "nobukti": 200,
+      "coadebet": 150,
+      "keterangan": 250,
+      "nominal": 150,
+      "dpp": 150,
+      "noinvoiceemkl": 250,
+      "tglinvoiceemkl": 250,
+      "nofakturpajakemkl": 250,
+      "perioderefund": 150,
+      "modifiedby": 200,
+      "created_at": 200,
+      "updated_at": 200
+    }
+  },
+  "GridPengeluaranHeader-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nobukti": 300,
+      "tglbukti": 250,
+      "relasi_id": 250,
+      "keterangan": 250,
+      "bank_id": 250,
+      "postingdari": 250,
+      "coakredit": 250,
+      "dibayarke": 250,
+      "alatbayar_id": 250,
+      "nowarkat": 250,
+      "tgljatuhtempo": 250,
+      "daftarbank_id": 250,
+      "modifiedby": 250,
+      "created_at": 250,
+      "updated_at": 250
+    }
   }
 }

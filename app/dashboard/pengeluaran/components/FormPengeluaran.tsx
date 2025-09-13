@@ -57,6 +57,7 @@ const FormPengeluaran = ({
   handleClose,
   isLoadingCreate,
   isLoadingUpdate,
+  isSubmitSuccessful,
   isLoadingDelete
 }: any) => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -83,7 +84,15 @@ const FormPengeluaran = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetPengeluaranDetail(headerData?.id ?? 0);
+  } = useGetPengeluaranDetail(
+    headerData?.nobukti ?? '',
+    'pengeluarandetail',
+    'formkasgantung',
+    {
+      ...filters,
+      page: 1
+    }
+  );
 
   const [rows, setRows] = useState<
     (PengeluaranDetail | (Partial<PengeluaranDetail> & { isNew: boolean }))[]
@@ -106,6 +115,8 @@ const FormPengeluaran = ({
       noinvoiceemkl: '',
       nofakturpajakemkl: '',
       perioderefund: '',
+      disableNominal: false,
+      disableDpp: false,
       isNew: true
     };
 
@@ -217,30 +228,6 @@ const FormPengeluaran = ({
     };
   };
 
-  // 2) onChangeRaw: simpan string yang sudah diformat ke state
-  const formatWithCommas = (val: string): string => {
-    // ambil cuma digit
-    const digits = val.replace(/\D/g, '');
-    // sisipkan koma setiap 3 digit dari kanan
-    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  };
-
-  // 2) handler onChange: format langsung & simpan ke state
-  const handleCurrencyChange = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'dpp', rawInput);
-  };
-
-  const handleCurrencyChange2 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'nominal', rawInput);
-  };
-  const handleCurrencyChange3 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'persentase', rawInput);
-  };
-
-  const handleCurrencyChange4 = (rowIdx: number, rawInput: string) => {
-    handleInputChange(rowIdx, 'coadebet', rawInput);
-  };
-
   const totalNominal = rows.reduce(
     (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
     0
@@ -292,6 +279,54 @@ const FormPengeluaran = ({
         }
         return row;
       });
+    });
+  };
+
+  const PERSENTASE = 2 / 100;
+
+  const handleNominalChange = (rowIdx: number, value: string) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
+
+      const parsedValue = parseCurrency(value);
+
+      current.nominal = value;
+      current.dpp = '0';
+
+      if (parsedValue === 0 && parseCurrency(current.dpp) === 0) {
+        current.disableNominal = false;
+        current.disableDpp = false;
+      } else {
+        current.disableNominal = false;
+        current.disableDpp = true;
+      }
+
+      return updated;
+    });
+  };
+
+  const handleDppChange = (rowIdx: number, value: string) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
+
+      const parsedDpp = parseCurrency(value);
+
+      current.dpp = value;
+
+      const nominalValue = parsedDpp * PERSENTASE;
+      current.nominal = formatCurrency(nominalValue);
+
+      if (parsedDpp === 0 && parseCurrency(current.nominal) === 0) {
+        current.disableNominal = false;
+        current.disableDpp = false;
+      } else {
+        current.disableNominal = true;
+        current.disableDpp = false;
+      }
+
+      return updated;
     });
   };
 
@@ -515,10 +550,11 @@ const FormPengeluaran = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={props.row.disableNominal}
                             value={String(props.row.nominal ?? '')}
                             onValueChange={(value) => {
                               field.onChange(value);
-                              handleCurrencyChange2(rowIdx, value);
+                              handleNominalChange(rowIdx, value);
                             }}
                           />
                         </FormControl>
@@ -579,10 +615,11 @@ const FormPengeluaran = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={props.row.disableDpp}
                             value={String(props.row.dpp ?? '')}
                             onValueChange={(value) => {
                               field.onChange(value);
-                              handleCurrencyChange(rowIdx, value);
+                              handleDppChange(rowIdx, value);
                             }}
                           />
                         </FormControl>
@@ -1062,6 +1099,12 @@ const FormPengeluaran = ({
     }
   }, [rows]);
 
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      resetDetailAndAddNewRow();
+    }
+  }, [isSubmitSuccessful]);
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1482,7 +1525,6 @@ const FormPengeluaran = ({
                   e.preventDefault();
                   onSubmit(true);
                   dispatch(setSubmitClicked(true));
-                  resetDetailAndAddNewRow();
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"

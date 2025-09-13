@@ -37,9 +37,16 @@ export const getJurnalUmumHeaderFn = async (
 };
 
 export const getJurnalUmumDetailFn = async (
-  id: number
+  nobukti: string,
+  filters: GetParams = {}
 ): Promise<IAllJurnalUmumDetail> => {
-  const response = await api2.get(`/jurnalumumdetail/${id}`);
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/jurnalumumdetail/detail`, {
+    params: {
+      mainNobukti: nobukti,
+      ...queryParams
+    }
+  });
   return response.data;
 };
 

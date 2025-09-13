@@ -236,6 +236,29 @@ const GridHutangDetail = () => {
         }
       },
       {
+        key: 'modifiedby',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div
+            className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
+            onContextMenu={handleContextMenu}
+          >
+            <p className="text-sm font-normal">Modified By</p>
+          </div>
+        ),
+        name: 'Modified By',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.modifiedby || ''}
+            </div>
+          );
+        }
+      },
+      {
         key: 'created_at',
         headerCellClass: 'column-headers',
         resizable: true,
