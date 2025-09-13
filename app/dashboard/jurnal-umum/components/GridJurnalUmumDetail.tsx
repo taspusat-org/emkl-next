@@ -36,8 +36,6 @@ interface GridConfig {
 }
 
 interface Filter {
-  page: number;
-  limit: number;
   search: string;
   filters: typeof filterJurnalUmumDetail;
   sortBy: string;
@@ -51,8 +49,6 @@ const GridJurnalUmumDetail = ({
   nobukti?: string;
 }) => {
   const [filters, setFilters] = useState<Filter>({
-    page: 1,
-    limit: 30,
     search: '',
     filters: filterJurnalUmumDetail,
     sortBy: 'nobukti',
