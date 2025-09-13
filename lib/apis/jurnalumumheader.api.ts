@@ -37,12 +37,33 @@ export const getJurnalUmumHeaderFn = async (
 };
 
 export const getJurnalUmumDetailFn = async (
-  id: number
+  filters: GetParams = {}
 ): Promise<IAllJurnalUmumDetail> => {
-  const response = await api2.get(`/jurnalumumdetail/${id}`);
-  return response.data;
-};
+  try {
+    const queryParams = buildQueryParams(filters);
 
+    const response = await api2.get('/jurnalumumdetail', {
+      params: queryParams
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
+};
+export const getJurnalUmumHeaderByIdFn = async (
+  id: number
+): Promise<IAllJurnalUmumHeader> => {
+  try {
+    const response = await api2.get(`/jurnalumumheader/${id}`);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
+};
 export const storeJurnalUmumFn = async (fields: JurnalUmumHeaderInput) => {
   const response = await api2.post(`/jurnalumumheader`, fields);
 
@@ -51,38 +72,6 @@ export const storeJurnalUmumFn = async (fields: JurnalUmumHeaderInput) => {
 export const updateJurnalUmumFn = async ({ id, fields }: UpdateParams) => {
   const response = await api2.put(`/jurnalumumheader/${id}`, fields);
   return response.data;
-};
-export const getKasgantungListFn = async (dari: string, sampai: string) => {
-  try {
-    // Construct the URL with query params
-    const url = `/kasgantungheader/list?dari=${dari}&sampai=${sampai}`;
-
-    // Using GET request with the full URL
-    const response = await api2.get(url);
-
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching rekap kehadiran:', error);
-    throw new Error('Failed to fetch rekap kehadiran');
-  }
-};
-export const getKasgantungPengembalianFn = async (
-  id: string,
-  dari: string,
-  sampai: string
-) => {
-  try {
-    // Construct the URL with query params
-    const url = `/kasgantungheader/pengembalian?dari=${dari}&sampai=${sampai}&id=${id}`;
-
-    // Using GET request with the full URL
-    const response = await api2.get(url);
-
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching rekap kehadiran:', error);
-    throw new Error('Failed to fetch rekap kehadiran');
-  }
 };
 export const deleteJurnalUmumFn = async (id: string) => {
   try {
@@ -99,4 +88,22 @@ export const checkValidationJurnalUmumFn = async (fields: validationFields) => {
     fields
   );
   return response.data;
+};
+export const exportJurnalUmumFn = async (
+  id: number,
+  filters: any
+): Promise<Blob> => {
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get(`/jurnalumumheader/export/${id}`, {
+      params: queryParams,
+      responseType: 'blob' // backend return file (Excel)
+    });
+
+    return response.data; // ini sudah Blob
+  } catch (error) {
+    console.error('Error exporting data jurnal umum:', error);
+    throw new Error('Failed to export data jurnal umum');
+  }
 };

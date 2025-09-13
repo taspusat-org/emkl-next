@@ -28,14 +28,16 @@ export interface PenerimaanHeader {
 export interface PenerimaanDetail {
   id: number | string;
   penerimaan_id: string;
+  nobukti: string;
   coa: string;
   coa_nama: string | null;
   keterangan: string | null;
   nominal: string | null;
   transaksibiaya_nobukti: string | null;
   transaksilain_nobukti: string | null;
-  pengeluaranheader_nobukti: string | null;
-  penerimaanheader_nobukti: string | null;
+  pengeluaranemklheader_nobukti: string | null;
+  penerimaanemklheader_nobukti: string | null;
+  pengembaliankasgantung_nobukti: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
@@ -74,4 +76,20 @@ export const filterPenerimaan = {
   updated_at: '',
   tglDari: '',
   tglSampai: ''
+};
+export const filterPenerimaanDetail = {
+  nobukti: '',
+  keterangan: '',
+  coa: '',
+  coa_nama: '',
+  nominal: '',
+  transaksibiaya_nobukti: '',
+  transaksilain_nobukti: '',
+  pengeluaranemklheader_nobukti: '',
+  penerimaanemklheader_nobukti: '',
+  pengembaliankasgantung_nobukti: '',
+  info: '',
+  modifiedby: '',
+  created_at: '',
+  updated_at: ''
 };

@@ -1287,7 +1287,7 @@ const GridPengembalianKasGantung = () => {
       const newOrder = await createPengembalianKasgantungHeader(
         {
           ...values,
-          details: values.details.map((detail: any) => ({
+          details: values?.details?.map((detail: any) => ({
             ...detail,
             id: 0 // Ubah id setiap detail menjadi 0
           })),
@@ -1368,19 +1368,16 @@ const GridPengembalianKasGantung = () => {
     const { page, limit, ...filtersWithoutLimit } = filters;
     try {
       dispatch(setProcessing());
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
       const response = await getPengembalianKasGantungHeaderByIdFn(
         rowId,
         filtersWithoutLimit
       );
-      const responseDetail = await getPengembalianKasGantungDetailFn(rowId);
-      if (response.data === null || response.data.length === 0) {
-        alert({
-          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
-          variant: 'danger',
-          submitText: 'OK'
-        });
-        return;
-      }
+      const responseDetail = await getPengembalianKasGantungDetailFn({
+        filters: { nobukti: selectedRowNobukti }
+      });
+      console.log('responseDetail', responseDetail);
+      console.log('selectedRowNobukti', selectedRowNobukti);
       const reportRows = response.data.map((row) => ({
         ...row,
         judullaporan: 'Laporan Kas Gantung',

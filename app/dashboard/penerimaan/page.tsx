@@ -18,6 +18,7 @@ import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 import GridPenerimaanHeader from './components/GridPenerimaanHeader';
 import GridPenerimaanDetail from './components/GridPenerimaanDetail';
+import { GridTabs } from './components/GridTabs';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -98,7 +99,7 @@ const Page = () => {
           <GridPenerimaanHeader />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridPenerimaanDetail />
+          <GridTabs />
         </div>
       </div>
     </PageContainer>

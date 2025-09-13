@@ -1814,9 +1814,12 @@ const GridPenerimaanHeader = () => {
     try {
       dispatch(setProcessing());
       const rowId = Array.from(checkedRows)[0];
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
 
       const response = await getPenerimaanHeaderByIdFn(rowId);
-      const responseDetail = await getPenerimaanDetailFn(rowId);
+      const responseDetail = await getPenerimaanDetailFn({
+        filters: { nobukti: selectedRowNobukti }
+      });
       const totalNominal = responseDetail.data.reduce(
         (sum: number, i: any) => sum + Number(i.nominal || 0),
         0

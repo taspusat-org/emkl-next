@@ -108,12 +108,26 @@ export const useCreatePenerimaan = () => {
     // }
   });
 };
-export const useGetPenerimaanDetail = (id?: number) => {
+export const useGetPenerimaanDetail = (
+  filters: {
+    filters?: {
+      nobukti?: string;
+      pengembaliankasgantung_nobukti?: string;
+      tglbukti?: string;
+      keterangan?: string | null;
+    };
+    sortBy?: string;
+    sortDirection?: string;
+    search?: string; // Kata kunci pencarian
+  } = {}
+) => {
   return useQuery(
-    ['penerimaan', id],
-    async () => await getPenerimaanDetailFn(id!),
+    ['penerimaan', filters],
+    async () => await getPenerimaanDetailFn(filters),
     {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      enabled:
+        !!filters.filters?.nobukti ||
+        !!filters.filters?.pengembaliankasgantung_nobukti // Hanya aktifkan query jika tab aktif adalah "penerimaan"
     }
   );
 };

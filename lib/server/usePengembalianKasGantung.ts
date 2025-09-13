@@ -137,6 +137,8 @@ export const useUpdatePengembalianKasGantung = () => {
   return useMutation(updatePengembalianKasGantungFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('pengembaliankasgantung');
+      void queryClient.invalidateQueries(['penerimaan']);
+      void queryClient.invalidateQueries(['jurnalumum']);
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'

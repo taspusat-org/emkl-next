@@ -79,15 +79,27 @@ export const useGetJurnalUmumHeader = (
     }
   );
 };
-export const useGetJurnalUmumDetail = (id?: number) => {
+export const useGetJurnalUmumDetail = (
+  filters: {
+    filters?: {
+      nobukti?: string;
+      tglbukti?: string;
+      keterangan?: string | null;
+    };
+    sortBy?: string;
+    sortDirection?: string;
+    search?: string; // Kata kunci pencarian
+  } = {}
+) => {
   return useQuery(
-    ['jurnalumum', id],
-    async () => await getJurnalUmumDetailFn(id!),
+    ['jurnalumum', filters],
+    async () => await getJurnalUmumDetailFn(filters),
     {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      enabled: !!filters.filters?.nobukti
     }
   );
 };
+
 export const useCreateJurnalUmum = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();

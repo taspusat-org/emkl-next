@@ -30,11 +30,20 @@ export const storePenerimaanFn = async (fields: PenerimaanHeaderInput) => {
   return response.data;
 };
 export const getPenerimaanDetailFn = async (
-  id: number
+  filters: GetParams = {}
 ): Promise<IAllPenerimaanDetail> => {
-  const response = await api2.get(`/penerimaandetail/${id}`);
+  try {
+    const queryParams = buildQueryParams(filters);
 
-  return response.data;
+    const response = await api2.get('/penerimaandetail', {
+      params: queryParams
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
 };
 export const updatePenerimaanFn = async ({ id, fields }: UpdateParams) => {
   const response = await api2.put(`/penerimaanheader/${id}`, fields);
