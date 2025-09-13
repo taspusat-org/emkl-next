@@ -36,7 +36,6 @@ export interface IAllJurnalUmumDetail {
   pagination: IMeta;
 }
 export const filterJurnalUmum = {
-  nobukti: '',
   tglbukti: '',
   postingdari: '',
   keterangan: '',

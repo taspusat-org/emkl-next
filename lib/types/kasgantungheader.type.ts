@@ -70,3 +70,12 @@ export const filterKasGantung = {
   tglDari: '',
   tglSampai: ''
 };
+
+export const filterkasgantungDetail = {
+  nobukti: '',
+  keterangan: '',
+  nominal: '',
+  modifiedby: '',
+  created_at: '',
+  updated_at: ''
+};

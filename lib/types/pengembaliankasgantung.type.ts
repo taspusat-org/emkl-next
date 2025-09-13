@@ -22,7 +22,8 @@ export interface PengembalianKasGantungHeader {
 export interface IPengembalianKasGantungDetail {
   id: number;
   nobukti: string;
-  kasgantung_nobukti: string;
+  kasgantung_id?: string;
+  kasgantung_nobukti?: string;
   keterangan: string | null;
   nominal: string | null; // Adjusted to 'string' since money type in the schema could be treated as string in TypeScript
   info: string | null;

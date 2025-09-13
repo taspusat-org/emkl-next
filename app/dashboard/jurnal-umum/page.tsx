@@ -98,7 +98,7 @@ const Page = () => {
           <GridJurnalUmumHeader />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridJurnalUmumDetail />
+          <GridJurnalUmumDetail activeTab="" />
         </div>
       </div>
     </PageContainer>

@@ -29,7 +29,7 @@ import {
 } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -93,10 +93,11 @@ import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import {
   checkValidationKasGantungFn,
   getKasGantungDetailFn,
-  getKasGantungHeaderByIdFn,
+  getKasGantungHeaderByNobuktiFn,
   getKasGantungHeaderFn
 } from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   page: number;
@@ -115,6 +116,7 @@ const GridKasGantungHeader = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const searchParams = useSearchParams();
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -150,7 +152,7 @@ const GridKasGantungHeader = () => {
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
   const dispatch = useDispatch();
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id, token } = useSelector(
@@ -339,24 +341,25 @@ const GridKasGantungHeader = () => {
     setRows([]);
   };
 
-  const handleRowSelect = (rowId: number) => {
+  const handleRowSelect = (nobukti: string) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
+      if (updated.has(nobukti)) {
+        updated.delete(nobukti);
       } else {
-        updated.add(rowId);
+        updated.add(nobukti);
       }
 
       setIsAllSelected(updated.size === rows.length);
       return updated;
     });
   };
+
   const handleSelectAll = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
     } else {
-      const allIds = rows.map((row) => row.id);
+      const allIds = rows.map((row) => row.nobukti);
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
@@ -436,8 +439,8 @@ const GridKasGantungHeader = () => {
         renderCell: ({ row }: { row: KasGantungHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
-              checked={checkedRows.has(row.id)}
-              onCheckedChange={() => handleRowSelect(row.id)}
+              checked={checkedRows.has(row.nobukti)}
+              onCheckedChange={() => handleRowSelect(row.nobukti)}
               id={`row-checkbox-${row.id}`}
             />
           </div>
@@ -739,13 +742,18 @@ const GridKasGantungHeader = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.pengeluaran_nobukti || '';
+          const value = props.row.pengeluaran_nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search, columnFilter);
+          };
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.pengeluaran_nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
             </div>
           );
         }
@@ -1631,12 +1639,13 @@ const GridKasGantungHeader = () => {
         const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
         return newRow;
       });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
     }
+    // else if (event.key === ' ') {
+    //   // Handle spacebar keydown to toggle row selection
+    //   if (selectedRowId !== undefined) {
+    //     handleRowSelect(selectedRowId); // Toggling the selection of the row
+    //   }
+    // }
   }
   const onSuccess = async (indexOnPage: any, pageNumber: any) => {
     try {
@@ -1812,13 +1821,13 @@ const GridKasGantungHeader = () => {
       });
       return; // Stop execution if no rows are selected
     }
-    const rowId = Array.from(checkedRows)[0];
+    const nobukti = Array.from(checkedRows)[0];
 
     const { page, limit, ...filtersWithoutLimit } = filters;
     try {
       dispatch(setProcessing());
-      const response = await getKasGantungHeaderByIdFn(
-        rowId,
+      const response = await getKasGantungHeaderByNobuktiFn(
+        nobukti,
         filtersWithoutLimit
       );
       if (response.data === null || response.data.length === 0) {
@@ -1829,7 +1838,8 @@ const GridKasGantungHeader = () => {
         });
         return;
       }
-      const responseDetail = await getKasGantungDetailFn(rowId);
+      console.log(checkedRows, 'testtttt');
+      const responseDetail = await getKasGantungDetailFn(nobukti);
       const reportRows = response.data.map((row) => ({
         ...row,
         judullaporan: 'Laporan Kas Gantung',
@@ -1841,7 +1851,7 @@ const GridKasGantungHeader = () => {
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataId', JSON.stringify(rowId));
+      sessionStorage.setItem('dataNobukti', nobukti);
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
           const { Stimulsoft } = module;
@@ -1987,37 +1997,37 @@ const GridKasGantungHeader = () => {
   //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
   //   }
   // };
-  const handleReportBySelect = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
 
-    const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-    try {
-      const response = await reportMenuBySelectFn(jsonCheckedRows);
-      const reportRows = response.map((row: any) => ({
-        ...row,
-        judullaporan: 'Laporan Menu',
-        usercetak: user.username,
-        tglcetak: new Date().toLocaleDateString(),
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-      }));
-      dispatch(setReportData(reportRows));
-      window.open('/reports/menu', '_blank');
-    } catch (error) {
-      console.error('Error generating report:', error);
-      alert({
-        title: 'Failed to generate the report. Please try again.',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    }
-  };
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
@@ -2208,6 +2218,30 @@ const GridKasGantungHeader = () => {
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
+
+  // useEffect(() => {
+  //   setIsFirstLoad(true);
+  //   loadGridConfig(user.id, 'GridKasGantungHeader');
+
+  //   const rawNobukti = searchParams.get('pengeluaran_nobukti');
+
+  //   // Set filters
+  //   setFilters((prevFilters: Filter) => ({
+  //     ...prevFilters,
+  //     filters: {
+  //       ...prevFilters.filters,
+  //       pengeluaran_nobukti: rawNobukti ?? ''
+  //     }
+  //   }));
+
+  //   // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+  //   setTimeout(() => {
+  //     const url = new URL(window.location.href);
+  //     url.searchParams.delete('pengeluaran_nobukti');
+  //     window.history.replaceState({}, '', url.toString());
+  //   }, 1000); // Delay 1 detik (1000 ms)
+  // }, []);
+
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
@@ -2250,10 +2284,8 @@ const GridKasGantungHeader = () => {
       }
     }
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
-  console.log(forms.getValues(), 'iniformms');
   useEffect(() => {
     if (!allData || isDataUpdated) return;
-    console.log('masuk3');
 
     const newRows = allData.data || [];
 
@@ -2460,7 +2492,7 @@ const GridKasGantungHeader = () => {
           <ActionButton
             module="KAS-GANTUNG"
             onAdd={handleAdd}
-            checkedRows={checkedRows}
+            // checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

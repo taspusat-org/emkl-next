@@ -79,12 +79,38 @@ export const useGetJurnalUmumHeader = (
     }
   );
 };
-export const useGetJurnalUmumDetail = (id?: number) => {
+export const useGetJurnalUmumDetail = (
+  nobukti?: string,
+  activeTab?: string,
+  tabFromValues?: string,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      nobukti?: string;
+      tglbukti?: string;
+      coa?: string;
+      keterangancoa?: string;
+      keterangan?: string;
+      nominal?: string;
+      modifiedby?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  } = {}
+) => {
   return useQuery(
-    ['jurnalumum', id],
-    async () => await getJurnalUmumDetailFn(id!),
+    ['jurnalumumdetail', nobukti, filters],
+    async () => await getJurnalUmumDetailFn(nobukti!, filters),
     {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      keepPreviousData: true,
+      enabled:
+        !!nobukti ||
+        activeTab === 'jurnalumumdetail' ||
+        tabFromValues === 'formjurnalumum'
     }
   );
 };

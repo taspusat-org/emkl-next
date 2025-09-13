@@ -30,15 +30,19 @@ export const getPengeluaranHeaderFn = async (
     throw new Error('Failed');
   }
 };
-export const getPengeluaranHeaderByIdFn = async (
-  id: number,
+
+export const getPengeluaranHeaderByNobuktiFn = async (
+  nobukti: string,
   filters: GetParams = {}
 ): Promise<IAllPengeluaranHeader> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get(`/pengeluaranheader/${id}`, {
-      params: queryParams
+    const response = await api2.get(`/pengeluaranheader/report`, {
+      params: {
+        mainNobukti: nobukti,
+        ...queryParams
+      }
     });
 
     return response.data;
@@ -48,10 +52,16 @@ export const getPengeluaranHeaderByIdFn = async (
   }
 };
 export const getPengeluaranDetailFn = async (
-  id: number
+  nobukti: string,
+  filters: GetParams = {}
 ): Promise<IAllPengeluaranDetail> => {
-  const response = await api2.get(`/pengeluarandetail/${id}`);
-
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/pengeluarandetail/detail`, {
+    params: {
+      mainNobukti: nobukti,
+      ...queryParams
+    }
+  });
   return response.data;
 };
 export const storePengeluaranFn = async (fields: PengeluaranHeaderInput) => {
@@ -114,14 +124,17 @@ export const checkValidationPengeluaranFn = async (
   return response.data;
 };
 export const exportPengeluaranFn = async (
-  id: number,
+  nobukti: string,
   filters: any
 ): Promise<Blob> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get(`/pengeluaranheader/export/${id}`, {
-      params: queryParams,
+    const response = await api2.get(`/pengeluaranheader/export/`, {
+      params: {
+        mainNobukti: nobukti,
+        ...queryParams
+      },
       responseType: 'blob' // backend return file (Excel)
     });
 

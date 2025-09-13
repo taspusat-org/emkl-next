@@ -83,15 +83,46 @@ export const useGetPengeluaranHeader = (
     }
   );
 };
-export const useGetPengeluaranDetail = (id?: number) => {
+export const useGetPengeluaranDetail = (
+  nobukti?: string,
+  activeTab?: string,
+  tabFromValues?: string,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      nobukti?: string;
+      coadebet?: string;
+      coadebet_text?: string;
+      keterangan?: string;
+      nominal?: string;
+      dpp?: string;
+      noinvoiceemkl?: string;
+      tglinvoiceemkl?: string;
+      nofakturpajakemkl?: string;
+      perioderefund?: string;
+      modifiedby?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  } = {}
+) => {
   return useQuery(
-    ['pengeluaran', id],
-    async () => await getPengeluaranDetailFn(id!),
+    ['pengeluaran', nobukti, filters],
+    async () => await getPengeluaranDetailFn(nobukti!, filters),
     {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      keepPreviousData: true,
+      enabled:
+        !!nobukti ||
+        activeTab === 'pengeluarandetail' ||
+        tabFromValues === 'formpengeluaran'
     }
   );
 };
+
 export const useCreatePengeluaran = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
