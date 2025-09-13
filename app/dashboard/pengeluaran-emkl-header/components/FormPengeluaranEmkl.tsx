@@ -32,7 +32,7 @@ import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
 import { PenerimaanDetail } from '@/lib/types/penerimaan.type';
 import { useGetPenerimaanDetail } from '@/lib/server/usePenerimaan';
-const FormPenerimaan = ({
+const FormPengeluaranEmkl = ({
   popOver,
   setPopOver,
   forms,
@@ -66,9 +66,7 @@ const FormPenerimaan = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetPenerimaanDetail({
-    filters: { nobukti: headerData?.nobukti ?? '' }
-  });
+  } = useGetPenerimaanDetail(headerData?.id ?? 0);
 
   const [rows, setRows] = useState<
     (PenerimaanDetail | (Partial<PenerimaanDetail> & { isNew: boolean }))[]
@@ -947,4 +945,4 @@ const FormPenerimaan = ({
   );
 };
 
-export default FormPenerimaan;
+export default FormPengeluaranEmkl;
