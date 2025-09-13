@@ -950,6 +950,7 @@ const FormSupplier = ({
                           onSelectRow={(val) =>
                             forms.setValue('statusaktif_nama', val?.text)
                           }
+                          inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_nama')}
                         />
                       ))}

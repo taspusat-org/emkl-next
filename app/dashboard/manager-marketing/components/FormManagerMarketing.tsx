@@ -711,6 +711,7 @@ const FormManagerMarketing = ({
 
   useEffect(() => {
     if (allData && popOver) {
+      console.log(allData, 'iniiiii');
       // If there is data, add the data rows and the "Add Row" button row at the end
       if (allData?.data?.length > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({

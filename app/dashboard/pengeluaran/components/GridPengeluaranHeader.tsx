@@ -29,7 +29,7 @@ import {
 } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -83,10 +83,11 @@ import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import {
   getPengeluaranDetailFn,
-  getPengeluaranHeaderByIdFn,
+  getPengeluaranHeaderByNobuktiFn,
   getPengeluaranHeaderFn
 } from '@/lib/apis/pengeluaranheader.api';
 import { numberToTerbilang } from '@/lib/utils/terbilang';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   page: number;
@@ -105,6 +106,8 @@ const GridPengeluaranHeader = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const dispatch = useDispatch();
+  const searchParams = useSearchParams();
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -139,14 +142,12 @@ const GridPengeluaranHeader = () => {
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
-  const dispatch = useDispatch();
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id, token } = useSelector(
     (state: RootState) => state.auth
   );
-  const getLookup = useSelector((state: RootState) => state.lookup.data);
   const forms = useForm<PengeluaranHeaderInput>({
     resolver:
       mode === 'delete' ? undefined : zodResolver(pengeluaranHeaderSchema),
@@ -334,13 +335,13 @@ const GridPengeluaranHeader = () => {
       requestAnimationFrame(() => setFocus('tglbukti'));
     }
   }, [isSubmitSuccessful, setFocus]);
-  const handleRowSelect = (rowId: number) => {
+  const handleRowSelect = (nobukti: string) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
+      if (updated.has(nobukti)) {
+        updated.delete(nobukti);
       } else {
-        updated.add(rowId);
+        updated.add(nobukti);
       }
 
       setIsAllSelected(updated.size === rows.length);
@@ -351,7 +352,7 @@ const GridPengeluaranHeader = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
     } else {
-      const allIds = rows.map((row) => row.id);
+      const allIds = rows.map((row) => row.nobukti);
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
@@ -431,8 +432,8 @@ const GridPengeluaranHeader = () => {
         renderCell: ({ row }: { row: PengeluaranHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
-              checked={checkedRows.has(row.id)}
-              onCheckedChange={() => handleRowSelect(row.id)}
+              checked={checkedRows.has(row.nobukti)}
+              onCheckedChange={() => handleRowSelect(row.nobukti)}
               id={`row-checkbox-${row.id}`}
             />
           </div>
@@ -503,13 +504,18 @@ const GridPengeluaranHeader = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
+          const value = props.row.nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search, columnFilter);
+          };
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
             </div>
           );
         }
@@ -1316,6 +1322,81 @@ const GridPengeluaranHeader = () => {
         }
       },
       {
+        key: 'modifiedby',
+        name: 'Updated At',
+        resizable: true,
+        draggable: true,
+
+        headerCellClass: 'column-headers',
+
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('modifiedby')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                MODIFIED BY
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'modifiedby' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'modifiedby' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['created_at'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.modifiedby.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('modifiedby', value);
+                }}
+              />
+              {filters.filters.modifiedby && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('modifiedby', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.modifiedby || '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.modifiedby || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
         key: 'created_at',
         name: 'Created At',
         resizable: true,
@@ -1464,7 +1545,7 @@ const GridPengeluaranHeader = () => {
         }
       }
     ];
-  }, [filters, rows, checkedRows, getLookup]);
+  }, [filters, rows, checkedRows]);
 
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
@@ -1602,12 +1683,13 @@ const GridPengeluaranHeader = () => {
         const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
         return newRow;
       });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
     }
+    // else if (event.key === ' ') {
+    //   // Handle spacebar keydown to toggle row selection
+    //   if (selectedRowId !== undefined) {
+    //     handleRowSelect(selectedRowId); // Toggling the selection of the row
+    //   }
+    // }
   }
   const onSuccess = async (
     indexOnPage: any,
@@ -1770,7 +1852,7 @@ const GridPengeluaranHeader = () => {
       });
       return; // Stop execution if no rows are selected
     }
-    const rowId = Array.from(checkedRows)[0];
+    const nobukti = Array.from(checkedRows)[0];
 
     try {
       dispatch(setProcessing());
@@ -1785,8 +1867,8 @@ const GridPengeluaranHeader = () => {
       )}:${pad(now.getSeconds())}`;
 
       const { page, limit, ...filtersWithoutLimit } = filters;
-      const response = await getPengeluaranHeaderByIdFn(
-        rowId,
+      const response = await getPengeluaranHeaderByNobuktiFn(
+        nobukti,
         filtersWithoutLimit
       );
       if (!response.data?.length) {
@@ -1798,7 +1880,7 @@ const GridPengeluaranHeader = () => {
         return;
       }
 
-      const responseDetail = await getPengeluaranDetailFn(rowId);
+      const responseDetail = await getPengeluaranDetailFn(String(nobukti));
       const totalNominal = responseDetail.data.reduce(
         (sum: number, i: any) => sum + Number(i.nominal || 0),
         0
@@ -1817,7 +1899,7 @@ const GridPengeluaranHeader = () => {
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataId', String(rowId));
+      sessionStorage.setItem('dataNobukti', String(nobukti));
       // Dynamically import Stimulsoft and generate the PDF report
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
@@ -1891,7 +1973,7 @@ const GridPengeluaranHeader = () => {
   //   dispatch(setProcessing()); // Show loading overlay when the request starts
 
   //   try {
-  //     const response = await getPengeluaranHeaderByIdFn(
+  //     const response = await getPengeluaranHeaderByNobuktiFn(
   //       rowId,
   //       filtersWithoutLimit
   //     );
@@ -2117,11 +2199,28 @@ const GridPengeluaranHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPengeluaranHeader');
-  }, []);
-  useEffect(() => {
     setIsFirstLoad(true);
+    loadGridConfig(user.id, 'GridPengeluaranHeader');
+
+    const rawNobukti = searchParams.get('pengeluaran_nobukti');
+
+    // Set filters
+    setFilters((prevFilters: Filter) => ({
+      ...prevFilters,
+      filters: {
+        ...prevFilters.filters,
+        nobukti: rawNobukti ?? ''
+      }
+    }));
+
+    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('pengeluaran_nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
   }, []);
+
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
@@ -2383,7 +2482,7 @@ const GridPengeluaranHeader = () => {
           <ActionButton
             module="PENGELUARAN"
             onAdd={handleAdd}
-            checkedRows={checkedRows}
+            // checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
@@ -2422,6 +2521,7 @@ const GridPengeluaranHeader = () => {
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
+        isSubmitSuccessful={isSubmitSuccessful}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
         forms={forms}

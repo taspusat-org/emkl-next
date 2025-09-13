@@ -1,29 +1,25 @@
 'use client';
-import React, { ReactElement, useEffect, useState } from 'react';
-import { Worker, Viewer } from '@react-pdf-viewer/core';
-import '@react-pdf-viewer/core/lib/styles/index.css';
 import { pdfjs } from 'react-pdf';
-
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/zoom/lib/styles/index.css';
+import '@react-pdf-viewer/print/lib/styles/index.css';
+import { Worker, Viewer } from '@react-pdf-viewer/core';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+import React, { ReactElement, useEffect, useState } from 'react';
+import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
+import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
+import { printPlugin, RenderPrintProps } from '@react-pdf-viewer/print';
+import { exportPengeluaranEmklFn } from '@/lib/apis/pengeluaranemkl.api';
 import {
   defaultLayoutPlugin,
   ToolbarProps,
   ToolbarSlot
 } from '@react-pdf-viewer/default-layout';
-import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
-import { printPlugin, RenderPrintProps } from '@react-pdf-viewer/print';
-import '@react-pdf-viewer/print/lib/styles/index.css';
-
-import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
-import '@react-pdf-viewer/zoom/lib/styles/index.css';
-import { MdOutlineZoomOut } from 'react-icons/md';
-import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
-import { exportShipperFn } from '@/lib/apis/shipper.api';
-import { exportKasGantungFn } from '@/lib/apis/kasgantungheader.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-  const [savedNobukti, setSaveNobukti] = useState<any>('');
+
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -45,26 +41,18 @@ const ReportMenuPage: React.FC = () => {
         setSavedFilters({});
       }
     }
-    const nobuktiData = sessionStorage.getItem('dataNobukti');
-    if (nobuktiData) {
-      try {
-        setSaveNobukti(nobuktiData);
-      } catch {
-        setSaveNobukti('');
-      }
-    }
   }, []);
 
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportKasGantungFn(savedNobukti, exportPayload);
+      const response = await exportPengeluaranEmklFn(exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_kasgantung_${Date.now()}.xlsx`;
+      link.download = `laporan_pengeluaran_emkl_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
@@ -72,7 +60,7 @@ const ReportMenuPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting shipper data:', error);
+      console.error('Error exporting pengeluaran emkl data:', error);
     }
   };
 
@@ -190,3 +178,97 @@ const ReportMenuPage: React.FC = () => {
 };
 
 export default ReportMenuPage;
+
+// 'use client';
+
+// import { useSelector } from 'react-redux';
+// import { RootState } from '@/lib/store/store';
+// import React, { useEffect, useState } from 'react';
+// import 'stimulsoft-reports-js/Css/stimulsoft.viewer.office2013.whiteblue.css';
+// import 'stimulsoft-reports-js/Css/stimulsoft.designer.office2013.whiteblue.css';
+// import { getAllPengeluaranEmklFn } from '@/lib/apis/pengeluaranemkl.api';
+
+// const ReportDesigner = () => {
+//   const { token } = useSelector((state: RootState) => state.auth);
+//   const [reportData, setReportData] = useState<any>(null);
+
+//   useEffect(() => {
+//     // Ambil data dari API
+//     const fetchData = async () => {
+//       try {
+//         const res = await getAllPengeluaranEmklFn({ page: 1, limit: 50 }); // sesuaikan filter
+//         setReportData(res.data); // simpan ke state
+//       } catch (err) {
+//         console.error('Gagal ambil data pengeluaran emkl:', err);
+//       }
+//     };
+//     fetchData();
+//   }, []);
+
+//   useEffect(() => {
+//     if (!reportData) return;
+
+//     // Render report jika data sudah ada
+//     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+//       .then((module) => {
+//         const { Stimulsoft } = module;
+
+//         // Set license
+//         Stimulsoft.Base.StiLicense.Key =
+//           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+//           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+//           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+//           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+//           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+//           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+//           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+//         // Viewer
+//         const viewerOptions = new Stimulsoft.Viewer.StiViewerOptions();
+//         const viewer = new Stimulsoft.Viewer.StiViewer(
+//           viewerOptions,
+//           'StiViewer',
+//           false
+//         );
+
+//         // Report
+//         const report = new Stimulsoft.Report.StiReport();
+//         report.loadFile('/reports/LaporanPengeluaranEmkl.mrt');
+
+//         // Designer
+//         const options = new Stimulsoft.Designer.StiDesignerOptions();
+//         options.appearance.fullScreenMode = true;
+//         const designer = new Stimulsoft.Designer.StiDesigner(
+//           options,
+//           'Designer',
+//           false
+//         );
+
+//         // Dataset
+//         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+//         dataSet.readJson({ data: reportData });
+//         report.dictionary.dataSources.clear();
+//         report.regData(dataSet.dataSetName, '', dataSet);
+//         report.dictionary.synchronize();
+
+//         // Render
+//         viewer.renderHtml('content');
+//         designer.report = report;
+//         designer.renderHtml('content');
+//         viewer.report = report;
+//       })
+//       .catch((error) => {
+//         console.error('Failed to load Stimulsoft:', error);
+//       });
+//   }, [reportData, token]);
+
+//   return (
+//     <div
+//       id="content"
+//       className="report"
+//       style={{ textTransform: 'none', fontSize: 'unset' }}
+//     />
+//   );
+// };
+
+// export default ReportDesigner;

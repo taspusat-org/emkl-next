@@ -78,6 +78,36 @@ export const filterPengeluaran = {
   statusformat: '',
   tglDari: '',
   tglSampai: '',
+  modifiedby: '',
+  created_at: '',
+  updated_at: ''
+};
+
+export const filterPengeluaranDetail = {
+  nobukti: '',
+  coadebet: '',
+  coadebet_text: '',
+  keterangan: '',
+  nominal: '',
+  dpp: '',
+  noinvoiceemkl: '',
+  tglinvoiceemkl: '',
+  nofakturpajakemkl: '',
+  perioderefund: '',
+  modifiedby: '',
+  created_at: '',
+  updated_at: ''
+};
+
+export const filterJurnalumumDetail = {
+  nobukti: '',
+  tglbukti: '',
+  coa: '',
+  keterangancoa: '',
+  keterangan: '',
+  nominaldebet: '',
+  nominalkredit: '',
+  modifiedby: '',
   created_at: '',
   updated_at: ''
 };

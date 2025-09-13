@@ -75,12 +75,36 @@ export const useGetKasGantungHeader = (
     }
   );
 };
-export const useGetKasGantungDetail = (id?: number) => {
+
+export const useGetKasGantungDetail = (
+  nobukti: string,
+  activeTab?: string,
+  tabFromValues?: string,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      nobukti?: string;
+      keterangan?: string;
+      nominal?: string;
+      modifiedby?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  } = {}
+) => {
   return useQuery(
-    ['kasgantung', id],
-    async () => await getKasGantungDetailFn(id!),
+    ['kasgantungdetail', nobukti, filters],
+    async () => await getKasGantungDetailFn(nobukti!, filters),
     {
-      enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      keepPreviousData: true,
+      enabled:
+        !!nobukti ||
+        activeTab === 'kasgantungdetail' ||
+        tabFromValues === 'formkasgantung'
     }
   );
 };

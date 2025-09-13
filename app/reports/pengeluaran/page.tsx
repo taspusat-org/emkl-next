@@ -23,7 +23,7 @@ import { exportPengeluaranFn } from '@/lib/apis/pengeluaranheader.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-  const [savedId, setSavedId] = useState<number | null>();
+  const [savedNobukti, setSaveNobukti] = useState<any>('');
 
   // Print plugin
   const printPluginInstance = printPlugin();
@@ -77,24 +77,20 @@ const ReportMenuPage: React.FC = () => {
         setSavedFilters({});
       }
     }
-    const storedId = sessionStorage.getItem('dataId');
-    if (storedId) {
+    const nobukti = sessionStorage.getItem('dataNobukti');
+    if (nobukti) {
       try {
-        setSavedId(Number(storedId));
+        setSaveNobukti(nobukti);
       } catch {
-        setSavedId(null);
+        setSaveNobukti(null);
       }
     }
-    console.log(storedId, 'storeid');
   }, []);
 
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportPengeluaranFn(
-        Number(savedId),
-        exportPayload
-      );
+      const response = await exportPengeluaranFn(savedNobukti, exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
@@ -255,7 +251,7 @@ export default ReportMenuPage;
 // const ReportMenuPage: React.FC = () => {
 //   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 //   const [savedFilters, setSavedFilters] = useState<any>({});
-//   const [savedId, setSavedId] = useState<number | null>();
+//   const [savedNobukti, setSaveNobukti] = useState<number | null>();
 
 //   // Print plugin
 //   const printPluginInstance = printPlugin();
@@ -332,12 +328,12 @@ export default ReportMenuPage;
 //         setSavedFilters({});
 //       }
 //     }
-//     const storedId = sessionStorage.getItem('dataId');
+//     const storedId = sessionStorage.getItem('dataNobukti');
 //     if (storedId) {
 //       try {
-//         setSavedId(Number(storedId));
+//         setSaveNobukti(Number(storedId));
 //       } catch {
-//         setSavedId(null);
+//         setSaveNobukti(null);
 //       }
 //     }
 //     console.log(storedId, 'storeid');
@@ -347,7 +343,7 @@ export default ReportMenuPage;
 //     try {
 //       const exportPayload = { ...savedFilters };
 //       const response = await exportPengeluaranFn(
-//         Number(savedId),
+//         Number(savedNobukti),
 //         exportPayload
 //       );
 

@@ -81,10 +81,18 @@ const FormKasGantung = ({
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const gridRef = useRef<DataGridHandle>(null);
   const {
-    data: allData,
-    isLoading: isLoadingData,
+    data: allData = { status: false, message: 'No data found', data: [] },
+    isLoading,
     refetch
-  } = useGetKasGantungDetail(headerData?.id ?? 0);
+  } = useGetKasGantungDetail(
+    headerData?.nobukti ?? '',
+    'kasgantungdetail',
+    'formkasgantung',
+    {
+      ...filters,
+      page: 1
+    }
+  );
 
   const [rows, setRows] = useState<
     (KasGantungDetail | (Partial<KasGantungDetail> & { isNew: boolean }))[]
@@ -482,7 +490,7 @@ const FormKasGantung = ({
         ]);
       }
     }
-  }, [allData, headerData?.id, popOver, mode]);
+  }, [allData, headerData?.nobukti, popOver, mode]);
 
   useEffect(() => {
     if (rows) {

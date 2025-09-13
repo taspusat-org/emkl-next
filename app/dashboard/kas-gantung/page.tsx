@@ -18,6 +18,7 @@ import GridKasGantungHeader from './components/GridKasGantungHeader';
 import GridKasGantungDetail from './components/GridKasGantungDetail';
 import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
+import { GridTabs } from './components/GridTabs';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -98,7 +99,7 @@ const Page = () => {
           <GridKasGantungHeader />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridKasGantungDetail />
+          <GridTabs />
         </div>
       </div>
     </PageContainer>
