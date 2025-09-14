@@ -77,9 +77,6 @@ export const useGetKasGantungHeader = (
 };
 
 export const useGetKasGantungDetail = (
-  nobukti: string,
-  activeTab?: string,
-  tabFromValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -97,14 +94,10 @@ export const useGetKasGantungDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['kasgantungdetail', nobukti, filters],
-    async () => await getKasGantungDetailFn(nobukti!, filters),
+    ['kasgantungdetail', filters],
+    async () => await getKasGantungDetailFn(filters),
     {
-      keepPreviousData: true,
-      enabled:
-        !!nobukti ||
-        activeTab === 'kasgantungdetail' ||
-        tabFromValues === 'formkasgantung'
+      enabled: !!filters.filters?.nobukti
     }
   );
 };

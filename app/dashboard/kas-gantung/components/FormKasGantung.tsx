@@ -80,19 +80,14 @@ const FormKasGantung = ({
   });
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const gridRef = useRef<DataGridHandle>(null);
+
   const {
-    data: allData = { status: false, message: 'No data found', data: [] },
-    isLoading,
+    data: allData,
+    isLoading: isLoadingData,
     refetch
-  } = useGetKasGantungDetail(
-    headerData?.nobukti ?? '',
-    'kasgantungdetail',
-    'formkasgantung',
-    {
-      ...filters,
-      page: 1
-    }
-  );
+  } = useGetKasGantungDetail({
+    filters: { nobukti: headerData?.nobukti ?? '' }
+  });
 
   const [rows, setRows] = useState<
     (KasGantungDetail | (Partial<KasGantungDetail> & { isNew: boolean }))[]
@@ -460,9 +455,8 @@ const FormKasGantung = ({
   }
 
   useEffect(() => {
-    if (allData && popOver) {
-      // If there is data, add the data rows and the "Add Row" button row at the end
-      if (allData?.data?.length > 0 && mode !== 'add') {
+    if (allData || popOver) {
+      if (allData && (allData.data?.length ?? 0) > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
           nobukti: item.nobukti ?? '',
@@ -490,7 +484,7 @@ const FormKasGantung = ({
         ]);
       }
     }
-  }, [allData, headerData?.nobukti, popOver, mode]);
+  }, [allData, headerData?.id, popOver, mode]);
 
   useEffect(() => {
     if (rows) {

@@ -55,7 +55,6 @@ const GridJurnalUmumDetail = ({
       ...filterJurnalUmumDetail,
       nobukti: nobukti ?? headerData.nobukti ?? ''
     },
-
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
@@ -67,7 +66,11 @@ const GridJurnalUmumDetail = ({
   } = useGetJurnalUmumDetail(
     activeTab === 'jurnalumumdetail'
       ? filters
-      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
+      : {
+          filters: {
+            nobukti: headerData?.nobukti ? headerData.nobukti : ''
+          }
+        }
   );
 
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
@@ -138,6 +141,10 @@ const GridJurnalUmumDetail = ({
     setSelectedRow(0);
     setRows([]);
   };
+
+  useEffect(() => {
+    console.log('Final filters', activeTab, filters, headerData);
+  }, [filters, headerData, activeTab]);
 
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
@@ -1058,7 +1065,7 @@ const GridJurnalUmumDetail = ({
       refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
       setPrevFilters(filters); // Simpan filters terbaru
     }
-  }, [headerData]);
+  }, [headerData, filters]);
 
   useEffect(() => {
     if (activeTab === 'jurnalumumdetail') {

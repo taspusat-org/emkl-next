@@ -81,18 +81,23 @@ export const useGetJurnalUmumHeader = (
 };
 export const useGetJurnalUmumDetail = (
   filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
     filters?: {
       nobukti?: string;
       tglbukti?: string;
       keterangan?: string | null;
+      modifiedby?: string;
+      created_at?: string;
+      updated_at?: string;
     };
-    sortBy?: string;
-    sortDirection?: string;
-    search?: string; // Kata kunci pencarian
   } = {}
 ) => {
   return useQuery(
-    ['jurnalumum', filters],
+    ['jurnalumumdetail', filters],
     async () => await getJurnalUmumDetailFn(filters),
     {
       enabled: !!filters.filters?.nobukti

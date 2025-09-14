@@ -5,8 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import GridPengeluaranDetail from './GridPengeluaranDetail';
 import GridJurnalUmumDetail from '../../jurnal-umum/components/GridJurnalUmumDetail';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
 
 export function GridTabs() {
+  const headerData = useSelector((state: RootState) => state.header.headerData);
   const [activeTab, setActiveTab] = useState('pengeluarandetail'); // Track tab aktif
   return (
     <Tabs

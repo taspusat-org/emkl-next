@@ -548,9 +548,8 @@ const FormKasGantung = ({
   }
 
   useEffect(() => {
-    if (allData && popOver) {
-      // If there is data, add the data rows and the "Add Row" button row at the end
-      if (allData?.data?.length > 0 && mode !== 'add') {
+    if (allData || popOver) {
+      if (allData && (allData.data?.length ?? 0) > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: Number(item.id),
           coa: item.coa ?? '',

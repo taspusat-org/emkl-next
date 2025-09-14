@@ -56,3 +56,18 @@ export const filterHutang = {
   created_at: '',
   updated_at: ''
 };
+
+export const filterHutangDetail = {
+  nobukti: '',
+  coa: '',
+  coa_text: '',
+  keterangan: '',
+  nominal: '',
+  dpp: '',
+  noinvoiceemkl: '',
+  tglinvoiceemkl: '',
+  nofakturpajakemkl: '',
+  modifiedby: '',
+  created_at: '',
+  updated_at: ''
+};

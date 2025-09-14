@@ -84,9 +84,6 @@ export const useGetPengeluaranHeader = (
   );
 };
 export const useGetPengeluaranDetail = (
-  nobukti?: string,
-  activeTab?: string,
-  tabFromValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -111,14 +108,10 @@ export const useGetPengeluaranDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['pengeluaran', nobukti, filters],
-    async () => await getPengeluaranDetailFn(nobukti!, filters),
+    ['pengeluarandetail', filters],
+    async () => await getPengeluaranDetailFn(filters),
     {
-      keepPreviousData: true,
-      enabled:
-        !!nobukti ||
-        activeTab === 'pengeluarandetail' ||
-        tabFromValues === 'formpengeluaran'
+      enabled: !!filters.filters?.nobukti
     }
   );
 };

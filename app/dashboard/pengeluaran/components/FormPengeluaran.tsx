@@ -84,15 +84,9 @@ const FormPengeluaran = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetPengeluaranDetail(
-    headerData?.nobukti ?? '',
-    'pengeluarandetail',
-    'formkasgantung',
-    {
-      ...filters,
-      page: 1
-    }
-  );
+  } = useGetPengeluaranDetail({
+    filters: { nobukti: headerData?.nobukti ?? {} }
+  });
 
   const [rows, setRows] = useState<
     (PengeluaranDetail | (Partial<PengeluaranDetail> & { isNew: boolean }))[]
@@ -1017,9 +1011,8 @@ const FormPengeluaran = ({
   }
 
   useEffect(() => {
-    if (allData && popOver) {
-      // If there is data, add the data rows and the "Add Row" button row at the end
-      if (allData?.data?.length > 0 && mode !== 'add') {
+    if (allData || popOver) {
+      if (allData && (allData.data?.length ?? 0) > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
           coadebet: item.coadebet ?? '',

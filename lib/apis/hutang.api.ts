@@ -27,16 +27,12 @@ export const getHutangHeaderFn = async (
     throw new Error('Failed');
   }
 };
+
 export const getHutangHeaderByIdFn = async (
-  id: number,
-  filters: GetParams = {}
+  id: number
 ): Promise<IAllHutangHeader> => {
   try {
-    const queryParams = buildQueryParams(filters);
-
-    const response = await api2.get(`/hutangheader/${id}`, {
-      params: queryParams
-    });
+    const response = await api2.get(`/hutangheader/${id}`);
 
     return response.data;
   } catch (error) {
@@ -44,13 +40,17 @@ export const getHutangHeaderByIdFn = async (
     throw new Error('Failed');
   }
 };
-export const getHutangDetailFn = async (
-  id: number
-): Promise<IAllHutangDetail> => {
-  const response = await api2.get(`/hutangdetail/${id}`);
 
+export const getHutangDetailFn = async (
+  filters: GetParams = {}
+): Promise<IAllHutangDetail> => {
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/hutangdetail`, {
+    params: queryParams
+  });
   return response.data;
 };
+
 export const storeHutangFn = async (fields: HutangHeaderInput) => {
   const response = await api2.post(`/hutangheader`, fields);
 
@@ -101,6 +101,7 @@ export const checkValidationHutangFn = async (fields: validationFields) => {
   const response = await api2.post(`/hutangheader/check-validation`, fields);
   return response.data;
 };
+
 export const exportHutangFn = async (
   id: number,
   filters: any
@@ -115,7 +116,7 @@ export const exportHutangFn = async (
 
     return response.data; // ini sudah Blob
   } catch (error) {
-    console.error('Error exporting data Hutang:', error);
-    throw new Error('Failed to export data Hutang');
+    console.error('Error exporting data pengeluaran:', error);
+    throw new Error('Failed to export data pengeluaran');
   }
 };
