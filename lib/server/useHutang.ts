@@ -76,10 +76,37 @@ export const useGetHutangHeader = (
     }
   );
 };
-export const useGetHutangDetail = (id?: number) => {
-  return useQuery(['hutang', id], async () => await getHutangDetailFn(id!), {
-    enabled: !!id // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
-  });
+
+export const useGetHutangDetail = (
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      nobukti?: string;
+      coa?: string;
+      coa_text?: string;
+      keterangan?: string;
+      nominal?: string;
+      dpp?: string;
+      noinvoiceemkl?: string;
+      tglinvoiceemkl?: string;
+      nofakturpajakemkl?: string;
+      modifiedby?: string;
+      created_at?: string;
+      updated_at?: string;
+    };
+  } = {}
+) => {
+  return useQuery(
+    ['hutangdetail', filters],
+    async () => await getHutangDetailFn(filters),
+    {
+      enabled: !!filters.filters?.nobukti
+    }
+  );
 };
 export const useCreateHutang = () => {
   const queryClient = useQueryClient();

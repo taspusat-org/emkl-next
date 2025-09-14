@@ -23,7 +23,7 @@ import { exportPengeluaranFn } from '@/lib/apis/pengeluaranheader.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-  const [savedNobukti, setSaveNobukti] = useState<any>('');
+  const [savedId, setSaveId] = useState<any>('');
 
   // Print plugin
   const printPluginInstance = printPlugin();
@@ -77,12 +77,12 @@ const ReportMenuPage: React.FC = () => {
         setSavedFilters({});
       }
     }
-    const nobukti = sessionStorage.getItem('dataNobukti');
-    if (nobukti) {
+    const rowData = sessionStorage.getItem('dataId');
+    if (rowData) {
       try {
-        setSaveNobukti(nobukti);
+        setSaveId(rowData);
       } catch {
-        setSaveNobukti(null);
+        setSaveId('');
       }
     }
   }, []);
@@ -90,7 +90,7 @@ const ReportMenuPage: React.FC = () => {
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportPengeluaranFn(savedNobukti, exportPayload);
+      const response = await exportPengeluaranFn(savedId, exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));

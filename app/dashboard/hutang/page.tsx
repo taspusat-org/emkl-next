@@ -21,6 +21,7 @@ import GridKasGantungDetail from './components/GridHutangDetail';
 import { IParameter } from '@/lib/types/parameter.type';
 import FilterGrid from './components/FilterGrid';
 import { getDaftarBankFn } from '@/lib/apis/daftarbank.api';
+import { GridTabs } from './components/GridTabs';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -78,7 +79,7 @@ const Page = () => {
           <GridKasGantungHeader />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridKasGantungDetail />
+          <GridTabs />
         </div>
       </div>
     </PageContainer>

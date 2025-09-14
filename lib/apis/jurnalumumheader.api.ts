@@ -39,18 +39,11 @@ export const getJurnalUmumHeaderFn = async (
 export const getJurnalUmumDetailFn = async (
   filters: GetParams = {}
 ): Promise<IAllJurnalUmumDetail> => {
-  try {
-    const queryParams = buildQueryParams(filters);
-
-    const response = await api2.get('/jurnalumumdetail', {
-      params: queryParams
-    });
-
-    return response.data;
-  } catch (error) {
-    console.error('Error:', error);
-    throw new Error('Failed');
-  }
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/jurnalumumdetail`, {
+    params: queryParams
+  });
+  return response.data;
 };
 export const getJurnalUmumHeaderByIdFn = async (
   id: number

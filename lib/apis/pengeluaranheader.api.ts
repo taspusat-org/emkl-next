@@ -31,19 +31,11 @@ export const getPengeluaranHeaderFn = async (
   }
 };
 
-export const getPengeluaranHeaderByNobuktiFn = async (
-  nobukti: string,
-  filters: GetParams = {}
+export const getPengeluaranHeaderByIdFn = async (
+  id: number
 ): Promise<IAllPengeluaranHeader> => {
   try {
-    const queryParams = buildQueryParams(filters);
-
-    const response = await api2.get(`/pengeluaranheader/report`, {
-      params: {
-        mainNobukti: nobukti,
-        ...queryParams
-      }
-    });
+    const response = await api2.get(`/pengeluaranheader/${id}`);
 
     return response.data;
   } catch (error) {
@@ -51,18 +43,22 @@ export const getPengeluaranHeaderByNobuktiFn = async (
     throw new Error('Failed');
   }
 };
+
 export const getPengeluaranDetailFn = async (
-  nobukti: string,
   filters: GetParams = {}
 ): Promise<IAllPengeluaranDetail> => {
-  const queryParams = buildQueryParams(filters);
-  const response = await api2.get(`/pengeluarandetail/detail`, {
-    params: {
-      mainNobukti: nobukti,
-      ...queryParams
-    }
-  });
-  return response.data;
+  try {
+    const queryParams = buildQueryParams(filters);
+
+    const response = await api2.get('/pengeluarandetail', {
+      params: queryParams
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Error:', error);
+    throw new Error('Failed');
+  }
 };
 export const storePengeluaranFn = async (fields: PengeluaranHeaderInput) => {
   const response = await api2.post(`/pengeluaranheader`, fields);
@@ -124,17 +120,14 @@ export const checkValidationPengeluaranFn = async (
   return response.data;
 };
 export const exportPengeluaranFn = async (
-  nobukti: string,
+  id: number,
   filters: any
 ): Promise<Blob> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get(`/pengeluaranheader/export/`, {
-      params: {
-        mainNobukti: nobukti,
-        ...queryParams
-      },
+    const response = await api2.get(`/pengeluaranheader/export/${id}`, {
+      params: queryParams,
       responseType: 'blob' // backend return file (Excel)
     });
 

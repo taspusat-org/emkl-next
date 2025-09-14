@@ -83,6 +83,7 @@ import {
   getHutangHeaderByIdFn
 } from '@/lib/apis/hutang.api';
 import { numberToTerbilang } from '@/lib/utils/terbilang';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   page: number;
@@ -494,13 +495,18 @@ const GridHutangHeader = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
+          const value = props.row.nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search, columnFilter);
+          };
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
             </div>
           );
         }
@@ -1220,12 +1226,13 @@ const GridHutangHeader = () => {
         const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
         return newRow;
       });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
     }
+    //  else if (event.key === ' ') {
+    //   // Handle spacebar keydown to toggle row selection
+    //   if (selectedRowId !== undefined) {
+    //     handleRowSelect(selectedRowId); // Toggling the selection of the row
+    //   }
+    // }
   }
   const onSuccess = async (
     indexOnPage: any,
@@ -1385,10 +1392,10 @@ const GridHutangHeader = () => {
       });
       return; // Stop execution if no rows are selected
     }
-    const rowId = Array.from(checkedRows)[0];
 
     try {
       dispatch(setProcessing());
+      const rowId = Array.from(checkedRows)[0];
 
       //TANGGAL
       const now = new Date();
@@ -1399,8 +1406,10 @@ const GridHutangHeader = () => {
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
 
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+      const response = await getHutangHeaderByIdFn(rowId);
+
       const { page, limit, ...filtersWithoutLimit } = filters;
-      const response = await getHutangHeaderByIdFn(rowId, filtersWithoutLimit);
       if (!response.data?.length) {
         alert({
           title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
@@ -1410,7 +1419,9 @@ const GridHutangHeader = () => {
         return;
       }
 
-      const responseDetail = await getHutangDetailFn(rowId);
+      const responseDetail = await getHutangDetailFn({
+        filters: { nobukti: selectedRowNobukti }
+      });
       const totalNominal = responseDetail.data.reduce(
         (sum: number, i: any) => sum + Number(i.nominal || 0),
         0
@@ -1429,7 +1440,7 @@ const GridHutangHeader = () => {
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataId', String(rowId));
+      sessionStorage.setItem('dataId', rowId as unknown as string);
       // Dynamically import Stimulsoft and generate the PDF report
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {

@@ -24,7 +24,7 @@ import { exportHutangFn } from '@/lib/apis/hutang.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-  const [savedId, setSavedId] = useState<number | null>();
+  const [savedId, setSavedId] = useState<any>('');
 
   // Print plugin
   const printPluginInstance = printPlugin();
@@ -92,7 +92,7 @@ const ReportMenuPage: React.FC = () => {
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportHutangFn(Number(savedId), exportPayload);
+      const response = await exportHutangFn(savedId, exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));

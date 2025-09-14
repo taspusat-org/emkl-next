@@ -93,7 +93,7 @@ import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import {
   checkValidationKasGantungFn,
   getKasGantungDetailFn,
-  getKasGantungHeaderByNobuktiFn,
+  getKasGantungHeaderByIdFn,
   getKasGantungHeaderFn
 } from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
@@ -152,7 +152,7 @@ const GridKasGantungHeader = () => {
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
   const dispatch = useDispatch();
-  const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set());
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id, token } = useSelector(
@@ -341,25 +341,24 @@ const GridKasGantungHeader = () => {
     setRows([]);
   };
 
-  const handleRowSelect = (nobukti: string) => {
+  const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
-      if (updated.has(nobukti)) {
-        updated.delete(nobukti);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
       } else {
-        updated.add(nobukti);
+        updated.add(rowId);
       }
 
       setIsAllSelected(updated.size === rows.length);
       return updated;
     });
   };
-
   const handleSelectAll = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
     } else {
-      const allIds = rows.map((row) => row.nobukti);
+      const allIds = rows.map((row) => row.id);
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
@@ -439,8 +438,8 @@ const GridKasGantungHeader = () => {
         renderCell: ({ row }: { row: KasGantungHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
-              checked={checkedRows.has(row.nobukti)}
-              onCheckedChange={() => handleRowSelect(row.nobukti)}
+              checked={checkedRows.has(row.id)}
+              onCheckedChange={() => handleRowSelect(row.id)}
               id={`row-checkbox-${row.id}`}
             />
           </div>
@@ -1639,13 +1638,12 @@ const GridKasGantungHeader = () => {
         const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
         return newRow;
       });
+    } else if (event.key === ' ') {
+      // Handle spacebar keydown to toggle row selection
+      if (selectedRowId !== undefined) {
+        handleRowSelect(selectedRowId); // Toggling the selection of the row
+      }
     }
-    // else if (event.key === ' ') {
-    //   // Handle spacebar keydown to toggle row selection
-    //   if (selectedRowId !== undefined) {
-    //     handleRowSelect(selectedRowId); // Toggling the selection of the row
-    //   }
-    // }
   }
   const onSuccess = async (indexOnPage: any, pageNumber: any) => {
     try {
@@ -1821,15 +1819,14 @@ const GridKasGantungHeader = () => {
       });
       return; // Stop execution if no rows are selected
     }
-    const nobukti = Array.from(checkedRows)[0];
 
     const { page, limit, ...filtersWithoutLimit } = filters;
     try {
+      const rowId = Array.from(checkedRows)[0];
+
       dispatch(setProcessing());
-      const response = await getKasGantungHeaderByNobuktiFn(
-        nobukti,
-        filtersWithoutLimit
-      );
+      const response = await getKasGantungHeaderByIdFn(rowId);
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
       if (response.data === null || response.data.length === 0) {
         alert({
           title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
@@ -1838,8 +1835,9 @@ const GridKasGantungHeader = () => {
         });
         return;
       }
-      console.log(checkedRows, 'testtttt');
-      const responseDetail = await getKasGantungDetailFn(nobukti);
+      const responseDetail = await getKasGantungDetailFn({
+        filters: { nobukti: selectedRowNobukti }
+      });
       const reportRows = response.data.map((row) => ({
         ...row,
         judullaporan: 'Laporan Kas Gantung',
@@ -1851,7 +1849,7 @@ const GridKasGantungHeader = () => {
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataNobukti', nobukti);
+      sessionStorage.setItem('dataId', rowId as unknown as string);
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
           const { Stimulsoft } = module;
@@ -2492,7 +2490,7 @@ const GridKasGantungHeader = () => {
           <ActionButton
             module="KAS-GANTUNG"
             onAdd={handleAdd}
-            // checkedRows={checkedRows}
+            checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}

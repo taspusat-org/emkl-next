@@ -27,8 +27,6 @@ import IcClose from '@/public/image/x.svg';
 import { highlightText } from '@/components/custom-ui/HighlightText';
 
 interface Filter {
-  page: number;
-  limit: number;
   search: string;
   filters: typeof filterPengeluaranDetail;
   sortBy: string;
@@ -43,15 +41,38 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridPengeluaranDetail = ({ activeTab }: GridProps) => {
+const GridPengeluaranDetail = ({
+  activeTab,
+  nobukti
+}: {
+  activeTab: string;
+  nobukti?: string;
+}) => {
+  const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
-    page: 1,
-    limit: 30,
     search: '',
-    filters: filterPengeluaranDetail,
+    filters: {
+      ...filterPengeluaranDetail,
+      nobukti: nobukti ?? headerData.nobukti ?? ''
+    },
+
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
+
+  const {
+    data: detail,
+    isLoading,
+    refetch
+  } = useGetPengeluaranDetail(
+    activeTab === 'pengeluarandetail'
+      ? filters
+      : {
+          filters: {
+            nobukti: headerData?.nobukti ? headerData.nobukti : ''
+          }
+        }
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
@@ -77,20 +98,23 @@ const GridPengeluaranDetail = ({ activeTab }: GridProps) => {
     setRows([]);
   };
 
-  const headerData = useSelector((state: RootState) => state.header.headerData);
-  const {
-    data: detail,
-    isLoading,
-    refetch
-  } = useGetPengeluaranDetail(
-    headerData?.pengeluaran_nobukti || headerData?.nobukti || '',
-    activeTab,
-    '',
-    {
-      ...filters,
-      page: 1
-    }
-  );
+  // const {
+  //   data: detail,
+  //   isLoading,
+  //   refetch
+  // } = useGetPengeluaranDetail(
+  //   activeTab === 'pengeluarandetail'
+  //     ? {
+  //         filters: {
+  //           pengeluaran_nobukti: headerData?.pengeluaran_nobukti || '',
+  //           nobukti:
+  //             !headerData?.pengeluaran_nobukti && headerData?.nobukti
+  //               ? headerData.nobukti
+  //               : ''
+  //         }
+  //       }
+  //     : {}
+  // );
 
   const [rows, setRows] = useState<PengeluaranDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -170,11 +194,7 @@ const GridPengeluaranDetail = ({ activeTab }: GridProps) => {
           const columnFilter = filters.filters.nobukti || '';
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {highlightText(
-                props.row.nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              {props.row.nobukti || ''}
             </div>
           );
         }
@@ -1210,7 +1230,7 @@ const GridPengeluaranDetail = ({ activeTab }: GridProps) => {
     if (headerData) {
       refetch();
     }
-  }, [headerData]);
+  }, [headerData, filters]);
 
   useEffect(() => {
     if (activeTab === 'pengeluarandetail') {

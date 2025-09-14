@@ -34,8 +34,6 @@ interface GridConfig {
 }
 
 interface Filter {
-  page: number;
-  limit: number;
   search: string;
   filters: typeof filterkasgantungDetail;
   sortBy: string;
@@ -44,26 +42,34 @@ interface Filter {
 interface GridProps {
   activeTab: string; // Menerima props activeTab
 }
-const GridKasGantungDetail = ({ activeTab }: GridProps) => {
+const GridKasGantungDetail = ({
+  activeTab,
+  nobukti
+}: {
+  activeTab: string;
+  nobukti?: string;
+}) => {
+  const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
-    page: 1,
-    limit: 30,
     search: '',
-    filters: filterkasgantungDetail,
+    filters: {
+      ...filterkasgantungDetail,
+      nobukti: nobukti ?? headerData.nobukti ?? ''
+    },
+
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
-
-  const headerData = useSelector((state: RootState) => state.header.headerData);
 
   const {
     data: detail,
     isLoading,
     refetch
-  } = useGetKasGantungDetail(headerData.nobukti ?? 0, activeTab, '', {
-    ...filters,
-    page: 1
-  });
+  } = useGetKasGantungDetail(
+    activeTab === 'kasgantungdetail'
+      ? filters
+      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
+  );
 
   const [rows, setRows] = useState<IPengembalianKasGantungDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -796,7 +802,7 @@ const GridKasGantungDetail = ({ activeTab }: GridProps) => {
     if (headerData) {
       refetch();
     }
-  }, [headerData]);
+  }, [headerData, filters]);
 
   useEffect(() => {
     if (activeTab === 'kasgantungdetail') {

@@ -30,19 +30,12 @@ export const getKasGantungHeaderFn = async (
     throw new Error('Failed');
   }
 };
-export const getKasGantungHeaderByNobuktiFn = async (
-  nobukti: string,
-  filters: GetParams = {}
+
+export const getKasGantungHeaderByIdFn = async (
+  id: number
 ): Promise<IAllKasGantungHeader> => {
   try {
-    const queryParams = buildQueryParams(filters);
-
-    const response = await api2.get(`/kasgantungheader/report`, {
-      params: {
-        mainNobukti: nobukti,
-        ...queryParams
-      }
-    });
+    const response = await api2.get(`/kasgantungheader/${id}`);
 
     return response.data;
   } catch (error) {
@@ -52,15 +45,11 @@ export const getKasGantungHeaderByNobuktiFn = async (
 };
 
 export const getKasGantungDetailFn = async (
-  nobukti: string,
   filters: GetParams = {}
 ): Promise<IAllKasGantungDetail> => {
   const queryParams = buildQueryParams(filters);
-  const response = await api2.get(`/kasgantungdetail/detail`, {
-    params: {
-      mainNobukti: nobukti,
-      ...queryParams
-    }
+  const response = await api2.get(`/kasgantungdetail`, {
+    params: queryParams
   });
   return response.data;
 };
@@ -122,17 +111,14 @@ export const checkValidationKasGantungFn = async (fields: validationFields) => {
   return response.data;
 };
 export const exportKasGantungFn = async (
-  nobukti: string,
+  id: number,
   filters: any
 ): Promise<Blob> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get(`/kasgantungheader/export/`, {
-      params: {
-        mainNobukti: nobukti,
-        ...queryParams
-      },
+    const response = await api2.get(`/kasgantungheader/export/${id}`, {
+      params: queryParams,
       responseType: 'blob' // backend return file (Excel)
     });
 

@@ -67,5 +67,16 @@
       "created_at": 250,
       "updated_at": 250
     }
+  },
+  "GridKasGantungDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5],
+    "columnsWidth": {
+      "nobukti": 200,
+      "keterangan": 149,
+      "nominal": 150,
+      "modifiedby": 150,
+      "created_at": 200,
+      "updated_at": 200
+    }
   }
 }

@@ -3,15 +3,14 @@
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import GridPengeluaranDetail from '../../pengeluaran/components/GridPengeluaranDetail';
+import GridHutangDetail from './GridHutangDetail';
 import GridJurnalUmumDetail from '../../jurnal-umum/components/GridJurnalUmumDetail';
-import GridKasGantungDetail from './GridKasGantungDetail';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 
 export function GridTabs() {
+  const [activeTab, setActiveTab] = useState('hutangdetail'); // Track tab aktif
   const headerData = useSelector((state: RootState) => state.header.headerData);
-  const [activeTab, setActiveTab] = useState('kasgantungdetail'); // Track tab aktif
   return (
     <Tabs
       defaultValue={activeTab}
@@ -24,17 +23,12 @@ export function GridTabs() {
           background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
         }}
       >
-        <TabsTrigger value="kasgantungdetail">Kas Gantung Detail</TabsTrigger>
-        <TabsTrigger value="pengeluarandetail">Pengeluaran Detail</TabsTrigger>
+        <TabsTrigger value="hutangdetail">Hutang Detail</TabsTrigger>
         <TabsTrigger value="jurnalumumdetail">Jurnal Umum Detail</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="kasgantungdetail" className="h-full">
-        <GridKasGantungDetail activeTab={activeTab} />
-      </TabsContent>
-
-      <TabsContent value="pengeluarandetail" className="h-full">
-        <GridPengeluaranDetail
+      <TabsContent value="hutangdetail" className="h-full">
+        <GridHutangDetail
           activeTab={activeTab}
           nobukti={headerData?.pengeluaran_nobukti}
         />

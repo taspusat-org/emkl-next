@@ -72,20 +72,21 @@ const FormHutang = ({
 
   const [dataGridKey, setDataGridKey] = useState(0);
   const dispatch = useDispatch();
-  // const [filters, setFilters] = useState({
-  //   nobukti: '',
-  //   keterangan: '',
-  //   sisa: '',
-  //   nominal: ''
-  // });
+  const [filters, setFilters] = useState({
+    nobukti: '',
+    keterangan: '',
+    sisa: '',
+    nominal: ''
+  });
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const gridRef = useRef<DataGridHandle>(null);
   const {
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetHutangDetail(headerData?.id ?? 0);
-
+  } = useGetHutangDetail({
+    filters: { nobukti: headerData?.nobukti ?? '' }
+  });
   const [rows, setRows] = useState<
     (HutangDetail | (Partial<HutangDetail> & { isNew: boolean }))[]
   >([]);
@@ -928,9 +929,8 @@ const FormHutang = ({
   }
 
   useEffect(() => {
-    if (allData && popOver) {
-      // If there is data, add the data rows and the "Add Row" button row at the end
-      if (allData?.data?.length > 0 && mode !== 'add') {
+    if (allData || popOver) {
+      if (allData && (allData.data?.length ?? 0) > 0 && mode !== 'add') {
         const formattedRows = allData.data.map((item: any) => ({
           id: item.id,
           coa: item.coa ?? '',
@@ -945,13 +945,11 @@ const FormHutang = ({
           isNew: false
         }));
 
-        // Always add the "Add Row" button row at the end
         setRows([
           ...formattedRows,
           { isAddRow: true, id: 'add_row', isNew: false }
         ]);
       } else {
-        // If no data, add one editable row and the "Add Row" button row at the end
         setRows([
           {
             id: 0,
@@ -966,7 +964,7 @@ const FormHutang = ({
             perioderefund: '',
             isNew: true
           },
-          { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
+          { isAddRow: true, id: 'add_row', isNew: false }
         ]);
       }
     }

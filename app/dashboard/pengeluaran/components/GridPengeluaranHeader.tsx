@@ -83,7 +83,7 @@ import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import {
   getPengeluaranDetailFn,
-  getPengeluaranHeaderByNobuktiFn,
+  getPengeluaranHeaderByIdFn,
   getPengeluaranHeaderFn
 } from '@/lib/apis/pengeluaranheader.api';
 import { numberToTerbilang } from '@/lib/utils/terbilang';
@@ -142,7 +142,7 @@ const GridPengeluaranHeader = () => {
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
-  const [checkedRows, setCheckedRows] = useState<Set<string>>(new Set());
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id, token } = useSelector(
@@ -335,13 +335,13 @@ const GridPengeluaranHeader = () => {
       requestAnimationFrame(() => setFocus('tglbukti'));
     }
   }, [isSubmitSuccessful, setFocus]);
-  const handleRowSelect = (nobukti: string) => {
+  const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
-      if (updated.has(nobukti)) {
-        updated.delete(nobukti);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
       } else {
-        updated.add(nobukti);
+        updated.add(rowId);
       }
 
       setIsAllSelected(updated.size === rows.length);
@@ -352,7 +352,7 @@ const GridPengeluaranHeader = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
     } else {
-      const allIds = rows.map((row) => row.nobukti);
+      const allIds = rows.map((row) => row.id);
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
@@ -432,8 +432,8 @@ const GridPengeluaranHeader = () => {
         renderCell: ({ row }: { row: PengeluaranHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
-              checked={checkedRows.has(row.nobukti)}
-              onCheckedChange={() => handleRowSelect(row.nobukti)}
+              checked={checkedRows.has(row.id)}
+              onCheckedChange={() => handleRowSelect(row.id)}
               id={`row-checkbox-${row.id}`}
             />
           </div>
@@ -1683,13 +1683,12 @@ const GridPengeluaranHeader = () => {
         const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
         return newRow;
       });
+    } else if (event.key === ' ') {
+      // Handle spacebar keydown to toggle row selection
+      if (selectedRowId !== undefined) {
+        handleRowSelect(selectedRowId); // Toggling the selection of the row
+      }
     }
-    // else if (event.key === ' ') {
-    //   // Handle spacebar keydown to toggle row selection
-    //   if (selectedRowId !== undefined) {
-    //     handleRowSelect(selectedRowId); // Toggling the selection of the row
-    //   }
-    // }
   }
   const onSuccess = async (
     indexOnPage: any,
@@ -1852,7 +1851,7 @@ const GridPengeluaranHeader = () => {
       });
       return; // Stop execution if no rows are selected
     }
-    const nobukti = Array.from(checkedRows)[0];
+    const rowId = Array.from(checkedRows)[0];
 
     try {
       dispatch(setProcessing());
@@ -1867,10 +1866,7 @@ const GridPengeluaranHeader = () => {
       )}:${pad(now.getSeconds())}`;
 
       const { page, limit, ...filtersWithoutLimit } = filters;
-      const response = await getPengeluaranHeaderByNobuktiFn(
-        nobukti,
-        filtersWithoutLimit
-      );
+      const response = await getPengeluaranHeaderByIdFn(rowId);
       if (!response.data?.length) {
         alert({
           title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
@@ -1879,8 +1875,10 @@ const GridPengeluaranHeader = () => {
         });
         return;
       }
-
-      const responseDetail = await getPengeluaranDetailFn(String(nobukti));
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+      const responseDetail = await getPengeluaranDetailFn({
+        filters: { nobukti: selectedRowNobukti }
+      });
       const totalNominal = responseDetail.data.reduce(
         (sum: number, i: any) => sum + Number(i.nominal || 0),
         0
@@ -1899,7 +1897,7 @@ const GridPengeluaranHeader = () => {
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataNobukti', String(nobukti));
+      sessionStorage.setItem('dataId', rowId as unknown as string);
       // Dynamically import Stimulsoft and generate the PDF report
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
@@ -1973,7 +1971,7 @@ const GridPengeluaranHeader = () => {
   //   dispatch(setProcessing()); // Show loading overlay when the request starts
 
   //   try {
-  //     const response = await getPengeluaranHeaderByNobuktiFn(
+  //     const response = await getPengeluaranHeaderByIdFn(
   //       rowId,
   //       filtersWithoutLimit
   //     );

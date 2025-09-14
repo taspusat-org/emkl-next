@@ -23,7 +23,7 @@ import { exportKasGantungFn } from '@/lib/apis/kasgantungheader.api';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-  const [savedNobukti, setSaveNobukti] = useState<any>('');
+  const [savedId, setSaveId] = useState<any>('');
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -45,12 +45,12 @@ const ReportMenuPage: React.FC = () => {
         setSavedFilters({});
       }
     }
-    const nobuktiData = sessionStorage.getItem('dataNobukti');
-    if (nobuktiData) {
+    const rowData = sessionStorage.getItem('dataId');
+    if (rowData) {
       try {
-        setSaveNobukti(nobuktiData);
+        setSaveId(rowData);
       } catch {
-        setSaveNobukti('');
+        setSaveId('');
       }
     }
   }, []);
@@ -58,7 +58,7 @@ const ReportMenuPage: React.FC = () => {
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportKasGantungFn(savedNobukti, exportPayload);
+      const response = await exportKasGantungFn(savedId, exportPayload);
 
       // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
