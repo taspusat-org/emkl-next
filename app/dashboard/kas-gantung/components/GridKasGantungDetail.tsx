@@ -51,16 +51,15 @@ const GridKasGantungDetail = ({
 }) => {
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
-    search: '',
     filters: {
       ...filterkasgantungDetail,
       nobukti: nobukti ?? headerData.nobukti ?? ''
     },
-
+    search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
-
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const {
     data: detail,
     isLoading,
@@ -70,7 +69,6 @@ const GridKasGantungDetail = ({
       ? filters
       : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
   );
-
   const [rows, setRows] = useState<IPengembalianKasGantungDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -97,11 +95,12 @@ const GridKasGantungDetail = ({
     setInputValue(searchValue);
     setFilters((prev) => ({
       ...prev,
-      filters: filterkasgantungDetail,
-      search: searchValue,
-      page: 1
+      filters: {
+        ...filterkasgantungDetail,
+        nobukti: nobukti ?? headerData.nobukti
+      },
+      search: searchValue
     }));
-
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
@@ -173,6 +172,49 @@ const GridKasGantungDetail = ({
 
   const columns = useMemo((): Column<IPengembalianKasGantungDetail>[] => {
     return [
+      {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm font-normal">No.</p>
+            </div>
+
+            <div
+              className="flex h-[50%] w-full cursor-pointer items-center justify-center"
+              onClick={() => {
+                setFilters({
+                  ...filters,
+                  search: '',
+                  filters: {
+                    ...filterkasgantungDetail,
+                    nobukti: nobukti ?? headerData.nobukti
+                  }
+                }),
+                  setInputValue('');
+                setTimeout(() => {
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+                }, 0);
+              }}
+            >
+              <FaTimes className="bg-red-500 text-white" />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {rowIndex + 1}
+            </div>
+          );
+        }
+      },
       {
         key: 'nobukti',
         headerCellClass: 'column-headers',
@@ -715,10 +757,10 @@ const GridKasGantungDetail = ({
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...prev.filters
+        ...prev.filters,
+        nobukti: nobukti ?? headerData.nobukti
       },
-      search: '',
-      page: 1
+      search: ''
     }));
     setInputValue('');
   };
@@ -756,6 +798,19 @@ const GridKasGantungDetail = ({
     loadGridConfig(user.id, 'GridKasGantungDetail');
   }, []);
   useEffect(() => {
+    if (headerData.nobukti || nobukti) {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: '' }
+      }));
+    }
+  }, [headerData.nobukti, nobukti]);
+  useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
       window.removeEventListener('mousedown', handleClickOutside);
@@ -778,10 +833,10 @@ const GridKasGantungDetail = ({
       }));
 
       setRows(formattedRows);
-    } else if (!headerData?.nobukti) {
+    } else if (!headerData?.nobukti || !nobukti) {
       setRows([]);
     }
-  }, [detail, headerData?.nobukti]);
+  }, [detail, headerData?.nobukti, nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<IPengembalianKasGantungDetail>,
@@ -799,16 +854,11 @@ const GridKasGantungDetail = ({
     });
   }, []);
   useEffect(() => {
-    if (headerData) {
+    if (filters !== prevFilters) {
       refetch();
+      setPrevFilters(filters);
     }
-  }, [headerData, filters]);
-
-  useEffect(() => {
-    if (activeTab === 'kasgantungdetail') {
-      refetch();
-    }
-  }, [activeTab, refetch]);
+  }, [filters, refetch]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>

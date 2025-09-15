@@ -50,15 +50,15 @@ const GridJurnalUmumDetail = ({
 }) => {
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
-    search: '',
     filters: {
       ...filterJurnalUmumDetail,
       nobukti: nobukti ?? headerData.nobukti ?? ''
     },
+    search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
-
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const {
     data: detail,
     isLoading,
@@ -66,14 +66,9 @@ const GridJurnalUmumDetail = ({
   } = useGetJurnalUmumDetail(
     activeTab === 'jurnalumumdetail'
       ? filters
-      : {
-          filters: {
-            nobukti: headerData?.nobukti ? headerData.nobukti : ''
-          }
-        }
+      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
   );
 
-  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const [rows, setRows] = useState<JurnalUmumDetail[]>([]);
   const [popOver, setPopOver] = useState<boolean>(false);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -123,11 +118,12 @@ const GridJurnalUmumDetail = ({
     setInputValue(searchValue);
     setFilters((prev) => ({
       ...prev,
-      filters: filterJurnalUmumDetail,
-      search: searchValue,
-      page: 1
+      filters: {
+        ...filterJurnalUmumDetail,
+        nobukti: nobukti ?? headerData.nobukti
+      },
+      search: searchValue
     }));
-
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
@@ -1007,6 +1003,19 @@ const GridJurnalUmumDetail = ({
     loadGridConfig(user.id, 'GridJurnalUmumDetail');
   }, []);
   useEffect(() => {
+    if (headerData.nobukti || nobukti) {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: '' }
+      }));
+    }
+  }, [headerData.nobukti, nobukti]);
+  useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
       window.removeEventListener('mousedown', handleClickOutside);
@@ -1039,10 +1048,10 @@ const GridJurnalUmumDetail = ({
       }));
 
       setRows(formattedRows);
-    } else if (!headerData?.id || !nobukti) {
+    } else if (!headerData?.nobukti || !nobukti) {
       setRows([]);
     }
-  }, [detail, headerData?.id, nobukti]);
+  }, [detail, headerData?.nobukti, nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<JurnalUmumDetail>,
@@ -1066,12 +1075,6 @@ const GridJurnalUmumDetail = ({
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [headerData, filters]);
-
-  useEffect(() => {
-    if (activeTab === 'jurnalumumdetail') {
-      refetch();
-    }
-  }, [activeTab, refetch]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>

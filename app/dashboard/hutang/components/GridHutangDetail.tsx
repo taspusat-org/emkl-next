@@ -47,16 +47,15 @@ const GridHutangDetail = ({
 }) => {
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
-    search: '',
     filters: {
       ...filterHutangDetail,
       nobukti: nobukti ?? headerData.nobukti ?? ''
     },
-
+    search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
-
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const {
     data: detail,
     isLoading,
@@ -64,23 +63,19 @@ const GridHutangDetail = ({
   } = useGetHutangDetail(
     activeTab === 'hutangdetail'
       ? filters
-      : {
-          filters: {
-            nobukti: headerData?.nobukti ? headerData.nobukti : ''
-          }
-        }
+      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
   );
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setFilters((prev) => ({
       ...prev,
-      filters: filterHutangDetail,
-      search: searchValue,
-      page: 1
+      filters: {
+        ...filterHutangDetail,
+        nobukti: nobukti ?? headerData.nobukti
+      },
+      search: searchValue
     }));
-
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
@@ -139,6 +134,49 @@ const GridHutangDetail = ({
 
   const columns = useMemo((): Column<HutangDetail>[] => {
     return [
+      {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm font-normal">No.</p>
+            </div>
+
+            <div
+              className="flex h-[50%] w-full cursor-pointer items-center justify-center"
+              onClick={() => {
+                setFilters({
+                  ...filters,
+                  search: '',
+                  filters: {
+                    ...filterHutangDetail,
+                    nobukti: nobukti ?? headerData.nobukti
+                  }
+                }),
+                  setInputValue('');
+                setTimeout(() => {
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+                }, 0);
+              }}
+            >
+              <FaTimes className="bg-red-500 text-white" />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {rowIndex + 1}
+            </div>
+          );
+        }
+      },
       {
         key: 'nobukti',
         headerCellClass: 'column-headers',
@@ -1040,10 +1078,10 @@ const GridHutangDetail = ({
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...prev.filters
+        ...prev.filters,
+        nobukti: nobukti ?? headerData.nobukti
       },
-      search: '',
-      page: 1
+      search: ''
     }));
     setInputValue('');
   };
@@ -1082,6 +1120,19 @@ const GridHutangDetail = ({
     loadGridConfig(user.id, 'GridHutangDetail');
   }, []);
   useEffect(() => {
+    if (headerData.nobukti || nobukti) {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: '' }
+      }));
+    }
+  }, [headerData.nobukti, nobukti]);
+  useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
       window.removeEventListener('mousedown', handleClickOutside);
@@ -1108,10 +1159,10 @@ const GridHutangDetail = ({
       }));
 
       setRows(formattedRows);
-    } else if (!headerData?.id) {
+    } else if (!headerData?.nobukti || !nobukti) {
       setRows([]);
     }
-  }, [detail, headerData?.id]);
+  }, [detail, headerData?.nobukti, nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<HutangDetail>,
@@ -1128,17 +1179,13 @@ const GridHutangDetail = ({
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-  useEffect(() => {
-    if (headerData) {
-      refetch();
-    }
-  }, [headerData, filters]);
 
   useEffect(() => {
-    if (activeTab === 'HutangDetail') {
+    if (filters !== prevFilters) {
       refetch();
+      setPrevFilters(filters);
     }
-  }, [activeTab, refetch]);
+  }, [filters, refetch]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>

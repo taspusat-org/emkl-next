@@ -617,7 +617,7 @@ const GridBiaya = () => {
         name: 'COA',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 350,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -687,7 +687,7 @@ const GridBiaya = () => {
         name: 'COA HUTANG',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 350,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">

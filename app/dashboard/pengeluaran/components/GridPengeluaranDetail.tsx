@@ -50,16 +50,15 @@ const GridPengeluaranDetail = ({
 }) => {
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
-    search: '',
     filters: {
       ...filterPengeluaranDetail,
       nobukti: nobukti ?? headerData.nobukti ?? ''
     },
-
+    search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
-
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const {
     data: detail,
     isLoading,
@@ -67,11 +66,7 @@ const GridPengeluaranDetail = ({
   } = useGetPengeluaranDetail(
     activeTab === 'pengeluarandetail'
       ? filters
-      : {
-          filters: {
-            nobukti: headerData?.nobukti ? headerData.nobukti : ''
-          }
-        }
+      : { filters: { nobukti: nobukti ?? headerData?.nobukti ?? '' } }
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,11 +74,12 @@ const GridPengeluaranDetail = ({
     setInputValue(searchValue);
     setFilters((prev) => ({
       ...prev,
-      filters: filterPengeluaranDetail,
-      search: searchValue,
-      page: 1
+      filters: {
+        ...filterPengeluaranDetail,
+        nobukti: nobukti ?? headerData.nobukti
+      },
+      search: searchValue
     }));
-
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
@@ -161,6 +157,49 @@ const GridPengeluaranDetail = ({
 
   const columns = useMemo((): Column<PengeluaranDetail>[] => {
     return [
+      {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm font-normal">No.</p>
+            </div>
+
+            <div
+              className="flex h-[50%] w-full cursor-pointer items-center justify-center"
+              onClick={() => {
+                setFilters({
+                  ...filters,
+                  search: '',
+                  filters: {
+                    ...filterPengeluaranDetail,
+                    nobukti: nobukti ?? headerData.nobukti
+                  }
+                }),
+                  setInputValue('');
+                setTimeout(() => {
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+                }, 0);
+              }}
+            >
+              <FaTimes className="bg-red-500 text-white" />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {rowIndex + 1}
+            </div>
+          );
+        }
+      },
       {
         key: 'nobukti',
         headerCellClass: 'column-headers',
@@ -1133,10 +1172,10 @@ const GridPengeluaranDetail = ({
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...prev.filters
+        ...prev.filters,
+        nobukti: nobukti ?? headerData.nobukti
       },
-      search: '',
-      page: 1
+      search: ''
     }));
     setInputValue('');
   };
@@ -1175,6 +1214,19 @@ const GridPengeluaranDetail = ({
     loadGridConfig(user.id, 'GridPengeluaranDetail');
   }, []);
   useEffect(() => {
+    if (headerData.nobukti || nobukti) {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: '' }
+      }));
+    }
+  }, [headerData.nobukti, nobukti]);
+  useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
       window.removeEventListener('mousedown', handleClickOutside);
@@ -1206,10 +1258,10 @@ const GridPengeluaranDetail = ({
       }));
 
       setRows(formattedRows);
-    } else if (!headerData?.id) {
+    } else if (!headerData?.nobukti || !nobukti) {
       setRows([]);
     }
-  }, [detail, headerData?.id]);
+  }, [detail, headerData?.nobukti, nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<PengeluaranDetail>,
@@ -1227,10 +1279,11 @@ const GridPengeluaranDetail = ({
     });
   }, []);
   useEffect(() => {
-    if (headerData) {
+    if (filters !== prevFilters) {
       refetch();
+      setPrevFilters(filters);
     }
-  }, [headerData, filters]);
+  }, [filters, refetch]);
 
   useEffect(() => {
     if (activeTab === 'pengeluarandetail') {
