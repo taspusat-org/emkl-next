@@ -30,7 +30,10 @@ export function GridTabs() {
       </TabsList>
 
       <TabsContent value="kasgantungdetail" className="h-full">
-        <GridKasGantungDetail activeTab={activeTab} />
+        <GridKasGantungDetail
+          activeTab={activeTab}
+          nobukti={headerData?.nobukti}
+        />
       </TabsContent>
 
       <TabsContent value="pengeluarandetail" className="h-full">

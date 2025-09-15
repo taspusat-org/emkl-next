@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "33bae7e57d41f3385185977afdbc75e3",
+  "ReportGuid": "846b14f19a708b4b812a6a2bf8ddb935",
   "ReportName": "Report",
   "ReportAlias": "Report",
-  "ReportFile": "/reports/LaporanBank.mrt",
+  "ReportFile": "/reports/LaporanBiaya.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1757323255000+0700)/",
+  "ReportChanged": "/Date(1757904883000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -304,6 +304,12 @@
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:0,0,0",
+              "Margins": {
+                "Left": 0,
+                "Right": 3,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "DataColumn"
             },
             "10": {
@@ -316,13 +322,19 @@
                 "Ident": "StiInteraction"
               },
               "Text": {
-                "Value": "Hal :{PageNumber} dari {TotalPageCount}"
+                "Value": "Hal : {PageNumber} dari {TotalPageCount}"
               },
               "HorAlignment": "Right",
               "Font": "Tahoma;;Italic;",
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
+              "Margins": {
+                "Left": 0,
+                "Right": 3,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "Expression"
             },
             "11": {

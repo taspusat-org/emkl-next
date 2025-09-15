@@ -21,8 +21,8 @@
       "select": 50,
       "nama": 300,
       "keterangan": 200,
-      "coa": 200,
-      "coahut": 200,
+      "coa": 350,
+      "coahut": 350,
       "jenisorderan_id": 150,
       "statusaktif": 150,
       "created_at": 250,
@@ -75,6 +75,23 @@
       "keterangan": 149,
       "nominal": 150,
       "modifiedby": 150,
+      "created_at": 200,
+      "updated_at": 200
+    }
+  },
+  "GridHutangDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "columnsWidth": {
+      "nomor": 50,
+      "nobukti": 200,
+      "coa": 150,
+      "keterangan": 250,
+      "nominal": 150,
+      "dpp": 150,
+      "noinvoiceemkl": 250,
+      "tglinvoiceemkl": 250,
+      "nofakturpajakemkl": 250,
+      "modifiedby": 200,
       "created_at": 200,
       "updated_at": 200
     }
