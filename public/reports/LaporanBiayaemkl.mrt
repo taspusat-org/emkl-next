@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "33bae7e57d41f3385185977afdbc75e3",
+  "ReportGuid": "68d419621ce8d50ed821ef559181c074",
   "ReportName": "Report",
   "ReportAlias": "Report",
-  "ReportFile": "/reports/LaporanBank.mrt",
+  "ReportFile": "/reports/LaporanBiayaemkl.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1757323255000+0700)/",
+  "ReportChanged": "/Date(1757922778000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -304,6 +304,12 @@
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:0,0,0",
+              "Margins": {
+                "Left": 0,
+                "Right": 2,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "DataColumn"
             },
             "10": {
@@ -323,6 +329,12 @@
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
+              "Margins": {
+                "Left": 0,
+                "Right": 2,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "Expression"
             },
             "11": {

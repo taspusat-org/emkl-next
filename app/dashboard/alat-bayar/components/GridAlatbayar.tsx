@@ -1203,6 +1203,7 @@ const GridAlatbayar = () => {
     }
   };
   const onSubmit = async (values: AlatbayarInput, keepOpenModal = false) => {
+    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {

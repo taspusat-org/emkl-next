@@ -949,6 +949,7 @@ const GridDaftarBank = () => {
     }
   };
   const onSubmit = async (values: DaftarBankInput, keepOpenModal = false) => {
+    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
 

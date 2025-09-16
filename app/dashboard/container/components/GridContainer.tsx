@@ -1008,6 +1008,8 @@ const GridContainer = () => {
     }
   };
   const onSubmit = async (values: ContainerInput, keepOpenModal = false) => {
+    forms.reset();
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
