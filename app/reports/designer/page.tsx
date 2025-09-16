@@ -54,7 +54,7 @@ const ReportDesigner = () => {
         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
         viewer.renderHtml('content');
-        report.loadFile('/reports/LaporanBiaya.mrt');
+        report.loadFile('/reports/LaporanMasterbiaya.mrt');
 
         report.dictionary.dataSources.clear();
         dataSet.readJson({

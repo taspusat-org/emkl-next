@@ -1879,10 +1879,12 @@ const GridPengeluaranHeader = () => {
       const responseDetail = await getPengeluaranDetailFn({
         filters: { nobukti: selectedRowNobukti }
       });
-      const totalNominal = responseDetail.data.reduce(
-        (sum: number, i: any) => sum + Number(i.nominal || 0),
-        0
-      );
+      const totalNominal =
+        responseDetail.data.reduce(
+          (sum: number, item: any) =>
+            sum + Math.round((Number(item.nominal) || 0) * 100),
+          0
+        ) / 100;
 
       const reportRows = response.data.map((row: any) => ({
         ...row,
