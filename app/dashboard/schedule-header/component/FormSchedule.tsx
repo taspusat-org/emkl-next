@@ -1134,68 +1134,71 @@ const FormSchedule = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-                  {/* <div className="flex flex-row"> */}
-                  <FormField
-                    name="nobukti"
-                    control={forms.control}
-                    render={({ field }) => (
-                      // <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                      // <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          NO BUKTI
-                        </FormLabel>
-                        {/* <div className="flex flex-col lg:w-[70%]"> */}
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              disabled
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    name="tglbukti"
-                    control={forms.control}
-                    render={({ field }) => (
-                      // <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
-                      // <FormLabel required={true} className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          TGL BUKTI
-                        </FormLabel>
-                        {/* <div className="flex flex-col lg:w-[70%]"> */}
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <InputDatePicker
-                              value={field.value}
-                              onChange={field.onChange}
-                              showCalendar={mode == 'add' || mode == 'edit'}
-                              disabled={mode == 'delete' || mode == 'view'}
-                              onSelect={(date) =>
-                                forms.setValue('tglbukti', date)
-                              }
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  {/* </div> */}
+                  <div className="flex flex-row">
+                    <FormField
+                      name="nobukti"
+                      control={forms.control}
+                      render={({ field }) => (
+                        <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                            {/* <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center"> */}
+                            {/* <FormLabel
+                            required={true}
+                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          > */}
+                            NO BUKTI
+                          </FormLabel>
+                          <div className="flex flex-col lg:w-[70%]">
+                            {/* <div className="flex flex-col lg:w-[85%]"> */}
+                            <FormControl>
+                              <Input
+                                {...field}
+                                disabled
+                                value={field.value ?? ''}
+                                type="text"
+                                readOnly={mode === 'view' || mode === 'delete'}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      name="tglbukti"
+                      control={forms.control}
+                      render={({ field }) => (
+                        <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
+                          <FormLabel
+                            required={true}
+                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          >
+                            {/* <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center"> */}
+                            {/* <FormLabel
+                            required={true}
+                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          > */}
+                            TGL BUKTI
+                          </FormLabel>
+                          <div className="flex flex-col lg:w-[70%]">
+                            {/* <div className="flex flex-col lg:w-[85%]"> */}
+                            <FormControl>
+                              <InputDatePicker
+                                value={field.value}
+                                onChange={field.onChange}
+                                showCalendar={mode == 'add' || mode == 'edit'}
+                                disabled={mode == 'delete' || mode == 'view'}
+                                onSelect={(date) =>
+                                  forms.setValue('tglbukti', date)
+                                }
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   <FormField
                     name="keterangan"
                     control={forms.control}
