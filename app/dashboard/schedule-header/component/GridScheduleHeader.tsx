@@ -197,7 +197,11 @@ const GridScheduleHeader = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterScheduleHeader,
+      filters: {
+        ...filterScheduleHeader,
+        tglDari: selectedDate,
+        tglSampai: selectedDate2
+      },
       search: searchValue,
       page: 1
     }));
@@ -866,11 +870,11 @@ const GridScheduleHeader = () => {
         alert({
           title: result.data.message,
           variant: 'danger',
-          submitText: 'OK',
-          isForceEdit: true,
-          valueForceEdit: rowData.id,
-          tableNameForceEdit: 'scheduleheader',
-          clickableText: 'LANJUT EDIT'
+          submitText: 'OK'
+          // isForceEdit: true,
+          // valueForceEdit: rowData.id,
+          // tableNameForceEdit: 'scheduleheader',
+          // clickableText: 'LANJUT EDIT'
         });
       } else {
         setPopOver(true);
