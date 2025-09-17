@@ -149,16 +149,6 @@ const FilterGrid = () => {
               <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
             </label>
             <div className="relative w-full text-black lg:w-[60%]">
-              {/* <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS BANK', subgrp: 'STATUS BANK' }}
-                onChange={(value) =>
-                  // simpan ke redux atau state sesuai kebutuhan Anda
-                  dispatch(setSelectedBank(String(value)))
-                }
-              /> */}
               {lookUpPropsBank.map((props, index) => (
                 <LookUp
                   key={index}
@@ -171,45 +161,6 @@ const FilterGrid = () => {
               ))}
             </div>
           </div>
-          {/* <div className="mt-2 flex w-full flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              karyawan dari:
-            </label>
-            <div className="relative w-full lg:w-[30%]">
-              {lookUpPropsKaryawan.map((props, index) => (
-                <LookUp
-                  key={index}
-                  {...props}
-                  label="karyawandari"
-                  lookupValue={(id) =>
-                    dispatch(setSelectedKaryawan1(String(id)))
-                  } // Dispatch to Redux)}
-                  // lookupNama={selectedKaryawan1}
-                  inputLookupValue={selectedKaryawan1}
-                />
-              ))}
-            </div>
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold text-black">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              {lookUpPropsKaryawan.map((props, index) => (
-                <LookUp
-                  key={index}
-                  {...props}
-                  label="karyawansampai"
-                  lookupValue={(absen_id) =>
-                    dispatch(setSelectedKaryawan2(String(absen_id)))
-                  }
-                  // lookupNama={selectedKaryawan2}
-                  inputLookupValue={selectedKaryawan2}
-                />
-              ))}
-            </div>
-          </div> */}
           <Button
             variant="default"
             className="mt-2 flex flex-row items-center justify-center"

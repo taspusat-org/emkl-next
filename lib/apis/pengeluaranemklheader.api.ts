@@ -4,10 +4,14 @@ import { buildQueryParams } from '../utils';
 import { IAllPenerimaanHeader } from '../types/penerimaan.type';
 import { PenerimaanHeaderInput } from '../validations/penerimaan.validation';
 import { IAllPenerimaanDetail } from '../types/penerimaan.type';
-import { IAllPengeluaranEmklHeader } from '../types/pengeluaranemklheader.type';
+import {
+  IAllPengeluaranEmklDetail,
+  IAllPengeluaranEmklHeader
+} from '../types/pengeluaranemklheader.type';
+import { PengeluaranemklheaderHeaderInput } from '../validations/pengeluaranemklheader.validation';
 interface UpdateParams {
   id: string;
-  fields: PenerimaanHeaderInput;
+  fields: PengeluaranemklheaderHeaderInput;
 }
 export const getPengeluaranEmklHeaderFn = async (
   filters: GetParams = {}
@@ -25,18 +29,20 @@ export const getPengeluaranEmklHeaderFn = async (
     throw new Error('Failed');
   }
 };
-export const storePengeluaranEmklFn = async (fields: PenerimaanHeaderInput) => {
+export const storePengeluaranEmklHeaderFn = async (
+  fields: PengeluaranemklheaderHeaderInput
+) => {
   const response = await api2.post(`/pengeluaranemklheader`, fields);
 
   return response.data;
 };
-export const getPenerimaanDetailFn = async (
+export const getPengeluaranEmklDetailFn = async (
   filters: GetParams = {}
-): Promise<IAllPenerimaanDetail> => {
+): Promise<IAllPengeluaranEmklDetail> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/penerimaandetail', {
+    const response = await api2.get('/pengeluaranemkldetail', {
       params: queryParams
     });
 
@@ -46,8 +52,11 @@ export const getPenerimaanDetailFn = async (
     throw new Error('Failed');
   }
 };
-export const updatePenerimaanFn = async ({ id, fields }: UpdateParams) => {
-  const response = await api2.put(`/penerimaanheader/${id}`, fields);
+export const updatePengeluaranEmklHeaderFn = async ({
+  id,
+  fields
+}: UpdateParams) => {
+  const response = await api2.put(`/pengeluaranemklheader/${id}`, fields);
   return response.data;
 };
 export const deletePenerimaanFn = async (id: string) => {

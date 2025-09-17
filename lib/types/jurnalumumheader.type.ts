@@ -26,6 +26,7 @@ export interface JurnalUmumDetail {
   modifiedby: string | null;
   created_at: string;
   updated_at: string;
+  link: string;
   [key: string]: string | number | boolean | null | undefined;
 }
 export interface IAllJurnalUmumHeader {

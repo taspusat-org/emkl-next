@@ -1,0 +1,4 @@
+const PINJAMANEMKL = 164;
+const KASBANK = 168;
+const HUTANG = 169;
+export { PINJAMANEMKL, KASBANK, HUTANG };

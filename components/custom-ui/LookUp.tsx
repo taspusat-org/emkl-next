@@ -268,7 +268,19 @@ export default function LookUp({
       setFiltering(true);
       setShowError({ label: label ?? '', status: false, message: '' });
 
-      // UX focus
+      // INI BLOCK TAMBAHAN UNTUK LOCAL FILTER
+      if (type === 'local' && data) {
+        const validColumnKeys = columns.map((col) => col.key);
+        const filteredRows = data.filter((row: any) =>
+          validColumnKeys.some((colKey) =>
+            String(row[colKey] ?? '')
+              .toLowerCase()
+              .includes(searchValue.toLowerCase())
+          )
+        );
+        setRows(filteredRows);
+      }
+
       setTimeout(() => {
         setSelectedRow(0);
         gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
@@ -438,7 +450,6 @@ export default function LookUp({
     if (onClear) {
       onClear(); // Trigger the passed onClear function
     }
-    onSelectRow?.(); // panggil tanpa argumen dengan aman
   };
 
   const handleSort = (column: string) => {
@@ -597,8 +608,6 @@ export default function LookUp({
       setSelectedRow(rowIndex);
     }
     const value = clickedRow[dataToPost as any];
-    console.log('value', value);
-    console.log('clickedRow', clickedRow);
     lookupValue?.(value);
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
@@ -1040,9 +1049,15 @@ export default function LookUp({
   }, [extendSize]);
   useEffect(() => {
     if (lookupNama) {
-      setInputValue(lookupNama); // Assuming "text" is the display column
+      setInputValue(lookupNama);
+      const foundRow = rows.find(
+        (row) => String(row[postData as string]) === String(lookupNama)
+      );
+      if (foundRow && onSelectRow) {
+        onSelectRow(foundRow);
+      }
     }
-  }, [lookupNama]);
+  }, [lookupNama, rows]);
   useEffect(() => {
     if (clearLookup) {
       setInputValue(''); // Assuming "text" is the display column
@@ -1097,8 +1112,6 @@ export default function LookUp({
         showError.label?.toLowerCase() === label?.toLowerCase() &&
         (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
-        console.log('masuk', label);
-
         setShowError({
           label: label ?? '',
           status: true,

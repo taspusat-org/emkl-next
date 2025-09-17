@@ -56,6 +56,7 @@ const GridHutangDetail = ({
     sortDirection: 'asc'
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+
   const {
     data: detail,
     isLoading,
@@ -1179,13 +1180,13 @@ const GridHutangDetail = ({
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-
   useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
     if (filters !== prevFilters) {
-      refetch();
-      setPrevFilters(filters);
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
     }
-  }, [filters, refetch]);
+  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>

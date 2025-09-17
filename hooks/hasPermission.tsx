@@ -18,9 +18,11 @@ const usePermissions = () => {
   const exclusionList: (string | string[])[] = [
     'SHOW',
     'MENU',
-    'ROLEACL',
+    'ROLE-ACL',
+    'USER-ACL',
+    'ROLE-USER',
     'ROLE',
-    'USERS',
+    'USER',
     'PARAMETER',
     'KAS GANTUNG',
     'BIAYA'

@@ -1,6 +1,17 @@
 {
   "GridAlatbayar-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -15,7 +26,18 @@
     }
   },
   "GridBiaya-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -30,7 +52,20 @@
     }
   },
   "GridPengeluaranDetail-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
     "columnsWidth": {
       "nobukti": 200,
       "coadebet": 150,
@@ -47,7 +82,25 @@
     }
   },
   "GridPengeluaranHeader-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -69,7 +122,14 @@
     }
   },
   "GridKasGantungDetail-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5],
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
     "columnsWidth": {
       "nobukti": 200,
       "keterangan": 149,
@@ -79,36 +139,40 @@
       "updated_at": 200
     }
   },
-  "GridHutangDetail-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  "GridPengeluaranEmklHeader-1": {
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      10,
+      7,
+      8,
+      9,
+      11,
+      12,
+      13,
+      14
+    ],
     "columnsWidth": {
       "nomor": 50,
-      "nobukti": 200,
-      "coa": 150,
-      "keterangan": 250,
-      "nominal": 150,
-      "dpp": 150,
-      "noinvoiceemkl": 250,
-      "tglinvoiceemkl": 250,
-      "nofakturpajakemkl": 250,
-      "modifiedby": 200,
-      "created_at": 200,
-      "updated_at": 200
-    }
-  },
-  "GridJurnalUmumDetail-1": {
-    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-    "columnsWidth": {
-      "nomor": 50,
-      "nobukti": 200,
-      "tglbukti": 200,
-      "keterangan": 150,
-      "coa_nama": 182,
-      "nominaldebet": 150,
-      "nominalkredit": 150,
+      "select": 50,
+      "nobukti": 300,
+      "tglbukti": 250,
+      "bank_nama": 150,
+      "tgljatuhtempo": 300,
+      "pengeluaran_nobukti": 300,
+      "karyawan_nama": 300,
+      "keterangan": 300,
+      "jenisposting": 150,
+      "hutang_nobukti": 150,
+      "nowarkat": 150,
       "modifiedby": 150,
-      "created_at": 200,
-      "updated_at": 200
+      "created_at": 250,
+      "updated_at": 250
     }
   }
 }

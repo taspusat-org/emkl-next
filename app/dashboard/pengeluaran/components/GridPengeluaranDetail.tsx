@@ -59,6 +59,7 @@ const GridPengeluaranDetail = ({
     sortDirection: 'asc'
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+
   const {
     data: detail,
     isLoading,
@@ -232,7 +233,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {props.row.nobukti || ''}
             </div>
           );
@@ -293,7 +294,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coadebet_text || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.coadebet_text || '',
                 filters.search,
@@ -358,7 +359,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.keterangan || '',
                 filters.search,
@@ -423,7 +424,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.nominal != null
                   ? formatCurrency(props.row.nominal)
@@ -489,7 +490,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.dpp || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-end p-0 text-sm">
               {highlightText(
                 props.row.nominal != null ? formatCurrency(props.row.dpp) : '',
                 filters.search,
@@ -554,7 +555,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.noinvoiceemkl || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.noinvoiceemkl || '',
                 filters.search,
@@ -619,8 +620,8 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglinvoiceemkl || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
                 {highlightText(
                   props.row.tglinvoiceemkl || '',
                   filters.search,
@@ -688,7 +689,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nofakturpajakemkl || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.nofakturpajakemkl || '',
                 filters.search,
@@ -753,7 +754,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.perioderefund || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.perioderefund || '',
                 filters.search,
@@ -818,7 +819,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.modifiedby || '',
                 filters.search,
@@ -883,7 +884,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.created_at || '',
                 filters.search,
@@ -948,7 +949,7 @@ const GridPengeluaranDetail = ({
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.updated_at || '',
                 filters.search,
@@ -1233,6 +1234,19 @@ const GridPengeluaranDetail = ({
     };
   }, []);
   useEffect(() => {
+    if (headerData.nobukti || nobukti) {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, nobukti: '' }
+      }));
+    }
+  }, [headerData.nobukti, nobukti]);
+  useEffect(() => {
     if (detail) {
       const formattedRows = detail?.data?.map((item: any) => ({
         id: item.id,
@@ -1279,17 +1293,12 @@ const GridPengeluaranDetail = ({
     });
   }, []);
   useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
     if (filters !== prevFilters) {
-      refetch();
-      setPrevFilters(filters);
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
     }
-  }, [filters, refetch]);
-
-  useEffect(() => {
-    if (activeTab === 'pengeluarandetail') {
-      refetch();
-    }
-  }, [activeTab, refetch]);
+  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -1337,7 +1346,7 @@ const GridPengeluaranDetail = ({
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-          className="rdg-light fill-grid text-xs"
+          className="rdg-light fill-grid text-sm"
         />
         {contextMenu && (
           <div

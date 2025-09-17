@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import 'react-data-grid/lib/styles.scss';
 
 import DataGrid, {
+  CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
@@ -25,6 +26,7 @@ import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import { highlightText } from '@/components/custom-ui/HighlightText';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import JsxParser from 'react-jsx-parser';
 
 interface GridProps {
   activeTab: string; // Menerima props activeTab
@@ -251,9 +253,19 @@ const GridJurnalUmumDetail = ({
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.nobukti || '';
+          const value = props.row.nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search);
+          };
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.nobukti}
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
             </div>
           );
         }
@@ -784,6 +796,17 @@ const GridJurnalUmumDetail = ({
       }
     ];
   }, [rows, filters]);
+  function getRowClass(row: JurnalUmumDetail) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+  function handleCellClick(args: CellClickArgs<JurnalUmumDetail>) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
@@ -1044,7 +1067,8 @@ const GridJurnalUmumDetail = ({
         info: item.info, // Updated to match the field name
         modifiedby: item.modifiedby, // Updated to match the field name
         created_at: item.created_at, // Updated to match the field name
-        updated_at: item.updated_at // Updated to match the field name
+        updated_at: item.updated_at, // Updated to match the field name
+        link: item.link // Updated to match the field name
       }));
 
       setRows(formattedRows);
@@ -1118,6 +1142,8 @@ const GridJurnalUmumDetail = ({
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           rows={rows}
+          rowClass={getRowClass}
+          onCellClick={handleCellClick}
           headerRowHeight={70}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}

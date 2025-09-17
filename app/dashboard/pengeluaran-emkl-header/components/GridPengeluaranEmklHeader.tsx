@@ -109,12 +109,20 @@ import {
 import { numberToTerbilang } from '@/lib/utils/terbilang';
 import Link from 'next/link';
 import JsxParser from 'react-jsx-parser';
-import FormPengeluaranEmkl from '../../pengeluaran-emkl/components/FormPengeluaranEmkl';
-import { useGetPengeluaranEmklHeader } from '@/lib/server/usePengeluaranEmklHeader';
+import {
+  useCreatePengeluaranEmklHeader,
+  useGetPengeluaranEmklHeader,
+  useUpdatePengeluaranEmklHeader
+} from '@/lib/server/usePengeluaranEmklHeader';
 import {
   filterPengeluaranEmklHeader,
   PengeluaranEmklHeader
 } from '@/lib/types/pengeluaranemklheader.type';
+import FormPengeluaranEmkl from './FormPengeluaranEmkl';
+import {
+  PengeluaranemklheaderHeaderInput,
+  pengeluaranemklheaderHeaderSchema
+} from '@/lib/validations/pengeluaranemklheader.validation';
 
 interface Filter {
   page: number;
@@ -137,10 +145,14 @@ const GridPengeluaranEmklHeader = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createPenerimaan, isLoading: isLoadingCreate } =
-    useCreatePenerimaan();
-  const { mutateAsync: updatePenerimaan, isLoading: isLoadingUpdate } =
-    useUpdatePenerimaan();
+  const {
+    mutateAsync: createPengeluaranEmklHeader,
+    isLoading: isLoadingCreate
+  } = useCreatePengeluaranEmklHeader();
+  const {
+    mutateAsync: updaetPengeluaranEmklHeader,
+    isLoading: isLoadingUpdate
+  } = useUpdatePengeluaranEmklHeader();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -175,24 +187,21 @@ const GridPengeluaranEmklHeader = () => {
   const { user, cabang_id, token } = useSelector(
     (state: RootState) => state.auth
   );
-  const forms = useForm<PenerimaanHeaderInput>({
-    resolver: zodResolver(penerimaanHeaderSchema),
+  const forms = useForm<PengeluaranemklheaderHeaderInput>({
+    resolver: zodResolver(pengeluaranemklheaderHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
       nobukti: '',
       tglbukti: '',
-      keterangan: null,
+      tgljatuhtempo: '',
+      keterangan: '',
+      karyawan_id: null,
+      karyawan_nama: '',
+      jenisposting: null,
       bank_id: null,
       bank_nama: '',
-      postingdari: '',
-      diterimadari: '',
-      coakasmasuk: '',
-      relasi_id: null,
-      alatbayar_id: null,
-      alatbayar_nama: '',
       nowarkat: '',
-      tgllunas: '',
-      noresi: '',
+      format: null,
       details: []
     }
   });
@@ -535,17 +544,13 @@ const GridPengeluaranEmklHeader = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
           const value = props.row.nobukti; // atau dari props.row
-          // Buat component wrapper untuk highlightText
-          const HighlightWrapper = () => {
-            return highlightText(value, filters.search, columnFilter);
-          };
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              <JsxParser
-                components={{ HighlightWrapper }}
-                jsx={props.row.link}
-                renderInWrapper={false}
-              />
+              {highlightText(
+                props.row.nobukti || '',
+                filters.search,
+                columnFilter
+              )}
             </div>
           );
         }
@@ -757,6 +762,90 @@ const GridPengeluaranEmklHeader = () => {
         }
       },
       {
+        key: 'pengeluaran_nobukti',
+        name: 'No.BUKTI PENGELUARAN',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('pengeluaran_nobukti')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'pengeluaran_nobukti'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                No.BUKTI PENGELUARAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'pengeluaran_nobukti' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'pengeluaran_nobukti' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['pengeluaran_nobukti'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.pengeluaran_nobukti
+                    ? filters.filters.pengeluaran_nobukti.toUpperCase()
+                    : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('pengeluaran_nobukti', value);
+                }}
+              />
+              {filters.filters.pengeluaran_nobukti && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() =>
+                    handleColumnFilterChange('pengeluaran_nobukti', '')
+                  }
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.pengeluaran_nobukti || '';
+          const value = props.row.pengeluaran_nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search, columnFilter);
+          };
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
+            </div>
+          );
+        }
+      },
+      {
         key: 'karyawan_nama',
         name: 'Karyawan',
         resizable: true,
@@ -945,118 +1034,22 @@ const GridPengeluaranEmklHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['jenisposting'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.jenisposting
-                    ? filters.filters.jenisposting.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('jenisposting', value);
-                }}
+              <FilterOptions
+                endpoint="parameter"
+                filterBy={{ grp: 'JENIS POSTING', subgrp: 'JENIS POSTING' }}
+                value="id"
+                label="text"
+                onChange={(value) =>
+                  handleColumnFilterChange('jenisposting', value)
+                } // Menangani perubahan nilai di parent
               />
-              {filters.filters.jenisposting && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('jenisposting', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.jenisposting || '';
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.jenisposting || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'pengeluaran_nobukti',
-        name: 'NO.BUKTI PENGELUARAN',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
-              onClick={() => handleSort('pengeluaran_nobukti')}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'pengeluaran_nobukti'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NO.BUKTI PENGELUARAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'pengeluaran_nobukti' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'pengeluaran_nobukti' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['pengeluaran_nobukti'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.pengeluaran_nobukti || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('pengeluaran_nobukti', value);
-                }}
-              />
-              {filters.filters.pengeluaran_nobukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('pengeluaran_nobukti', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.pengeluaran_nobukti || '';
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.pengeluaran_nobukti || '',
-                filters.search,
-                columnFilter
-              )}
+              {highlightText(props.row.jenisposting_nama || '', filters.search)}
             </div>
           );
         }
@@ -1573,7 +1566,9 @@ const GridPengeluaranEmklHeader = () => {
       setIsFetchingManually(true);
       setRows([]);
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/penerimaanheader-allItems`);
+        const response = await api2.get(
+          `/redis/get/pengeluaranemklheader-allItems`
+        );
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1598,7 +1593,7 @@ const GridPengeluaranEmklHeader = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: PenerimaanHeaderInput) => {
+  const onSubmit = async (values: PengeluaranemklheaderHeaderInput) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1629,7 +1624,7 @@ const GridPengeluaranEmklHeader = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createPenerimaan(
+        const newOrder = await createPengeluaranEmklHeader(
           {
             ...values,
             details: values.details.map((detail: any) => ({
@@ -1649,7 +1644,7 @@ const GridPengeluaranEmklHeader = () => {
       }
 
       if (selectedRowId && mode === 'edit') {
-        await updatePenerimaan(
+        await updaetPengeluaranEmklHeader(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
@@ -2221,31 +2216,28 @@ const GridPengeluaranEmklHeader = () => {
 
       forms.setValue('nobukti', row.nobukti);
       forms.setValue('tglbukti', row.tglbukti);
+      forms.setValue('tgljatuhtempo', row.tgljatuhtempo);
       forms.setValue('keterangan', row.keterangan ?? '');
       forms.setValue('bank_id', Number(row.bank_id) ?? null);
-      forms.setValue('postingdari', row.postingdari ?? '');
-      forms.setValue('diterimadari', row.diterimadari ?? '');
-      forms.setValue('noresi', row.noresi ?? '');
-      forms.setValue('tgllunas', row.tgllunas ?? '');
       forms.setValue('nowarkat', row.nowarkat ?? '');
-      forms.setValue('coakasmasuk', row.coakasmasuk ?? '');
-      forms.setValue('coakasmasuk_nama', row.coakasmasuk_nama ?? '');
-      forms.setValue('relasi_id', Number(row.relasi_id) ?? null);
-      forms.setValue('alatbayar_id', Number(row.alatbayar_id) ?? null);
       forms.setValue('bank_nama', row.bank_nama);
-      forms.setValue('relasi_nama', row.relasi_nama);
-      forms.setValue('alatbayar_nama', row.alatbayar_nama);
+      forms.setValue('karyawan_id', Number(row.karyawan_id) ?? null);
+      forms.setValue('karyawan_nama', row.karyawan_nama);
+      forms.setValue('jenisposting', Number(row.jenisposting) ?? null);
+      forms.setValue('format', Number(row.statusformat) ?? null);
+      forms.setValue('jenisposting_nama', row.jenisposting_nama ?? null);
+      forms.setValue('pengeluaran_nobukti', row.pengeluaran_nobukti ?? null);
+      forms.setValue('hutang_nobukti', row.hutang_nobukti ?? null);
+      forms.setValue('statusformat_nama', row.statusformat_nama ?? null);
+
       // Saat form pertama kali di-render
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
       // Clear or set defaults when adding a new record
       const currentDate = new Date(); // Dapatkan tanggal sekarang
       forms.setValue('bank_nama', '');
-      forms.setValue('relasi_nama', '');
-      forms.setValue('alatbayar_nama', '');
       forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
-      forms.setValue('tgllunas', formatDateToDDMMYYYY(currentDate));
-      forms.setValue('coakasmasuk', '');
+      forms.setValue('tgljatuhtempo', formatDateToDDMMYYYY(currentDate));
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {

@@ -97,7 +97,7 @@ export const useGetJurnalUmumDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['jurnalumumdetail', filters],
+    ['jurnalumum', filters],
     async () => await getJurnalUmumDetailFn(filters),
     {
       enabled: !!filters.filters?.nobukti

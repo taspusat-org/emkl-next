@@ -1660,6 +1660,7 @@ const GridUser = () => {
           }}
         >
           <ActionButton
+            module="USER"
             onAdd={handleAdd}
             onDelete={handleDelete}
             onEdit={handleEdit}

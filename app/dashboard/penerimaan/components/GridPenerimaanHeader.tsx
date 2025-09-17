@@ -88,7 +88,6 @@ import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import {
   checkValidationKasGantungFn,
   getKasGantungDetailFn,
-  getKasGantungHeaderByIdFn,
   getKasGantungHeaderFn
 } from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';

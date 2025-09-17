@@ -78,7 +78,9 @@ const FormKasGantung = ({
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetJurnalUmumDetail(headerData?.id ?? 0);
+  } = useGetJurnalUmumDetail({
+    filters: { nobukti: headerData?.nobukti ?? '' }
+  });
 
   const [rows, setRows] = useState<
     (JurnalUmumDetail | (Partial<JurnalUmumDetail> & { isNew: boolean }))[]
@@ -94,6 +96,7 @@ const FormKasGantung = ({
     const newRow: Partial<JurnalUmumDetail> & { isNew: boolean } = {
       id: 0, // Placeholder ID
       nobukti: '',
+      coa_nama: '',
       keterangan: '',
       nominaldebet: '',
       coa: '',
@@ -291,14 +294,13 @@ const FormKasGantung = ({
                         handleInputChange(rowIdx, 'coa', String(id))
                       }
                       inputLookupValue={props.row.coa}
-                      lookupNama={props.row.keterangancoa}
+                      lookupNama={props.row.coa_nama}
                     />
                   ))}
             </div>
           );
         }
       },
-
       {
         key: 'nominaldebet',
         headerCellClass: 'column-headers',
@@ -326,26 +328,12 @@ const FormKasGantung = ({
                   {formatCurrency(totalNominalDebet)}
                 </div>
               ) : (
-                // <InputMask
-                //   mask="" // biar kita yang atur formatting
-                //   maskPlaceholder={null}
-                //   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
-                //   onKeyDown={inputStopPropagation}
-                //   onClick={(e: any) => e.stopPropagation()}
-                //   value={String(raw)} // Menampilkan nilai setelah diformat
-                //   beforeMaskedStateChange={beforeMaskedStateChange}
-                //   onChange={(e: any) =>
-                //     handleCurrencyChange(rowIdx, e.target.value)
-                //   }
-                //   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
-                //   onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
-                // />
                 <InputCurrency
                   value={String(raw)}
                   disabled={
                     mode === 'view' ||
                     mode === 'delete' ||
-                    Number(props.row.nominalkredit) > 0
+                    Number(parseCurrency(props.row.nominalkredit)) > 0 // Disable if kredit has a value
                   }
                   onValueChange={(value) =>
                     handleCurrencyChangeDebet(rowIdx, value)
@@ -383,26 +371,12 @@ const FormKasGantung = ({
                   {formatCurrency(totalNominalKredit)}
                 </div>
               ) : (
-                // <InputMask
-                //   mask="" // biar kita yang atur formatting
-                //   maskPlaceholder={null}
-                //   className="h-9 w-full rounded-sm border border-blue-500 px-1 py-1 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0"
-                //   onKeyDown={inputStopPropagation}
-                //   onClick={(e: any) => e.stopPropagation()}
-                //   value={String(raw)} // Menampilkan nilai setelah diformat
-                //   beforeMaskedStateChange={beforeMaskedStateChange}
-                //   onChange={(e: any) =>
-                //     handleCurrencyChange(rowIdx, e.target.value)
-                //   }
-                //   onBlur={() => handleCurrencyBlur(props.row.nominal, rowIdx)}
-                //   onFocus={() => handleFocus(rowIdx, raw)} // Mengirimkan raw ke handleFocus
-                // />
                 <InputCurrency
                   value={String(raw)}
                   disabled={
                     mode === 'view' ||
                     mode === 'delete' ||
-                    Number(props.row.nominaldebet) > 0
+                    Number(parseCurrency(props.row.nominaldebet)) > 0 // Disable if debet has a value
                   }
                   onValueChange={(value) =>
                     handleCurrencyChangeKredit(rowIdx, value)
@@ -553,6 +527,7 @@ const FormKasGantung = ({
         const formattedRows = allData.data.map((item: any) => ({
           id: Number(item.id),
           coa: item.coa ?? '',
+          coa_nama: item.coa_nama ?? '',
           nobukti: item.nobukti ?? '',
           nominaldebet: item.nominaldebet ?? '',
           nominalkredit: item.nominalkredit ?? '',
