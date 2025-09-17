@@ -462,6 +462,7 @@ const FormKasGantung = ({
           nobukti: item.nobukti ?? '',
           nominal: item.nominal ?? '',
           keterangan: item.keterangan ?? '',
+          pengeluarandetail_id: Number(item.pengeluarandetail_id) ?? 0,
           isNew: false
         }));
 

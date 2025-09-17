@@ -108,7 +108,7 @@ export const useGetPengeluaranDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['pengeluarandetail', filters],
+    ['pengeluaran', filters],
     async () => await getPengeluaranDetailFn(filters),
     {
       enabled: !!filters.filters?.nobukti

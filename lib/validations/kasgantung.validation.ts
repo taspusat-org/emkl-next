@@ -4,7 +4,8 @@ export const kasgantungDetailSchema = z.object({
   id: z.number().optional(),
   nobukti: z.string().nullable(),
   keterangan: z.string().nullable(),
-  nominal: z.string().nullable()
+  nominal: z.string().nullable(),
+  pengeluarandetail_id: z.number().nullable().optional()
 });
 export type KasGantungDetailInput = z.infer<typeof kasgantungDetailSchema>;
 
