@@ -1731,7 +1731,7 @@ const GridKasGantungHeader = () => {
         },
         { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
       );
-      queryClient.invalidateQueries('menus');
+      queryClient.invalidateQueries('kasgantung');
     }
   };
 
@@ -2389,6 +2389,7 @@ const GridKasGantungHeader = () => {
       forms.setValue('coakaskeluar', '');
     }
   }, [forms, selectedRow, rows, mode]);
+  console.log(forms.getValues(), 'xnxx');
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

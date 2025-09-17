@@ -101,7 +101,7 @@ export const useGetHutangDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['hutangdetail', filters],
+    ['hutang', filters],
     async () => await getHutangDetailFn(filters),
     {
       enabled: !!filters.filters?.nobukti
@@ -178,6 +178,7 @@ export const useUpdateHutang = () => {
   return useMutation(updateHutangFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('hutang');
+      void queryClient.invalidateQueries('jurnalumum');
       //   toast({
       //     title: 'Proses Berhasil.',
       //     description: 'Data Berhasil Diubah.'

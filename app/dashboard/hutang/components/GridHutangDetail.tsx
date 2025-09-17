@@ -49,7 +49,7 @@ const GridHutangDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterHutangDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',

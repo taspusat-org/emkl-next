@@ -94,7 +94,7 @@ export const useGetKasGantungDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['kasgantungdetail', filters],
+    ['kasgantung', filters],
     async () => await getKasGantungDetailFn(filters),
     {
       enabled: !!filters.filters?.nobukti
@@ -207,6 +207,8 @@ export const useUpdatePengembalianKasGantung = () => {
   return useMutation(updateKasGantungFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('kasgantung');
+      void queryClient.invalidateQueries('pengeluaran');
+      void queryClient.invalidateQueries('jurnalumum');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'
