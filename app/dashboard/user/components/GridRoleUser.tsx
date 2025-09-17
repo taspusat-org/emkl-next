@@ -481,7 +481,7 @@ const GridRoleUser = () => {
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          <ActionButton onEdit={handleEdit} />
+          <ActionButton module="ROLE-USER" onEdit={handleEdit} />
           {isLoadingUserRole ? <LoadRowsRenderer /> : null}
         </div>
       </div>
