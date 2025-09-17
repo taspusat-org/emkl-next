@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import 'react-data-grid/lib/styles.scss';
 
 import DataGrid, {
+  CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
@@ -1243,6 +1244,14 @@ const GridPenerimaanDetail = ({
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
+
+  function handleCellClick(args: CellClickArgs<PenerimaanDetail>) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   const handleContextMenu = (event: React.MouseEvent) => {
     event.preventDefault();
     setContextMenu({ x: event.clientX, y: event.clientY });
@@ -1388,6 +1397,7 @@ const GridPenerimaanDetail = ({
           onCellKeyDown={handleKeyDown}
           rowClass={getRowClass}
           rowHeight={30}
+          onCellClick={handleCellClick}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
           className="rdg-light fill-grid text-xs"
         />

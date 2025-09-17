@@ -10,10 +10,12 @@ export interface PengeluaranEmklHeader {
   karyawan_id: number | null;
   karyawan_nama: string | null;
   jenisposting: string | null;
+  jenisposting_nama: string | null;
   nowarkat: string | null;
   pengeluaran_nobukti: string | null;
   hutang_nobukti: string | null;
   statusformat: number | null;
+  statusformat_nama: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
@@ -28,6 +30,7 @@ export interface PengeluaranEmklDetail {
   keterangan: string | null;
   nominal: string | null;
   pengeluaranemkl_nobukti: string | null;
+  penerimaanemkl_nobukti: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
@@ -54,8 +57,10 @@ export const filterPengeluaranEmklHeader = {
   jenisposting: '',
   nowarkat: '',
   pengeluaran_nobukti: '',
+  jenisposting_nama: '',
   hutang_nobukti: '',
   statusformat: null,
+  statusformat_nama: '',
   info: '',
   modifiedby: '',
   created_at: '',
@@ -68,6 +73,7 @@ export const filterPengeluaranEmklDetail = {
   keterangan: '',
   nominal: '',
   pengeluaranemkl_nobukti: '',
+  penerimaanemkl_nobukti: '',
   info: '',
   modifiedby: '',
   created_at: '',

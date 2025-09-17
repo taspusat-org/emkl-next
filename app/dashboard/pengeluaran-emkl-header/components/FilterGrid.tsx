@@ -15,7 +15,9 @@ import {
   setSelectedDate,
   setSelectedDate2,
   setSelectedKaryawan1,
-  setSelectedKaryawan2
+  setSelectedKaryawan2,
+  setSelectedPengeluaranEmkl,
+  setSelectedPengeluaranEmklNama
 } from '@/lib/store/filterSlice/filterSlice';
 import { useSelector } from 'react-redux';
 import { IoReload } from 'react-icons/io5';
@@ -23,10 +25,12 @@ import { Button } from '@/components/ui/button';
 import { IoMdRefresh } from 'react-icons/io';
 import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
+import FormLabel from '@/components/ui/form';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
+
   const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
   const {
     selectedDate,
@@ -64,8 +68,23 @@ const FilterGrid = () => {
   };
   const onSubmit = () => {
     // dispatch(setProcessing());
+
     dispatch(setOnReload(true));
   };
+  const lookUpPropsPengeluaranEmkl = [
+    {
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      labelLookup: 'PENGELUARAN EMKL LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'pengeluaranemkl',
+      singleColumn: true,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'nama',
+      dataToPost: 'id'
+    }
+  ];
   useEffect(() => {
     const now = new Date();
     const fmt = (date: Date) =>
@@ -125,46 +144,31 @@ const FilterGrid = () => {
               />
             </div>
           </div>
-
-          {/* <div className="mt-2 flex w-full flex-col items-center justify-between lg:flex-row">
+          <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
             <label
               htmlFor=""
               className="w-full text-sm font-bold text-black lg:w-[20%]"
             >
-              karyawan dari:
+              Pengeluaran Emkl:
+              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
             </label>
-            <div className="relative w-full lg:w-[30%]">
-              {lookUpPropsKaryawan.map((props, index) => (
+            <div className="relative w-full text-black lg:w-[60%]">
+              {lookUpPropsPengeluaranEmkl.map((props, index) => (
                 <LookUp
                   key={index}
                   {...props}
-                  label="karyawandari"
-                  lookupValue={(id) =>
-                    dispatch(setSelectedKaryawan1(String(id)))
-                  } // Dispatch to Redux)}
-                  // lookupNama={selectedKaryawan1}
-                  inputLookupValue={selectedKaryawan1}
+                  onSelectRow={(val) => {
+                    dispatch(setSelectedPengeluaranEmkl(Number(val.format)));
+                    dispatch(setSelectedPengeluaranEmklNama(val.nama));
+                  }}
+                  onClear={() => {
+                    dispatch(setSelectedPengeluaranEmkl(null));
+                    dispatch(setSelectedPengeluaranEmklNama(''));
+                  }}
                 />
               ))}
             </div>
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold text-black">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              {lookUpPropsKaryawan.map((props, index) => (
-                <LookUp
-                  key={index}
-                  {...props}
-                  label="karyawansampai"
-                  lookupValue={(absen_id) =>
-                    dispatch(setSelectedKaryawan2(String(absen_id)))
-                  }
-                  // lookupNama={selectedKaryawan2}
-                  inputLookupValue={selectedKaryawan2}
-                />
-              ))}
-            </div>
-          </div> */}
+          </div>
           <Button
             variant="default"
             className="mt-2 flex flex-row items-center justify-center"

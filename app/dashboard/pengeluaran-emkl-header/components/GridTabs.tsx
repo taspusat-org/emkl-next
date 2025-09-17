@@ -6,10 +6,13 @@ import GridJurnalUmumDetail from '../../jurnal-umum/components/GridJurnalUmumDet
 import GridPenerimaanDetail from '../../penerimaan/components/GridPenerimaanDetail';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
+import GridPengeluaranDetail from '../../pengeluaran/components/GridPengeluaranDetail';
+import GridPengeluaranEmklDetail from './GridPengeluaranEmklDetail';
+import GridHutangDetail from '../../hutang/components/GridHutangDetail';
 
 export function GridTabs() {
   const headerData = useSelector((state: RootState) => state.header.headerData);
-  const [activeTab, setActiveTab] = useState('penerimaandetail'); // Track tab aktif
+  const [activeTab, setActiveTab] = useState('pengeluaranemkldetail'); // Track tab aktif
   return (
     <Tabs
       defaultValue={activeTab}
@@ -22,20 +25,42 @@ export function GridTabs() {
           background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
         }}
       >
-        <TabsTrigger value="penerimaandetail">Penerimaan Detail</TabsTrigger>
+        <TabsTrigger value="pengeluaranemkldetail">
+          Pengeluaran EMKL Detail
+        </TabsTrigger>
+        <TabsTrigger value="pengeluarandetail">
+          Pengeluaran KAS/BANK Detail
+        </TabsTrigger>
+        <TabsTrigger value="hutangdetail">Hutang Detail</TabsTrigger>
         <TabsTrigger value="jurnalumumdetail">Jurnal Umum Detail</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="jurnalumumdetail" className="h-full">
-        <GridJurnalUmumDetail
+      <TabsContent value="pengeluaranemkldetail" className="h-full">
+        <GridPengeluaranEmklDetail
           activeTab={activeTab}
           nobukti={headerData.nobukti}
         />
       </TabsContent>
-      <TabsContent value="penerimaandetail" className="h-full">
-        <GridPenerimaanDetail
+      <TabsContent value="jurnalumumdetail" className="h-full">
+        <GridJurnalUmumDetail
           activeTab={activeTab}
-          nobukti={headerData.nobukti}
+          nobukti={
+            headerData.pengeluaran_nobukti
+              ? headerData.pengeluaran_nobukti
+              : headerData.hutang_nobukti
+          }
+        />
+      </TabsContent>
+      <TabsContent value="pengeluarandetail" className="h-full">
+        <GridPengeluaranDetail
+          activeTab={activeTab}
+          nobukti={headerData.pengeluaran_nobukti}
+        />
+      </TabsContent>
+      <TabsContent value="hutangdetail" className="h-full">
+        <GridHutangDetail
+          activeTab={activeTab}
+          nobukti={headerData.hutang_nobukti}
         />
       </TabsContent>
     </Tabs>

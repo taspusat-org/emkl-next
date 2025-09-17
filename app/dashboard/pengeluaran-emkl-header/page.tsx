@@ -16,8 +16,6 @@ import {
 } from '@/lib/store/lookupSlice/lookupSlice';
 import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
-import GridPenerimaanHeader from './components/GridPenerimaanHeader';
-import GridPenerimaanDetail from './components/GridPenerimaanDetail';
 import { GridTabs } from './components/GridTabs';
 import GridPengeluaranEmklHeader from './components/GridPengeluaranEmklHeader';
 interface ApiResponse {

@@ -1376,8 +1376,6 @@ const GridPengembalianKasGantung = () => {
       const responseDetail = await getPengembalianKasGantungDetailFn({
         filters: { nobukti: selectedRowNobukti }
       });
-      console.log('responseDetail', responseDetail);
-      console.log('selectedRowNobukti', selectedRowNobukti);
       const reportRows = response.data.map((row) => ({
         ...row,
         judullaporan: 'Laporan Kas Gantung',

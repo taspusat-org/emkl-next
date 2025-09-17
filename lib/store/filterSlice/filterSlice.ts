@@ -7,6 +7,8 @@ interface FilterState {
   selectedKaryawan2: string;
   selectedYear: string;
   selectedBank: string;
+  selectedPengeluaranEmkl: number | null;
+  selectedPengeluaranEmklNama: string;
   onReload: boolean; // Add the new onReload property here
 }
 
@@ -17,6 +19,8 @@ const initialState: FilterState = {
   selectedKaryawan2: '',
   selectedYear: '',
   selectedBank: '',
+  selectedPengeluaranEmkl: null,
+  selectedPengeluaranEmklNama: '',
   onReload: false // Initialize the onReload with default value false
 };
 
@@ -42,6 +46,12 @@ const filterSlice = createSlice({
     setSelectedBank(state, action: PayloadAction<string>) {
       state.selectedBank = action.payload;
     },
+    setSelectedPengeluaranEmkl(state, action: PayloadAction<number | null>) {
+      state.selectedPengeluaranEmkl = action.payload;
+    },
+    setSelectedPengeluaranEmklNama(state, action: PayloadAction<string>) {
+      state.selectedPengeluaranEmklNama = action.payload;
+    },
     setOnReload(state, action: PayloadAction<boolean>) {
       state.onReload = action.payload; // Handle the onReload state
     },
@@ -50,6 +60,8 @@ const filterSlice = createSlice({
       state.selectedDate2 = '';
       state.selectedKaryawan1 = '';
       state.selectedKaryawan2 = '';
+      state.selectedPengeluaranEmkl = null;
+      state.selectedPengeluaranEmklNama = '';
       state.onReload = false; // Reset onReload when clearing filters
     },
     clearOnReload(state) {
@@ -65,7 +77,9 @@ export const {
   setSelectedBank,
   setSelectedKaryawan1,
   setSelectedKaryawan2,
-  setOnReload, // Export the action to update onReload
+  setSelectedPengeluaranEmkl,
+  setSelectedPengeluaranEmklNama,
+  setOnReload,
   clearFilter,
   clearOnReload
 } = filterSlice.actions;

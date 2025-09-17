@@ -3,8 +3,6 @@ import { AxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { useDispatch } from 'react-redux';
 import {
-  getPenerimaanHeaderFn,
-  getPenerimaanDetailFn,
   storePenerimaanFn,
   updatePenerimaanFn,
   deletePenerimaanFn
@@ -14,7 +12,12 @@ import {
   setProcessing
 } from '../store/loadingSlice/loadingSlice';
 import { IErrorResponse } from '../types/user.type';
-import { getPengeluaranEmklHeaderFn } from '../apis/pengeluaranemklheader.api';
+import {
+  getPengeluaranEmklDetailFn,
+  getPengeluaranEmklHeaderFn,
+  storePengeluaranEmklHeaderFn,
+  updatePengeluaranEmklHeaderFn
+} from '../apis/pengeluaranemklheader.api';
 
 export const useGetPengeluaranEmklHeader = (
   filters: {
@@ -72,19 +75,19 @@ export const useGetPengeluaranEmklHeader = (
     }
   );
 };
-export const useCreatePenerimaan = () => {
+export const useCreatePengeluaranEmklHeader = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  return useMutation(storePenerimaanFn, {
+  return useMutation(storePengeluaranEmklHeaderFn, {
     // before the mutation fn runs
     onMutate: () => {
       dispatch(setProcessing());
     },
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
-      void queryClient.invalidateQueries(['penerimaan']);
+      void queryClient.invalidateQueries(['pengeluaranemklheader']);
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -107,11 +110,10 @@ export const useCreatePenerimaan = () => {
     // }
   });
 };
-export const useGetPenerimaanDetail = (
+export const useGetPengeluaranEmklDetail = (
   filters: {
     filters?: {
       nobukti?: string;
-      pengembaliankasgantung_nobukti?: string;
       tglbukti?: string;
       keterangan?: string | null;
     };
@@ -121,23 +123,21 @@ export const useGetPenerimaanDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['penerimaan', filters],
-    async () => await getPenerimaanDetailFn(filters),
+    ['pengeluaranemkl', filters],
+    async () => await getPengeluaranEmklDetailFn(filters),
     {
-      enabled:
-        !!filters.filters?.nobukti ||
-        !!filters.filters?.pengembaliankasgantung_nobukti // Hanya aktifkan query jika tab aktif adalah "penerimaan"
+      enabled: !!filters.filters?.nobukti
     }
   );
 };
 
-export const useUpdatePenerimaan = () => {
+export const useUpdatePengeluaranEmklHeader = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updatePenerimaanFn, {
+  return useMutation(updatePengeluaranEmklHeaderFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('penerimaan');
+      void queryClient.invalidateQueries('pengeluaranemkl');
       //   toast({
       //     title: 'Proses Berhasil.',
       //     description: 'Data Berhasil Diubah.'
