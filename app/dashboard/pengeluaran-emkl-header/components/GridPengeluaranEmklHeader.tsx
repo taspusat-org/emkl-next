@@ -123,6 +123,10 @@ import {
   PengeluaranemklheaderHeaderInput,
   pengeluaranemklheaderHeaderSchema
 } from '@/lib/validations/pengeluaranemklheader.validation';
+import {
+  getPengeluaranEmklDetailFn,
+  getPengeluaranEmklHeaderByIdFn
+} from '@/lib/apis/pengeluaranemklheader.api';
 
 interface Filter {
   page: number;
@@ -1748,8 +1752,8 @@ const GridPengeluaranEmklHeader = () => {
       const rowId = Array.from(checkedRows)[0];
       const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
 
-      const response = await getPenerimaanHeaderByIdFn(rowId);
-      const responseDetail = await getPenerimaanDetailFn({
+      const response = await getPengeluaranEmklHeaderByIdFn(rowId);
+      const responseDetail = await getPengeluaranEmklDetailFn({
         filters: { nobukti: selectedRowNobukti }
       });
       const totalNominal = responseDetail.data.reduce(
@@ -1767,7 +1771,7 @@ const GridPengeluaranEmklHeader = () => {
       }
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Penerimaan',
+        judullaporan: 'Laporan Pengeluaran',
         usercetak: user.username,
         tglcetak: new Date().toLocaleDateString(),
         terbilang: numberToTerbilang(totalNominal),
@@ -1798,7 +1802,7 @@ const GridPengeluaranEmklHeader = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanPenerimaan.mrt');
+          report.loadFile('/reports/LaporanPengeluaranKasEmklHeader.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           dataSet.readJson({ detail: responseDetail.data });
@@ -1819,7 +1823,7 @@ const GridPengeluaranEmklHeader = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/penerimaan', '_blank');
+              window.open('/reports/pengeluaranemklheader', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1831,8 +1835,6 @@ const GridPengeluaranEmklHeader = () => {
     } finally {
       dispatch(setProcessed());
     }
-
-    // Dynamically import Stimulsoft and generate the PDF report
   };
   // const handleReport = async () => {
   //   if (checkedRows.size === 0) {
@@ -1853,9 +1855,12 @@ const GridPengeluaranEmklHeader = () => {
   //   }
 
   //   const rowId = Array.from(checkedRows)[0];
+  //   const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
 
-  //   const response = await getPenerimaanHeaderByIdFn(rowId);
-  //   const responseDetail = await getPenerimaanDetailFn(rowId);
+  //   const response = await getPengeluaranEmklHeaderByIdFn(rowId);
+  //   const responseDetail = await getPengeluaranEmklDetailFn({
+  //     filters: { nobukti: selectedRowNobukti }
+  //   });
   //   console.log('responseDetail', responseDetail.data);
   //   const totalNominal = responseDetail.data.reduce(
   //     (sum: number, i: any) => sum + Number(i.nominal || 0),
@@ -1869,9 +1874,9 @@ const GridPengeluaranEmklHeader = () => {
   //       submitText: 'ok'
   //     });
   //   } else {
-  //     const reportRows = response.data.map((row) => ({
+  //     const reportRows = response.data.map((row: any) => ({
   //       ...row,
-  //       judullaporan: 'Laporan Penerimaan',
+  //       judullaporan: 'Laporan Pengeluaran',
   //       usercetak: user.username,
   //       tglcetak: formatDateToDDMMYYYY(new Date()),
   //       terbilang: numberToTerbilang(totalNominal),
@@ -2102,7 +2107,6 @@ const GridPengeluaranEmklHeader = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk1');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -2118,7 +2122,6 @@ const GridPengeluaranEmklHeader = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk2');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
