@@ -53,7 +53,7 @@ const GridKasGantungDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterkasgantungDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',

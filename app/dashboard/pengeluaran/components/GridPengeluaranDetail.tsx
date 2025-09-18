@@ -52,7 +52,7 @@ const GridPengeluaranDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterPengeluaranDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',
