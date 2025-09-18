@@ -38,7 +38,7 @@ export interface KasGantungDetail {
   editing_at: string | null; // Nullable datetime field
   created_at: string;
   updated_at: string;
-  pengeluarandetail_id: string;
+  pengeluarandetail_id: number;
   [key: string]: string | number | boolean | null | undefined;
 }
 export interface IAllKasGantungHeader {

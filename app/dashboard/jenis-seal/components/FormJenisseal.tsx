@@ -10,51 +10,18 @@ import {
 } from '@/components/ui/form';
 import { useGetMenu } from '@/lib/server/useMenu';
 import { Button } from '@/components/ui/button';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import LookUp from '@/components/custom-ui/LookUp';
 import { Input } from '@/components/ui/input';
-import { IoMdClose, IoMdRefresh } from 'react-icons/io';
-import { FaSave, FaTimes, FaTrashAlt } from 'react-icons/fa';
-import InputMask from '@mona-health/react-input-mask';
-import DataGrid, {
-  CellKeyDownArgs,
-  Column,
-  DataGridHandle
-} from 'react-data-grid';
-import {
-  formatCurrency,
-  formatDateCalendar,
-  formatDateToDDMMYYYY,
-  isLeapYear,
-  parseCurrency,
-  parseDateFromDDMMYYYY
-} from '@/lib/utils';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
-import { parse } from 'date-fns';
-import { Checkbox } from '@/components/ui/checkbox';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { KasGantungDetail } from '@/lib/types/kasgantungheader.type';
-import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
-import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
-import InputCurrency from '@/components/custom-ui/InputCurrency';
-import LookUpModal from '@/components/custom-ui/LookUpModal';
-import FormPinjamanEmkl from './FormPinjamanEmkl';
-import { PINJAMANEMKL } from '@/constants/pengeluaranemkl';
-import {
-  setSelectedPengeluaranEmkl,
-  setSelectedPengeluaranEmklNama
-} from '@/lib/store/filterSlice/filterSlice';
+import { IoMdClose } from 'react-icons/io';
+import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
-const FormPengeluaranEmkl = ({
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+
+const FormJenisseal = ({
   popOver,
   setPopOver,
   forms,
@@ -65,13 +32,25 @@ const FormPengeluaranEmkl = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const { selectedPengeluaranEmkl, selectedPengeluaranEmklNama } = useSelector(
-    (state: RootState) => state.filter
-  );
-  const dispatch = useDispatch();
-
+  const lookUpPropsStatusAktif = [
+    {
+      columns: [{ key: 'text', name: 'NAMA' }],
+      // filterby: { class: 'system', method: 'get' },
+      labelLookup: 'STATUS AKTIF LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=status+aktif',
+      label: 'STATUS AKTIF',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
+    }
+  ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
@@ -122,7 +101,6 @@ const FormPengeluaranEmkl = ({
         nextElement.focus();
       }
     };
-
     // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
     const getNextFocusableElement = (
       inputs: HTMLElement[],
@@ -149,31 +127,7 @@ const FormPengeluaranEmkl = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [openName]); // Tambahkan popOverDate sebagai dependen
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-  const lookUpPropsPengeluaranEmkl = [
-    {
-      columns: [{ key: 'nama', name: 'NAMA' }],
-      labelLookup: 'PENGELUARAN EMKL LOOKUP',
-      required: true,
-      selectedRequired: false,
-      endpoint: 'pengeluaranemkl',
-      singleColumn: true,
-      pageSize: 20,
-      showOnButton: true,
-      postData: 'nama',
-      dataToPost: 'id'
-    }
-  ];
+  }, [openName]); // Tambahkan popOverDate sebagai dependensi
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -181,12 +135,12 @@ const FormPengeluaranEmkl = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'ADD Kas Gantung'
+              ? 'Add Jenis Seal'
               : mode === 'edit'
-              ? 'Edit Kas Gantung'
+              ? 'Edit Jenis Seal'
               : mode === 'delete'
-              ? 'Delete Kas Gantung'
-              : 'View Kas Gantung'}
+              ? 'Delete Jenis Seal'
+              : 'View Jenis Seal'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -199,27 +153,30 @@ const FormPengeluaranEmkl = ({
           </div>
         </div>
         <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="min-h-full bg-white px-5 py-3">
+          <div className="h-full bg-white px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
                 onSubmit={onSubmit}
                 className="flex h-full flex-col gap-6"
               >
-                <div className="flex flex-row">
+                <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
                   <FormField
-                    name="nobukti"
+                    name="nama"
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
-                          NO BUKTI
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          NAMA
                         </FormLabel>
-                        <div className="flex flex-col lg:w-[70%]">
+                        <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
                             <Input
+                              autoFocus
                               {...field}
-                              disabled
                               value={field.value ?? ''}
                               type="text"
                               readOnly={mode === 'view' || mode === 'delete'}
@@ -231,30 +188,23 @@ const FormPengeluaranEmkl = ({
                     )}
                   />
                   <FormField
-                    name="tglbukti"
+                    name="keterangan"
                     control={forms.control}
                     render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          TGL BUKTI
+                          Keterangan
                         </FormLabel>
-                        <div className="flex flex-col lg:w-[70%]">
+                        <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-                            <InputDatePicker
-                              value={field.value}
-                              onChange={field.onChange}
-                              disabled={
-                                mode === 'view' ||
-                                mode === 'delete' ||
-                                mode === 'edit'
-                              }
-                              showCalendar
-                              onSelect={(date) =>
-                                forms.setValue('tglbukti', date)
-                              }
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -262,57 +212,31 @@ const FormPengeluaranEmkl = ({
                       </FormItem>
                     )}
                   />
-                </div>
-                <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                  <div className="w-full lg:w-[15%]">
-                    <FormLabel className="text-sm font-semibold text-gray-700">
-                      PENGELUARAN EMKL
-                    </FormLabel>
-                  </div>
-                  <div className="w-full lg:w-[85%]">
-                    {lookUpPropsPengeluaranEmkl.map((props, index) => (
-                      <LookUp
-                        key={index}
-                        {...props}
-                        labelLookup="LOOKUP PENGELUARAN EMKL"
-                        disabled={
-                          mode === 'view' ||
-                          mode === 'delete' ||
-                          mode === 'edit'
-                        }
-                        // inputLookupValue={forms.getValues('relasi_id')}
-                        lookupNama={
-                          forms.getValues('statusformat_nama') ??
-                          selectedPengeluaranEmklNama
-                        }
-                        onSelectRow={(val) => {
-                          dispatch(
-                            setSelectedPengeluaranEmkl(Number(val?.format))
-                          );
-                          dispatch(setSelectedPengeluaranEmklNama(val?.nama));
-                          forms.setValue('format', Number(val?.format));
-                          forms.setValue('coadebet', val?.coadebet);
-                        }}
-                        onClear={() => {
-                          dispatch(setSelectedPengeluaranEmkl(null));
-                          dispatch(setSelectedPengeluaranEmklNama(''));
-                        }}
-                      />
-                    ))}
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Aktif
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatusAktif.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('statusaktif', id)
+                          }
+                          inputLookupValue={forms.getValues('statusaktif')}
+                          lookupNama={forms.getValues('statusaktif_nama')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-                {selectedPengeluaranEmkl === PINJAMANEMKL ? (
-                  <FormPinjamanEmkl
-                    forms={forms}
-                    mode={mode}
-                    popOver={popOver}
-                  />
-                ) : // <FormPinjamanEmkl
-                //   forms={forms}
-                //   mode={mode}
-                //   popOver={popOver}
-                // />
-                null}
               </form>
             </Form>
           </div>
@@ -320,15 +244,45 @@ const FormPengeluaranEmkl = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            onClick={onSubmit}
+            // onClick={onSubmit}
+            onClick={(e) => {
+              e.preventDefault();
+              onSubmit(false);
+              dispatch(setSubmitClicked(true));
+            }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
+            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
           </Button>
+
+          {mode === 'add' && (
+            <div>
+              <Button
+                type="submit"
+                variant="success"
+                // onClick={onSubmit}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSubmit(true);
+                  dispatch(setSubmitClicked(true));
+                }}
+                disabled={mode === 'view'}
+                className="flex w-fit items-center gap-1 text-sm"
+                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+              >
+                <FaSave />
+                <p className="text-center">
+                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
+                </p>
+              </Button>
+            </div>
+          )}
+
           <Button
             type="button"
             variant="secondary"
@@ -343,4 +297,4 @@ const FormPengeluaranEmkl = ({
   );
 };
 
-export default FormPengeluaranEmkl;
+export default FormJenisseal;
