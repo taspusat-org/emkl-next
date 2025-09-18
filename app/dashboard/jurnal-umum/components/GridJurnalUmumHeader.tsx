@@ -1735,7 +1735,7 @@ const GridJurnalUmumHeader = () => {
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
       const currentDate = new Date(); // Dapatkan tanggal sekarang
-      forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
+      // forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {

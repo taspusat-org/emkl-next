@@ -49,6 +49,7 @@ import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
 import { useGetJurnalUmumDetail } from '@/lib/server/useJurnalUmum';
 import { JurnalUmumDetail } from '@/lib/types/jurnalumumheader.type';
+import InputMonthPicker from '@/components/custom-ui/InputMonthPicker';
 const FormKasGantung = ({
   popOver,
   setPopOver,
@@ -655,13 +656,10 @@ const FormKasGantung = ({
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
-                              <InputDatePicker
+                              <InputMonthPicker
                                 value={field.value}
                                 onChange={field.onChange}
                                 showCalendar
-                                onSelect={(date) =>
-                                  forms.setValue('tglbukti', date)
-                                }
                               />
                               {/* <InputDateTimePicker
                                 value={field.value} // '' saat kosong

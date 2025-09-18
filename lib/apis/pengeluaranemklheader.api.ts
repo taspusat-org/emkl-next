@@ -68,11 +68,11 @@ export const deletePenerimaanFn = async (id: string) => {
     throw error; // Re-throw the error if you want to handle it in the calling function
   }
 };
-export const getPenerimaanHeaderByIdFn = async (
+export const getPengeluaranEmklHeaderByIdFn = async (
   id: number
-): Promise<IAllPenerimaanHeader> => {
+): Promise<IAllPengeluaranEmklHeader> => {
   try {
-    const response = await api2.get(`/penerimaanheader/${id}`);
+    const response = await api2.get(`/pengeluaranemklheader/${id}`);
 
     return response.data;
   } catch (error) {
@@ -80,21 +80,21 @@ export const getPenerimaanHeaderByIdFn = async (
     throw new Error('Failed');
   }
 };
-export const exportPenerimaanFn = async (
+export const exportPengeluaranEmklHeaderFn = async (
   id: number,
   filters: any
 ): Promise<Blob> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get(`/penerimaanheader/export/${id}`, {
+    const response = await api2.get(`/pengeluaranemklheader/export/${id}`, {
       params: queryParams,
       responseType: 'blob' // backend return file (Excel)
     });
 
     return response.data; // ini sudah Blob
   } catch (error) {
-    console.error('Error exporting data penerimaan:', error);
-    throw new Error('Failed to export data penerimaan');
+    console.error('Error exporting data pengeluaran emkl header:', error);
+    throw new Error('Failed to export data pengeluaran emkl header');
   }
 };
