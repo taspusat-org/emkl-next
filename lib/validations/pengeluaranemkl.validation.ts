@@ -27,6 +27,21 @@ export const pengeluaranEmklSchema = z.object({
   coapostinghutangkredit: z.string().nullable().optional(),
   coahutangkredit_nama: z.string().nullable().optional(),
 
+  coaproses: z.string().nullable().optional(),
+  coaproses_nama: z.string().nullable().optional(),
+
+  nilaiproses: z
+    .number()
+    .int({ message: dynamicRequiredMessage('NILAI PROSES') })
+    .min(1, { message: dynamicRequiredMessage('NILAI PROSES') }),
+  nilaiproses_nama: z.string().nullable().optional(),
+
+  statuspenarikan: z
+    .number()
+    .int({ message: dynamicRequiredMessage('STATUS PENARIKAN') })
+    .min(1, { message: dynamicRequiredMessage('STATUS PENARIKAN ') }),
+  statuspenarikan_nama: z.string().nullable().optional(),
+
   format: z
     .number()
     .int({ message: dynamicRequiredMessage('FORMAT') })

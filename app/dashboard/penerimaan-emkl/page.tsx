@@ -42,7 +42,7 @@ const Page = () => {
         );
 
         if (getStatusAktifLookup.type === 'local') {
-          const grpsToFilter = ['STATUS AKTIF'];
+          const grpsToFilter = ['STATUS AKTIF', 'NILAI PROSES'];
 
           grpsToFilter.forEach((grp) => {
             const filteredData = getStatusAktifLookup.data.filter(
@@ -58,6 +58,26 @@ const Page = () => {
 
             dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
           });
+
+          const statusNilaiData = getStatusAktifLookup.data.filter(
+            (item: any) => item.grp === 'STATUS NILAI'
+          );
+          dispatch(setData({ key: 'STATUS PENARIKAN', data: statusNilaiData }));
+          dispatch(
+            setType({
+              key: 'STATUS PENARIKAN',
+              type: getStatusAktifLookup.type
+            })
+          );
+          const defaultValueStatusNilai = getAkunPusatLookup.data
+            .map((item: any) => item.default)
+            .find((val: any) => val !== null || '');
+          dispatch(
+            setDefault({
+              key: 'STATUS PENARIKAN',
+              isdefault: String(defaultValueStatusNilai)
+            })
+          );
 
           const formatData = getStatusAktifLookup.data.filter(
             (item: any) => item.kelompok != ''
@@ -79,7 +99,8 @@ const Page = () => {
             'COA_BANK_DEBET',
             'COA_BANK_KREDIT',
             'COA_HUTANG_DEBET',
-            'COA_HUTANG_KREDIT'
+            'COA_HUTANG_KREDIT',
+            'COA_PROSES'
           ];
 
           multipleKey.forEach((labelKey) => {
