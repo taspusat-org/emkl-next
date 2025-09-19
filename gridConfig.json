@@ -1,17 +1,108 @@
 {
+  "GridCutiApprovalCuti-1665": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "lampiran": 171,
+      "namakaryawan": 250,
+      "namaalias": 150,
+      "tglpengajuan": 200,
+      "tglcuti": 348,
+      "alasancuti": 243,
+      "statuscuti": 150,
+      "jumlahcuti": 150,
+      "jatahcuti": 150,
+      "sisacuti": 150,
+      "prediksicuti": 150
+    }
+  },
+  "GridUser-1541": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "username": 123,
+      "name": 150,
+      "email": 250,
+      "statusaktif": 150,
+      "modifiedby": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridPengembalianKasGantung-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nobukti": 300,
+      "tglbukti": 250,
+      "bank_id": 150,
+      "penerimaan_nobukti": 300,
+      "coakasmasuk": 300,
+      "relasi_id": 150,
+      "modifiedby": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridMenu-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "title": 300,
+      "parentId": 150,
+      "statusaktif": 150,
+      "icon": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridContainer-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nama": 300,
+      "cabang": 300,
+      "keterangan": 150,
+      "statusaktif": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridOpenLocks-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "editing_by": 300,
+      "editing_at": 357,
+      "table": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridHargatrucking-1": {
+    "columnsOrder": [0, 1, 3, 2, 4, 5, 6, 7, 8, 9, 10],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "tujuankapal_id": 200,
+      "emkl_id": 200,
+      "keterangan": 150,
+      "container_id": 300,
+      "jenisorderan_id": 300,
+      "nominal": 300,
+      "statusaktif": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
   "GridAlatbayar-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -25,82 +116,66 @@
       "updated_at": 250
     }
   },
-  "GridBiaya-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9
-    ],
+  "GridManagerMarketingHeader-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
-      "nama": 300,
-      "keterangan": 200,
-      "coa": 350,
-      "coahut": 350,
-      "jenisorderan_id": 150,
-      "statusaktif": 150,
-      "created_at": 250,
-      "updated_at": 250
+      "nama": 412,
+      "keterangan": 250,
+      "minimalprofit": 250,
+      "statusmentor": 150,
+      "statusleader": 150,
+      "statusaktif": 150
     }
   },
-  "GridPengeluaranDetail-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11
-    ],
+  "GridManagerMarketingDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5],
     "columnsWidth": {
-      "nobukti": 200,
-      "coadebet": 150,
-      "keterangan": 250,
-      "nominal": 150,
-      "dpp": 150,
-      "noinvoiceemkl": 250,
-      "tglinvoiceemkl": 250,
-      "nofakturpajakemkl": 250,
-      "perioderefund": 150,
-      "modifiedby": 200,
+      "nominalawal": 150,
+      "nominalakhir": 199,
+      "persentase": 150,
+      "statusaktif": 150,
       "created_at": 200,
       "updated_at": 200
     }
   },
+  "GridMarketingHeader-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nama": 200,
+      "keterangan": 200,
+      "statusaktif": 150,
+      "email": 250,
+      "karyawan": 250,
+      "tglmasuk": 200,
+      "cabang": 200,
+      "statustarget": 150,
+      "statusbagifee": 150,
+      "statusfeemanager": 150,
+      "marketinggroup": 250,
+      "statusprafee": 150,
+      "modifiedby": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridMarketingManager-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6],
+    "columnsWidth": {
+      "nomor": 50,
+      "marketing": 200,
+      "managermarketing": 200,
+      "tglapproval": 150,
+      "statusapproval": 150,
+      "userapproval": 150,
+      "statusaktif": 150
+    }
+  },
   "GridPengeluaranHeader-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      13,
-      14,
-      15,
-      16
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
@@ -116,20 +191,46 @@
       "nowarkat": 250,
       "tgljatuhtempo": 250,
       "daftarbank_id": 250,
-      "modifiedby": 250,
+      "statusformat": 250
+    }
+  },
+  "GridPengeluaranDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nama": 300,
+      "keterangan": 200,
+      "coa": 200,
+      "coahut": 200,
+      "jenisorderan_id": 150,
+      "statusaktif": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
+  },
+  "GridPenerimaanEmkl-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nama": 300,
+      "keterangan": 250,
+      "coadebet": 250,
+      "coakredit": 250,
+      "coabankdebet": 250,
+      "coabankkredit": 251,
+      "coahutangdebet": 250,
+      "coahutangkredit": 250,
+      "format": 250,
+      "statusaktif": 150,
+      "modifiedby": 150,
       "created_at": 250,
       "updated_at": 250
     }
   },
   "GridKasGantungDetail-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5],
     "columnsWidth": {
       "nobukti": 200,
       "keterangan": 149,
@@ -140,23 +241,7 @@
     }
   },
   "GridPengeluaranEmklHeader-1": {
-    "columnsOrder": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      10,
-      7,
-      8,
-      9,
-      11,
-      12,
-      13,
-      14
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 10, 7, 8, 9, 11, 12, 13, 14],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,

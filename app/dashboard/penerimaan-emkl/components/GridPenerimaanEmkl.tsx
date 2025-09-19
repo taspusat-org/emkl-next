@@ -977,6 +977,190 @@ const GridPenerimaanEmkl = () => {
         }
       },
       {
+        key: 'coaproses',
+        name: 'coaproses',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('coaproses_text')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'coaproses'
+                    ? 'text-red-500'
+                    : 'font-normal'
+                }`}
+              >
+                COA PROSES
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'coaproses_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'coaproses_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['coaproses'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.coaproses_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('coaproses_text', value);
+                }}
+              />
+              {filters.filters.coaproses_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('coaproses_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.coaproses_text || '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.coaproses_nama !== null &&
+                  props.row.coaproses_nama !== undefined
+                  ? props.row.coaproses_nama
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nilaiproses',
+        name: 'nilaiproses',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">NILAI PROSES</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('nilaiproses_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.nilaiproses_memo
+            ? JSON.parse(props.row.nilaiproses_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'statuspenarikan',
+        name: 'statuspenarikan',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">Status Penarikan</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statuspenarikan_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statuspenarikan_memo
+            ? JSON.parse(props.row.statuspenarikan_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
         key: 'format',
         name: 'format',
         resizable: true,
@@ -2156,6 +2340,15 @@ const GridPenerimaanEmkl = () => {
         rowData?.coapostinghutangkredit || null
       );
       forms.setValue('coahutangkredit_nama', rowData?.coahutangkredit_nama);
+      forms.setValue('coaproses', rowData?.coaproses || null);
+      forms.setValue('coaproses_nama', rowData?.coaproses_nama);
+      forms.setValue('nilaiproses', Number(rowData?.nilaiproses) || 0);
+      forms.setValue('nilaiproses_nama', rowData?.nilaiproses_nama || '');
+      forms.setValue('statuspenarikan', Number(rowData?.statuspenarikan) || 0);
+      forms.setValue(
+        'statuspenarikan_nama',
+        rowData?.statuspenarikan_nama || ''
+      );
       forms.setValue('format', Number(rowData?.format) || 0);
       forms.setValue('format_nama', rowData?.format_nama || '');
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 0);

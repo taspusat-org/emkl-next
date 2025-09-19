@@ -72,13 +72,45 @@ const FormPengeluaranEmkl = ({
     }
   ];
 
+  const lookupPropsNilaiProses = [
+    {
+      columns: [{ key: 'text', name: 'NAMA' }],
+      labelLookup: 'NILAI PROSES LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=nilai+proses',
+      label: 'NILAI PROSES',
+      singleColumn: true,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookupPropsStatusPenarikan = [
+    {
+      columns: [{ key: 'text', name: 'NAMA' }],
+      labelLookup: 'STATUS PENARIKAN LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=status+nilai',
+      label: 'STATUS PENARIKAN',
+      singleColumn: true,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id'
+    }
+  ];
+
   const lookUpPropsCoaDebet = [
     {
       columns: [
         { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
       ],
-      labelLookup: 'COA DEBET',
+      labelLookup: 'COA DEBET LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
@@ -96,9 +128,9 @@ const FormPengeluaranEmkl = ({
     {
       columns: [
         { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
       ],
-      labelLookup: 'COA KREDIT',
+      labelLookup: 'COA KREDIT LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
@@ -116,9 +148,9 @@ const FormPengeluaranEmkl = ({
     {
       columns: [
         { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
       ],
-      labelLookup: 'COA_BANK_DEBET',
+      labelLookup: 'COA BANK DEBET LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
@@ -136,9 +168,9 @@ const FormPengeluaranEmkl = ({
     {
       columns: [
         { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
       ],
-      labelLookup: 'COA_BANK_KREDIT',
+      labelLookup: 'COA BANK KREDIT LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
@@ -156,9 +188,9 @@ const FormPengeluaranEmkl = ({
     {
       columns: [
         { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
       ],
-      labelLookup: 'COA_HUTANG_DEBET',
+      labelLookup: 'COA HUTANG DEBET LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
@@ -176,13 +208,33 @@ const FormPengeluaranEmkl = ({
     {
       columns: [
         { key: 'coa', name: 'COA' },
-        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
       ],
-      labelLookup: 'COA_HUTANG_KREDIT',
+      labelLookup: 'COA HUTANG KREDIT LOOKUP',
       required: true,
       selectedRequired: false,
       endpoint: 'akunpusat',
       label: 'COA_HUTANG_KREDIT',
+      singleColumn: false,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'keterangancoa',
+      dataToPost: 'coa',
+      showOnButton: true
+    }
+  ];
+
+  const lookUpPropsCoaProses = [
+    {
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGAN COA' }
+      ],
+      labelLookup: 'COA PROSES LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'akunpusat',
+      label: 'COA_PROSES',
       singleColumn: false,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
@@ -515,6 +567,88 @@ const FormPengeluaranEmkl = ({
                           name="coapostinghutangkredit"
                           forms={forms}
                           lookupNama={forms.getValues('coahutangkredit_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        COA PROSES
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsCoaProses.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(value: any) => {
+                            forms.setValue('coaproses', value);
+                          }}
+                          onSelectRow={(val) => {
+                            forms.setValue(
+                              'coaproses_nama',
+                              val?.keterangancoa
+                            );
+                          }}
+                          name="coaproses"
+                          forms={forms}
+                          lookupNama={forms.getValues('coaproses_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Nilai Proses
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsNilaiProses.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('nilaiproses', id)
+                          }
+                          onSelectRow={(val) =>
+                            forms.setValue('nilaiproses_nama', val?.text)
+                          }
+                          inputLookupValue={forms.getValues('nilaiproses')}
+                          lookupNama={forms.getValues('nilaiproses_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Penarikan
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsStatusPenarikan.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('statuspenarikan', id)
+                          }
+                          onSelectRow={(val) =>
+                            forms.setValue('statuspenarikan_nama', val?.text)
+                          }
+                          inputLookupValue={forms.getValues('statuspenarikan')}
+                          lookupNama={forms.getValues('statuspenarikan_nama')}
                         />
                       ))}
                     </div>
