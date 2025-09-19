@@ -48,7 +48,8 @@ import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
 import FormPinjamanEmkl from './FormPinjamanEmkl';
-import { PINJAMANEMKL } from '@/constants/pengeluaranemkl';
+import FormPenerimaanSeal from './FormPenerimaanSeal';
+import { PINJAMANEMKL, PENERIMAANSEAL } from '@/constants/pengeluaranemkl';
 import {
   setSelectedPengeluaranEmkl,
   setSelectedPengeluaranEmklNama
@@ -160,6 +161,7 @@ const FormPengeluaranEmkl = ({
       </div>
     );
   }
+
   const lookUpPropsPengeluaranEmkl = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
@@ -174,6 +176,21 @@ const FormPengeluaranEmkl = ({
       dataToPost: 'id'
     }
   ];
+
+  const renderedForm = () => {
+    const val = Number(selectedPengeluaranEmkl); // pastikan number
+    switch (val) {
+      case PINJAMANEMKL:
+        return <FormPinjamanEmkl forms={forms} mode={mode} popOver={popOver} />;
+      case PENERIMAANSEAL:
+        return (
+          <FormPenerimaanSeal forms={forms} mode={mode} popOver={popOver} />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -301,18 +318,7 @@ const FormPengeluaranEmkl = ({
                     ))}
                   </div>
                 </div>
-                {selectedPengeluaranEmkl === PINJAMANEMKL ? (
-                  <FormPinjamanEmkl
-                    forms={forms}
-                    mode={mode}
-                    popOver={popOver}
-                  />
-                ) : // <FormPinjamanEmkl
-                //   forms={forms}
-                //   mode={mode}
-                //   popOver={popOver}
-                // />
-                null}
+                {renderedForm()}
               </form>
             </Form>
           </div>
