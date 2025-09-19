@@ -2646,7 +2646,7 @@ const GridLabaRugiKalkulasi = () => {
           }}
         >
           <ActionButton
-            module="Type-Akuntansi"
+            module="LABA-RUGI-KALKULASI"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onEdit={handleEdit}
