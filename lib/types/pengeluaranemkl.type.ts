@@ -16,6 +16,12 @@ export interface PengeluaranEmkl {
   coahutangdebet_nama: string | null;
   coapostinghutangkredit: string;
   coahutangkredit_nama: string | null;
+  coaproses: string;
+  coaproses_nama: string | null;
+  nilaiproses: number;
+  nilaiproses_nama: string | null;
+  statuspenarikan: number;
+  statuspenarikan_nama: string | null;
   format: string;
   format_nama: string | null;
   statusaktif: number;
@@ -46,6 +52,9 @@ export const filterPengeluaranEmkl = {
   coabankkredit_text: '',
   coahutangdebet_text: '',
   coahutangkredit_text: '',
+  coaproses_text: '',
+  nilaiproses_text: '',
+  statuspenarikan_text: '',
   format_text: '',
   statusaktif_text: '',
   modifiedby: '',
