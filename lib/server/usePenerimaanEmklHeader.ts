@@ -1,27 +1,21 @@
 import { useToast } from '@/hooks/use-toast';
-import { AxiosError } from 'axios';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
-import { useDispatch } from 'react-redux';
-import {
-  storePenerimaanFn,
-  updatePenerimaanFn,
-  deletePenerimaanFn
-} from '../apis/penerimaan.api';
+import { useQuery, useQueryClient, useMutation } from 'react-query';
 import {
   setProcessed,
   setProcessing
 } from '../store/loadingSlice/loadingSlice';
-import { IErrorResponse } from '../types/user.type';
+import { useDispatch } from 'react-redux';
 import {
-  getPengeluaranEmklDetailFn,
-  getPengeluaranEmklHeaderFn,
-  getPengeluaranEmklPengembalianFn,
-  storePengeluaranEmklHeaderFn,
-  updatePengeluaranEmklHeaderFn
-} from '../apis/pengeluaranemklheader.api';
-import { getPengeluaranEmklListFn } from '../apis/pengeluaranemkl.api';
+  getPenerimaanEmklHeaderFn,
+  getPenerimaanEmklDetailFn,
+  storePenerimaanEmklHeaderFn,
+  updatePenerimaanEmklHeaderFn,
+  deletePenerimaanEmklHeaderFn
+} from '../apis/penerimaanemklheader.api';
+import { AxiosError } from 'axios';
+import { IErrorResponse } from '../types/user.type';
 
-export const useGetPengeluaranEmklHeader = (
+export const useGetPenerimaanEmklHeader = (
   filters: {
     filters?: {
       nobukti?: string;
@@ -43,7 +37,7 @@ export const useGetPengeluaranEmklHeader = (
   const queryClient = useQueryClient();
 
   return useQuery(
-    ['pengeluaranemklheader', filters],
+    ['penerimaanemklheader', filters],
     async () => {
       // Only trigger processing if the page is 1
       if (filters.page === 1) {
@@ -51,7 +45,7 @@ export const useGetPengeluaranEmklHeader = (
       }
 
       try {
-        const data = await getPengeluaranEmklHeaderFn(filters);
+        const data = await getPenerimaanEmklHeaderFn(filters);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -77,19 +71,19 @@ export const useGetPengeluaranEmklHeader = (
     }
   );
 };
-export const useCreatePengeluaranEmklHeader = () => {
+export const useCreatePenerimaanEmklHeader = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  return useMutation(storePengeluaranEmklHeaderFn, {
+  return useMutation(storePenerimaanEmklHeaderFn, {
     // before the mutation fn runs
     onMutate: () => {
       dispatch(setProcessing());
     },
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
-      void queryClient.invalidateQueries(['pengeluaranemklheader']);
+      void queryClient.invalidateQueries(['penerimaanemklheader']);
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -112,7 +106,7 @@ export const useCreatePengeluaranEmklHeader = () => {
     // }
   });
 };
-export const useGetPengeluaranEmklDetail = (
+export const useGetPenerimaanEmklDetail = (
   filters: {
     filters?: {
       nobukti?: string;
@@ -125,21 +119,21 @@ export const useGetPengeluaranEmklDetail = (
   } = {}
 ) => {
   return useQuery(
-    ['pengeluaranemkl', filters],
-    async () => await getPengeluaranEmklDetailFn(filters),
+    ['penerimaanemkl', filters],
+    async () => await getPenerimaanEmklDetailFn(filters),
     {
       enabled: !!filters.filters?.nobukti
     }
   );
 };
 
-export const useUpdatePengeluaranEmklHeader = () => {
+export const useUpdatePenerimaanEmklHeader = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updatePengeluaranEmklHeaderFn, {
+  return useMutation(updatePenerimaanEmklHeaderFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('pengeluaranemkl');
+      void queryClient.invalidateQueries('penerimaanemkl');
       //   toast({
       //     title: 'Proses Berhasil.',
       //     description: 'Data Berhasil Diubah.'
@@ -157,13 +151,13 @@ export const useUpdatePengeluaranEmklHeader = () => {
     }
   });
 };
-export const useDeletePenerimaan = () => {
+export const useDeletePenerimaanEmklHeader = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deletePenerimaanFn, {
+  return useMutation(deletePenerimaanEmklHeaderFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('penerimaan');
+      void queryClient.invalidateQueries('penerimaanemkl');
       toast({
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Dihapus.'
@@ -180,68 +174,4 @@ export const useDeletePenerimaan = () => {
       }
     }
   });
-};
-export const useGetPengeluaranEmklHeaderList = (
-  params: { dari: string; sampai: string } = { dari: '', sampai: '' },
-  popOver: boolean
-) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useQuery(
-    ['pengeluaranemklheaderlist', params],
-    async () => {
-      try {
-        const data = await getPengeluaranEmklListFn(params.dari, params.sampai);
-        return data;
-      } catch (error) {
-        // Show error toast
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
-        throw error; // Re-throw to ensure the query is marked as failed
-      }
-    },
-    {
-      enabled: popOver // Fetch hanya jika popOver true dan id tidak kosong
-    }
-  );
-};
-export const useGetPengeluaranEmklHeaderPengembalian = (
-  params: { dari: string; sampai: string; id: string } = {
-    dari: '',
-    sampai: '',
-    id: ''
-  },
-  popOver: boolean // Menambahkan argumen popOver untuk kontrol kondisi fetch
-) => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useQuery(
-    ['pengeluaranemklheaderpengembalian', params],
-    async () => {
-      try {
-        const data = await getPengeluaranEmklPengembalianFn(
-          params.id,
-          params.dari,
-          params.sampai
-        );
-        return data;
-      } catch (error) {
-        // Show error toast
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
-        throw error; // Re-throw to ensure the query is marked as failed
-      }
-    },
-    {
-      enabled: popOver && params.id !== '' // Fetch hanya jika popOver true dan id tidak kosong
-    }
-  );
 };

@@ -84,3 +84,20 @@ export const exportPengeluaranEmklFn = async (filters: any): Promise<any> => {
     throw new Error('Failed to export data pengeluaran emkl');
   }
 };
+export const getPengeluaranEmklListFn = async (
+  dari: string,
+  sampai: string
+) => {
+  try {
+    // Construct the URL with query params
+    const url = `/pengeluaranemklheader/list?dari=${dari}&sampai=${sampai}`;
+
+    // Using GET request with the full URL
+    const response = await api2.get(url);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching pengeluaran emkl:', error);
+    throw new Error('Failed to fetch pengeluaran emkl');
+  }
+};

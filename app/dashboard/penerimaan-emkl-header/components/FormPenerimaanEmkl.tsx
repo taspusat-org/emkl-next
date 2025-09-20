@@ -1,0 +1,325 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { useEffect, useRef } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/store/store';
+import LookUp from '@/components/custom-ui/LookUp';
+import { Input } from '@/components/ui/input';
+import { IoMdClose } from 'react-icons/io';
+import { FaSave } from 'react-icons/fa';
+import InputDatePicker from '@/components/custom-ui/InputDatePicker';
+import {
+  setSelectedPenerimaanEmkl,
+  setSelectedPenerimaanEmklNama
+} from '@/lib/store/filterSlice/filterSlice';
+import { useDispatch } from 'react-redux';
+import FormPengembalianPinjamanEmkl from './FormPengembalianPinjamanEmkl';
+import { PENGEMBALIANPINJAMANEMKL } from '@/constants/penerimaanemkl';
+const FormPenerimaanEmkl = ({
+  popOver,
+  setPopOver,
+  forms,
+  onSubmit,
+  mode,
+  handleClose,
+  isLoadingCreate,
+  isLoadingUpdate,
+  isLoadingDelete
+}: any) => {
+  const { selectedPenerimaanEmkl, selectedPenerimaanEmklNama } = useSelector(
+    (state: RootState) => state.filter
+  );
+  const dispatch = useDispatch();
+
+  const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
+  const openName = useSelector((state: RootState) => state.lookup.openName);
+
+  useEffect(() => {
+    // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Jika popOverDate ada nilainya, jangan lakukan apa-apa
+      if (openName) {
+        return;
+      }
+
+      const form = formRef.current;
+
+      if (!form) return;
+
+      const inputs = Array.from(
+        form.querySelectorAll('input, select, textarea, button')
+      ).filter(
+        (element) =>
+          element.id !== 'image-dropzone' &&
+          element.tagName !== 'BUTTON' &&
+          !element.hasAttribute('readonly') // Pengecualian jika input readonly
+      ) as HTMLElement[]; // Ambil semua input dalam form kecuali button dan readonly inputs
+
+      const focusedElement = document.activeElement as HTMLElement;
+
+      // Cek apakah elemen yang difokuskan adalah dropzone
+      const isImageDropzone =
+        document.querySelector('input#image-dropzone') === focusedElement;
+      const isFileInput =
+        document.querySelector('input#file-input') === focusedElement;
+
+      if (isImageDropzone || isFileInput) return; // Jangan pindah fokus jika elemen fokus adalah dropzone atau input file
+
+      let nextElement: HTMLElement | null = null;
+
+      if (event.key === 'ArrowDown' || event.key === 'Tab') {
+        nextElement = getNextFocusableElement(inputs, focusedElement, 'down');
+        if (event.key === 'Tab') {
+          event.preventDefault(); // Cegah default tab behavior jika ingin mengontrol pergerakan fokus
+        }
+      } else if (
+        event.key === 'ArrowUp' ||
+        (event.shiftKey && event.key === 'Tab')
+      ) {
+        nextElement = getNextFocusableElement(inputs, focusedElement, 'up');
+      }
+      // Jika ditemukan input selanjutnya, pindahkan fokus
+      if (nextElement) {
+        nextElement.focus();
+      }
+    };
+
+    // Fungsi untuk mendapatkan elemen input selanjutnya berdasarkan arah (down atau up)
+    const getNextFocusableElement = (
+      inputs: HTMLElement[],
+      currentElement: HTMLElement,
+      direction: 'up' | 'down'
+    ): HTMLElement | null => {
+      const index = Array.from(inputs).indexOf(currentElement as any);
+
+      if (direction === 'down') {
+        // Jika sudah di input terakhir, tidak perlu pindah fokus
+        if (index === inputs.length - 1) {
+          return null; // Tidak ada elemen selanjutnya
+        }
+        return inputs[index + 1]; // Fokus pindah ke input setelahnya
+      } else {
+        return inputs[index - 1]; // Fokus pindah ke input sebelumnya
+      }
+    };
+
+    // Menambahkan event listener untuk keydown
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Membersihkan event listener ketika komponen tidak lagi digunakan
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openName]); // Tambahkan popOverDate sebagai dependen
+  function EmptyRowsRenderer() {
+    return (
+      <div
+        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
+        style={{ textAlign: 'center', gridColumn: '1/-1' }}
+      >
+        <p className="text-gray-400">NO ROWS DATA FOUND</p>
+      </div>
+    );
+  }
+  const lookUpPropsPenerimaanEmkl = [
+    {
+      columns: [{ key: 'nama', name: 'NAMA' }],
+      labelLookup: 'PENERIMAAN EMKL LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'penerimaanemkl',
+      singleColumn: true,
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'nama',
+      dataToPost: 'id'
+    }
+  ];
+
+  const renderedForm = () => {
+    switch (selectedPenerimaanEmkl) {
+      case PENGEMBALIANPINJAMANEMKL:
+        return (
+          <FormPengembalianPinjamanEmkl
+            forms={forms}
+            mode={mode}
+            popOver={popOver}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+  return (
+    <Dialog open={popOver} onOpenChange={setPopOver}>
+      <DialogTitle hidden={true}>Title</DialogTitle>
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
+        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
+          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            {mode === 'add'
+              ? 'ADD Penerimaan Emkl'
+              : mode === 'edit'
+              ? 'Edit Penerimaan Emkl'
+              : mode === 'delete'
+              ? 'Delete Penerimaan Emkl'
+              : 'View Penerimaan Emkl'}
+          </h2>
+          <div
+            className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
+            onClick={() => {
+              setPopOver(false);
+              handleClose();
+            }}
+          >
+            <IoMdClose className="h-5 w-5 font-bold text-white" />
+          </div>
+        </div>
+        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
+          <div className="min-h-full bg-white px-5 py-3">
+            <Form {...forms}>
+              <form
+                ref={formRef}
+                onSubmit={onSubmit}
+                className="flex h-full flex-col gap-6"
+              >
+                <div className="flex flex-row">
+                  <FormField
+                    name="nobukti"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                          NO BUKTI
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[70%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              disabled
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    name="tglbukti"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                        >
+                          TGL BUKTI
+                        </FormLabel>
+                        <div className="flex flex-col lg:w-[70%]">
+                          <FormControl>
+                            <InputDatePicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={
+                                mode === 'view' ||
+                                mode === 'delete' ||
+                                mode === 'edit'
+                              }
+                              showCalendar
+                              onSelect={(date) =>
+                                forms.setValue('tglbukti', date)
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                  <div className="w-full lg:w-[15%]">
+                    <FormLabel className="text-sm font-semibold text-gray-700">
+                      PENERIMAAN EMKL
+                    </FormLabel>
+                  </div>
+                  <div className="w-full lg:w-[85%]">
+                    {lookUpPropsPenerimaanEmkl.map((props, index) => (
+                      <LookUp
+                        key={index}
+                        {...props}
+                        labelLookup="LOOKUP PENERIMAAN EMKL"
+                        disabled={
+                          mode === 'view' ||
+                          mode === 'delete' ||
+                          mode === 'edit'
+                        }
+                        // inputLookupValue={forms.getValues('relasi_id')}
+                        lookupNama={
+                          forms.getValues('statusformat_nama') ??
+                          selectedPenerimaanEmklNama
+                        }
+                        onSelectRow={(val) => {
+                          dispatch(
+                            setSelectedPenerimaanEmkl(Number(val?.format))
+                          );
+                          dispatch(setSelectedPenerimaanEmklNama(val?.nama));
+                          forms.setValue('format', Number(val?.format));
+                          forms.setValue('coakredit', val?.coakredit);
+                        }}
+                        onClear={() => {
+                          dispatch(setSelectedPenerimaanEmkl(null));
+                          dispatch(setSelectedPenerimaanEmklNama(''));
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {renderedForm()}
+              </form>
+            </Form>
+          </div>
+        </div>
+        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+          <Button
+            type="submit"
+            onClick={onSubmit}
+            disabled={
+              mode === 'view' ||
+              isLoadingCreate ||
+              isLoadingUpdate ||
+              isLoadingDelete
+            }
+            className="flex w-fit items-center gap-1 text-sm"
+          >
+            <FaSave />
+            <p className="text-center">
+              {mode === 'delete' ? 'DELETE' : 'SAVE'}
+            </p>
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+            onClick={handleClose}
+          >
+            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default FormPenerimaanEmkl;

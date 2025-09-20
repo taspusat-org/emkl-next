@@ -11,11 +11,13 @@ type CurrencyInputProps = {
   disabled?: boolean;
   isPercent?: boolean;
   placeholder?: string;
+  onBlur?: () => void;
 };
 
 const InputCurrency: React.FC<CurrencyInputProps> = ({
   value = '',
   onValueChange,
+  onBlur,
   icon,
   className = '',
   autoFocus = false,
@@ -129,6 +131,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
       setInputValue(formatted);
       onValueChange?.(formatted);
     }
+    onBlur?.();
   };
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -181,7 +184,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         disabled={disabled}
         beforeMaskedStateChange={beforeMaskedStateChange}
         onChange={handleChange}
-        autoFocus={autoFocus}
+        autoFocus
         onKeyDown={inputStopPropagation}
         onClick={(e: any) => e.stopPropagation()}
         onFocus={handleFocus}
