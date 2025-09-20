@@ -259,5 +259,20 @@
       "created_at": 250,
       "updated_at": 250
     }
+  },
+  "GridPengeluaranEmklDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "columnsWidth": {
+      "nomor": 50,
+      "nobukti": 200,
+      "noseal": 200,
+      "keterangan": 150,
+      "nominal": 150,
+      "pengeluaranemkl_nobukti": 250,
+      "penerimaanemkl_nobukti": 150,
+      "modifiedby": 150,
+      "created_at": 200,
+      "updated_at": 200
+    }
   }
 }

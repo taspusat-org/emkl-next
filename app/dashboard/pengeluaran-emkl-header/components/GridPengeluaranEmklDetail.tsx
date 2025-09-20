@@ -289,6 +289,76 @@ const GridPengeluaranEmklDetail = ({
         }
       },
       {
+        key: 'noseal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        name: 'NO SEAL',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('noseal')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'noseal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Nomor Seal
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'noseal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'noseal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['noseal'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.noseal
+                    ? filters.filters.noseal.toUpperCase()
+                    : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('noseal', value);
+                }}
+              />
+              {filters.filters.noseal && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('noseal', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.noseal}
+            </div>
+          );
+        }
+      },
+      {
         key: 'keterangan',
         headerCellClass: 'column-headers',
         resizable: true,
@@ -1057,6 +1127,7 @@ const GridPengeluaranEmklDetail = ({
       const formattedRows = detail?.data?.map((item: any) => ({
         id: item.id,
         nobukti: item.nobukti, // Updated to match the field name
+        noseal: item.noseal, // Updated to match the field name
         pengeluaranemkl_id: item.pengeluaranemkl_id, // Updated to match the field name
         keterangan: item.keterangan, // Updated to match the field name
         nominal: item.nominal, // Updated to match the field name

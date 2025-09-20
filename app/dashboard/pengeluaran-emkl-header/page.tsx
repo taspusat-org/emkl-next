@@ -18,6 +18,7 @@ import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 import { GridTabs } from './components/GridTabs';
 import GridPengeluaranEmklHeader from './components/GridPengeluaranEmklHeader';
+import { getJenissealFn } from '@/lib/apis/jenisseal.api';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -33,11 +34,12 @@ const Page = () => {
         const fieldLengthResult = await fieldLength('menus');
 
         // Fetching data for BANK, ALAT BAYAR, and RELASI
-        const [dataBank, dataAlatBayar, dataRelasi] =
+        const [dataBank, dataAlatBayar, dataRelasi, dataJenisseal] =
           await Promise.all<ApiResponse>([
             getBankFn({ isLookUp: 'true' }),
             getAlatbayarFn({ isLookUp: 'true' }),
-            getRelasiFn({ isLookUp: 'true' })
+            getRelasiFn({ isLookUp: 'true' }),
+            getJenissealFn({ isLookUp: 'true' })
           ]);
 
         // Handle BANK data
@@ -78,6 +80,18 @@ const Page = () => {
           dispatch(setDefault({ key: 'RELASI', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'RELASI', type: dataRelasi.type }));
+
+        if (dataJenisseal.type === 'local') {
+          dispatch(setData({ key: 'JENIS SEAL', data: dataJenisseal.data }));
+          const defaultValue =
+            dataJenisseal.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
+
+          // Dispatch the default data
+          dispatch(setDefault({ key: 'JENIS SEAL', isdefault: defaultValue }));
+        }
+        dispatch(setType({ key: 'JENIS SEAL', type: dataJenisseal.type }));
 
         // Dispatch the field length data separately
         dispatch(setFieldLength(fieldLengthResult.data));
