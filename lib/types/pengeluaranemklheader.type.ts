@@ -16,6 +16,8 @@ export interface PengeluaranEmklHeader {
   hutang_nobukti: string | null;
   statusformat: number | null;
   statusformat_nama: string | null;
+  jenisseal_id: string | null;
+  jenisseal_text: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
@@ -31,6 +33,7 @@ export interface PengeluaranEmklDetail {
   nominal: string | null;
   pengeluaranemkl_nobukti: string | null;
   penerimaanemkl_nobukti: string | null;
+  noseal: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
@@ -54,6 +57,8 @@ export const filterPengeluaranEmklHeader = {
   bank_nama: '',
   karyawan_id: null,
   karyawan_nama: '',
+  jenisseal_id: null,
+  jenisseal_text: '',
   jenisposting: '',
   nowarkat: '',
   pengeluaran_nobukti: '',
@@ -70,6 +75,7 @@ export const filterPengeluaranEmklHeader = {
 };
 export const filterPengeluaranEmklDetail = {
   nobukti: '',
+  noseal: '',
   keterangan: '',
   nominal: '',
   pengeluaranemkl_nobukti: '',

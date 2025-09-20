@@ -21,7 +21,7 @@ import DataGrid, {
   DataGridHandle
 } from 'react-data-grid';
 import { FaRegSquarePlus } from 'react-icons/fa6';
-import { FaTimes, FaTrashAlt } from 'react-icons/fa';
+import { FaSave, FaTimes, FaTrashAlt } from 'react-icons/fa';
 import { MdAddBox } from 'react-icons/md';
 import { formatCurrency, parseCurrency } from '@/lib/utils';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
@@ -34,8 +34,11 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useAlert } from '@/lib/store/client/useAlert';
+import { IoMdClose } from 'react-icons/io';
 
 const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
+  const { alert } = useAlert();
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [rows, setRows] = useState<
     (
@@ -66,7 +69,6 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
 
   const addRow = () => {
     const newRow: Partial<PengeluaranEmklDetail> & { isNew: boolean } = {
-      id: 0, // Placeholder ID
       nobukti: '',
       keterangan: '',
       nominal: '',
@@ -90,7 +92,11 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
 
     // Validation
     if (!kode || !nominal || !dari || !sampai) {
-      alert('Semua field harus diisi!');
+      alert({
+        title: 'Isi semua field terlebih dahulu !!!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
       return;
     }
 
@@ -98,7 +104,11 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
     const sampaiNum = parseInt(sampai);
 
     if (dariNum > sampaiNum) {
-      alert('Nilai "Dari" harus lebih kecil atau sama dengan "Sampai"');
+      alert({
+        title: 'Nilai "Dari" harus lebih kecil atau sama dengan "Sampai !!!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
       return;
     }
 
@@ -123,7 +133,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         isNew: true
       });
     }
-
+    setRows([]);
     // Insert new rows before the "Add Row" button row
     setRows((prevRows) => {
       const dataRows = prevRows.filter((row) => !row.isAddRow);
@@ -143,13 +153,13 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
     setShowEntryModal(false);
   };
 
-  const lookUpPropsKaryawan = [
+  const lookUpPropsJenisseal = [
     {
-      columns: [{ key: 'nama', name: 'KARYAWAN' }],
-      labelLookup: 'KARYAWAN LOOKUP',
+      columns: [{ key: 'nama', name: 'JENIS SEAL' }],
+      labelLookup: 'JENIS SEAL LOOKUP',
       selectedRequired: false,
-      label: 'KARYAWAN',
-      endpoint: 'karyawan',
+      label: 'JENIS SEAL',
+      endpoint: 'jenisseal',
       dataToPost: 'id',
       singleColumn: true,
       pageSize: 20,
@@ -181,6 +191,21 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
       selectedRequired: false,
       endpoint: 'bank',
       label: 'BANK',
+      singleColumn: true,
+      dataToPost: 'id',
+      pageSize: 20,
+      showOnButton: true,
+      postData: 'nama'
+    }
+  ];
+
+  const lookUpPropsAlatbayar = [
+    {
+      columns: [{ key: 'nama', name: 'ALAT BAYAR' }],
+      labelLookup: 'ALAT BAYAR LOOKUP',
+      selectedRequired: false,
+      endpoint: 'alatbayar',
+      label: 'ALAT BAYAR',
       singleColumn: true,
       dataToPost: 'id',
       pageSize: 20,
@@ -502,75 +527,28 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
           </FormItem>
         )}
       />
-      <FormField
-        name="tgljatuhtempo"
-        control={forms.control}
-        render={({ field }) => (
-          <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel
-              required={true}
-              className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-            >
-              TGL JATUH TEMPO
-            </FormLabel>
-            <div className="flex flex-col lg:w-[85%]">
-              <FormControl>
-                <InputDatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  disabled={mode === 'view' || mode === 'delete'}
-                  showCalendar
-                  onSelect={(date) => forms.setValue('tgljatuhtempo', date)}
-                />
-              </FormControl>
-              <FormMessage />
-            </div>
-          </FormItem>
-        )}
-      />
+
       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
         <div className="w-full lg:w-[15%]">
           <FormLabel className="text-sm font-semibold text-gray-700">
-            KARYAWAN
+            JENIS SEAL
           </FormLabel>
         </div>
         <div className="w-full lg:w-[85%]">
-          {lookUpPropsKaryawan.map((props, index) => (
+          {lookUpPropsJenisseal.map((props, index) => (
             <LookUp
               key={index}
               {...props}
-              labelLookup="LOOKUP KARYAWAN"
               disabled={mode === 'view' || mode === 'delete'}
               // onClear={forms.setValue('relasi_id', null)}
-              lookupValue={(id) => forms.setValue('karyawan_id', Number(id))}
+              lookupValue={(id) => forms.setValue('jenisseal_id', Number(id))}
               // inputLookupValue={forms.getValues('relasi_id')}
-              lookupNama={forms.getValues('karyawan_nama')}
+              lookupNama={forms.getValues('jenisseal_text')}
             />
           ))}
         </div>
       </div>
-      <FormField
-        name="nowarkat"
-        control={forms.control}
-        render={({ field }) => (
-          <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-              NOWARKAT
-            </FormLabel>
-            <div className="flex flex-col lg:w-[85%]">
-              <FormControl>
-                <Input
-                  {...field}
-                  value={field.value ?? ''}
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                />
-              </FormControl>
-              <FormMessage />
-            </div>
-          </FormItem>
-        )}
-      />
+
       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
         <div className="w-full lg:w-[15%]">
           <FormLabel className="text-sm font-semibold text-gray-700">
@@ -605,7 +583,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
               <div className="flex w-full flex-col lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
                   <FormLabel className="text-sm font-semibold text-gray-700">
-                    KAS/BANK
+                    KAS / BANK
                   </FormLabel>
                 </div>
                 <div className="w-full lg:w-[35%]">
@@ -642,6 +620,84 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                             value={forms.getValues('pengeluaran_nobukti')}
                             type="text"
                             readOnly={mode === 'view' || mode === 'delete'}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  name="tgljatuhtempo"
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
+                      <FormLabel
+                        required={true}
+                        className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      >
+                        TANGGAL JATUH TEMPO
+                      </FormLabel>
+                      <div className="flex flex-col lg:w-[35%]">
+                        <FormControl>
+                          <InputDatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={mode === 'view' || mode === 'delete'}
+                            showCalendar
+                            onSelect={(date) =>
+                              forms.setValue('tgljatuhtempo', date)
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="flex w-full flex-col lg:flex-row lg:items-center">
+                <div className="w-full lg:w-[15%]">
+                  <FormLabel className="text-sm font-semibold text-gray-700">
+                    Alat Bayar
+                  </FormLabel>
+                </div>
+                <div className="w-full lg:w-[35%]">
+                  {lookUpPropsAlatbayar.map((props, index) => (
+                    <LookUp
+                      key={index}
+                      {...props}
+                      disabled={
+                        mode === 'view' || mode === 'delete' || mode === 'edit'
+                      }
+                      lookupValue={(id) =>
+                        forms.setValue('alatbayar_id', Number(id))
+                      }
+                      inputLookupValue={forms.getValues('alatbayar_id')}
+                      lookupNama={forms.getValues('alatbayar_text')}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <FormField
+                  name="nowarkat"
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
+                      <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        NOMOR WARKAT
+                      </FormLabel>
+                      <div className="flex flex-col lg:w-[35%]">
+                        <FormControl>
+                          <Input
+                            {...field}
+                            value={field.value ?? ''}
+                            type="text"
+                            disabled={mode === 'view' || mode === 'delete'}
                           />
                         </FormControl>
                         <FormMessage />
@@ -691,7 +747,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
               <Button
                 type="button"
                 onClick={() => setShowEntryModal(true)}
-                className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className="ml-auto flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
                 size="sm"
               >
                 <MdAddBox className="text-lg" />
@@ -718,137 +774,189 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         </div>
       </div>
 
-      {/* Entry Banyak Modal */}
       <Dialog open={showEntryModal} onOpenChange={setShowEntryModal}>
-        <DialogContent
-          className="p-4 shadow-lg sm:max-w-[500px]"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 z-50 ${
+            showEntryModal ? 'visible bg-black/30' : 'invisible bg-transparent'
+          }`}
+          style={{ pointerEvents: showEntryModal ? 'auto' : 'none' }}
+          onClick={() => setShowEntryModal(false)}
+          aria-hidden={!showEntryModal}
+        />
+
+        {/* Dialog Container */}
+        <div
+          className={`fixed inset-0 z-[0] flex items-center justify-center p-4 ${
+            showEntryModal ? 'visible' : 'invisible'
+          }`}
+          style={{ pointerEvents: showEntryModal ? 'auto' : 'none' }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="dialog-title"
         >
-          <DialogHeader>
-            <DialogTitle>Entry Banyak</DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label
-                htmlFor="kode"
-                className="text-right text-sm font-semibold"
+          <DialogContent
+            className={`fixed left-[50%] top-[50%] z-50 flex w-full max-w-lg 
+              -translate-x-1/2 -translate-y-1/2 flex-col rounded-sm 
+              border border-blue-500 bg-white px-1 py-1 shadow-2xl duration-200
+              ${showEntryModal ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
+            `}
+            style={{
+              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 10%)',
+              overflowY: 'hidden',
+              isolation: 'isolate',
+              pointerEvents: 'auto'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            {/* <div className="mb-1 mt-2 flex w-full flex-row items-center justify-end">
+              <div
+                className="w-fit rounded-sm bg-red-500 p-1"
+                onPointerDown={(e) => e.stopPropagation()}
               >
-                Kode
-              </label>
-              <Input
-                id="kode"
-                value={entryData.kode}
-                onChange={(e) =>
-                  setEntryData({ ...entryData, kode: e.target.value })
-                }
-                className="col-span-3"
-                placeholder="Contoh: TR"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label
-                htmlFor="nominal"
-                className="text-right text-sm font-semibold"
-              >
-                Nominal
-              </label>
-              <div className="col-span-3">
-                <InputCurrency
-                  value={entryData.nominal}
-                  onValueChange={(value) =>
-                    setEntryData({ ...entryData, nominal: value })
-                  }
+                <FaTimes
+                  className="cursor-pointer text-white"
+                  onClick={() => setShowEntryModal(false)}
                 />
+              </div>
+            </div> */}
+
+            <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
+              <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                ENTRY BANYAK
+              </h2>
+              <div
+                className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setShowEntryModal(false)}
+              >
+                <IoMdClose className="h-5 w-5 font-bold text-white" />
               </div>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label
-                htmlFor="dari"
-                className="text-right text-sm font-semibold"
-              >
-                Dari
-              </label>
-              <Input
-                id="dari"
-                type="number"
-                value={entryData.dari}
-                onChange={(e) =>
-                  setEntryData({ ...entryData, dari: e.target.value })
-                }
-                className="col-span-3"
-                placeholder="Contoh: 1"
-              />
+            {/* Dialog Content */}
+            <div className="flex flex-col border border-blue-500 border-b-[#dddddd] bg-white px-2 py-4">
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label
+                    htmlFor="kode"
+                    className="text-left text-sm font-semibold"
+                  >
+                    Kode
+                  </label>
+                  <Input
+                    id="kode"
+                    value={entryData.kode}
+                    onChange={(e) =>
+                      setEntryData({ ...entryData, kode: e.target.value })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label
+                    htmlFor="nominal"
+                    className="text-left text-sm font-semibold"
+                  >
+                    Nominal
+                  </label>
+                  <div className="col-span-3">
+                    <InputCurrency
+                      value={entryData.nominal}
+                      onValueChange={(value) =>
+                        setEntryData({ ...entryData, nominal: value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label
+                    htmlFor="dari"
+                    className="text-left text-sm font-semibold"
+                  >
+                    Dari
+                  </label>
+                  <Input
+                    id="dari"
+                    type="number"
+                    value={entryData.dari}
+                    onChange={(e) =>
+                      setEntryData({ ...entryData, dari: e.target.value })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label
+                    htmlFor="sampai"
+                    className="text-left text-sm font-semibold"
+                  >
+                    Sampai
+                  </label>
+                  <Input
+                    id="sampai"
+                    type="number"
+                    value={entryData.sampai}
+                    onChange={(e) =>
+                      setEntryData({ ...entryData, sampai: e.target.value })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label
+                    htmlFor="keterangan"
+                    className="text-left text-sm font-semibold"
+                  >
+                    Keterangan
+                  </label>
+                  <Input
+                    id="keterangan"
+                    value={entryData.keterangan}
+                    onChange={(e) =>
+                      setEntryData({ ...entryData, keterangan: e.target.value })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label
-                htmlFor="sampai"
-                className="text-right text-sm font-semibold"
+            {/* Dialog Footer */}
+            <div className="flex flex-col-reverse items-center justify-start gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] px-2 py-2 sm:flex-row">
+              <Button
+                type="button"
+                className="flex w-fit items-center gap-1 text-sm"
+                onClick={handleEntryBanyakSubmit}
               >
-                Sampai
-              </label>
-              <Input
-                id="sampai"
-                type="number"
-                value={entryData.sampai}
-                onChange={(e) =>
-                  setEntryData({ ...entryData, sampai: e.target.value })
-                }
-                className="col-span-3"
-                placeholder="Contoh: 100"
-              />
-            </div>
-
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label
-                htmlFor="keterangan"
-                className="text-right text-sm font-semibold"
+                <FaSave />
+                SAVE
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+                onClick={() => {
+                  setShowEntryModal(false);
+                  setEntryData({
+                    kode: '',
+                    nominal: '',
+                    dari: '',
+                    sampai: '',
+                    keterangan: ''
+                  });
+                }}
               >
-                Keterangan
-              </label>
-              <Input
-                id="keterangan"
-                value={entryData.keterangan}
-                onChange={(e) =>
-                  setEntryData({ ...entryData, keterangan: e.target.value })
-                }
-                className="col-span-3"
-                placeholder="Keterangan (opsional)"
-              />
+                <IoMdClose /> <p className="text-center text-white">Cancel</p>
+              </Button>
             </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setShowEntryModal(false);
-                setEntryData({
-                  kode: '',
-                  nominal: '',
-                  dari: '',
-                  sampai: '',
-                  keterangan: ''
-                });
-              }}
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              onClick={handleEntryBanyakSubmit}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              Submit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+          </DialogContent>
+        </div>
       </Dialog>
     </div>
   );

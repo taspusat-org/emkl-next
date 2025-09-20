@@ -766,6 +766,83 @@ const GridPengeluaranEmklHeader = () => {
         }
       },
       {
+        key: 'jenisseal_id',
+        name: 'jenisseal_id',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('jenisseal_id')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'jenisseal_id'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                JENIS SEAL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'jenisseal_id' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'jenisseal_id' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['jenisseal_text'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.jenisseal_text
+                    ? filters.filters.jenisseal_text?.toUpperCase()
+                    : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('jenisseal_text', value);
+                }}
+              />
+              {filters.filters.jenisseal_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('jenisseal_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.jenisseal_text || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.jenisseal_text || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
         key: 'pengeluaran_nobukti',
         name: 'No.BUKTI PENGELUARAN',
         resizable: true,
@@ -2213,6 +2290,7 @@ const GridPengeluaranEmklHeader = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+  console.log(forms.getValues(), 'ISI2');
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
