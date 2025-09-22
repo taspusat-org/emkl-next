@@ -9,6 +9,8 @@ interface FilterState {
   selectedBank: string;
   selectedPengeluaranEmkl: number | null;
   selectedPengeluaranEmklNama: string;
+  selectedPenerimaanEmkl: number | null;
+  selectedPenerimaanEmklNama: string;
   onReload: boolean; // Add the new onReload property here
 }
 
@@ -21,6 +23,8 @@ const initialState: FilterState = {
   selectedBank: '',
   selectedPengeluaranEmkl: null,
   selectedPengeluaranEmklNama: '',
+  selectedPenerimaanEmkl: null,
+  selectedPenerimaanEmklNama: '',
   onReload: false // Initialize the onReload with default value false
 };
 
@@ -52,6 +56,12 @@ const filterSlice = createSlice({
     setSelectedPengeluaranEmklNama(state, action: PayloadAction<string>) {
       state.selectedPengeluaranEmklNama = action.payload;
     },
+    setSelectedPenerimaanEmkl(state, action: PayloadAction<number | null>) {
+      state.selectedPenerimaanEmkl = action.payload;
+    },
+    setSelectedPenerimaanEmklNama(state, action: PayloadAction<string>) {
+      state.selectedPenerimaanEmklNama = action.payload;
+    },
     setOnReload(state, action: PayloadAction<boolean>) {
       state.onReload = action.payload; // Handle the onReload state
     },
@@ -62,6 +72,8 @@ const filterSlice = createSlice({
       state.selectedKaryawan2 = '';
       state.selectedPengeluaranEmkl = null;
       state.selectedPengeluaranEmklNama = '';
+      state.selectedPenerimaanEmkl = null;
+      state.selectedPenerimaanEmklNama = '';
       state.onReload = false; // Reset onReload when clearing filters
     },
     clearOnReload(state) {
@@ -79,6 +91,8 @@ export const {
   setSelectedKaryawan2,
   setSelectedPengeluaranEmkl,
   setSelectedPengeluaranEmklNama,
+  setSelectedPenerimaanEmkl,
+  setSelectedPenerimaanEmklNama,
   setOnReload,
   clearFilter,
   clearOnReload

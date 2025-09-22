@@ -98,3 +98,21 @@ export const exportPengeluaranEmklHeaderFn = async (
     throw new Error('Failed to export data pengeluaran emkl header');
   }
 };
+export const getPengeluaranEmklPengembalianFn = async (
+  id: string,
+  dari: string,
+  sampai: string
+) => {
+  try {
+    // Construct the URL with query params
+    const url = `/pengeluaranemklheader/pengembalian?dari=${dari}&sampai=${sampai}&id=${id}`;
+
+    // Using GET request with the full URL
+    const response = await api2.get(url);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching rekap kehadiran:', error);
+    throw new Error('Failed to fetch rekap kehadiran');
+  }
+};

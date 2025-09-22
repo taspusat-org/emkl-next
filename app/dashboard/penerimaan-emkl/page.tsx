@@ -29,68 +29,41 @@ const Page = () => {
         const result = await fieldLength('penerimaanemkl');
         dispatch(setFieldLength(result.data));
 
-        const [getStatusAktifLookup, getAkunPusatLookup] =
-          await Promise.all<ApiResponse>([
-            getParameterFn({ isLookUp: 'true' }),
-            getAkunpusatFn({ isLookUp: 'true' })
-          ]);
+        const [getAkunPusatLookup] = await Promise.all<ApiResponse>([
+          // getParameterFn({ isLookUp: 'true' }),
+          getAkunpusatFn({ isLookUp: 'true' })
+        ]);
 
-        console.log(
-          'getStatusAktifLookup',
-          getStatusAktifLookup.data,
-          getStatusAktifLookup.data.length
-        );
+        // if (getStatusAktifLookup.type === 'local') {
+        //   const grpsToFilter = ['STATUS AKTIF'];
 
-        if (getStatusAktifLookup.type === 'local') {
-          const grpsToFilter = ['STATUS AKTIF', 'NILAI PROSES'];
+        //   grpsToFilter.forEach((grp) => {
+        //     const filteredData = getStatusAktifLookup.data.filter(
+        //       (item: any) => item.grp === grp
+        //     );
 
-          grpsToFilter.forEach((grp) => {
-            const filteredData = getStatusAktifLookup.data.filter(
-              (item: any) => item.grp === grp
-            );
+        //     dispatch(setData({ key: grp, data: filteredData }));
+        //     dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
 
-            dispatch(setData({ key: grp, data: filteredData }));
-            dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
+        //     const defaultValue = filteredData
+        //       .map((item: any) => item.default)
+        //       .find((val: any) => val !== null || '');
 
-            const defaultValue = filteredData
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null || '');
+        //     dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
+        //   });
 
-            dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
-          });
-
-          const statusNilaiData = getStatusAktifLookup.data.filter(
-            (item: any) => item.grp === 'STATUS NILAI'
-          );
-          dispatch(setData({ key: 'STATUS PENARIKAN', data: statusNilaiData }));
-          dispatch(
-            setType({
-              key: 'STATUS PENARIKAN',
-              type: getStatusAktifLookup.type
-            })
-          );
-          const defaultValueStatusNilai = getAkunPusatLookup.data
-            .map((item: any) => item.default)
-            .find((val: any) => val !== null || '');
-          dispatch(
-            setDefault({
-              key: 'STATUS PENARIKAN',
-              isdefault: String(defaultValueStatusNilai)
-            })
-          );
-
-          const formatData = getStatusAktifLookup.data.filter(
-            (item: any) => item.kelompok != ''
-          );
-          dispatch(setData({ key: 'FORMAT', data: formatData }));
-          dispatch(setType({ key: 'FORMAT', type: getStatusAktifLookup.type }));
-          const defaultValue = getAkunPusatLookup.data
-            .map((item: any) => item.default)
-            .find((val: any) => val !== null || '');
-          dispatch(
-            setDefault({ key: 'FORMAT', isdefault: String(defaultValue) })
-          );
-        }
+        //   const formatData = getStatusAktifLookup.data.filter(
+        //     (item: any) => item.kelompok != ''
+        //   );
+        //   dispatch(setData({ key: 'FORMAT', data: formatData }));
+        //   dispatch(setType({ key: 'FORMAT', type: getStatusAktifLookup.type }));
+        //   const defaultValue = getAkunPusatLookup.data
+        //     .map((item: any) => item.default)
+        //     .find((val: any) => val !== null || '');
+        //   dispatch(
+        //     setDefault({ key: 'FORMAT', isdefault: String(defaultValue) })
+        //   );
+        // }
 
         if (getAkunPusatLookup.type === 'local') {
           const multipleKey = [

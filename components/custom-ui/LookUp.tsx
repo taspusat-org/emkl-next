@@ -225,6 +225,7 @@ export default function LookUp({
           !deleteClicked &&
           !clicked
         ) {
+          console.log('item222', item);
           setInputValue(item.text);
           const value = item[dataToPost as string] || item.id;
           lookupValue?.(value);
@@ -250,45 +251,22 @@ export default function LookUp({
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-
-    debounceTimerRef.current = setTimeout(() => {
-      // Batalkan request yang sedang berjalan
-      abortRef.current?.abort('New filter applied');
-
-      const next = {
-        ...filters,
-        filters: {}, // optional reset kolom filter
-        search: searchValue,
-        page: 1
-      };
-
-      setFilters(next);
-      dispatch(setOpenName(label || ''));
-      setFiltering(true);
-      setShowError({ label: label ?? '', status: false, message: '' });
-
-      // INI BLOCK TAMBAHAN UNTUK LOCAL FILTER
-      if (type === 'local' && data) {
-        const validColumnKeys = columns.map((col) => col.key);
-        const filteredRows = data.filter((row: any) =>
-          validColumnKeys.some((colKey) =>
-            String(row[colKey] ?? '')
-              .toLowerCase()
-              .includes(searchValue.toLowerCase())
-          )
-        );
-        setRows(filteredRows);
-      }
-
-      setTimeout(() => {
-        setSelectedRow(0);
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-      }, 250);
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 350);
-    }, 300);
+    setFilters((prev) => ({
+      ...prev,
+      filters: {}, // reset column filter
+      search: searchValue,
+      page: 1
+    }));
+    dispatch(setOpenName(label || ''));
+    setFiltering(true);
+    setShowError({ label: label ?? '', status: false, message: '' });
+    setTimeout(() => {
+      setSelectedRow(0);
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+    }, 250);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 350);
   };
 
   const handleColumnFilterChange = (
@@ -840,32 +818,41 @@ export default function LookUp({
     (rows: Row[]) => {
       let filtered = rows;
 
-      // filter berdasarkan filterby (jika ada)
-      if (filterby && !Array.isArray(filterby)) {
+      // filter khusus kolom pada columns lewat global search (filters.search)
+      if (filters.search && filters.search.trim() !== '') {
+        const validColumnKeys = columns.map((col) => col.key);
+        const searchLower = filters.search.toLowerCase();
         filtered = filtered.filter((row: Row) =>
-          Object.entries(filterby).every(
-            ([k, v]) => String(row[k]) === String(v) // Membandingkan row dengan filterby
+          validColumnKeys.some((colKey) =>
+            String(row[colKey] ?? '')
+              .toLowerCase()
+              .includes(searchLower)
           )
         );
       }
 
-      // filter berdasarkan filters lainnya
+      // filter berdasarkan filters lainnya (per kolom)
       for (const [colKey, filterValue] of Object.entries(
         filters.filters || {}
       )) {
-        const fv = String(filterValue).toLowerCase();
         filtered = filtered.filter((row: Row) =>
           String(row[colKey as keyof Row])
             .toLowerCase()
-            .includes(fv)
+            .includes(String(filterValue).toLowerCase())
         );
       }
-
+      // filterby (opsional)
+      if (filterby && !Array.isArray(filterby)) {
+        filtered = filtered.filter((row: Row) =>
+          Object.entries(filterby).every(
+            ([k, v]) => String(row[k]) === String(v)
+          )
+        );
+      }
       return filtered;
     },
-    [filterby, filters]
+    [filterby, filters, columns]
   );
-
   useEffect(() => {
     if (type === 'local' || !endpoint) {
       // Mode local tetap seperti sebelumnya
@@ -878,6 +865,7 @@ export default function LookUp({
           const defaultRow = filteredRows.find(
             (row: any) => row.default === 'YA'
           );
+          console.log('defaultRow222', defaultRow);
           if (defaultRow && !clicked) {
             setInputValue(defaultRow?.text);
             if (lookupValue) {
@@ -886,7 +874,6 @@ export default function LookUp({
           }
         }
       }
-
       setRows(filteredRows);
       setIsLoading(false);
       return;
@@ -994,6 +981,7 @@ export default function LookUp({
             ...filters,
             search: rows[0][postData as string] || ''
           });
+          console.log('rows222', rows[0][postData as string]);
           setInputValue(rows[0][postData as string] || '');
           const value = rows[0][dataToPost as string] || '';
           lookupValue?.(value);
@@ -1048,7 +1036,7 @@ export default function LookUp({
     setPopoverWidth(newWidth);
   }, [extendSize]);
   useEffect(() => {
-    if (lookupNama) {
+    if (lookupNama && !deleteClicked) {
       setInputValue(lookupNama);
       const foundRow = rows.find(
         (row) => String(row[postData as string]) === String(lookupNama)
@@ -1057,7 +1045,7 @@ export default function LookUp({
         onSelectRow(foundRow);
       }
     }
-  }, [lookupNama, rows]);
+  }, [lookupNama, rows, deleteClicked]);
   useEffect(() => {
     if (clearLookup) {
       setInputValue(''); // Assuming "text" is the display column
@@ -1149,8 +1137,6 @@ export default function LookUp({
     }
   }, [focus, name, inputRef, submitClicked]);
 
-  console.log(submitClicked);
-  console.log(showError);
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>

@@ -1,5 +1,5 @@
 import { IMeta } from './error.type';
-export interface PengeluaranEmklHeader {
+export interface PenerimaanEmklHeader {
   id: number;
   nobukti: string;
   tglbukti: string;
@@ -12,12 +12,11 @@ export interface PengeluaranEmklHeader {
   jenisposting: string | null;
   jenisposting_nama: string | null;
   nowarkat: string | null;
+  penerimaan_nobukti: string | null;
   pengeluaran_nobukti: string | null;
   hutang_nobukti: string | null;
   statusformat: number | null;
   statusformat_nama: string | null;
-  jenisseal_id: string | null;
-  jenisseal_text: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
@@ -25,33 +24,29 @@ export interface PengeluaranEmklHeader {
   link: string | null;
 }
 
-export interface PengeluaranEmklDetail {
+export interface PenerimaanEmklDetail {
   id: number | string;
   pengeluaranemkl_id: string;
   nobukti: string;
   keterangan: string | null;
   nominal: string | null;
-  sisa: string | null;
-  sudah_dibayar: string | null;
-  jumlahpinjaman: string | null;
   pengeluaranemkl_nobukti: string | null;
   penerimaanemkl_nobukti: string | null;
-  noseal: string | null;
   info: string | null;
   modifiedby: string | null;
   created_at: string;
   updated_at: string;
   [key: string]: string | number | boolean | null | undefined;
 }
-export interface IAllPengeluaranEmklHeader {
-  data: PengeluaranEmklHeader[];
+export interface IAllPenerimaanEmklHeader {
+  data: PenerimaanEmklHeader[];
   pagination: IMeta;
 }
-export interface IAllPengeluaranEmklDetail {
-  data: PengeluaranEmklDetail[];
+export interface IAllPenerimaanEmklDetail {
+  data: PenerimaanEmklDetail[];
   pagination: IMeta;
 }
-export const filterPengeluaranEmklHeader = {
+export const filterPenerimaanEmklHeader = {
   nobukti: '',
   tglbukti: '',
   tgljatuhtempo: '',
@@ -60,11 +55,10 @@ export const filterPengeluaranEmklHeader = {
   bank_nama: '',
   karyawan_id: null,
   karyawan_nama: '',
-  jenisseal_id: null,
-  jenisseal_text: '',
   jenisposting: '',
   nowarkat: '',
   penerimaan_nobukti: '',
+  pengeluaran_nobukti: '',
   jenisposting_nama: '',
   hutang_nobukti: '',
   statusformat: null,
@@ -76,9 +70,8 @@ export const filterPengeluaranEmklHeader = {
   tglDari: '',
   tglSampai: ''
 };
-export const filterPengeluaranEmklDetail = {
+export const filterPenerimaanEmklDetail = {
   nobukti: '',
-  noseal: '',
   keterangan: '',
   nominal: '',
   pengeluaranemkl_nobukti: '',
