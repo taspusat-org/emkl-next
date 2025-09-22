@@ -5,6 +5,8 @@ export interface IJenisOrderan {
   keterangan: string;
   statusaktif: number;
   statusaktif_text: string;
+  statusformat: string;
+  format_nama: string | null;
   created_at: string;
   updated_at: string;
 }
