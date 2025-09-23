@@ -2290,7 +2290,7 @@ const GridPengeluaranEmklHeader = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  console.log(forms.getValues(), 'ISI2');
+
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
