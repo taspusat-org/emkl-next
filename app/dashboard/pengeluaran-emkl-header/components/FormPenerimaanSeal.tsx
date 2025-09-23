@@ -66,6 +66,9 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
   });
 
   const gridRef = useRef<DataGridHandle>(null);
+  const stopWheelPropagation = (e: React.WheelEvent) => {
+    e.stopPropagation();
+  };
 
   const addRow = () => {
     const newRow: Partial<PengeluaranEmklDetail> & { isNew: boolean } = {

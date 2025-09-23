@@ -1687,8 +1687,6 @@ const GridManagerMarketingHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
-  console.log('filters', filters);
-  console.log('prevFilters', prevFilters);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
