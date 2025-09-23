@@ -45,6 +45,26 @@ const FormJenisOrderan = ({
       postData: 'text'
     }
   ];
+
+  const lookupPropsFormat = [
+    {
+      columns: [
+        { key: 'subgrp', name: 'SUB GRUP' },
+        { key: 'text', name: 'FORMAT' }
+      ],
+      labelLookup: 'FORMAT LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: `parameter?exclude=true&kelompok=`,
+      label: 'FORMAT',
+      singleColumn: false,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id'
+    }
+  ];
+
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
@@ -217,6 +237,33 @@ const FormJenisOrderan = ({
                           }
                           lookupNama={forms.getValues('statusaktif_text')}
                           disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        FORMAT
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsFormat.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('statusformat', id)
+                          }
+                          onSelectRow={(val) =>
+                            forms.setValue('statusformat_nama', val?.text)
+                          }
+                          inputLookupValue={forms.getValues('statusformat')}
+                          lookupNama={forms.getValues('statusformat_nama')}
                         />
                       ))}
                     </div>

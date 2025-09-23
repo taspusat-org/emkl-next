@@ -8,6 +8,12 @@ export const jenisorderanSchema = z.object({
     .string()
     .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }), // Keterangan opsional
   statusaktif: z.number().min(1, `${REQUIRED_FIELD}`), // Status aktif wajib diisi
-  statusaktif_text: z.string().nullable().optional() // Email wajib diisi
+  statusaktif_text: z.string().nullable().optional(), // Email wajib diisi
+
+  statusformat: z
+    .number()
+    .int({ message: dynamicRequiredMessage('FORMAT') })
+    .min(1, { message: dynamicRequiredMessage('FORMAT') }),
+  statusformat_nama: z.string().nullable().optional()
 });
 export type JenisOrderanInput = z.infer<typeof jenisorderanSchema>;

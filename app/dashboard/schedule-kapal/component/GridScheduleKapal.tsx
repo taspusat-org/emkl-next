@@ -1924,7 +1924,7 @@ const GridScheduleKapal = () => {
   }
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridTypeAkuntansi');
+    loadGridConfig(user.id, 'GridScheduleKapal');
   }, []);
 
   useEffect(() => {

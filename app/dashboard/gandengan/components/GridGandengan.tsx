@@ -1,187 +1,100 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+
+import Image from 'next/image';
 import 'react-data-grid/lib/styles.scss';
+import { useSelector } from 'react-redux';
+import IcClose from '@/public/image/x.svg';
+import { ImSpinner2 } from 'react-icons/im';
+import { Input } from '@/components/ui/input';
+import { RootState } from '@/lib/store/store';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useGetAllGandengan } from '@/lib/server/useGandengan';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import { Gandengan, gandenganFilter } from '@/lib/types/gandengan.type';
 import DataGrid, {
-  CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
 } from 'react-data-grid';
 
-import { ImSpinner2 } from 'react-icons/im';
-import ActionButton from '@/components/custom-ui/ActionButton';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQueryClient } from 'react-query';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store/store';
-import {
-  FaFileExport,
-  FaPlus,
-  FaPrint,
-  FaSort,
-  FaSortDown,
-  FaSortUp,
-  FaTimes
-} from 'react-icons/fa';
-import { Input } from '@/components/ui/input';
-import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { useRouter } from 'next/navigation';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import { HiDocument } from 'react-icons/hi2';
-import { setReportData } from '@/lib/store/reportSlice/reportSlice';
-import { useDispatch } from 'react-redux';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useAlert } from '@/lib/store/client/useAlert';
-import { Button } from '@/components/ui/button';
-import Image from 'next/image';
-import IcClose from '@/public/image/x.svg';
-import { IJenisOrderan } from '@/lib/types/jenisorderan.type';
-import {
-  JenisOrderanInput,
-  jenisorderanSchema
-} from '@/lib/validations/jenisorderan.validation';
-import {
-  useCreateJenisOrderan,
-  useDeleteJenisOrderan,
-  useGetJenisOrderan,
-  useUpdateJenisOrderan
-} from '@/lib/server/useJenisOrderan';
-import FormJenisOrderan from './FormJenisOrderan';
-import { getJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
-import {
-  clearOpenName,
-  setClearLookup
-} from '@/lib/store/lookupSlice/lookupSlice';
-import { useFormError } from '@/lib/hooks/formErrorContext';
-import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: {
-    nama: string;
-    keterangan: string;
-    created_at: string;
-    updated_at: string;
-    text: string;
-    format_text: string;
-  };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
+  filters: typeof gandenganFilter;
 }
 
 interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridJenisOrderan = () => {
+
+const GridGandengan = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const [hasMore, setHasMore] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [inputValue, setInputValue] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [dataGridKey, setDataGridKey] = useState(0);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [rows, setRows] = useState<Gandengan[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-
-  const [totalPages, setTotalPages] = useState(1);
-  const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createJenisOrderan, isLoading: isLoadingCreate } =
-    useCreateJenisOrderan();
-  const { mutateAsync: updateJenisOrderan, isLoading: isLoadingUpdate } =
-    useUpdateJenisOrderan();
-  const { mutateAsync: deleteJenisOrderan, isLoading: isLoadingDelete } =
-    useDeleteJenisOrderan();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [inputValue, setInputValue] = useState<string>('');
-  const [hasMore, setHasMore] = useState(true);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
+  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
+  const [filters, setFilters] = useState<Filter>({
+    page: 1,
+    limit: 30,
+    search: '',
+    sortBy: 'nama',
+    sortDirection: 'asc',
+    filters: gandenganFilter
+  });
+  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
-  const [mode, setMode] = useState<string>('');
-
-  const [dataGridKey, setDataGridKey] = useState(0);
-
-  const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
   } | null>(null);
-  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
-  const queryClient = useQueryClient();
-  const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IJenisOrderan[]>([]);
-  const [isDataUpdated, setIsDataUpdated] = useState(false);
-  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
-  const prevPageRef = useRef(currentPage);
-  const dispatch = useDispatch();
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
-  const [isAllSelected, setIsAllSelected] = useState(false);
-  const { alert } = useAlert();
-  const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<JenisOrderanInput>({
-    resolver:
-      mode === 'delete'
-        ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(jenisorderanSchema),
-    mode: 'onSubmit',
-    defaultValues: {
-      nama: '',
-      keterangan: ''
-    }
-  });
-  const {
-    setFocus,
-    reset,
-    formState: { isSubmitSuccessful }
-  } = forms;
-  const router = useRouter();
-  const [filters, setFilters] = useState<Filter>({
-    page: 1,
-    limit: 30,
-    filters: {
-      nama: '',
-      keterangan: '',
-      created_at: '',
-      updated_at: '',
-      text: '',
-      format_text: ''
-    },
-    search: '',
-    sortBy: 'nama',
-    sortDirection: 'asc'
-  });
+
   const gridRef = useRef<DataGridHandle>(null);
-  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allJenisOrderan, isLoading: isLoadingJenisOrderan } =
-    useGetJenisOrderan({
-      ...filters,
-      page: currentPage
-    });
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const { clearError } = useFormError();
+
+  const { data: allGandengan, isLoading: isLoadingGandengan } =
+    useGetAllGandengan({ ...filters, page: currentPage });
+
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
+    const originalIndex = columns.findIndex((col) => col.key === colKey); // 1. cari index di array columns asli
+    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
         : originalIndex;
 
     setFilters((prev) => ({
+      // update filter seperti biasa…
       ...prev,
-      filters: { ...prev.filters, [colKey]: value },
+      filters: {
+        ...prev.filters,
+        [colKey]: value
+      },
       search: '',
       page: 1
     }));
@@ -190,15 +103,63 @@ const GridJenisOrderan = () => {
     setIsAllSelected(false);
 
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+      // 3. focus sel di grid pakai displayIndex
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
 
     setTimeout(() => {
+      // 4. focus input filter
       const ref = inputColRefs.current[colKey];
       ref?.focus();
     }, 200);
 
     setSelectedRow(0);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchValue = e.target.value;
+    setInputValue(searchValue);
+    setCurrentPage(1);
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        nama: '',
+        keterangan: '',
+        statusaktif_text: '',
+        modifiedby: '',
+        created_at: '',
+        updated_at: ''
+      },
+      search: searchValue,
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setTimeout(() => {
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+    }, 100);
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 200);
+
+    setSelectedRow(0);
+    setCurrentPage(1);
+    setRows([]);
+  };
+
+  const handleClearInput = () => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters
+      },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
   };
 
   function highlightText(
@@ -237,39 +198,31 @@ const GridJenisOrderan = () => {
       />
     );
   }
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchValue = e.target.value;
-    setInputValue(searchValue);
-    setCurrentPage(1);
-    setFilters((prev) => ({
-      ...prev,
-      filters: {
-        nama: '',
-        keterangan: '',
-        created_at: '',
-        updated_at: '',
-        text: '',
-        format_text: ''
-      },
-      search: searchValue,
-      page: 1
-    }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 100);
 
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
+  const handleRowSelect = (rowId: number) => {
+    setCheckedRows((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
+      } else {
+        updated.add(rowId);
       }
-    }, 200);
 
-    setSelectedRow(0);
-    setCurrentPage(1);
-    setRows([]);
+      setIsAllSelected(updated.size === rows.length);
+      return updated;
+    });
   };
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setCheckedRows(new Set());
+    } else {
+      const allIds = rows.map((row) => row.id);
+      setCheckedRows(new Set(allIds));
+    }
+    setIsAllSelected(!isAllSelected);
+  };
+
   const handleSort = (column: string) => {
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
@@ -285,54 +238,28 @@ const GridJenisOrderan = () => {
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 200);
-    setSelectedRow(0);
 
+    setSelectedRow(0);
     setCurrentPage(1);
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
-  const handleRowSelect = (rowId: number) => {
-    setCheckedRows((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
-      } else {
-        updated.add(rowId);
-      }
 
-      setIsAllSelected(updated.size === rows.length);
-      return updated;
-    });
+  const handleContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({ x: event.clientX, y: event.clientY });
   };
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setCheckedRows(new Set());
-    } else {
-      const allIds = rows.map((row) => row.id);
-      setCheckedRows(new Set(allIds));
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      contextMenuRef.current &&
+      !contextMenuRef.current.contains(event.target as Node)
+    ) {
+      setContextMenu(null);
     }
-    setIsAllSelected(!isAllSelected);
   };
-  console.log(forms.getValues());
-  const handleClearInput = () => {
-    setFilters((prev) => ({
-      ...prev,
-      filters: {
-        ...prev.filters
-      },
-      search: '',
-      page: 1
-    }));
-    setInputValue('');
-  };
-  const columns = useMemo((): Column<IJenisOrderan>[] => {
+
+  const columns = useMemo((): Column<Gandengan>[] => {
     return [
       {
         key: 'nomor',
@@ -353,14 +280,7 @@ const GridJenisOrderan = () => {
                 setFilters({
                   ...filters,
                   search: '',
-                  filters: {
-                    nama: '',
-                    keterangan: '',
-                    created_at: '',
-                    updated_at: '',
-                    text: '',
-                    format_text: ''
-                  }
+                  filters: gandenganFilter
                 }),
                   setInputValue('');
                 setTimeout(() => {
@@ -399,7 +319,7 @@ const GridJenisOrderan = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IJenisOrderan }) => (
+        renderCell: ({ row }: { row: Gandengan }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -409,10 +329,9 @@ const GridJenisOrderan = () => {
           </div>
         )
       },
-
       {
         key: 'nama',
-        name: 'Nama',
+        name: 'nama',
         resizable: true,
         draggable: true,
         width: 300,
@@ -429,7 +348,7 @@ const GridJenisOrderan = () => {
                   filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Nama
+                nama
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
@@ -488,12 +407,12 @@ const GridJenisOrderan = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 300,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%]"
+              className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
               onContextMenu={handleContextMenu}
             >
@@ -518,16 +437,20 @@ const GridJenisOrderan = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.keterangan
+                    ? filters.filters.keterangan.toUpperCase()
+                    : ''
+                }
+                type="text"
                 onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
                   handleColumnFilterChange('keterangan', value);
                 }}
               />
@@ -548,10 +471,7 @@ const GridJenisOrderan = () => {
           return (
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
-                  : '',
+                props.row.keterangan || '',
                 filters.search,
                 columnFilter
               )}
@@ -575,41 +495,20 @@ const GridJenisOrderan = () => {
               <p className="text-sm font-normal">Status Aktif</p>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif_text', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-
           if (memoData) {
             return (
               <div className="flex h-full w-full items-center justify-center py-1">
@@ -629,38 +528,39 @@ const GridJenisOrderan = () => {
               </div>
             );
           }
-
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
-        key: 'format',
-        name: 'format',
+        key: 'modifiedby',
+        name: 'Modified By',
         resizable: true,
         draggable: true,
+        width: 150,
         headerCellClass: 'column-headers',
-        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('format_text')}
               onContextMenu={handleContextMenu}
+              onClick={() => handleSort('modifiedby')}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'format' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'modifiedby'
+                    ? 'text-red-500'
+                    : 'font-normal'
                 }`}
               >
-                FORMAT
+                Modified By
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'format_text' &&
+                {filters.sortBy === 'modifiedby' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'format_text' &&
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'modifiedby' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -670,19 +570,19 @@ const GridJenisOrderan = () => {
             <div className="relative h-[50%] w-full px-1">
               <Input
                 ref={(el) => {
-                  inputColRefs.current['format'] = el;
+                  inputColRefs.current['modifiedby'] = el;
                 }}
                 className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.format_text.toUpperCase() || ''}
+                value={filters.filters.modifiedby || ''}
                 onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('format_text', value);
+                  const value = e.target.value;
+                  handleColumnFilterChange('modifiedby', value);
                 }}
               />
-              {filters.filters.format_text && (
+              {filters.filters.modifiedby && (
                 <button
                   className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('format_text', '')}
+                  onClick={() => handleColumnFilterChange('modifiedby', '')}
                   type="button"
                 >
                   <FaTimes />
@@ -692,14 +592,11 @@ const GridJenisOrderan = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.format_text || '';
+          const columnFilter = filters.filters.modifiedby || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
-                props.row.format_nama !== null &&
-                  props.row.format_nama !== undefined
-                  ? props.row.format_nama
-                  : '',
+                props.row.modifiedby || '',
                 filters.search,
                 columnFilter
               )}
@@ -785,9 +682,7 @@ const GridJenisOrderan = () => {
         name: 'Updated At',
         resizable: true,
         draggable: true,
-
         headerCellClass: 'column-headers',
-
         width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -858,30 +753,112 @@ const GridJenisOrderan = () => {
     ];
   }, [filters, rows, checkedRows]);
 
-  const onColumnResize = (index: number, width: number) => {
-    // 1) Dapatkan key kolom yang di-resize
-    const columnKey = columns[columnsOrder[index]].key;
+  const orderedColumns = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // Mapping dan filter untuk menghindari undefined
+      return columnsOrder
+        .map((orderIndex) => columns[orderIndex])
+        .filter((col) => col !== undefined);
+    }
+    return columns;
+  }, [columns, columnsOrder]);
 
-    // 2) Update state width seketika (biar kolom langsung responsif)
-    const newWidthMap = { ...columnsWidth, [columnKey]: width };
+  const finalColumns = useMemo(() => {
+    return orderedColumns.map((col) => ({
+      ...col,
+      width: columnsWidth[col.key] ?? col.width
+    }));
+  }, [orderedColumns, columnsWidth]);
+
+  const loadGridConfig = async (userId: string, gridName: string) => {
+    try {
+      const response = await fetch(
+        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to load grid configuration');
+      }
+
+      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
+
+      setColumnsOrder(
+        columnsOrder && columnsOrder.length
+          ? columnsOrder
+          : columns.map((_, index) => index)
+      );
+      setColumnsWidth(
+        columnsWidth && Object.keys(columnsWidth).length
+          ? columnsWidth
+          : columns.reduce(
+              (acc, column) => ({
+                ...acc,
+                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
+              }),
+              {}
+            )
+      );
+    } catch (error) {
+      console.error('Failed to load grid configuration:', error);
+      setColumnsOrder(columns.map((_, index) => index)); // If configuration is not available or error occurs, fallback to original column widths
+      setColumnsWidth(
+        columns.reduce(
+          (acc, column) => {
+            // Use the original column width instead of '1fr' when configuration is missing or error occurs
+            acc[column.key] =
+              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
+            return acc;
+          },
+          {} as { [key: string]: number }
+        )
+      );
+    }
+  };
+
+  const saveGridConfig = async (
+    userId: string, // userId sebagai identifier
+    gridName: string,
+    columnsOrder: number[],
+    columnsWidth: { [key: string]: number }
+  ) => {
+    try {
+      const response = await fetch('/api/savegrid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          userId,
+          gridName,
+          config: { columnsOrder, columnsWidth }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save grid configuration');
+      }
+    } catch (error) {
+      console.error('Failed to save grid configuration:', error);
+    }
+  };
+
+  const onColumnResize = (index: number, width: number) => {
+    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
+
+    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
     setColumnsWidth(newWidthMap);
 
-    // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
     if (resizeDebounceTimeout.current) {
+      // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
       clearTimeout(resizeDebounceTimeout.current);
     }
 
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridJenisOrderan',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridGandengan', [...columnsOrder], newWidthMap);
     }, 300);
   };
+
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
     setColumnsOrder((prevOrder) => {
       const sourceIndex = prevOrder.findIndex(
@@ -894,13 +871,49 @@ const GridJenisOrderan = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridJenisOrderan', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridGandengan', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
+
+  const resetGridConfig = () => {
+    // Nilai default untuk columnsOrder dan columnsWidth
+    const defaultColumnsOrder = columns.map((_, index) => index);
+    const defaultColumnsWidth = columns.reduce(
+      (acc, column) => {
+        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
+        return acc;
+      },
+      {} as { [key: string]: number }
+    );
+
+    // Set state kembali ke nilai default
+    setColumnsOrder(defaultColumnsOrder);
+    setColumnsWidth(defaultColumnsWidth);
+    setContextMenu(null);
+    setDataGridKey((prevKey) => prevKey + 1);
+
+    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+
+    if (user.id) {
+      // Simpan konfigurasi reset ke server (atau backend)
+      saveGridConfig(
+        user.id,
+        'GridGandengan',
+        defaultColumnsOrder,
+        defaultColumnsWidth
+      );
+    }
+  };
+
+  document.querySelectorAll('.column-headers').forEach((element) => {
+    element.classList.remove('c1kqdw7y7-0-0-beta-47');
+  });
+
   function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
     return currentTarget.scrollTop <= 10;
   }
+
   function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
     const { currentTarget } = event;
     if (!currentTarget) return false;
@@ -910,8 +923,17 @@ const GridJenisOrderan = () => {
       currentTarget.scrollHeight - 2
     );
   }
+
+  function handleCellClick(args: { row: Gandengan }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
+
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingJenisOrderan || !hasMore || rows.length === 0) return;
+    if (isLoadingGandengan || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -938,15 +960,8 @@ const GridJenisOrderan = () => {
     }
   }
 
-  function handleCellClick(args: { row: IJenisOrderan }) {
-    const clickedRow = args.row;
-    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    if (rowIndex !== -1) {
-      setSelectedRow(rowIndex);
-    }
-  }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IJenisOrderan>,
+    args: CellKeyDownArgs<Gandengan>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -994,212 +1009,13 @@ const GridJenisOrderan = () => {
       }
     }
   }
-  const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
-  ) => {
-    dispatch(setClearLookup(true));
-    clearError();
-    try {
-      if (keepOpenModal) {
-        forms.reset();
-        setPopOver(true);
-      } else {
-        forms.reset();
-        setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/jenisorderan-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
 
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
-      }
-    } catch (error) {
-      console.error('Error during onSuccess:', error);
-      setIsFetchingManually(false);
-      setIsDataUpdated(false);
-    }
-  };
-  const onSubmit = async (values: JenisOrderanInput, keepOpenModal = false) => {
-    const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteJenisOrderan(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
-            }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createJenisOrderan(
-        {
-          ...values,
-          ...filters
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
-        }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
-      }
-      return;
-    }
-
-    if (selectedRowId && mode === 'edit') {
-      await updateJenisOrderan(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('jenisorderans');
-    }
-  };
-
-  const handleEdit = () => {
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-      setPopOver(true);
-      setMode('edit');
-    }
-  };
-  const handleDelete = () => {
-    if (selectedRow !== null) {
-      setMode('delete');
-      setPopOver(true);
-    }
-  };
-  const handleView = () => {
-    if (selectedRow !== null) {
-      setMode('view');
-      setPopOver(true);
-    }
-  };
-  const handleReport = async () => {
-    try {
-      dispatch(setProcessing());
-      const now = new Date();
-      const pad = (n: any) => n.toString().padStart(2, '0');
-      const tglcetak = `${pad(now.getDate())}-${pad(
-        now.getMonth() + 1
-      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-        now.getMinutes()
-      )}:${pad(now.getSeconds())}`;
-      const { page, limit, ...filtersWithoutLimit } = filters;
-
-      const response = await getJenisOrderanFn(filtersWithoutLimit);
-      const reportRows = response.data.map((row) => ({
-        ...row,
-        judullaporan: 'Laporan Jenis Orderan',
-        usercetak: user.username,
-        tglcetak: tglcetak,
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-      }));
-      sessionStorage.setItem(
-        'filtersWithoutLimit',
-        JSON.stringify(filtersWithoutLimit)
-      );
-      // Dynamically import Stimulsoft and generate the PDF report
-      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-        .then((module) => {
-          const { Stimulsoft } = module;
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahoma.ttf',
-            'Tahoma'
-          ); // Regular
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'Tahoma'
-          ); // Bold
-          Stimulsoft.Base.StiLicense.Key =
-            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-          const report = new Stimulsoft.Report.StiReport();
-          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-
-          // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanJenisorderan.mrt');
-          report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows });
-          report.regData(dataSet.dataSetName, '', dataSet);
-          report.dictionary.synchronize();
-
-          // Render the report asynchronously
-          report.renderAsync(() => {
-            // Export the report to PDF asynchronously
-            report.exportDocumentAsync((pdfData: any) => {
-              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-                type: 'application/pdf'
-              });
-              const pdfUrl = URL.createObjectURL(pdfBlob);
-
-              // Store the Blob URL in sessionStorage
-              sessionStorage.setItem('pdfUrl', pdfUrl);
-
-              // Navigate to the report page
-              window.open('/reports/jenisorderan', '_blank');
-            }, Stimulsoft.Report.StiExportFormat.Pdf);
-          });
-        })
-        .catch((error) => {
-          console.error('Failed to load Stimulsoft:', error);
-        });
-    } catch (error) {
-      dispatch(setProcessed());
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
-
-  document.querySelectorAll('.column-headers').forEach((element) => {
-    element.classList.remove('c1kqdw7y7-0-0-beta-47');
-  });
-  function getRowClass(row: IJenisOrderan) {
-    const rowIndex = rows.findIndex((r) => r.id === row.id);
-    return rowIndex === selectedRow ? 'selected-row' : '';
-  }
-
-  function rowKeyGetter(row: IJenisOrderan) {
-    return row.id;
+  function LoadRowsRenderer() {
+    return (
+      <div>
+        <ImSpinner2 className="animate-spin text-3xl text-primary" />
+      </div>
+    );
   }
 
   function EmptyRowsRenderer() {
@@ -1212,165 +1028,24 @@ const GridJenisOrderan = () => {
       </div>
     );
   }
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
+
+  function getRowClass(row: Gandengan) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
   }
-  const handleClose = () => {
-    setPopOver(false);
-    setMode('');
-    clearError();
-    forms.reset();
-  };
-  const handleAdd = async () => {
-    setMode('add');
 
-    setPopOver(true);
-
-    forms.reset();
-  };
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridJenisOrderan',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
-  const handleClickOutside = (event: MouseEvent) => {
-    if (
-      contextMenuRef.current &&
-      !contextMenuRef.current.contains(event.target as Node)
-    ) {
-      setContextMenu(null);
-    }
-  };
-
-  const orderedColumns = useMemo(() => {
-    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // Mapping dan filter untuk menghindari undefined
-      return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
-        .filter((col) => col !== undefined);
-    }
-    return columns;
-  }, [columns, columnsOrder]);
-
-  // Update properti width pada setiap kolom berdasarkan state columnsWidth
-  const finalColumns = useMemo(() => {
-    return orderedColumns.map((col) => ({
-      ...col,
-      width: columnsWidth[col.key] ?? col.width
-    }));
-  }, [orderedColumns, columnsWidth]);
+  function rowKeyGetter(row: Gandengan) {
+    return row.id;
+  }
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridJenisOrderan');
+    loadGridConfig(user.id, 'GridGandengan');
   }, []);
+
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
+
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
@@ -1378,10 +1053,11 @@ const GridJenisOrderan = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  useEffect(() => {
-    if (!allJenisOrderan || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allJenisOrderan.data || [];
+  useEffect(() => {
+    if (!allGandengan || isDataUpdated) return;
+
+    const newRows = allGandengan.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1391,28 +1067,22 @@ const GridJenisOrderan = () => {
         return newRows; // Use the fetched new rows directly
       }
 
-      // Add new data to the bottom for infinite scroll
       if (!fetchedPages.has(currentPage)) {
+        // Add new data to the bottom for infinite scroll
         return [...prevRows, ...newRows];
       }
 
       return prevRows;
     });
 
-    if (allJenisOrderan.pagination.totalPages) {
-      setTotalPages(allJenisOrderan.pagination.totalPages);
+    if (allGandengan.pagination.totalPages) {
+      setTotalPages(allGandengan.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [
-    allJenisOrderan,
-    currentPage,
-    filters,
-    isFetchingManually,
-    isDataUpdated
-  ]);
+  }, [allGandengan, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1420,6 +1090,7 @@ const GridJenisOrderan = () => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
+
   useEffect(() => {
     if (gridRef.current && dataGridKey) {
       setTimeout(() => {
@@ -1428,15 +1099,9 @@ const GridJenisOrderan = () => {
       }, 0);
     }
   }, [dataGridKey]);
+
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        clearError();
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
       // Cek apakah target yang sedang fokus adalah input atau textarea
       if (
         event.key === ' ' &&
@@ -1464,24 +1129,7 @@ const GridJenisOrderan = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-  useEffect(() => {
-    const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' // Only fill the form if not in addMode
-    ) {
-      forms.setValue('nama', rowData?.nama);
-      forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('statusaktif', rowData?.statusaktif || 1);
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-      forms.setValue('statusformat', Number(rowData?.statusformat) || 0);
-      forms.setValue('statusformat_nama', rowData?.format_nama || '');
-    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
-      // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
-    }
-  }, [forms, selectedRow, rows, mode]);
+
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -1501,7 +1149,8 @@ const GridJenisOrderan = () => {
           }}
         >
           <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
+            {' '}
+            SEARCH :{' '}
           </label>
           <div className="relative flex w-[200px] flex-row items-center">
             <Input
@@ -1513,6 +1162,7 @@ const GridJenisOrderan = () => {
               className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
               placeholder="Type to search..."
             />
+
             {(filters.search !== '' || inputValue !== '') && (
               <Button
                 type="button"
@@ -1538,6 +1188,7 @@ const GridJenisOrderan = () => {
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
+          onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
           onSelectedCellChange={(args) => {
             handleCellClick({ row: args.row });
@@ -1552,23 +1203,7 @@ const GridJenisOrderan = () => {
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          <ActionButton
-            module="JenisOrderan"
-            onAdd={handleAdd}
-            checkedRows={checkedRows}
-            onDelete={handleDelete}
-            onView={handleView}
-            onEdit={handleEdit}
-            customActions={[
-              {
-                label: 'Print',
-                icon: <FaPrint />,
-                onClick: () => handleReport(),
-                className: 'bg-cyan-500 hover:bg-cyan-700'
-              }
-            ]}
-          />
-          {isLoadingJenisOrderan ? <LoadRowsRenderer /> : null}
+          {isLoadingGandengan ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1590,19 +1225,8 @@ const GridJenisOrderan = () => {
           )}
         </div>
       </div>
-      <FormJenisOrderan
-        popOver={popOver}
-        handleClose={handleClose}
-        setPopOver={setPopOver}
-        isLoadingUpdate={isLoadingUpdate}
-        isLoadingDelete={isLoadingDelete}
-        forms={forms}
-        mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit as any)}
-        isLoadingCreate={isLoadingCreate}
-      />
     </div>
   );
 };
 
-export default GridJenisOrderan;
+export default GridGandengan;
