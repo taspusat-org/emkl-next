@@ -40,7 +40,6 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
   const fetchData = async () => {
     try {
       const response = await api2.get(`/${endpoint}`, { params: filterBy });
-      console.log('response', response);
 
       // Tentukan apakah data ada di response.data.data atau langsung di response.data
       const optionsData = (response.data?.data ?? response.data ?? []).map(
@@ -108,7 +107,7 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
 
   return (
     <Select value={localSelectedValue} onValueChange={handleChange}>
-      <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
+      <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer overflow-hidden rounded-none border border-gray-300 p-1 text-xs font-thin">
         <SelectValue>{selectedLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent>

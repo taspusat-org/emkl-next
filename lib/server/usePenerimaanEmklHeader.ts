@@ -84,6 +84,9 @@ export const useCreatePenerimaanEmklHeader = () => {
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
       void queryClient.invalidateQueries(['penerimaanemklheader']);
+      void queryClient.invalidateQueries('penerimaanemkl');
+      void queryClient.invalidateQueries('pengeluaranemklheaderpengembalian');
+      void queryClient.invalidateQueries('pengeluaranemklheaderlist');
       toast({
         title: 'Proses Berhasil',
         description: 'Data Berhasil Ditambahkan'
@@ -120,10 +123,7 @@ export const useGetPenerimaanEmklDetail = (
 ) => {
   return useQuery(
     ['penerimaanemkl', filters],
-    async () => await getPenerimaanEmklDetailFn(filters),
-    {
-      enabled: !!filters.filters?.nobukti
-    }
+    async () => await getPenerimaanEmklDetailFn(filters)
   );
 };
 
@@ -134,6 +134,8 @@ export const useUpdatePenerimaanEmklHeader = () => {
   return useMutation(updatePenerimaanEmklHeaderFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('penerimaanemkl');
+      void queryClient.invalidateQueries('pengeluaranemklheaderpengembalian');
+      void queryClient.invalidateQueries('pengeluaranemklheaderlist');
       //   toast({
       //     title: 'Proses Berhasil.',
       //     description: 'Data Berhasil Diubah.'

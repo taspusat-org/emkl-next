@@ -129,9 +129,62 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
   ) => {
     setRows((prevRows) => {
       const updatedData = [...prevRows];
+      const currentRow = updatedData[index]; // Row saat ini
+      const oldNominal = currentRow.nominal; // Nilai nominal LAMA (sebelum update)
+      const parsedOldNominal = parseCurrency(oldNominal as string) || 0;
 
+      // Update field yang diminta
       updatedData[index][field] = value;
 
+      // Logic khusus jika field adalah 'nominal'
+      if (field === 'nominal') {
+        const parsedNewNominal = parseCurrency(value as string) || 0;
+        let newSisa: number;
+
+        if (mode === 'add') {
+          // Mode add: Hitung dari awal, seperti kode asli
+          const jumlahPinjaman = Number(currentRow.jumlahpinjaman || 0);
+          const sudahDibayar = Number(currentRow.sudah_dibayar || 0);
+          newSisa = jumlahPinjaman - (sudahDibayar + parsedNewNominal);
+
+          // Validasi minus untuk add
+          if (newSisa < 0) {
+            updatedData[index].nominal = ''; // Reset ke kosong
+            alert({
+              title: 'Sisa tidak boleh minus',
+              variant: 'danger',
+              submitText: 'OK'
+            });
+            // Update sisa ke nilai sebelum nominal (jumlahPinjaman - sudahDibayar)
+            updatedData[index].sisa = (
+              jumlahPinjaman - sudahDibayar
+            ).toString();
+            return updatedData; // Return early
+          }
+        } else if (mode === 'edit') {
+          // Mode edit: Gunakan DELTA untuk adjust sisa dari nilai awal backend
+          const oldSisa = Number(currentRow.sisa || 0); // Sisa awal dari backend (2,000)
+          const delta = parsedNewNominal - parsedOldNominal; // Perubahan: +1,000 jika 6k → 7k
+          newSisa = oldSisa - delta; // Adjust: 2,000 - 1,000 = 1,000
+
+          // Validasi minus untuk edit (warning, jangan reset)
+          if (newSisa < 0) {
+            console.warn('Peringatan: Sisa akan minus! Nominal terlalu besar.');
+            // Opsional: Alert ringan
+            // alert({ title: 'Sisa hampir minus, kurangi nominal!', variant: 'warning' });
+            // Tetap simpan, tapi set sisa ke 0 untuk tampilan
+            newSisa = 0;
+          }
+        } else {
+          // Mode lain (jika ada), fallback ke 0 atau handle custom
+          newSisa = 0;
+        }
+
+        // Simpan newSisa ke row
+        updatedData[index].sisa = newSisa.toString();
+      }
+
+      // Logic asli untuk isNew (tetap pertahankan)
       if (
         updatedData[index].isNew &&
         Object.values(updatedData[index]).every((val) => val !== '')
@@ -522,30 +575,46 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         ),
         name: 'sisa',
         renderCell: (props: any) => {
-          const parsedNominal = parseCurrency(props.row.nominal);
-          const newSisa =
-            parseCurrency(props.row.sisa) - (parsedNominal ? parsedNominal : 0);
+          let displaySisa: number;
 
-          if (newSisa < 0) {
-            alert({
-              title: 'Sisa tidak boleh minus',
-              variant: 'danger',
-              submitText: 'OK'
-            });
-            setRows((prevRows: any) => {
-              const updatedRows = [...prevRows];
-              updatedRows[props.rowIdx].nominal = '';
-              return updatedRows;
-            });
+          if (mode === 'add') {
+            // Untuk add: Selalu hitung dinamis
+            const parsedNominal = parseCurrency(props.row.nominal || '0') || 0;
+            displaySisa =
+              Number(props.row.jumlahpinjaman || 0) -
+              (Number(props.row.sudah_dibayar || 0) + parsedNominal);
+          } else if (mode === 'edit') {
+            // Untuk edit: Gunakan row.sisa yang sudah diadjust via handler (atau hitung delta jika belum)
+            // Fallback: Jika row.sisa belum update, hitung delta manual
+            const currentNominal = parseCurrency(props.row.nominal || '0') || 0;
+            const oldNominal =
+              parseCurrency(
+                props.row.old_nominal || props.row.nominal || '0'
+              ) || 0; // Asumsi simpan old_nominal di row jika perlu
+            const delta = currentNominal - oldNominal;
+            displaySisa = Number(props.row.sisa || 0) - delta; // Adjust dari sisa awal
+          } else {
+            displaySisa = Number(props.row.sisa || 0);
           }
+
+          // Tampilkan 0 jika minus (atau handle warning)
+          const finalSisa = displaySisa < 0 ? 0 : displaySisa;
+          const isWarning = displaySisa < 0 && mode === 'edit';
+
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {mode !== 'add'
-                ? formatCurrency(props.row.sisa)
-                : formatCurrency(newSisa) || ''}
+            <div
+              className={`m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm ${
+                isWarning ? 'font-bold text-red-500' : ''
+              }`}
+            >
+              {formatCurrency(finalSisa)}
+              {isWarning && (
+                <span className="ml-1 text-xs"> (Periksa nominal!)</span>
+              )}
             </div>
           );
         },
+
         renderSummaryCell: () => {
           return (
             <div className="text-sm font-semibold">
@@ -650,7 +719,6 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         const matchedRows = rows.filter((row) =>
           detailNoBuktiSet.has(row.nobukti)
         );
-        console.log('matchedRows', matchedRows);
         const matchedRowIds = matchedRows.map((row) => row.id);
 
         setCheckedRows(new Set(matchedRowIds as number[]));
@@ -658,14 +726,10 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
       }
     }
   }, [popOver, detail, mode, rows]);
-  console.log('rows', rows);
-  console.log('dataDetail', dataDetail);
-  console.log('detail', detail);
   useEffect(() => {
     const updatedDetail = rows.filter((row) => checkedRows.has(Number(row.id)));
     forms.setValue('details', updatedDetail, { shouldDirty: true });
   }, [checkedRows, rows, forms]);
-  console.log('forms', forms.getValues());
   return (
     <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
       <FormField

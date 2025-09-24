@@ -1585,6 +1585,7 @@ const GridPenerimaanEmklHeader = () => {
       setPopOver(false);
       setIsFetchingManually(true);
       setRows([]);
+
       if (mode !== 'delete') {
         const response = await api2.get(
           `/redis/get/penerimaanemklheader-allItems`
@@ -1604,12 +1605,13 @@ const GridPenerimaanEmklHeader = () => {
           }, 200);
         }
       }
-
+      setMode('');
       setIsFetchingManually(false);
       setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
+      setMode('');
       setIsDataUpdated(false);
     }
   };

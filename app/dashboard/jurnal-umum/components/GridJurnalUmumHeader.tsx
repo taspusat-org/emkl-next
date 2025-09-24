@@ -100,6 +100,7 @@ import {
   getJurnalUmumDetailFn,
   getJurnalUmumHeaderByIdFn
 } from '@/lib/apis/jurnalumumheader.api';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
@@ -732,6 +733,159 @@ const GridJurnalUmumHeader = () => {
           );
         }
       },
+      {
+        key: 'statusapproval',
+        name: 'STATUS APPROVAL TRANSAKSI',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 50,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusapproval')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusapproval'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                STATUS APPROVAL TRANSAKSI
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusapproval' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusapproval' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS APPROVAL', subgrp: 'STATUS APPROVAL' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusapproval', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusapproval
+            ? JSON.parse(props.row.statusapproval)
+            : null;
+
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'statuscetak',
+        name: 'STATUS CETAK',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 50,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('statuscetak')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statuscetak' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                STATUS CETAK
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statuscetak' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statuscetak' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statuscetak', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statuscetak
+            ? JSON.parse(props.row.statuscetak)
+            : null;
+
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+
       {
         key: 'modifiedby',
         name: 'Modified By',
@@ -1857,7 +2011,7 @@ const GridJurnalUmumHeader = () => {
           }}
         >
           <ActionButton
-            module="JURNAL-UMUM"
+            module="JURNALUMUMHEADER"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
