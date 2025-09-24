@@ -3,6 +3,7 @@ import { IMeta } from './error.type';
 export interface ITujuanKapal {
   id: number;
   nama: string;
+  kode: string;
   keterangan: string;
   namacabang: string;
   cabang_id: number;

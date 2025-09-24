@@ -13,6 +13,7 @@ export interface Trado {
 
 export interface IAllTrado {
   data: Trado[];
+  type: string;
   pagination: IMeta;
 }
 

@@ -4,6 +4,12 @@ import { dynamicRequiredMessage } from '../utils';
 
 export const tujuankapalSchema = z.object({
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }), // Nama wajib diisi
+  kode: z
+    .string({
+      required_error: dynamicRequiredMessage('KODE TUJUAN KAPAL'),
+      invalid_type_error: dynamicRequiredMessage('KODE TUJUAN KAPAL')
+    })
+    .nonempty({ message: dynamicRequiredMessage('KODE TUJUAN KAPAL') }),
   keterangan: z
     .string()
     .trim()

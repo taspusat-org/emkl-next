@@ -28,6 +28,7 @@ export interface IScheduleKapal {
 
 export interface IAllScheduleKapal {
   data: IScheduleKapal[];
+  type: string;
   pagination: IMeta;
 }
 

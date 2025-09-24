@@ -216,6 +216,7 @@ export default ReportMenuPage;
 //             return {
 //               marketingorderan: marketingorderan.data.map((details: any) => ({
 //                 nama: data.nama,
+//                 kode: data.kode,
 //                 keterangan: data.keterangan,
 //                 statusaktif_nama: data.statusaktif_nama,
 //                 email: data.email,
@@ -243,6 +244,7 @@ export default ReportMenuPage;
 //             return {
 //               marketingbiaya: marketingbiaya.data.map((details: any) => ({
 //                 nama: data.nama,
+//                 kode: data.kode,
 //                 keterangan: data.keterangan,
 //                 statusaktif_nama: data.statusaktif_nama,
 //                 email: data.email,
@@ -269,6 +271,7 @@ export default ReportMenuPage;
 //             return {
 //               marketingmanager: marketingmanager.data.map((details: any) => ({
 //                 nama: data.nama,
+//                 kode: data.kode,
 //                 keterangan: data.keterangan,
 //                 statusaktif_nama: data.statusaktif_nama,
 //                 email: data.email,
@@ -297,6 +300,7 @@ export default ReportMenuPage;
 //             return {
 //               marketinprosesfee: marketinprosesfee.data.map((details: any) => ({
 //                 nama: data.nama,
+//                 kode: data.kode,
 //                 keterangan: data.keterangan,
 //                 statusaktif_nama: data.statusaktif_nama,
 //                 email: data.email,

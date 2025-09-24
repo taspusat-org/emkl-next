@@ -39,6 +39,12 @@ export const marketingProsesFeeSchema = z.object({
 
 export const marketingSchema = z.object({
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
+  kode: z
+    .string({
+      required_error: dynamicRequiredMessage('KODE MARKETING'),
+      invalid_type_error: dynamicRequiredMessage('KODE MARKETING')
+    })
+    .nonempty({ message: dynamicRequiredMessage('KODE MARKETING') }),
   keterangan: z
     .string()
     .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),

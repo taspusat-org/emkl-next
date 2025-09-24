@@ -474,6 +474,79 @@ const GridMarketing = () => {
         }
       },
       {
+        key: 'kode',
+        name: 'kode',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('kode')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'kode' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                kode
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'kode' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'kode' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['kode'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.kode ? filters.filters.kode.toUpperCase() : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('kode', value);
+                }}
+              />
+              {filters.filters.kode && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('kode', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.kode || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.kode || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
         key: 'keterangan',
         name: 'keterangan',
         resizable: true,
@@ -1616,11 +1689,11 @@ const GridMarketing = () => {
         alert({
           title: result.data.message,
           variant: 'danger',
-          submitText: 'OK',
-          isForceEdit: true,
-          valueForceEdit: rowData.id,
-          tableNameForceEdit: 'marketing',
-          clickableText: 'LANJUT EDIT'
+          submitText: 'OK'
+          // isForceEdit: true,
+          // valueForceEdit: rowData.id,
+          // tableNameForceEdit: 'marketing',
+          // clickableText: 'LANJUT EDIT'
         });
       } else {
         setPopOver(true);
@@ -1927,6 +2000,7 @@ const GridMarketing = () => {
           return {
             marketingorderan: marketingorderan.data.map((details: any) => ({
               nama: data.nama,
+              kode: data.kode,
               keterangan: data.keterangan,
               statusaktif_nama: data.statusaktif_nama,
               email: data.email,
@@ -1962,6 +2036,7 @@ const GridMarketing = () => {
           return {
             marketingbiaya: marketingbiaya.data.map((details: any) => ({
               nama: data.nama,
+              kode: data.kode,
               keterangan: data.keterangan,
               statusaktif_nama: data.statusaktif_nama,
               email: data.email,
@@ -1997,6 +2072,7 @@ const GridMarketing = () => {
           return {
             marketingmanager: marketingmanager.data.map((details: any) => ({
               nama: data.nama,
+              kode: data.kode,
               keterangan: data.keterangan,
               statusaktif_nama: data.statusaktif_nama,
               email: data.email,
@@ -2033,6 +2109,7 @@ const GridMarketing = () => {
           return {
             marketinprosesfee: marketinprosesfee.data.map((details: any) => ({
               nama: data.nama,
+              kode: data.kode,
               keterangan: data.keterangan,
               statusaktif_nama: data.statusaktif_nama,
               email: data.email,
@@ -2519,24 +2596,25 @@ const GridMarketing = () => {
       const row = rows[selectedRow];
       // console.log('row', row);
 
-      forms.setValue('nama', row.nama);
-      forms.setValue('keterangan', row.keterangan ?? '');
-      forms.setValue('statusaktif', Number(row.statusaktif) ?? 0);
-      forms.setValue('statusaktif_nama', row.statusaktif_nama ?? null);
-      forms.setValue('email', row.email ?? '');
-      forms.setValue('karyawan_id', Number(row.karyawan_id) ?? 0);
-      forms.setValue('karyawan_nama', row.karyawan_nama ?? null);
-      forms.setValue('tglmasuk', row.tglmasuk ?? '');
-      forms.setValue('statustarget', Number(row.statustarget));
-      forms.setValue('statustarget_nama', row.statustarget_nama);
-      forms.setValue('statusbagifee', Number(row.statusbagifee));
-      forms.setValue('statusbagifee_nama', row.statusbagifee_nama);
-      forms.setValue('statusfeemanager', Number(row.statusfeemanager));
-      forms.setValue('statusfeemanager_nama', row.statusfeemanager_nama);
-      forms.setValue('marketinggroup_id', Number(row.marketinggroup_id));
-      forms.setValue('marketinggroup_nama', row.marketinggroup_nama);
-      forms.setValue('statusprafee', Number(row.statusprafee));
-      forms.setValue('statusprafee_nama', row.statusprafee_nama);
+      forms.setValue('nama', row?.nama);
+      forms.setValue('kode', row?.kode ?? '');
+      forms.setValue('keterangan', row?.keterangan ?? '');
+      forms.setValue('statusaktif', Number(row?.statusaktif) ?? 0);
+      forms.setValue('statusaktif_nama', row?.statusaktif_nama ?? null);
+      forms.setValue('email', row?.email ?? '');
+      forms.setValue('karyawan_id', Number(row?.karyawan_id) ?? 0);
+      forms.setValue('karyawan_nama', row?.karyawan_nama ?? null);
+      forms.setValue('tglmasuk', row?.tglmasuk ?? '');
+      forms.setValue('statustarget', Number(row?.statustarget));
+      forms.setValue('statustarget_nama', row?.statustarget_nama);
+      forms.setValue('statusbagifee', Number(row?.statusbagifee));
+      forms.setValue('statusbagifee_nama', row?.statusbagifee_nama);
+      forms.setValue('statusfeemanager', Number(row?.statusfeemanager));
+      forms.setValue('statusfeemanager_nama', row?.statusfeemanager_nama);
+      forms.setValue('marketinggroup_id', Number(row?.marketinggroup_id));
+      forms.setValue('marketinggroup_nama', row?.marketinggroup_nama);
+      forms.setValue('statusprafee', Number(row?.statusprafee));
+      forms.setValue('statusprafee_nama', row?.statusprafee_nama);
       forms.setValue('marketingorderan', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {
       // Clear or set defaults when adding a new record
