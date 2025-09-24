@@ -177,6 +177,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
     <div className="relative w-full">
       <InputMask
         mask=""
+        inputMode="numeric"
         maskPlaceholder={null}
         maskChar={null}
         value={inputValue}
@@ -184,7 +185,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
         disabled={disabled}
         beforeMaskedStateChange={beforeMaskedStateChange}
         onChange={handleChange}
-        autoFocus
+        // autoFocus
         onKeyDown={inputStopPropagation}
         onClick={(e: any) => e.stopPropagation()}
         onFocus={handleFocus}

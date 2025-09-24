@@ -27,6 +27,13 @@ export interface JurnalUmumDetail {
   created_at: string;
   updated_at: string;
   link: string;
+  keteranganapproval: string;
+  tglapproval: string;
+  statusapproval: string;
+  keterangancetak: string;
+  tglcetak: string;
+  statuscetak: string;
+
   [key: string]: string | number | boolean | null | undefined;
 }
 export interface IAllJurnalUmumHeader {
@@ -43,6 +50,8 @@ export const filterJurnalUmum = {
   postingdari: '',
   keterangan: '',
   modifiedby: '',
+  statusapproval: '',
+  statuscetak: '',
   created_at: '',
   updated_at: '',
   tglDari: '',

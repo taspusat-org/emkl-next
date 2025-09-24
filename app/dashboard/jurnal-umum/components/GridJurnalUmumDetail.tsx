@@ -140,10 +140,6 @@ const GridJurnalUmumDetail = ({
     setRows([]);
   };
 
-  useEffect(() => {
-    console.log('Final filters', activeTab, filters, headerData);
-  }, [filters, headerData, activeTab]);
-
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
