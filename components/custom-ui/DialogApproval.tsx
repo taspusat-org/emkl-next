@@ -35,6 +35,7 @@ import {
 import { useAlert } from '@/lib/store/client/useAlert';
 import { useQueryClient } from 'react-query';
 import { Textarea } from '../ui/textarea';
+import { getPermissionFn } from '@/lib/apis/menu.api';
 
 const DialogApproval: React.FC = ({}) => {
   const [showErrorKeterangan, setShowErrorKeterangan] = useState(false);
@@ -42,6 +43,7 @@ const DialogApproval: React.FC = ({}) => {
   const [showKeteranganDialog, setShowKeteranganDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [keterangan, setKeterangan] = useState('');
+  const { id } = useSelector((state: RootState) => state.auth);
 
   const { open, module, closeDialog, mode, checkedRows } = useApprovalDialog();
   const queryClient = useQueryClient();
@@ -151,9 +153,8 @@ const DialogApproval: React.FC = ({}) => {
           });
           closeDialog();
         } else {
-          queryClient.invalidateQueries({
-            predicate: () => true
-          });
+          queryClient.invalidateQueries({ queryKey: ['jurnalumum'] });
+
           closeDialog();
         }
       } catch (error) {
@@ -205,22 +206,55 @@ const DialogApproval: React.FC = ({}) => {
     }
   };
   const fetchData = async () => {
-    const data = await getParameterApprovalFn({
-      filters: { grp: 'DATA PENDUKUNG', subgrp: formattedModule }
-    });
-    // Filter data agar hanya yang subgrp-nya sama persis dengan formattedModule
-    const filteredData = (data.data || []).filter(
-      (item: any) =>
-        (item.subgrp || '').toString().toUpperCase() ===
-        (formattedModule || '').toString().toUpperCase()
-    );
-    setDataParameter(filteredData);
+    dispatch(setProcessing());
+    try {
+      const data = await getParameterApprovalFn({
+        filters: { grp: 'DATA PENDUKUNG', subgrp: formattedModule }
+      });
+      const res = await getPermissionFn(String(id));
+
+      if (res?.abilities) {
+        if (mode === 'APPROVAL') {
+          const filteredPermission = res.abilities.filter((item: any) =>
+            item.action.includes('-> YA')
+          );
+          const filteredData = data.data.filter((item: any) =>
+            filteredPermission.some(
+              (filteredItem: any) =>
+                Number(filteredItem.id) === Number(item.role_ya)
+            )
+          );
+          setDataParameter(filteredData);
+        } else {
+          const filteredPermission = res.abilities.filter((item: any) =>
+            item.action.includes('-> TIDAK')
+          );
+          const filteredData = data.data.filter((item: any) =>
+            filteredPermission.some(
+              (filteredItem: any) =>
+                Number(filteredItem.id) === Number(item.role_tidak)
+            )
+          );
+          setDataParameter(filteredData);
+        }
+      }
+    } catch (error) {
+      dispatch(setProcessed());
+      console.error('Error fetching data:', error);
+      alert({
+        title: 'Terjadi kesalahan saat memproses, coba lagi beberapa saat',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
+    }
   };
   useEffect(() => {
     if (formattedModule) {
       fetchData();
     }
-  }, [formattedModule]);
+  }, [formattedModule, mode, id]);
   useDisableBodyScroll(open || showKeteranganDialog);
   useEffect(() => {
     if (keterangan) {
