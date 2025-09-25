@@ -427,30 +427,28 @@ const FormPengeluaran = ({
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
           return (
-            <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-              <div className="w-full lg:w-[100%]">
-                {lookUpPropsCoaDebet.map((props, index) => (
-                  <LookUp
-                    label={`COA DEBET ${rowIdx + 1}`}
-                    key={index}
-                    {...props}
-                    lookupValue={(value: any) =>
-                      handleInputChange(rowIdx, 'coadebet', value)
-                    }
-                    lookupNama={forms.getValues(
-                      `details[${rowIdx}].coadebet_text`
-                    )}
-                    onSelectRow={(value) => {
-                      handleInputChange(
-                        rowIdx,
-                        'coadebet_text',
-                        value.keterangancoa
-                      );
-                    }}
-                    disabled={mode === 'view' || mode === 'delete'}
-                  />
-                ))}
-              </div>
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {lookUpPropsCoaDebet.map((props, index) => (
+                <LookUp
+                  label={`COA DEBET ${rowIdx + 1}`}
+                  key={index}
+                  {...props}
+                  lookupValue={(value: any) =>
+                    handleInputChange(rowIdx, 'coadebet', value)
+                  }
+                  lookupNama={forms.getValues(
+                    `details[${rowIdx}].coadebet_text`
+                  )}
+                  onSelectRow={(value) => {
+                    handleInputChange(
+                      rowIdx,
+                      'coadebet_text',
+                      value.keterangancoa
+                    );
+                  }}
+                  disabled={mode === 'view' || mode === 'delete'}
+                />
+              ))}
             </div>
           );
         }
