@@ -13,6 +13,7 @@ export interface Gandengan {
 
 export interface IAllGandengan {
   data: Gandengan[];
+  type: string;
   pagination: IMeta;
 }
 

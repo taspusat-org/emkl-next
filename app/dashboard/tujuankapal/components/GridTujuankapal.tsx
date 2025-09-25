@@ -79,6 +79,7 @@ interface Filter {
   search: string;
   filters: {
     nama: string;
+    kode: string;
     keterangan: string;
     text: string;
     created_at: string;
@@ -161,6 +162,7 @@ const GridTujuankapal = () => {
     limit: 30,
     filters: {
       nama: '',
+      kode: '',
       keterangan: '',
       created_at: '',
       updated_at: '',
@@ -266,6 +268,7 @@ const GridTujuankapal = () => {
       ...prev,
       filters: {
         nama: '',
+        kode: '',
         keterangan: '',
         icon: '',
         created_at: '',
@@ -378,6 +381,7 @@ const GridTujuankapal = () => {
                   search: '',
                   filters: {
                     nama: '',
+                    kode: '',
                     keterangan: '',
                     text: '',
                     created_at: '',
@@ -501,6 +505,79 @@ const GridTujuankapal = () => {
             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
               {highlightText(
                 props.row.nama || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'kode',
+        name: 'kode',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('kode')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'kode' ? 'text-red-500' : 'font-normal'
+                }`}
+              >
+                kode
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'kode' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="text-red-500" />
+                ) : filters.sortBy === 'kode' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="text-red-500" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['kode'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none text-sm"
+                value={
+                  filters.filters.kode ? filters.filters.kode.toUpperCase() : ''
+                }
+                type="text"
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
+                  handleColumnFilterChange('kode', value);
+                }}
+              />
+              {filters.filters.kode && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('kode', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.kode || '';
+          return (
+            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.kode || '',
                 filters.search,
                 columnFilter
               )}
@@ -1616,6 +1693,7 @@ const GridTujuankapal = () => {
       mode !== 'add' // Only fill the form if not in addMode
     ) {
       forms.setValue('nama', rowData.nama);
+      forms.setValue('kode', rowData.kode);
       forms.setValue('keterangan', rowData.keterangan);
       forms.setValue('cabang_id', Number(rowData.cabang_id));
       forms.setValue('namacabang', rowData.namacabang);

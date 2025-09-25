@@ -11,5 +11,6 @@ export interface IJenisMuatan {
 
 export interface IAllJenisMuatan {
   data: IJenisMuatan[];
+  type: string;
   pagination: IMeta;
 }

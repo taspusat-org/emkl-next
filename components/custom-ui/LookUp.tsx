@@ -1283,7 +1283,7 @@ export default function LookUp({
         side="bottom"
         align="start"
         sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
-        avoidCollisions={false}
+        avoidCollisions={true}
         style={{ width: popoverWidth }}
         onEscapeKeyDown={() => setOpen(false)}
       >

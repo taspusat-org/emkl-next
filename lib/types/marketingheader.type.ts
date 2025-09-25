@@ -3,6 +3,7 @@ import { IMeta } from './error.type';
 export interface MarketingHeader {
   id: number;
   nama: string;
+  kode: string | null;
   keterangan: string | null;
   statusaktif: number | null;
   statusaktif_nama: string | null;
@@ -129,6 +130,7 @@ export interface IAllMarketingDetail {
 export const filterMarketing = {
   nama: '',
   keterangan: '',
+  kode: '',
   // statusaktif: number | null;
   statusaktif_nama: '',
   email: '',

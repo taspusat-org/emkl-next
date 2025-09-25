@@ -1973,6 +1973,32 @@ const FormMarketing = ({
                   />
 
                   <FormField
+                    name="kode"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel
+                          required={true}
+                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        >
+                          KODE MARKETING
+                        </FormLabel>
+                        <div className="fle x flex-col lg:w-[85%]">
+                          <FormControl>
+                            <Input
+                              {...field}
+                              value={field.value ?? ''}
+                              type="text"
+                              readOnly={mode === 'view' || mode === 'delete'}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
                     name="keterangan"
                     control={forms.control}
                     render={({ field }) => (
