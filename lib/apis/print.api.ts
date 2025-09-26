@@ -1,52 +1,117 @@
-import { api2 } from '../utils/AxiosInstance';
-
-// Tipe data untuk printer (opsional, untuk TypeScript)
 export interface PrinterInfo {
   name: string;
-  status?: string;
   isDefault?: boolean;
+  status?: string;
 }
 
-// Payload untuk print dokumen
-interface PrintPayload {
-  printerName: string;
-  file: File | Blob; // Menerima objek File atau Blob
+export interface PrintOptions {
+  printer?: string;
+  paperSize?: string;
+  pages?: string;
+  subset?: 'odd' | 'even';
+  orientation?: 'portrait' | 'landscape';
+  scale?: 'noscale' | 'shrink' | 'fit';
+  monochrome?: boolean; // true = B/W (Color off)
+  side?: 'duplex' | 'duplexshort' | 'duplexlong' | 'simplex';
+  bin?: string;
+  silent?: boolean;
+  printDialog?: boolean;
+  copies?: number;
 }
 
-/**
- * Ambil daftar printer yang tersedia dari backend NestJS
- */
-export const getPrintersFn = async (): Promise<PrinterInfo[]> => {
+export interface PrintFileBody {
+  file: File | Blob;
+  options: PrintOptions;
+}
+
+const BASE = 'http://localhost:3004/api/printer';
+
+export async function getPrintersFn(): Promise<PrinterInfo[]> {
   try {
-    const response = await api2.get('/printers');
-    return response.data; // hasil berupa array printer
-  } catch (error) {
-    console.error('Error fetching printers:', error);
-    throw new Error('Gagal mengambil daftar printer');
-  }
-};
+    const url = `${BASE}`;
 
-/**
- * Kirim file PDF ke backend untuk dicetak ke printer tertentu
- */
-export const printDocumentFn = async (payload: PrintPayload): Promise<any> => {
-  // 1. Buat objek FormData
+    const res = await fetch(url, { cache: 'no-store' });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('Failed to fetch printers:', errorText);
+      throw new Error(
+        `Failed to fetch printers: ${errorText || res.statusText}`
+      );
+    }
+
+    const data = await res.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid printer list response, expected an array');
+    }
+
+    const formattedData = data.map((printer: any) => ({
+      name: printer.name || '',
+      isDefault: printer.isDefault || false,
+      status: printer.status || 'Unknown'
+    }));
+
+    console.log('Printers fetched successfully:', formattedData);
+    return formattedData;
+  } catch (error: any) {
+    console.error('Error fetching printers:', error.message || error);
+    throw new Error(error.message || 'Gagal mengambil daftar printer');
+  }
+}
+
+export async function getPaperSizesFn(printerName: string): Promise<string[]> {
+  const formatPrinterName = (name: string): string => {
+    if (name.startsWith('\\\\')) {
+      return name;
+    }
+
+    const ipPattern = /^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/;
+
+    if (ipPattern.test(name)) {
+      const formatted = name.replace(ipPattern, (_, ip) => `${ip}\\`);
+      return `\\\\${formatted}`;
+    }
+
+    return name;
+  };
+
+  const safePrinterName = formatPrinterName(printerName);
+
+  const url = `${BASE}/paper-sizes?printerName=${encodeURIComponent(
+    safePrinterName
+  )}`;
+
+  const res = await fetch(url, { cache: 'no-store' });
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch paper sizes');
+  }
+
+  return res.json();
+}
+
+export async function printFileFn(
+  body: PrintFileBody
+): Promise<{ success: boolean; message: string }> {
+  const fixedOptions = {
+    ...body.options,
+    printer: body.options.printer?.replace(/\\\\/g, '\\')
+  };
+
   const formData = new FormData();
+  formData.append('file', body.file, 'document.pdf');
+  formData.append('options', JSON.stringify(fixedOptions));
 
-  // 2. Tambahkan data ke FormData
-  // Nama field ('printerName' dan 'file') harus cocok dengan yang ada di backend
-  formData.append('printerName', payload.printerName);
+  const res = await fetch(`${BASE}/print-file`, {
+    method: 'POST',
+    body: formData
+  });
 
-  // 'file' harus cocok dengan @UseInterceptors(FileInterceptor('file'))
-  // 'document.pdf' adalah nama file yang akan diterima di backend
-  formData.append('file', payload.file, 'document.pdf');
-
-  try {
-    // 3. Kirim FormData. Axios akan otomatis mengatur Content-Type menjadi multipart/form-data.
-    const response = await api2.post('/printers/print', formData);
-    return response.data;
-  } catch (error) {
-    console.error('Error printing document:', error);
-    throw new Error('Gagal mengirim dokumen ke printer');
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(t || 'Failed to send print job');
   }
-};
+
+  return res.json();
+}
