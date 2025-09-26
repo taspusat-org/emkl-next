@@ -10,7 +10,7 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import '@react-pdf-viewer/print/lib/styles/index.css';
 
 // Icons
-import { FaDownload, FaFileExport, FaPrint, FaTimes } from 'react-icons/fa';
+import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 
 // Plugins
 import {
@@ -24,10 +24,17 @@ import { printPlugin } from '@react-pdf-viewer/print';
 // API
 import {
   getPrintersFn,
-  printDocumentFn,
-  PrinterInfo
+  getPaperSizesFn,
+  printFileFn,
+  PrinterInfo,
+  PrintOptions
 } from '@/lib/apis/print.api';
 import { exportPengeluaranEmklHeaderFn } from '@/lib/apis/pengeluaranemklheader.api';
+import { exportPengeluaranFn } from '@/lib/apis/pengeluaranheader.api';
+interface PaperSize {
+  id: number;
+  name: string;
+}
 
 const ReportMenuPage: React.FC = () => {
   // ===== STATE =====
@@ -35,39 +42,10 @@ const ReportMenuPage: React.FC = () => {
   const [savedFilters, setSavedFilters] = useState<any>({});
   const [savedId, setSavedId] = useState<number | null>(null);
 
-  // State untuk printer
-  const [printers, setPrinters] = useState<PrinterInfo[]>([]);
-  const [selectedPrinter, setSelectedPrinter] = useState<string>('');
-  const [loadingPrinters, setLoadingPrinters] = useState<boolean>(false);
-
-  // State untuk dialog custom
-  const [showSaveDialog, setShowSaveDialog] = useState<boolean>(false);
-  const [downloadUrl, setDownloadUrl] = useState<string>('');
-
-  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-
   // ===== PLUGINS =====
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
-
   const printPluginInstance = printPlugin();
-
-  // ===== FETCH DATA PRINTER =====
-  useEffect(() => {
-    const fetchPrinters = async () => {
-      try {
-        setLoadingPrinters(true);
-        const data = await getPrintersFn();
-        setPrinters(data);
-      } catch (error) {
-        console.error('Gagal mengambil daftar printer:', error);
-      } finally {
-        setLoadingPrinters(false);
-      }
-    };
-
-    fetchPrinters();
-  }, []);
 
   // ===== FETCH DATA PDF DAN FILTER =====
   useEffect(() => {
@@ -93,23 +71,19 @@ const ReportMenuPage: React.FC = () => {
     }
   }, []);
 
-  // ===== EXPORT EXCEL =====
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportPengeluaranEmklHeaderFn(
+      const response = await exportPengeluaranFn(
         Number(savedId),
         exportPayload
       );
-
-      // Download file Excel
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_pengeluaran_emkl_header_${Date.now()}.xlsx`;
+      link.download = `laporan_pengeluaran${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
-
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
@@ -117,40 +91,18 @@ const ReportMenuPage: React.FC = () => {
     }
   };
 
-  // ===== HANDLE DOWNLOAD DENGAN DIALOG CUSTOM =====
-  const handleDownloadClick = () => {
+  const handleDownload = () => {
     if (!pdfUrl) {
-      alert('Tidak ada dokumen untuk diunduh!');
       return;
     }
-
-    // Buat URL download
-    const url = pdfUrl;
-    setDownloadUrl(url);
-    setShowSaveDialog(true);
-  };
-
-  const handleSaveConfirm = () => {
-    // Lakukan download
     const link = document.createElement('a');
-    link.href = downloadUrl;
+    link.href = pdfUrl;
     link.download = `laporan_${Date.now()}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    // Tutup dialog
-    setShowSaveDialog(false);
-    setDownloadUrl('');
   };
 
-  const handleSaveCancel = () => {
-    // Tutup dialog tanpa download
-    setShowSaveDialog(false);
-    setDownloadUrl('');
-  };
-
-  // --- KOMPONEN MODAL CETAK KUSTOM ---
   const CustomPrintModal = ({
     isOpen,
     onClose,
@@ -160,42 +112,94 @@ const ReportMenuPage: React.FC = () => {
     onClose: () => void;
     docUrl: string;
   }) => {
-    const [destination, setDestination] = useState('save_as_pdf');
+    const [destination, setDestination] = useState<'save_as_pdf' | string>(
+      'save_as_pdf'
+    );
     const [printers, setPrinters] = useState<PrinterInfo[]>([]);
     const [loadingPrinters, setLoadingPrinters] = useState(false);
 
+    // Form fields
+    const [pages, setPages] = useState<string>(''); // e.g. "1-3,5"
+    const [copies, setCopies] = useState<number>(1);
+    const [layout, setLayout] = useState<'portrait' | 'landscape'>('portrait');
+    const [colorMode, setColorMode] = useState<'color' | 'bw'>('color'); // bw -> monochrome=true
+    const [paperSizes, setPaperSizes] = useState<PaperSize[]>([]);
+    const [paperSize, setPaperSize] = useState<string>('');
+
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
-    // Ambil daftar printer dari backend saat modal dibuka
+    // Ambil daftar printer saat modal dibuka
     useEffect(() => {
       if (!isOpen) return;
-
       const fetchPrinters = async () => {
         try {
           setLoadingPrinters(true);
           const data = await getPrintersFn();
-          setPrinters(data); // hasil API simpan ke state
+          setPrinters(data);
         } catch (error) {
           console.error('Gagal mengambil daftar printer:', error);
         } finally {
           setLoadingPrinters(false);
         }
       };
-
       fetchPrinters();
     }, [isOpen]);
 
+    // Ambil paper sizes ketika memilih printer fisik
+    useEffect(() => {
+      const run = async () => {
+        if (!isOpen) return;
+
+        if (!destination || destination === 'save_as_pdf') {
+          setPaperSizes([]);
+          setPaperSize('');
+          return;
+        }
+
+        try {
+          const sizes = await getPaperSizesFn(destination);
+          console.log('Raw API response:', sizes);
+
+          // Mapping agar name selalu string
+          const validSizes: PaperSize[] = (sizes || []).map(
+            (item: any, index: number) => {
+              return {
+                id: item.id || index + 1,
+                name: typeof item.name === 'object' ? item.name.name : item.name
+              };
+            }
+          );
+
+          console.log('Valid sizes after mapping:', validSizes);
+
+          setPaperSizes(validSizes);
+
+          // Cari default A4
+          const defaultChoice =
+            validSizes.find((s) => s.name === 'A4 210 x 297 mm') ||
+            validSizes[0] ||
+            null;
+
+          console.log('Default paper size:', defaultChoice);
+
+          setPaperSize(defaultChoice?.name || '');
+        } catch (e) {
+          console.error('Gagal ambil paper sizes:', e);
+          setPaperSizes([]);
+          setPaperSize('');
+        }
+      };
+
+      run();
+    }, [isOpen, destination]);
+
     if (!isOpen) return null;
 
-    const handleCancel = () => {
-      console.log('❌ User membatalkan print (Cancel)');
-      onClose();
-    };
+    const handleCancel = () => onClose();
 
     const handleAction = async () => {
       if (destination === 'save_as_pdf') {
-        // Jika pilih Save as PDF → download file lokal
-        console.log('✅ User memilih SAVE AS PDF');
+        // Save as PDF → download file lokal
         const link = document.createElement('a');
         link.href = docUrl;
         link.download = `Laporan-${Date.now()}.pdf`;
@@ -204,40 +208,43 @@ const ReportMenuPage: React.FC = () => {
         document.body.removeChild(link);
         onClose();
       } else {
-        // [DIUBAH] Logika untuk kirim ke printer fisik
+        // Kirim job ke printer fisik via API eksternal
         try {
           console.log('✅ User memilih printer:', destination);
 
-          // 1. Fetch data dari docUrl untuk mendapatkan Blob
           const response = await fetch(docUrl);
           const fileBlob = await response.blob();
 
-          // 2. Kirim Blob ke backend, bukan URL string
-          const result = await printDocumentFn({
-            printerName: destination,
-            file: fileBlob // Kirim objek Blob
+          const result = await printFileFn({
+            file: fileBlob,
+            options: {
+              printer: destination,
+              paperSize,
+              monochrome: colorMode === 'bw',
+              copies: copies || 1,
+              orientation: layout
+            }
           });
 
-          alert(`Dokumen berhasil dikirim ke printer! ${result.message || ''}`);
           onClose();
-        } catch (error) {
+        } catch (error: any) {
           console.error('Gagal mengirim dokumen ke printer:', error);
-          alert('Gagal mengirim dokumen ke printer.');
         }
       }
     };
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
-        <div className="flex h-[90vh] w-[90vw] max-w-7xl flex-row rounded-lg bg-gray-50 shadow-2xl">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="flex h-[90vh] w-[92vw] max-w-7xl flex-row overflow-hidden rounded-xl bg-white shadow-2xl">
           {/* Panel Kiri: Pengaturan Cetak */}
-          <div className="flex w-96 flex-col border-r border-gray-300 bg-white p-6">
-            <h2 className="mb-6 text-2xl font-bold text-gray-800">Print</h2>
+          <div className="flex w-[400px] flex-col border-r border-gray-200 p-6">
+            <h2 className="mb-6 text-2xl font-semibold text-gray-800">Print</h2>
 
-            <div className="mb-5">
+            {/* Destination */}
+            <div className="mb-4">
               <label
                 htmlFor="destination"
-                className="mb-1 block text-sm font-medium text-gray-600"
+                className="mb-1 block text-sm font-medium text-gray-700"
               >
                 Destination
               </label>
@@ -245,23 +252,131 @@ const ReportMenuPage: React.FC = () => {
                 id="destination"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
-                className="w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="save_as_pdf">Save as PDF</option>
                 {loadingPrinters ? (
-                  <option disabled>Loading printers...</option>
+                  <option disabled>Loading printers…</option>
                 ) : (
-                  printers.map((printer) => (
-                    <option key={printer.name} value={printer.name}>
-                      {printer.name}
+                  printers.map((p) => (
+                    <option key={p.name} value={p.name.replace(/\\/g, '\\\\')}>
+                      {p.name.replace(/\\/g, '\\\\')}
                     </option>
                   ))
                 )}
               </select>
             </div>
 
-            {/* Tombol Aksi di Bagian Bawah */}
-            <div className="mt-auto flex justify-end space-x-3 pt-4">
+            {/* Pages */}
+            <div className="mb-4">
+              <label
+                htmlFor="pages"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Pages (contoh: 1-3,5)
+              </label>
+              <input
+                id="pages"
+                placeholder="All"
+                value={pages}
+                onChange={(e) => setPages(e.target.value)}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Copies */}
+            <div className="mb-4">
+              <label
+                htmlFor="copies"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Copies
+              </label>
+              <input
+                id="copies"
+                type="number"
+                min={1}
+                value={copies}
+                onChange={(e) =>
+                  setCopies(Math.max(1, Number(e.target.value || 1)))
+                }
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Layout */}
+            <div className="mb-4">
+              <label
+                htmlFor="layout"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Layout
+              </label>
+              <select
+                id="layout"
+                value={layout}
+                onChange={(e) =>
+                  setLayout(e.target.value as 'portrait' | 'landscape')
+                }
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
+
+            {/* Color */}
+            <div className="mb-4">
+              <label
+                htmlFor="color"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Color
+              </label>
+              <select
+                id="color"
+                value={colorMode}
+                onChange={(e) => setColorMode(e.target.value as 'color' | 'bw')}
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="color">Color</option>
+                <option value="bw">Black &amp; White</option>
+              </select>
+            </div>
+
+            {/* Paper Size */}
+            <div className="mb-6">
+              <label
+                htmlFor="paper"
+                className="mb-1 block text-sm font-medium text-gray-700"
+              >
+                Paper size
+              </label>
+              <select
+                id="paper"
+                value={paperSize}
+                onChange={(e) => setPaperSize(e.target.value)}
+                disabled={
+                  destination === 'save_as_pdf' || paperSizes.length === 0
+                }
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
+              >
+                {destination === 'save_as_pdf' ? (
+                  <option value="">(Tidak tersedia untuk Save as PDF)</option>
+                ) : paperSizes.length === 0 ? (
+                  <option value="">(Paper size tidak tersedia)</option>
+                ) : (
+                  paperSizes.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Tombol Aksi */}
+            <div className="mt-auto flex justify-end gap-3">
               <button
                 onClick={handleCancel}
                 className="rounded-md bg-gray-200 px-5 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-300"
@@ -278,8 +393,8 @@ const ReportMenuPage: React.FC = () => {
           </div>
 
           {/* Panel Kanan: Pratinjau Cetak */}
-          <div className="flex-1 overflow-y-auto bg-gray-200 p-4">
-            <div className="h-full w-full bg-white shadow-lg">
+          <div className="flex-1 overflow-y-auto bg-gray-100 p-4">
+            <div className="h-full w-full overflow-hidden rounded-lg bg-white shadow">
               <iframe
                 ref={iframeRef}
                 src={`${docUrl}#toolbar=0&navpanes=0`}
@@ -293,7 +408,9 @@ const ReportMenuPage: React.FC = () => {
     );
   };
 
-  // ===== PLUGIN LAYOUT =====
+  // ===== TOOLBAR ala Akuntansi =====
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
   const layoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [defaultTabs[0]],
     renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
@@ -328,16 +445,17 @@ const ReportMenuPage: React.FC = () => {
                 <DefaultZoomIn />
               </div>
 
-              <button
-                onClick={() => setIsPrintModalOpen(true)}
-                className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
-              >
-                <FaPrint /> Print
-              </button>
-
+              {/* Column 3: Actions */}
               <div className="flex items-center justify-end gap-2">
                 <button
-                  onClick={handleDownloadClick}
+                  onClick={() => setIsPrintModalOpen(true)}
+                  className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
+                >
+                  <FaPrint /> Print
+                </button>
+
+                <button
+                  onClick={handleDownload}
                   className="flex flex-row items-center gap-2 rounded bg-green-600 px-3 py-1 text-white hover:bg-green-800"
                 >
                   <FaDownload /> Download
@@ -369,42 +487,6 @@ const ReportMenuPage: React.FC = () => {
   // ===== RENDER =====
   return (
     <div className="flex h-screen w-screen flex-col">
-      {/* Dialog Custom untuk Save/Cancel */}
-      {showSaveDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="mx-4 w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Konfirmasi Download</h3>
-              <button
-                onClick={handleSaveCancel}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes />
-              </button>
-            </div>
-
-            <p className="mb-6 text-gray-600">
-              Apakah Anda yakin ingin mengunduh file PDF ini?
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={handleSaveCancel}
-                className="rounded border border-gray-300 px-4 py-2 text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveConfirm}
-                className="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <main className="flex-1 overflow-hidden">
         {pdfUrl && (
           <CustomPrintModal
