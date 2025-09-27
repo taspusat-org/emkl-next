@@ -1177,7 +1177,6 @@ const GridPengembalianKasGantung = () => {
       dispatch(setHeaderData(foundRow));
     }
   }
-  }
   async function handleKeyDown(
     args: CellKeyDownArgs<PengembalianKasGantungHeader>,
     event: React.KeyboardEvent

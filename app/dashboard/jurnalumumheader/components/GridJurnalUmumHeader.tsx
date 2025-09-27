@@ -1909,7 +1909,6 @@ const GridJurnalUmumHeader = () => {
     if (!allData || isFetchingManually) return;
 
     const newRows = allData.data || [];
-    console.log('newRows', newRows);
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
       if (currentPage === 1 || filters !== prevFilters) {
