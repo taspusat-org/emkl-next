@@ -259,6 +259,9 @@ export default function LookUp({
     dispatch(setOpenName(label || ''));
     setFiltering(true);
     setShowError({ label: label ?? '', status: false, message: '' });
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   const handleColumnFilterChange = (
@@ -403,27 +406,94 @@ export default function LookUp({
   };
 
   const handleSort = (column: string) => {
-    const newSortOrder =
-      filters.sortBy === column && filters.sortDirection === 'asc'
-        ? 'desc'
-        : 'asc';
+    if (type === 'local' || !endpoint) {
+      // Local sorting logic
+      const currentSortBy = filters.sortBy;
+      const currentSortDirection = filters.sortDirection;
 
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      sortBy: column,
-      sortDirection: newSortOrder,
-      page: 1
-    }));
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-    }, 200);
+      console.log('currentSortBy', currentSortBy);
+      console.log('currentSortDirection', currentSortDirection);
+      console.log('column', column);
+      // Determine new sort direction
+      let newSortDirection: 'asc' | 'desc' = 'asc';
+      if (currentSortBy === column && currentSortDirection === 'asc') {
+        newSortDirection = 'desc';
+      }
 
-    setSelectedRow(0);
-    setCurrentPage(1);
-    setFetchedPages(new Set([1]));
-    setRows([]);
+      // Update filters
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        sortBy: column,
+        sortDirection: newSortDirection,
+        page: 1
+      }));
+
+      // Sort the current rows locally
+      const sortedRows = [...rows].sort((a, b) => {
+        // Assuming rows are objects with the column as a key
+        // Adjust the comparison based on your data structure (e.g., handle numbers, strings, dates)
+        let aValue = a[column];
+        let bValue = b[column];
+
+        // Handle null/undefined values
+        if (aValue == null) aValue = '';
+        if (bValue == null) bValue = '';
+
+        // Convert to strings for comparison if needed (or handle specific types)
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        } else if (typeof aValue !== typeof bValue) {
+          // Ensure comparable types (e.g., convert numbers to strings if mixed)
+          aValue = String(aValue);
+          bValue = String(bValue);
+        }
+
+        if (aValue < bValue) {
+          return newSortDirection === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return newSortDirection === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+      console.log('sortedRows', sortedRows);
+      // For local sorting, also handle pagination reset if applicable
+      setCurrentPage(1);
+      setSelectedRow(0);
+      setTimeout(() => {
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+      }, 200);
+
+      setRows(sortedRows);
+      setIsLoading(false);
+      return;
+    } else {
+      const newSortOrder =
+        filters.sortBy === column && filters.sortDirection === 'asc'
+          ? 'desc'
+          : 'asc';
+
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        sortBy: column,
+        sortDirection: newSortOrder,
+        page: 1
+      }));
+      setTimeout(() => {
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+      }, 200);
+
+      setSelectedRow(0);
+      setCurrentPage(1);
+      setFetchedPages(new Set([1]));
+      setRows([]);
+    }
   };
 
+  const inputStopPropagation = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
   const columns: readonly Column<Row>[] = useMemo(() => {
     return rawColumns.map((col, index) => ({
       ...col,
@@ -467,8 +537,11 @@ export default function LookUp({
                 // Menyimpan ref input berdasarkan kolom key
                 columnInputRefs.current[col.name] = el;
               }}
+              autoFocus={false}
               onKeyDown={(e) => handleInputColumnKeydown(e, col.name)}
               type="text"
+              tabIndex={-1}
+              onClick={(e) => e.stopPropagation()}
               className="filter-input z-[999999] h-8 w-full rounded-none"
               value={filters.filters[col.key] || ''}
               // onKeyDown={(e) => handleColumnInputKeydown(e, col.name)}
@@ -806,6 +879,14 @@ export default function LookUp({
     } else if (event.key === 'ArrowUp') {
       if (selectedRow === 0 && gridRef.current) {
         event.preventDefault();
+        setTimeout(
+          () => {
+            if (columnInputRefs.current[colKey]) {
+              columnInputRefs.current[colKey].focus();
+            }
+          },
+          type !== 'local' ? 300 : 150
+        );
       } else {
         gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 0 });
 
@@ -1185,7 +1266,6 @@ export default function LookUp({
       }, 100);
     }
   }, [focus, name, inputRef, submitClicked]);
-
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
@@ -1378,8 +1458,14 @@ export default function LookUp({
                     rowHeight={30}
                     headerRowHeight={singleColumn ? 0 : 70}
                     className={`rdg-light ${
-                      rows.length < 10 ? 'overflow-hidden' : ''
-                    }`}
+                      rows.length > 0
+                        ? rows.length < 10
+                          ? 'h-fit'
+                          : 'h-[290px]'
+                        : singleColumn && rows.length <= 0
+                        ? 'h-[30px]'
+                        : 'h-[100px]'
+                    }${rows.length < 10 ? 'overflow-hidden' : ''}`}
                     // className="rdg-light fill-grid overflow-hidden"
                     onColumnsReorder={onColumnsReorder}
                     renderers={{

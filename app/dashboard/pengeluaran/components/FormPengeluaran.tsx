@@ -1235,31 +1235,6 @@ const FormPengeluaran = ({
                       ))}
                     </div>
                   </div>
-                  <FormField
-                    name="postingdari"
-                    control={forms.control}
-                    render={({ field }) => (
-                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel
-                          required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-                        >
-                          POSTING DARI
-                        </FormLabel>
-                        <div className="flex flex-col lg:w-[85%]">
-                          <FormControl>
-                            <Input
-                              {...field}
-                              value={field.value ?? ''}
-                              type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </div>
-                      </FormItem>
-                    )}
-                  />
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
@@ -1442,6 +1417,7 @@ const FormPengeluaran = ({
                           </div>
                         </div>
                       </div> */}
+
                       <div
                         className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
                         style={{
