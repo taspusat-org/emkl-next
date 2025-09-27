@@ -1053,8 +1053,8 @@ const GridPenerimaanEmkl = () => {
         }
       },
       {
-        key: 'nilaiproses',
-        name: 'nilaiproses',
+        key: 'nilaiprosespenerimaan',
+        name: 'nilaiprosespenerimaan',
         resizable: true,
         draggable: true,
         width: 150,
@@ -1065,7 +1065,7 @@ const GridPenerimaanEmkl = () => {
               className="headers-cell h-[50%]"
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NILAI PROSES</p>
+              <p className="text-sm font-normal">NILAI PROSES PENERIMAAN</p>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1074,15 +1074,15 @@ const GridPenerimaanEmkl = () => {
                 label="text"
                 filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('nilaiproses_text', value)
+                  handleColumnFilterChange('nilaiprosespenerimaan_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const memoData = props.row.nilaiproses_memo
-            ? JSON.parse(props.row.nilaiproses_memo)
+          const memoData = props.row.nilaiprosespenerimaan_memo
+            ? JSON.parse(props.row.nilaiprosespenerimaan_memo)
             : null;
           if (memoData) {
             return (
@@ -1103,7 +1103,115 @@ const GridPenerimaanEmkl = () => {
               </div>
             );
           }
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'nilaiprosespengeluaran',
+        name: 'nilaiprosespengeluaran',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">NILAI PROSES PENGELUARAN</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('nilaiprosespengeluaran_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.nilaiprosespengeluaran_memo
+            ? JSON.parse(props.row.nilaiprosespengeluaran_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'nilaiproseshutang',
+        name: 'nilaiproseshutang',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">NILAI PROSES HUTANG</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('nilaiproseshutang_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.nilaiproseshutang_memo
+            ? JSON.parse(props.row.nilaiproseshutang_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
@@ -1157,7 +1265,7 @@ const GridPenerimaanEmkl = () => {
               </div>
             );
           }
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
@@ -1283,7 +1391,7 @@ const GridPenerimaanEmkl = () => {
               </div>
             );
           }
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
@@ -2342,8 +2450,30 @@ const GridPenerimaanEmkl = () => {
       forms.setValue('coahutangkredit_nama', rowData?.coahutangkredit_nama);
       forms.setValue('coaproses', rowData?.coaproses || null);
       forms.setValue('coaproses_nama', rowData?.coaproses_nama);
-      forms.setValue('nilaiproses', Number(rowData?.nilaiproses) || 0);
-      forms.setValue('nilaiproses_nama', rowData?.nilaiproses_nama || '');
+      forms.setValue(
+        'nilaiprosespenerimaan',
+        Number(rowData?.nilaiprosespenerimaan) || 0
+      );
+      forms.setValue(
+        'nilaiprosespenerimaan_nama',
+        rowData?.nilaiprosespenerimaan_nama || ''
+      );
+      forms.setValue(
+        'nilaiprosespengeluaran',
+        Number(rowData?.nilaiprosespengeluaran) || 0
+      );
+      forms.setValue(
+        'nilaiprosespengeluaran_nama',
+        rowData?.nilaiprosespengeluaran_nama || ''
+      );
+      forms.setValue(
+        'nilaiproseshutang',
+        Number(rowData?.nilaiproseshutang) || 0
+      );
+      forms.setValue(
+        'nilaiproseshutang_nama',
+        rowData?.nilaiproseshutang_nama || ''
+      );
       forms.setValue('statuspenarikan', Number(rowData?.statuspenarikan) || 0);
       forms.setValue(
         'statuspenarikan_nama',

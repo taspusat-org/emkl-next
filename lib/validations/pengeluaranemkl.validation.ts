@@ -30,16 +30,16 @@ export const pengeluaranEmklSchema = z.object({
   coaproses: z.string().nullable().optional(),
   coaproses_nama: z.string().nullable().optional(),
 
-  nilaiproses: z
-    .number()
-    .int({ message: dynamicRequiredMessage('NILAI PROSES') })
-    .min(1, { message: dynamicRequiredMessage('NILAI PROSES') }),
-  nilaiproses_nama: z.string().nullable().optional(),
+  nilaiprosespenerimaan: z.number().nullable().optional(),
+  nilaiprosespenerimaan_nama: z.string().nullable().optional(),
 
-  statuspenarikan: z
-    .number()
-    .int({ message: dynamicRequiredMessage('STATUS PENARIKAN') })
-    .min(1, { message: dynamicRequiredMessage('STATUS PENARIKAN ') }),
+  nilaiprosespengeluaran: z.number().nullable().optional(),
+  nilaiprosespengeluaran_nama: z.string().nullable().optional(),
+
+  nilaiproseshutang: z.number().nullable().optional(),
+  nilaiproseshutang_nama: z.string().nullable().optional(),
+
+  statuspenarikan: z.number().nullable().optional(),
   statuspenarikan_nama: z.string().nullable().optional(),
 
   format: z

@@ -17,6 +17,7 @@ import { useApprovalDialog } from '@/lib/store/client/useDialogApproval';
 import { getPermissionFn } from '@/lib/apis/menu.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
+import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
 // Import API untuk get permissions (sesuaikan dengan API Anda)
 
 interface CustomAction {
@@ -83,7 +84,8 @@ const ActionButton = ({
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const { hasPermission, loading } = usePermissions();
   const [dataParameter, setDataParameter] = useState<any>([]);
-  const { openDialog } = useApprovalDialog();
+  const { openDialog: openDialog } = useApprovalDialog();
+  const { open, openDialog: openDialogLainnya } = useLainnyaDialog();
   const { id } = useSelector((state: RootState) => state.auth);
 
   // State untuk permissions
@@ -91,11 +93,14 @@ const ActionButton = ({
   const [hasApprovalPermission, setHasApprovalPermission] = useState(false);
   const [hasNonApprovalPermission, setHasNonApprovalPermission] =
     useState(false);
+  const [hasDataLainnyaPermission, setHasDataLainnyaPermission] =
+    useState(false);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(true);
 
   // State untuk memisahkan data APPROVAL dan NON APPROVAL
   const [approvalData, setApprovalData] = useState<any[]>([]);
   const [nonApprovalData, setNonApprovalData] = useState<any[]>([]);
+  const [dataLainnya, setDataLainnya] = useState<any[]>([]);
 
   const handleDropdownClick = (index: number) => {
     setOpenMenu(openMenu === index ? null : index);
@@ -105,6 +110,14 @@ const ActionButton = ({
 
   const onClick = (value: any) => {
     openDialog({
+      module: module,
+      mode: value,
+      checkedRows: checkedRows
+    });
+  };
+
+  const onClickLainnya = (value: any) => {
+    openDialogLainnya({
       module: module,
       mode: value,
       checkedRows: checkedRows
@@ -136,10 +149,18 @@ const ActionButton = ({
           permission.action.toUpperCase().includes('TIDAK'))
     );
 
+    const hasLAINNYA = relevantPermissions.some(
+      (permission) =>
+        permission.action &&
+        (permission.action.includes('DATA LAINNYA -> YA') ||
+          permission.action.toUpperCase().includes('DATA LAINNYA -> YA'))
+    );
+
     setHasApprovalPermission(hasYA);
     setHasNonApprovalPermission(hasTIDAK);
+    setHasDataLainnyaPermission(hasLAINNYA);
 
-    return { hasYA, hasTIDAK };
+    return { hasYA, hasTIDAK, hasLAINNYA };
   };
 
   // Function untuk filter data parameter berdasarkan permissions
@@ -193,7 +214,7 @@ const ActionButton = ({
 
       if (res?.abilities) {
         setPermissions(res.abilities);
-        const { hasYA, hasTIDAK } = checkPermissions(res.abilities);
+        const { hasYA, hasTIDAK, hasLAINNYA } = checkPermissions(res.abilities);
         // Filter data parameter berdasarkan permissions
         if (hakApprovalResponse?.data) {
           filterParameterByPermission(
@@ -208,6 +229,7 @@ const ActionButton = ({
       // Set default jika error
       setHasApprovalPermission(false);
       setHasNonApprovalPermission(false);
+      setHasDataLainnyaPermission(false);
     } finally {
       setIsLoadingPermissions(false);
     }
@@ -434,6 +456,20 @@ const ActionButton = ({
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+      )}
+
+      {hasDataLainnyaPermission && !isLoadingPermissions && (
+        <Button
+          key={`lainnya`}
+          variant="default"
+          className={`w-fit gap-1 bg-gray-500 text-sm font-normal hover:bg-gray-600`}
+          onClick={() => {
+            onClickLainnya('lainnya');
+          }}
+        >
+          LAINNYA
+          <IoMdArrowDropup />
+        </Button>
       )}
     </div>
   );

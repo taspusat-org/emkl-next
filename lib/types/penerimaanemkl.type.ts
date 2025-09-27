@@ -18,8 +18,12 @@ export interface PenerimaanEmkl {
   coahutangkredit_nama: string | null;
   coaproses: string;
   coaproses_nama: string | null;
-  nilaiproses: number;
-  nilaiproses_nama: string | null;
+  nilaiprosespenerimaan: number;
+  nilaiprosespenerimaan_nama: string | null;
+  nilaiprosespengeluaran: number;
+  nilaiprosespengeluaran_nama: string | null;
+  nilaiproseshutang: number;
+  nilaiproseshutang_nama: string | null;
   statuspenarikan: number;
   statuspenarikan_nama: string | null;
   format: string;
@@ -53,7 +57,9 @@ export const filterPenerimaanEmkl = {
   coahutangdebet_text: '',
   coahutangkredit_text: '',
   coaproses_text: '',
-  nilaiproses_text: '',
+  nilaiprosespenerimaan_text: '',
+  nilaiprosespengeluaran_text: '',
+  nilaiproseshutang_text: '',
   statuspenarikan_text: '',
   format_text: '',
   statusaktif_text: '',
