@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import GridHutangDetail from './GridHutangDetail';
-import GridJurnalUmumDetail from '../../jurnal-umum/components/GridJurnalUmumDetail';
+import GridJurnalUmumDetail from '../../jurnalumumheader/components/GridJurnalUmumDetail';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 
