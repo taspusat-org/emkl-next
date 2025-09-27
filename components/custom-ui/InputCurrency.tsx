@@ -29,10 +29,26 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
+  // Helper to extract sign and numeric part
+  const getSignAndNumeric = (
+    str: string
+  ): { sign: string; numeric: string } => {
+    if (str.startsWith('-')) {
+      return { sign: '-', numeric: str.slice(1) };
+    }
+    return { sign: '', numeric: str };
+  };
+
   // Format number with thousand separators only (no decimal forcing)
   const formatWithCommas = (rawValue: string): string => {
-    // Remove all non-numeric characters except dots
-    const cleaned = rawValue.replace(/[^0-9.]/g, '');
+    const { sign, numeric } = getSignAndNumeric(rawValue);
+
+    // Remove all non-numeric characters except dots from numeric part
+    const cleaned = numeric.replace(/[^0-9.]/g, '');
+
+    if (cleaned === '') {
+      return sign;
+    }
 
     // Split by decimal point
     const parts = cleaned.split('.');
@@ -44,36 +60,38 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
     if (parts.length > 1) {
       // Limit decimal places to 2
       parts[1] = parts[1].slice(0, 2);
-      return parts.join('.');
+      return sign + parts.join('.');
     }
 
-    return parts[0];
+    return sign + parts[0];
   };
 
   // Format with .00 decimal (for blur and initial value)
   const formatWithDecimal = (rawValue: string): string => {
     if (!rawValue || rawValue === '') return '';
 
-    // Remove all non-numeric characters except dots
-    const cleaned = rawValue.replace(/[^0-9.]/g, '');
+    const { sign, numeric } = getSignAndNumeric(rawValue);
 
-    if (cleaned === '') return '';
+    // Remove all non-numeric characters except dots from numeric part
+    const cleaned = numeric.replace(/[^0-9.]/g, '');
 
-    // Split by decimal point
-    const parts = cleaned.split('.');
+    let integerPart = '0';
+    let decimalPart = '00';
 
-    // Format integer part with commas
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (cleaned !== '') {
+      // Split by decimal point
+      const parts = cleaned.split('.');
 
-    // Handle decimal part
-    if (parts.length > 1) {
-      // Ensure 2 decimal places
-      const decimalPart = (parts[1] + '00').slice(0, 2);
-      return `${parts[0]}.${decimalPart}`;
-    } else {
-      // Add .00 if no decimal
-      return `${parts[0]}.00`;
+      // Format integer part with commas
+      integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+      // Handle decimal part
+      if (parts.length > 1) {
+        decimalPart = (parts[1] + '00').slice(0, 2);
+      }
     }
+
+    return sign + integerPart + '.' + decimalPart;
   };
 
   // Initialize value on mount or when external value changes
@@ -107,9 +125,18 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
 
     // Check for percent validation
     if (isPercent) {
-      const numericValue = parseFloat(raw.replace(/[^0-9.]/g, ''));
-      if (numericValue > 100) {
-        return; // Don't update if exceeds 100%
+      // Clean for parsing: remove commas, keep only digits, ., and - at start
+      const clean = raw.replace(/,/g, '').replace(/[^0-9.-]/g, '');
+      let parseStr: string;
+      if (clean === '-' || clean.startsWith('-')) {
+        const numPart = clean.slice(1).replace(/[^0-9.]/g, '');
+        parseStr = '-' + numPart;
+      } else {
+        parseStr = clean.replace(/[^0-9.]/g, '');
+      }
+      const numericValue = parseFloat(parseStr);
+      if (isNaN(numericValue) || numericValue < 0 || numericValue > 100) {
+        return; // Don't update if invalid for percent
       }
     }
 
@@ -177,7 +204,7 @@ const InputCurrency: React.FC<CurrencyInputProps> = ({
     <div className="relative w-full">
       <InputMask
         mask=""
-        inputMode="numeric"
+        inputMode="text"
         maskPlaceholder={null}
         maskChar={null}
         value={inputValue}

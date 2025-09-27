@@ -37,7 +37,6 @@ const Page = () => {
         const [dataBank, dataAlatBayar, dataRelasi] =
           await Promise.all<ApiResponse>([
             getBankFn({ isLookUp: 'true' }),
-            getAlatbayarFn({ isLookUp: 'true' }),
             getRelasiFn({ isLookUp: 'true' })
           ]);
 
@@ -53,19 +52,6 @@ const Page = () => {
           dispatch(setDefault({ key: 'BANK', isdefault: defaultValue }));
         }
         dispatch(setType({ key: 'BANK', type: dataBank.type }));
-
-        // Handle ALAT BAYAR data
-        if (dataAlatBayar.type === 'local') {
-          dispatch(setData({ key: 'ALAT BAYAR', data: dataAlatBayar.data }));
-          const defaultValue =
-            dataAlatBayar.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
-
-          // Dispatch the default data
-          dispatch(setDefault({ key: 'ALAT BAYAR', isdefault: defaultValue }));
-        }
-        dispatch(setType({ key: 'ALAT BAYAR', type: dataAlatBayar.type }));
 
         // Handle RELASI data
         if (dataRelasi.type === 'local') {

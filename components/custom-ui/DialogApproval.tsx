@@ -154,7 +154,7 @@ const DialogApproval: React.FC = ({}) => {
           closeDialog();
         } else {
           queryClient.invalidateQueries({ queryKey: ['jurnalumum'] });
-
+          useApprovalDialog.setState({ successApproved: true });
           closeDialog();
         }
       } catch (error) {
@@ -192,6 +192,7 @@ const DialogApproval: React.FC = ({}) => {
           queryClient.invalidateQueries({
             predicate: () => true
           });
+          useApprovalDialog.setState({ successApproved: true });
           closeDialog();
         }
       } catch (error) {

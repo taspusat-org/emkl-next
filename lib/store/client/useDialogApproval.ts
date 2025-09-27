@@ -6,7 +6,7 @@ type OpenPayload = {
   mode: string;
   // opsional, dipanggil saat verify sukses
   checkedRows?: Set<number>;
-  onSuccess?: () => void;
+  successApproved?: boolean;
 };
 
 type ApprovalDialogState = {
@@ -14,7 +14,7 @@ type ApprovalDialogState = {
   module?: string;
   checkedRows?: Set<number>;
   mode?: string;
-  onSuccess?: () => void;
+  successApproved?: boolean;
   openDialog: (p: OpenPayload) => void;
   closeDialog: () => void;
 };
@@ -24,15 +24,14 @@ export const useApprovalDialog = create<ApprovalDialogState>((set) => ({
   module: undefined,
   mode: undefined,
   checkedRows: undefined,
-  onSuccess: undefined,
-  openDialog: ({ module, onSuccess, mode, checkedRows }) =>
-    set({ open: true, module, onSuccess, mode, checkedRows }),
+  successApproved: false,
+  openDialog: ({ module, successApproved, mode, checkedRows }) =>
+    set({ open: true, module, successApproved, mode, checkedRows }),
   closeDialog: () =>
     set({
       open: false,
       mode: undefined,
       module: undefined,
-      checkedRows: undefined,
-      onSuccess: undefined
+      checkedRows: undefined
     })
 }));

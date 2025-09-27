@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
-import GridJurnalUmumDetail from '../../jurnal-umum/components/GridJurnalUmumDetail';
+import GridJurnalUmumDetail from '../../jurnalumumheader/components/GridJurnalUmumDetail';
 import GridPenerimaanDetail from '../../penerimaan/components/GridPenerimaanDetail';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';

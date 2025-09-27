@@ -15,6 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useDispatch } from 'react-redux';
 import { AxiosError } from 'axios';
 import { IErrorResponse } from '../types/user.type';
+import { useAlert } from '../store/client/useAlert';
+import { useFormError } from '../hooks/formErrorContext';
 
 export const useGetPengeluaranHeader = (
   filters: {
@@ -119,7 +121,8 @@ export const useGetPengeluaranDetail = (
 export const useCreatePengeluaran = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
-  const { toast } = useToast();
+  const { alert } = useAlert();
+  const { setError } = useFormError();
 
   return useMutation(storePengeluaranFn, {
     // before the mutation fn runs
@@ -137,7 +140,27 @@ export const useCreatePengeluaran = () => {
     },
     // on error, toast + clear loading
     onError: (error: AxiosError) => {
-      const err = (error.response?.data as IErrorResponse) ?? {};
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        // Menangani error berdasarkan path
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          alert({
+            variant: 'danger',
+            submitText: 'OK',
+            title: errorResponse.message ?? 'Gagal'
+          });
+        }
+      }
       // toast({
       //   variant: 'destructive',
       //   title: err.message ?? 'Gagal',

@@ -44,40 +44,29 @@ export const useGetJurnalUmumHeader = (
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  return useQuery(
-    ['jurnalumum', filters],
-    async () => {
-      // Only trigger processing if the page is 1
-      if (filters.page === 1) {
-        dispatch(setProcessing());
-      }
-
-      try {
-        const data = await getJurnalUmumHeaderFn(filters);
-        return data;
-      } catch (error) {
-        // Show error toast and dispatch processed
-        dispatch(setProcessed());
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
-        throw error;
-      } finally {
-        // Regardless of success or failure, we dispatch setProcessed after the query finishes
-        dispatch(setProcessed());
-      }
-    },
-    {
-      // Optionally, you can use the `onSettled` callback if you want to reset the processing state after query success or failure
-      onSettled: () => {
-        if (filters.page === 1) {
-          dispatch(setProcessed());
-        }
-      }
+  return useQuery(['jurnalumum', filters], async () => {
+    // Only trigger processing if the page is 1
+    if (filters.page === 1) {
+      dispatch(setProcessing());
     }
-  );
+
+    try {
+      const data = await getJurnalUmumHeaderFn(filters);
+      return data;
+    } catch (error) {
+      // Show error toast and dispatch processed
+      dispatch(setProcessed());
+      toast({
+        variant: 'destructive',
+        title: 'Gagal',
+        description: 'Terjadi masalah dengan permintaan Anda.'
+      });
+      throw error;
+    } finally {
+      // Regardless of success or failure, we dispatch setProcessed after the query finishes
+      dispatch(setProcessed());
+    }
+  });
 };
 export const useGetJurnalUmumDetail = (
   filters: {

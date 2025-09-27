@@ -133,6 +133,7 @@ const ActionButton = ({
       // Sesuaikan logic ini dengan struktur data permission Anda
       return formattedSubject?.toUpperCase() === formattedModule?.toUpperCase();
     });
+    console.log('relevantPermissions', relevantPermissions);
     // Check apakah ada permission dengan YA (untuk APPROVAL)
     const hasYA = relevantPermissions.some(
       (permission) =>
@@ -140,7 +141,7 @@ const ActionButton = ({
         (permission.action.includes('-> YA') ||
           permission.action.toUpperCase().includes('YA'))
     );
-
+    console.log('hasYA', hasYA);
     // Check apakah ada permission dengan TIDAK (untuk NON APPROVAL)
     const hasTIDAK = relevantPermissions.some(
       (permission) =>

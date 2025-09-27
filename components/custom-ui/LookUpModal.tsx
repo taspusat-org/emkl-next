@@ -42,13 +42,19 @@ import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import InputDatePicker from './InputDatePicker';
+import { formatCurrency } from '@/lib/utils';
 
 interface LinkFilter {
   linkTo: string;
   linkValue: string | number | Array<string | number>;
 }
 interface LookUpProps {
-  columns: { key: string; name: string; width?: number }[];
+  columns: {
+    key: string;
+    name: string;
+    width?: number;
+    isCurrency?: boolean;
+  }[];
   endpoint?: string;
   label?: string;
   labelLookup?: string;
@@ -214,7 +220,6 @@ export default function LookUpModal({
       sortDirection: filters.sortDirection
     };
 
-    // Gabungkan filters lainnya
     if (filters.filters) {
       for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
     }
@@ -224,14 +229,10 @@ export default function LookUpModal({
         params[k] = v; // menambahkan filterby ke params untuk API
       }
     }
-
-    // Periksa apakah tglDari dan tglSampai ada, lalu tambahkan ke params dengan field name yang dikirim di props
     const effFrom = tglDari;
     const effTo = tglSampai;
-
     if (effFrom) params[dateFromParam] = effFrom; // kirim dengan nama field yang diinginkan
     if (effTo) params[dateToParam] = effTo; // kirim dengan nama field yang diinginkan
-
     return params;
   }, [
     currentPage,
@@ -248,7 +249,13 @@ export default function LookUpModal({
     (payload: any[]): Row[] => {
       return payload.map((item: any) => {
         const row: Row = { id: item.id };
-        if (item?.default && !lookupNama && item.default === 'YA') {
+        if (
+          item?.default &&
+          !lookupNama &&
+          item.default === 'YA' &&
+          !deleteClicked &&
+          !clicked
+        ) {
           setInputValue(item.text);
           const value = item[dataToPost as string] || item.id;
           lookupValue?.(value);
@@ -258,7 +265,14 @@ export default function LookUpModal({
         return row;
       });
     },
-    [lookupNama, lookupValue, onSelectRow, setInputValue]
+    [
+      lookupNama,
+      lookupValue,
+      onSelectRow,
+      setInputValue,
+      deleteClicked,
+      clicked
+    ]
   );
 
   const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -528,13 +542,18 @@ export default function LookUpModal({
       ),
       renderCell: (props: any) => {
         const columnFilter = filters.filters[props.column.key] || '';
+        let cellValue = props.row[props.column.key as keyof Row] || '';
+        // Jika kolom punya property isCurrency, format sebagai currency
+        if (col.isCurrency) {
+          cellValue = formatCurrency(cellValue);
+        }
         return (
-          <div className="m-0 flex h-full cursor-pointer items-center p-0  text-[12px]">
-            {highlightText(
-              props.row[props.column.key as keyof Row] || '', // Get the text value for the current row and column
-              filters.search, // Use the global search term
-              columnFilter // Use the column-specific filter
-            )}
+          <div
+            className={`m-0 flex h-full cursor-pointer items-center p-0  text-[12px] ${
+              col.isCurrency ? 'justify-end' : 'justify-start'
+            }`}
+          >
+            {highlightText(cellValue, filters.search, columnFilter)}
           </div>
         );
       }
@@ -573,7 +592,7 @@ export default function LookUpModal({
       }
     }
   }
-  function handleCellClick(args: any) {
+  function handleCellDoubleClick(args: any) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const classValue = clickedRow[postData as string];
@@ -593,6 +612,12 @@ export default function LookUpModal({
     lookupValue?.(value);
     onSelectRow?.(value); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
+  }
+  function handleCellClick(args: any) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    const classValue = clickedRow[postData as string];
+    setSelectedRow(rowIndex);
   }
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
@@ -835,53 +860,55 @@ export default function LookUpModal({
     (rows: Row[]) => {
       let filtered = rows;
 
-      // filterby array (local only)
-      if (filterby && !Array.isArray(filterby)) {
+      // filter khusus kolom pada columns lewat global search (filters.search)
+      if (filters.search && filters.search.trim() !== '') {
+        const validColumnKeys = columns.map((col) => col.key);
+        const searchLower = filters.search.toLowerCase();
         filtered = filtered.filter((row: Row) =>
-          Object.entries(filterby).every(
-            ([k, v]) => String(row[k]) === String(v) // Membandingkan row dengan filterby
+          validColumnKeys.some((colKey) =>
+            String(row[colKey] ?? '')
+              .toLowerCase()
+              .includes(searchLower)
           )
         );
       }
 
-      // column filters
+      // filter berdasarkan filters lainnya (per kolom)
       for (const [colKey, filterValue] of Object.entries(
         filters.filters || {}
       )) {
-        const fv = String(filterValue).toLowerCase();
         filtered = filtered.filter((row: Row) =>
           String(row[colKey as keyof Row])
             .toLowerCase()
-            .includes(fv)
+            .includes(String(filterValue).toLowerCase())
         );
       }
-
-      // global search
-      const q = (filters.search || '').toLowerCase();
-      if (q) {
+      // filterby (opsional)
+      if (filterby && !Array.isArray(filterby)) {
         filtered = filtered.filter((row: Row) =>
-          Object.values(row).some((v) => String(v).toLowerCase().includes(q))
+          Object.entries(filterby).every(
+            ([k, v]) => String(row[k]) === String(v)
+          )
         );
       }
-
       return filtered;
     },
-    [filterby, filters]
+    [filterby, filters, columns]
   );
 
-  const [isFetching, setIsFetching] = useState(false); // Mengontrol fetching status
-  const hasFetchedRef = useRef(false); // Menandakan apakah sudah pernah fetch
-
   useEffect(() => {
-    if (type === 'local' || !endpoint || !open) {
+    if (type === 'local' || !endpoint) {
       // Mode local tetap seperti sebelumnya
       const filteredRows = data ? applyFilters(data) : [];
-      if (isdefault && !lookupNama && !deleteClicked) {
+
+      // Check if we're not clearing input and lookupNama is undefined
+      if (isdefault && !deleteClicked) {
         // Only set default value if inputValue is empty (cleared)
         if (isdefault === 'YA') {
           const defaultRow = filteredRows.find(
             (row: any) => row.default === 'YA'
           );
+          console.log('defaultRow222', defaultRow);
           if (defaultRow && !clicked) {
             setInputValue(defaultRow?.text);
             if (lookupValue) {
@@ -890,7 +917,7 @@ export default function LookUpModal({
           }
         }
       }
-      setRows(filteredRows); // Set filtered rows jika mode local
+      setRows(filteredRows);
       setIsLoading(false);
       return;
     }
@@ -904,19 +931,15 @@ export default function LookUpModal({
 
     (async () => {
       try {
-        const newRows = await fetchRows(controller.signal); // Ambil data baru
+        const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
 
         if (myRequestId !== requestIdRef.current) return;
-
         setRows((prev) => {
-          const mapped = applyFilters(newRows); // Terapkan filter ke data baru
+          if (currentPage === 1) return newRows;
 
-          // Jika halaman pertama, langsung return mapped rows
-          if (currentPage === 1) return mapped;
-
-          // Jika bukan halaman pertama, gabungkan dengan data sebelumnya (deduplicate)
+          // append + dedup by id
           const seen = new Set<number | string>();
-          const merged = [...prev, ...mapped].filter((r) => {
+          const merged = [...prev, ...newRows].filter((r) => {
             const k = r.id;
             if (seen.has(k)) return false;
             seen.add(k);
@@ -925,14 +948,14 @@ export default function LookUpModal({
           return merged;
         });
 
-        // Tandai halaman yang sudah diambil
+        // tandai halaman ini sudah diambil
         setFetchedPages((prev) => {
           const s = new Set(prev);
           s.add(currentPage);
           return s;
         });
 
-        // Update hasMore berdasar totalPages
+        // update hasMore berdasar totalPages
         setHasMore(currentPage < totalPages);
       } catch (err) {
         if (myRequestId === requestIdRef.current) {
@@ -952,7 +975,6 @@ export default function LookUpModal({
     type,
     currentPage,
     filters,
-    applyFilters,
     totalPages,
     deleteClicked,
     clicked
@@ -1262,7 +1284,11 @@ export default function LookUpModal({
                   rowKeyGetter={rowKeyGetter}
                   onScroll={handleScroll}
                   rowClass={getRowClass}
-                  onCellDoubleClick={handleCellClick}
+                  onCellClick={handleCellClick}
+                  onSelectedCellChange={(args) => {
+                    handleCellClick({ row: args.row });
+                  }}
+                  onCellDoubleClick={handleCellDoubleClick}
                   rowHeight={30}
                   headerRowHeight={singleColumn ? 0 : 70}
                   className="rdg-light h-[450px]"

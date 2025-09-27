@@ -54,7 +54,7 @@ const GridJurnalUmumDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterJurnalUmumDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',
@@ -122,7 +122,7 @@ const GridJurnalUmumDetail = ({
       ...prev,
       filters: {
         ...filterJurnalUmumDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -197,7 +197,7 @@ const GridJurnalUmumDetail = ({
                   ...filters,
                   filters: {
                     ...filterJurnalUmumDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -1022,10 +1022,10 @@ const GridJurnalUmumDetail = ({
     loadGridConfig(user.id, 'GridJurnalUmumDetail');
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
       }));
     } else {
       setFilters((prev) => ({
@@ -1033,7 +1033,7 @@ const GridJurnalUmumDetail = ({
         filters: { ...prev.filters, nobukti: '' }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -1043,9 +1043,9 @@ const GridJurnalUmumDetail = ({
   useEffect(() => {
     setFilters((prev) => ({
       ...prev,
-      filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
     }));
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     if (detail) {
       const formattedRows = detail?.data?.map((item: any) => ({
