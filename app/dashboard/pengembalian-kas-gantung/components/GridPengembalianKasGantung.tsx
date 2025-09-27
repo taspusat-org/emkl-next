@@ -1168,7 +1168,7 @@ const GridPengembalianKasGantung = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<PengembalianKasGantungHeader>) {
+  function handleCellClick(args: { row: PengembalianKasGantungHeader }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
@@ -1176,6 +1176,7 @@ const GridPengembalianKasGantung = () => {
       setSelectedRow(rowIndex);
       dispatch(setHeaderData(foundRow));
     }
+  }
   }
   async function handleKeyDown(
     args: CellKeyDownArgs<PengembalianKasGantungHeader>,
@@ -1936,6 +1937,9 @@ const GridPengembalianKasGantung = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}

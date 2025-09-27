@@ -30,20 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
-import {
-  exportMenuBySelectFn,
-  exportMenuFn,
-  getMenuFn,
-  reportMenuBySelectFn
-} from '@/lib/apis/menu.api';
+import { reportMenuBySelectFn } from '@/lib/apis/menu.api';
 import { HiDocument } from 'react-icons/hi2';
 import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
@@ -52,31 +39,12 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import ReportDesignerMenu from '@/app/reports/menu/page';
-import {
-  useCreatePengembalianKasGantung,
-  useGetPengembalianKasGantung
-} from '@/lib/server/usePengembalianKasGantung';
-import {
-  PengembalianKasGantungHeaderInput,
-  pengembalianKasGantungHeaderSchema
-} from '@/lib/validations/pengembaliankasgantung.validation';
-import {
-  getPengembalianKasGantungHeaderFn,
-  getPengembalianKasGantungReportFn
-} from '@/lib/apis/pengembaliankasgantung.api';
 import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import FormKasGantung from './FormJurnalUmum';
-import {
-  useCreateKasGantung,
-  useDeleteKasGantung,
-  useGetKasGantungHeader,
-  useUpdatePengembalianKasGantung
-} from '@/lib/server/useKasGantung';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
@@ -101,6 +69,7 @@ import {
   getJurnalUmumHeaderByIdFn
 } from '@/lib/apis/jurnalumumheader.api';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { useApprovalDialog } from '@/lib/store/client/useDialogApproval';
 
 interface Filter {
   page: number;
@@ -127,6 +96,7 @@ const GridJurnalUmumHeader = () => {
     useCreateJurnalUmum();
   const { mutateAsync: updateJurnalUmum, isLoading: isLoadingUpdate } =
     useUpdateJurnalUmum();
+  const { successApproved } = useApprovalDialog();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -1253,6 +1223,7 @@ const GridJurnalUmumHeader = () => {
       setPopOver(false);
       setIsFetchingManually(true);
       setRows([]);
+      console.log('pageNumber', pageNumber);
       if (mode !== 'delete') {
         const response = await api2.get(`/redis/get/jurnalumumheader-allItems`);
         // Set the rows only if the data has changed
@@ -1800,35 +1771,7 @@ const GridJurnalUmumHeader = () => {
       }));
     }
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
-  useEffect(() => {
-    if (!allData || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allData.data || [];
-
-    setRows((prevRows) => {
-      // Reset data if filter changes (first page)
-      if (currentPage === 1 || filters !== prevFilters) {
-        setCurrentPage(1); // Reset currentPage to 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-        return newRows; // Use the fetched new rows directly
-      }
-
-      // Add new data to the bottom for infinite scroll
-      if (!fetchedPages.has(currentPage)) {
-        return [...prevRows, ...newRows];
-      }
-
-      return prevRows;
-    });
-
-    if (allData.pagination.totalPages) {
-      setTotalPages(allData.pagination.totalPages);
-    }
-
-    setHasMore(newRows.length === filters.limit);
-    setFetchedPages((prev) => new Set(prev).add(currentPage));
-    setPrevFilters(filters);
-  }, [allData, currentPage, filters, isFetchingManually, isDataUpdated]);
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
       const selectedRowData = rows[selectedRow];
@@ -1841,14 +1784,6 @@ const GridJurnalUmumHeader = () => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-  // useEffect(() => {
-  //   if (gridRef.current && dataGridKey) {
-  //     setTimeout(() => {
-  //       gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-  //       setIsFirstLoad(false);
-  //     }, 0);
-  //   }
-  // }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
@@ -1879,7 +1814,12 @@ const GridJurnalUmumHeader = () => {
     };
   }, []);
   useEffect(() => {
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' &&
+      !successApproved
+    ) {
       const row = rows[selectedRow];
 
       forms.setValue('nobukti', row.nobukti);
@@ -1891,7 +1831,7 @@ const GridJurnalUmumHeader = () => {
       const currentDate = new Date(); // Dapatkan tanggal sekarang
       forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
     }
-  }, [forms, selectedRow, rows, mode]);
+  }, [forms, selectedRow, rows, mode, successApproved]);
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -1923,14 +1863,28 @@ const GridJurnalUmumHeader = () => {
       refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
       setPrevFilters(filters); // Simpan filters terbaru
     }
-  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
+  }, [filters]); // Dependency array termasuk filters dan refetch
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
     if (onReload) {
       refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
       setPrevFilters(filters); // Simpan filters terbaru
     }
-  }, [onReload, refetch]); // Dependency array termasuk filters dan ref
+  }, [onReload]); // Dependency array termasuk filters dan ref
+  useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
+    if (successApproved) {
+      setIsFirstLoad(true);
+      setCheckedRows(new Set());
+      setCurrentPage(1);
+      setFetchedPages(new Set([1]));
+      setHasMore(true);
+      setFilters((prevFilters) => ({
+        ...prevFilters,
+        page: 1
+      }));
+    }
+  }, [successApproved]); // Dependency array termasuk filters dan ref
   useEffect(() => {
     // Ambil parameter nobukti dari URL
     const rawNobukti = searchParams.get('nobukti');
@@ -1951,6 +1905,40 @@ const GridJurnalUmumHeader = () => {
       window.history.replaceState({}, '', url.toString());
     }, 1000); // Delay 1 detik (1000 ms)
   }, []);
+  useEffect(() => {
+    if (!allData || isFetchingManually) return;
+
+    const newRows = allData.data || [];
+    console.log('newRows', newRows);
+    setRows((prevRows) => {
+      // Reset data if filter changes (first page)
+      if (currentPage === 1 || filters !== prevFilters) {
+        console.log('masuk1');
+        setCurrentPage(1); // Reset currentPage to 1
+        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
+        return newRows; // Use the fetched new rows directly
+      }
+
+      // Add new data to the bottom for infinite scroll
+      if (!fetchedPages.has(currentPage)) {
+        console.log('masuk2');
+        return [...prevRows, ...newRows];
+      }
+
+      return prevRows;
+    });
+
+    if (allData.pagination.totalPages) {
+      setTotalPages(allData.pagination.totalPages);
+    }
+
+    setHasMore(newRows.length === filters.limit);
+    setFetchedPages((prev) => new Set(prev).add(currentPage));
+    setPrevFilters(filters);
+  }, [allData, currentPage, filters, isFetchingManually]);
+  console.log('rows', rows);
+  console.log('currentPage', currentPage);
+  console.log('filters', filters);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

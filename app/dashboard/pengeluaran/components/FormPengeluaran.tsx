@@ -328,12 +328,11 @@ const FormPengeluaran = ({
     return [
       {
         key: 'aksi',
-        headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
-            <p className="text-sm font-normal">aksi</p>
+          <div className="flex h-full w-full flex-col justify-center px-1">
+            <p className="text-center text-sm font-normal">aksi</p>
           </div>
         ),
         name: 'aksi',
@@ -388,21 +387,14 @@ const FormPengeluaran = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center font-normal">
-              <p className="text-sm">No.</p>
-            </div>
-
-            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
         ),
         renderCell: (props: any) => {
           return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-normal">
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm font-normal">
               {props.row.isAddRow ? 'TOTAL :' : props.rowIdx + 1}
             </div>
           );
@@ -410,17 +402,13 @@ const FormPengeluaran = ({
       },
       {
         key: 'coadebet',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 350,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Coa Debet</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Coa Debet</p>
           </div>
         ),
         name: 'coadebet',
@@ -453,61 +441,78 @@ const FormPengeluaran = ({
           );
         }
       },
+
       {
-        key: 'keterangan',
-        headerCellClass: 'column-headers',
+        key: 'dpp',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Keterangan</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Dpp</p>
           </div>
         ),
-        name: 'KETERANGAN',
+        name: 'dpp',
         renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          let raw = props.row.dpp ?? ''; // Nilai dpp awal
+
+          // Cek jika raw belum diformat dengan tanda koma, kemudian format
+          if (typeof raw === 'number') {
+            raw = raw.toString(); // Mengonversi dpp menjadi string
+          }
+
+          // Jika raw tidak mengandung tanda koma, format sebagai currency
+          if (!raw.includes(',')) {
+            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+          }
+
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
-                ''
+                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+                  {formatCurrency(totalDpp)}
+                </div>
               ) : (
-                <Input
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                  value={props.row.keterangan}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'keterangan',
-                      e.target.value
-                    )
-                  }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                <FormField
+                  name={`details.${rowIdx}.dpp`}
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                      <div className="flex w-full flex-col">
+                        <FormControl>
+                          <InputCurrency
+                            {...field}
+                            readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={props.row.disableDpp}
+                            value={String(props.row.dpp ?? '')}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              handleDppChange(rowIdx, value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
                 />
               )}
             </div>
           );
         }
       },
+
       {
         key: 'nominal',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Nominal</p>
           </div>
         ),
         name: 'nominal',
@@ -561,64 +566,37 @@ const FormPengeluaran = ({
         }
       },
       {
-        key: 'dpp',
-        headerCellClass: 'column-headers',
+        key: 'keterangan',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 200,
+        width: 400,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>DPP</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Keterangan</p>
           </div>
         ),
-        name: 'dpp',
+        name: 'KETERANGAN',
         renderCell: (props: any) => {
-          const rowIdx = props.rowIdx;
-          let raw = props.row.dpp ?? ''; // Nilai dpp awal
-
-          // Cek jika raw belum diformat dengan tanda koma, kemudian format
-          if (typeof raw === 'number') {
-            raw = raw.toString(); // Mengonversi dpp menjadi string
-          }
-
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
-
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {props.row.isAddRow ? (
-                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
-                  {formatCurrency(totalDpp)}
-                </div>
+                ''
               ) : (
-                <FormField
-                  name={`details.${rowIdx}.dpp`}
-                  control={forms.control}
-                  render={({ field }) => (
-                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-                      <div className="flex w-full flex-col">
-                        <FormControl>
-                          <InputCurrency
-                            {...field}
-                            readOnly={mode === 'view' || mode === 'delete'}
-                            disabled={props.row.disableDpp}
-                            value={String(props.row.dpp ?? '')}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              handleDppChange(rowIdx, value);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.keterangan}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'keterangan',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
             </div>
@@ -627,7 +605,6 @@ const FormPengeluaran = ({
       },
       {
         key: 'noinvoiceemkl',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
@@ -640,11 +617,10 @@ const FormPengeluaran = ({
           return undefined; // For other rows, no column spanning
         },
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>nomor invoice emkl</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>
+              nomor invoice emkl
+            </p>
           </div>
         ),
         name: 'noinvoiceemkl',
@@ -676,17 +652,15 @@ const FormPengeluaran = ({
       },
       {
         key: 'tglinvoiceemkl',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 170,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>TANGGAL INVOICE EMKL</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>
+              TANGGAL INVOICE EMKL
+            </p>
           </div>
         ),
         name: 'tglinvoiceemkl',
@@ -730,17 +704,15 @@ const FormPengeluaran = ({
       },
       {
         key: 'nofakturpajakemkl',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>nomor faktur pajak emkl</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>
+              nomor faktur pajak emkl
+            </p>
           </div>
         ),
         name: 'nofakturpajakemkl',
@@ -772,17 +744,13 @@ const FormPengeluaran = ({
       },
       {
         key: 'perioderefund',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 170,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>periode refund</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>periode refund</p>
           </div>
         ),
         name: 'perioderefund',
@@ -1453,7 +1421,7 @@ const FormPengeluaran = ({
                         ref={gridRef}
                         columns={columns as any[]}
                         rows={rows}
-                        headerRowHeight={70}
+                        headerRowHeight={30}
                         rowHeight={60}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"

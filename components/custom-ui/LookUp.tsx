@@ -225,7 +225,6 @@ export default function LookUp({
           !deleteClicked &&
           !clicked
         ) {
-          console.log('item222', item);
           setInputValue(item.text);
           const value = item[dataToPost as string] || item.id;
           lookupValue?.(value);
@@ -260,13 +259,6 @@ export default function LookUp({
     dispatch(setOpenName(label || ''));
     setFiltering(true);
     setShowError({ label: label ?? '', status: false, message: '' });
-    setTimeout(() => {
-      setSelectedRow(0);
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-    }, 250);
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 350);
   };
 
   const handleColumnFilterChange = (
@@ -288,26 +280,6 @@ export default function LookUp({
       page: 1
     }));
     setFiltering(true);
-
-    // Handle the debounce logic for API or local filtering
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current); // Clear previous debounce timeout
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      if (type !== 'local' && endpoint) {
-        setTimeout(() => {
-          dispatch(setOpenName(label || '')); // Update Redux state
-        }, 100);
-      } else {
-        // Apply local filtering
-        const filteredRows =
-          data?.filter((row: Row) =>
-            String(row[colKey]).toLowerCase().includes(value.toLowerCase())
-          ) || [];
-        setRows(filteredRows); // Set filtered rows based on local data
-      }
-    }, 300); // Debounce delay of 300ms after the last keystroke
   };
 
   const gridRef = useRef<DataGridHandle | null>(null);
@@ -443,7 +415,7 @@ export default function LookUp({
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
     }, 200);
 
     setSelectedRow(0);
@@ -495,6 +467,7 @@ export default function LookUp({
                 // Menyimpan ref input berdasarkan kolom key
                 columnInputRefs.current[col.name] = el;
               }}
+              onKeyDown={(e) => handleInputColumnKeydown(e, col.name)}
               type="text"
               className="filter-input z-[999999] h-8 w-full rounded-none"
               value={filters.filters[col.key] || ''}
@@ -590,6 +563,14 @@ export default function LookUp({
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
+  function onSelectedCellChange(args: { row: Row }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
+
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
@@ -730,7 +711,6 @@ export default function LookUp({
       if (gridRef.current !== null) {
         // Only update selectedRow if we haven't reached the last row
         if (selectedRow < totalRows - 1) {
-          setSelectedRow(selectedRow + 1);
           gridRef?.current?.selectCell({ rowIdx: selectedRow + 1, idx: 0 });
         }
 
@@ -747,7 +727,6 @@ export default function LookUp({
       if (selectedRow === 0 && gridRef.current) {
         event.preventDefault();
       } else {
-        setSelectedRow(selectedRow - 1);
         gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 0 });
 
         setTimeout(
@@ -760,11 +739,6 @@ export default function LookUp({
         );
       }
     } else if (event.key === 'PageDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return 0; // Start from the first row
-        const nextRow = Math.min(prev + visibleRowCount, totalRows - 1);
-        return nextRow;
-      });
       const nextRow = Math.min(selectedRow + visibleRowCount, totalRows - 1);
       gridRef?.current?.selectCell({
         rowIdx: nextRow,
@@ -780,11 +754,6 @@ export default function LookUp({
         type !== 'local' ? 300 : 150
       );
     } else if (event.key === 'PageUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return 0; // Start from the first row
-        const newRow = Math.max(prev - visibleRowCount, 0);
-        return newRow;
-      });
       const newRow = Math.max(selectedRow - visibleRowCount, 0);
       gridRef?.current?.selectCell({
         rowIdx: newRow,
@@ -802,18 +771,98 @@ export default function LookUp({
     }
   };
 
+  const handleInputColumnKeydown = (event: any, colKey: string) => {
+    if ((!open && !filters.filters) || !openName) {
+      return;
+    }
+    const rowData = rows[selectedRow];
+    const totalRows = rows.length; // Ensure the data contains all rows
+    const visibleRowCount = 12; // You can adjust this value based on your visible row count
+
+    if (event.key === 'Enter') {
+      dispatch(clearOpenName());
+      setInputValue(rowData[postData as string]);
+      const value = dataToPost ? rowData[dataToPost] : rowData.id;
+      lookupValue?.(value);
+      onSelectRow?.(rowData); // cukup satu kali, tanpa else
+      setOpen(false);
+    }
+    if (event.key === 'ArrowDown') {
+      if (gridRef.current !== null) {
+        // Only update selectedRow if we haven't reached the last row
+        if (selectedRow < totalRows - 1) {
+          gridRef?.current?.selectCell({ rowIdx: selectedRow + 1, idx: 0 });
+        }
+
+        setTimeout(
+          () => {
+            if (columnInputRefs.current[colKey]) {
+              columnInputRefs.current[colKey].focus();
+            }
+          },
+          type !== 'local' ? 300 : 150
+        );
+      }
+    } else if (event.key === 'ArrowUp') {
+      if (selectedRow === 0 && gridRef.current) {
+        event.preventDefault();
+      } else {
+        gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 0 });
+
+        setTimeout(
+          () => {
+            if (columnInputRefs.current[colKey]) {
+              columnInputRefs.current[colKey].focus();
+            }
+          },
+          type !== 'local' ? 300 : 150
+        );
+      }
+    } else if (event.key === 'PageDown') {
+      const nextRow = Math.min(selectedRow + visibleRowCount, totalRows - 1);
+      gridRef?.current?.selectCell({
+        rowIdx: nextRow,
+        idx: 0
+      });
+      // Ensure selectCell is updated after selectedRow change
+      setTimeout(
+        () => {
+          if (columnInputRefs.current[colKey]) {
+            columnInputRefs.current[colKey].focus();
+          }
+        },
+        type !== 'local' ? 300 : 150
+      );
+    } else if (event.key === 'PageUp') {
+      const newRow = Math.max(selectedRow - visibleRowCount, 0);
+      gridRef?.current?.selectCell({
+        rowIdx: newRow,
+        idx: 0
+      });
+      // Ensure selectCell is updated after selectedRow change
+      setTimeout(
+        () => {
+          if (columnInputRefs.current[colKey]) {
+            columnInputRefs.current[colKey].focus();
+          }
+        },
+        type !== 'local' ? 300 : 150
+      );
+    }
+  };
+  console.log('selectedRow', selectedRow);
   useEffect(() => {
     if (open) {
       setIsFirstLoad(true);
     }
   }, [open]);
-  useEffect(() => {
-    if (isFirstLoad && gridRef.current && rows.length > 0) {
-      setSelectedRow(0);
-      gridRef.current.selectCell({ rowIdx: 0, idx: 0 });
-      setIsFirstLoad(false);
-    }
-  }, [rows, isFirstLoad]);
+  // useEffect(() => {
+  //   if (isFirstLoad && gridRef.current && rows.length > 0) {
+  //     setSelectedRow(0);
+  //     gridRef.current.selectCell({ rowIdx: 0, idx: 0 });
+  //     setIsFirstLoad(false);
+  //   }
+  // }, [rows, isFirstLoad]);
   const applyFilters = useCallback(
     (rows: Row[]) => {
       let filtered = rows;
@@ -1323,14 +1372,16 @@ export default function LookUp({
                     onScroll={handleScroll}
                     rowClass={getRowClass}
                     onCellClick={handleCellClick}
+                    onSelectedCellChange={(args) => {
+                      onSelectedCellChange({ row: args.row });
+                    }}
                     rowHeight={30}
                     headerRowHeight={singleColumn ? 0 : 70}
-                    className={`rdg-light fill-grid ${
+                    className={`rdg-light ${
                       rows.length < 10 ? 'overflow-hidden' : ''
                     }`}
                     // className="rdg-light fill-grid overflow-hidden"
                     onColumnsReorder={onColumnsReorder}
-                    onCellKeyDown={handleKeyDown}
                     renderers={{
                       noRowsFallback: <EmptyRowsRenderer />
                     }}

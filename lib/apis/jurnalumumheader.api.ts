@@ -3,17 +3,12 @@ import {
   IAllJurnalUmumDetail,
   IAllJurnalUmumHeader
 } from '../types/jurnalumumheader.type';
-import {
-  IAllKasGantungDetail,
-  IAllKasGantungHeader
-} from '../types/kasgantungheader.type';
 import { buildQueryParams } from '../utils';
 import { api2 } from '../utils/AxiosInstance';
 import { JurnalUmumHeaderInput } from '../validations/jurnalumum.validation';
-import { KasGantungHeaderInput } from '../validations/kasgantung.validation';
 interface UpdateParams {
   id: string;
-  fields: KasGantungHeaderInput;
+  fields: JurnalUmumHeaderInput;
 }
 interface validationFields {
   aksi: string;
