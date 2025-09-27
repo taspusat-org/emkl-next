@@ -16,7 +16,7 @@ import {
   setType,
   setDefault
 } from '@/lib/store/lookupSlice/lookupSlice';
-import GridJurnalUmumDetail from '../jurnal-umum/components/GridJurnalUmumDetail';
+import GridJurnalUmumDetail from '../jurnalumumheader/components/GridJurnalUmumDetail';
 
 interface ApiResponse {
   type: string;
