@@ -36,7 +36,7 @@ const Page = () => {
           ]);
 
         if (getStatusAktifLookup.type === 'local') {
-          const grpsToFilter = ['STATUS AKTIF', 'NILAI PROSES'];
+          const grpsToFilter = ['STATUS AKTIF'];
 
           grpsToFilter.forEach((grp) => {
             const filteredData = getStatusAktifLookup.data.filter(
@@ -63,7 +63,8 @@ const Page = () => {
               type: getStatusAktifLookup.type
             })
           );
-          const defaultValueStatusNilai = getAkunPusatLookup.data
+
+          const defaultValueStatusNilai = statusNilaiData
             .map((item: any) => item.default)
             .find((val: any) => val !== null || '');
           dispatch(
@@ -73,12 +74,35 @@ const Page = () => {
             })
           );
 
+          const nilaiProsesData = getStatusAktifLookup.data.filter(
+            (item: any) => item.grp === 'NILAI PROSES'
+          );
+
+          const multipleNilaiProses = [
+            'PROSES PENERIMAAN',
+            'PROSES PENGELUARAN',
+            'PROSES HUTANG'
+          ];
+
+          multipleNilaiProses.forEach((labelKey) => {
+            dispatch(setData({ key: labelKey, data: nilaiProsesData }));
+            dispatch(
+              setType({ key: labelKey, type: getStatusAktifLookup.type })
+            );
+            const defaultValue = nilaiProsesData
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null || '');
+            dispatch(
+              setDefault({ key: labelKey, isdefault: String(defaultValue) })
+            );
+          });
+
           const formatData = getStatusAktifLookup.data.filter(
             (item: any) => item.kelompok != ''
           );
           dispatch(setData({ key: 'FORMAT', data: formatData }));
           dispatch(setType({ key: 'FORMAT', type: getStatusAktifLookup.type }));
-          const defaultValue = getAkunPusatLookup.data
+          const defaultValue = formatData
             .map((item: any) => item.default)
             .find((val: any) => val !== null || '');
           dispatch(

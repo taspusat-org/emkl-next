@@ -72,14 +72,43 @@ const FormPengeluaranEmkl = ({
     }
   ];
 
-  const lookupPropsNilaiProses = [
+  const lookupPropsNilaiProsesPenerimaan = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
       labelLookup: 'NILAI PROSES LOOKUP',
-      required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=nilai+proses',
-      label: 'NILAI PROSES',
+      label: 'PROSES PENERIMAAN',
+      singleColumn: true,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookupPropsNilaiProsesPengeluaran = [
+    {
+      columns: [{ key: 'text', name: 'NAMA' }],
+      labelLookup: 'NILAI PROSES LOOKUP',
+      selectedRequired: false,
+      endpoint: 'parameter?grp=nilai+proses',
+      label: 'PROSES PENGELUARAN',
+      singleColumn: true,
+      pageSize: 20,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      postData: 'text',
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookupPropsNilaiProsesHutang = [
+    {
+      columns: [{ key: 'text', name: 'NAMA' }],
+      labelLookup: 'NILAI PROSES LOOKUP',
+      selectedRequired: false,
+      endpoint: 'parameter?grp=nilai+proses',
+      label: 'PROSES HUTANG',
       singleColumn: true,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
@@ -92,7 +121,6 @@ const FormPengeluaranEmkl = ({
     {
       columns: [{ key: 'text', name: 'NAMA' }],
       labelLookup: 'STATUS PENARIKAN LOOKUP',
-      required: true,
       selectedRequired: false,
       endpoint: 'parameter?grp=status+nilai',
       label: 'STATUS PENARIKAN',
@@ -602,26 +630,30 @@ const FormPengeluaranEmkl = ({
 
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
-                        Nilai Proses
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        Nilai Proses Penerimaan
                       </FormLabel>
                     </div>
                     <div className="w-full lg:w-[85%]">
-                      {lookupPropsNilaiProses.map((props, index) => (
+                      {lookupPropsNilaiProsesPenerimaan.map((props, index) => (
                         <LookUp
                           key={index}
                           {...props}
                           lookupValue={(id) =>
-                            forms.setValue('nilaiproses', id)
+                            forms.setValue('nilaiprosespenerimaan', id)
                           }
                           onSelectRow={(val) =>
-                            forms.setValue('nilaiproses_nama', val?.text)
+                            forms.setValue(
+                              'nilaiprosespenerimaan_nama',
+                              val?.text
+                            )
                           }
-                          inputLookupValue={forms.getValues('nilaiproses')}
-                          lookupNama={forms.getValues('nilaiproses_nama')}
+                          inputLookupValue={forms.getValues(
+                            'nilaiprosespenerimaan'
+                          )}
+                          lookupNama={forms.getValues(
+                            'nilaiprosespenerimaan_nama'
+                          )}
                         />
                       ))}
                     </div>
@@ -629,10 +661,64 @@ const FormPengeluaranEmkl = ({
 
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel
-                        required={true}
-                        className="text-sm font-semibold text-gray-700"
-                      >
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        Nilai Proses Pengeluaran
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsNilaiProsesPengeluaran.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('nilaiprosespengeluaran', id)
+                          }
+                          onSelectRow={(val) =>
+                            forms.setValue(
+                              'nilaiprosespengeluaran_nama',
+                              val?.text
+                            )
+                          }
+                          inputLookupValue={forms.getValues(
+                            'nilaiprosespengeluaran'
+                          )}
+                          lookupNama={forms.getValues(
+                            'nilaiprosespengeluaran_nama'
+                          )}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        Nilai Proses Hutang
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookupPropsNilaiProsesHutang.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('nilaiproseshutang', id)
+                          }
+                          onSelectRow={(val) =>
+                            forms.setValue('nilaiproseshutang_nama', val?.text)
+                          }
+                          inputLookupValue={forms.getValues(
+                            'nilaiproseshutang'
+                          )}
+                          lookupNama={forms.getValues('nilaiproseshutang_nama')}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
                         Status Penarikan
                       </FormLabel>
                     </div>

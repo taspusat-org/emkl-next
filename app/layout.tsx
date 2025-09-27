@@ -24,6 +24,7 @@ import { pdfjs } from 'react-pdf';
 import ForceEditDialogHost from '@/components/custom-ui/ForceEditDialogHost';
 import { FormErrorProvider } from '@/lib/hooks/formErrorContext';
 import ApprovalDialog from '@/components/custom-ui/ApprovalDialog';
+import DialogLainnya from '@/components/custom-ui/DialogLainnya';
 
 const roboto = Roboto({
   subsets: ['latin'],
@@ -65,6 +66,7 @@ export default function RootLayout({
               />
               {/* <ForceEditDialogHost /> */}
               <ApprovalDialog />
+              <DialogLainnya />
               <FormErrorProvider>
                 <PersistGate loading={null} persistor={persistor}>
                   <NextTopLoader showSpinner={false} />
