@@ -778,7 +778,7 @@ const GridPenerimaanDetail = ({
                     : 'font-normal'
                 }`}
               >
-                PENGELUARAN HEADER NO BUKTI
+                PENERIMAAN HEADER NO BUKTI
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'penerimaanemklheader_nobukti' &&

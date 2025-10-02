@@ -38,7 +38,7 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Search } from 'lucide-react';
 import { parse } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
@@ -47,7 +47,14 @@ import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Textarea } from '@/components/ui/textarea';
 import { useGetPengeluaranDetail } from '@/lib/server/usePengeluaran';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
-import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setOpenName,
+  setOpenNameModal,
+  setSubmitClicked
+} from '@/lib/store/lookupSlice/lookupSlice';
+import { MdAddBox } from 'react-icons/md';
+import LookUpModal from '@/components/custom-ui/LookUpModal';
+import LookUpModalPengeluaran from '@/components/custom-ui/LookUpModalPengeluaran';
 const FormPengeluaran = ({
   popOver,
   setPopOver,
@@ -57,7 +64,7 @@ const FormPengeluaran = ({
   handleClose,
   isLoadingCreate,
   isLoadingUpdate,
-  isSubmitSuccessful,
+  submitSuccessful,
   isLoadingDelete
 }: any) => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -66,7 +73,7 @@ const FormPengeluaran = ({
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
     new Map()
   ); // Nilai yang sedang diedit untuk setiap baris
-
+  const [showSearchModal, setShowSearchModal] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
 
@@ -232,50 +239,6 @@ const FormPengeluaran = ({
     0
   );
 
-  const handleCurrencyBlur = (formattedStr: string, rowIdx: number) => {
-    console.log(formattedStr);
-    if (!String(formattedStr).includes(',')) {
-      return;
-    }
-
-    if (!String(formattedStr).includes('.')) {
-      const finalValue = String(formattedStr) + '.00';
-      setRows((rs) =>
-        rs.map((r, idx) =>
-          idx === rowIdx ? { ...r, nominalawal: finalValue } : r
-        )
-      );
-    } else {
-      setRows((rs) =>
-        rs.map((r, idx) =>
-          idx === rowIdx ? { ...r, nominalawal: formattedStr } : r
-        )
-      );
-    }
-  };
-  const handleFocus = (rowIdx: number, raw: any) => {
-    setRows((prevRows) => {
-      return prevRows.map((row, idx) => {
-        if (idx === rowIdx) {
-          // Pengecekan apakah nominal berformat dengan desimal '.00'
-          console.log(raw); // Menampilkan raw value yang dikirim
-
-          const updatedNominal =
-            raw && String(raw).includes('.00')
-              ? raw.toString().slice(0, -3) // Menghapus '.00' jika ada
-              : raw; // Jika tidak ada '.00', tetap seperti semula
-
-          return {
-            ...row,
-            nominal: updatedNominal, // Update nilai nominal
-            isNew: row.isNew === true ? true : false // Memastikan isNew adalah boolean
-          };
-        }
-        return row;
-      });
-    });
-  };
-
   const PERSENTASE = 2 / 100;
 
   const handleNominalChange = (rowIdx: number, value: string) => {
@@ -342,7 +305,7 @@ const FormPengeluaran = ({
 
           if (props.row.isAddRow) {
             return (
-              <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
+              <div className="m-0 flex h-fit w-full cursor-pointer items-center justify-center p-0 text-xs">
                 <button
                   disabled={mode === 'view' || mode === 'delete'}
                   type="button"
@@ -414,6 +377,7 @@ const FormPengeluaran = ({
         name: 'coadebet',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
+          console.log('rowIdx', rowIdx);
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {lookUpPropsCoaDebet.map((props, index) => (
@@ -651,6 +615,86 @@ const FormPengeluaran = ({
         }
       },
       {
+        key: 'transaksibiaya_nobukti',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 160,
+        colSpan: (args) => {
+          // If it's the "Add Row" row, span across multiple columns
+          if (args.type === 'ROW' && args.row.isAddRow) {
+            return 4; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+          }
+          return undefined; // For other rows, no column spanning
+        },
+        renderHeaderCell: () => (
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>
+              nomor transaksi biaya
+            </p>
+          </div>
+        ),
+        name: 'transaksibiaya_nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled
+                  value={props.row.transaksibiaya_nobukti}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'transaksilain_nobukti',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 160,
+        colSpan: (args) => {
+          // If it's the "Add Row" row, span across multiple columns
+          if (args.type === 'ROW' && args.row.isAddRow) {
+            return 4; // Spanning the "Add Row" button across 3 columns (adjust as needed)
+          }
+          return undefined; // For other rows, no column spanning
+        },
+        renderHeaderCell: () => (
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>
+              nomor transaksi lain
+            </p>
+          </div>
+        ),
+        name: 'transaksilain_nobukti',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled
+                  value={props.row.transaksilain_nobukti}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
         key: 'tglinvoiceemkl',
         resizable: true,
         draggable: true,
@@ -782,7 +826,13 @@ const FormPengeluaran = ({
         }
       }
     ];
-  }, [rows, checkedRows, editingRowId, editableValues, dispatch]);
+  }, [
+    rows,
+    checkedRows,
+    editingRowId,
+    editableValues,
+    forms.getValues('details')
+  ]);
 
   const lookUpPropsRelasi = [
     {
@@ -975,7 +1025,47 @@ const FormPengeluaran = ({
       </div>
     );
   }
+  function handleSetRowsLookup(val: any) {
+    console.log('val', val);
 
+    setRows((prevRows) => {
+      // Find the index of the "Add Row" button row
+      const addRowIndex = prevRows.findIndex((row) => row.isAddRow);
+
+      // Find the first row that is empty (excluding the "Add Row" button row)
+      const emptyRowIndex = prevRows.findIndex(
+        (row) => row.id !== 'add_row' && !row.coadebet && !row.coadebet_text
+      );
+
+      // Prepare the new row data from the lookup value
+      const newRow = {
+        id: 0,
+        coadebet: val.coadebet ?? '',
+        coadebet_text: val.coadebet_text ?? '',
+        keterangan: val.keterangan ?? '',
+        nominal: val.total_nominal ?? '',
+        dpp: val.dpp ?? '',
+        noinvoiceemkl: val.noinvoiceemkl ?? '',
+        tglinvoiceemkl: val.tglinvoiceemkl ?? '',
+        nofakturpajakemkl: val.nofakturpajakemkl ?? '',
+        perioderefund: val.perioderefund ?? '',
+        transaksibiaya_nobukti: val.transaksibiaya_nobukti ?? '',
+        transaksilain_nobukti: val.transaksilain_nobukti ?? '',
+        isNew: false
+      };
+
+      // If there's an empty row, replace it with the new row from the lookup
+      if (emptyRowIndex !== -1) {
+        prevRows[emptyRowIndex] = newRow;
+      } else {
+        // If no empty rows, just add the new row at the end, before the "Add Row" button
+        prevRows.splice(addRowIndex, 0, newRow);
+      }
+
+      // Ensure the "Add Row" button is always at the end
+      return [...prevRows];
+    });
+  }
   useEffect(() => {
     if (allData || popOver) {
       if (allData && (allData.data?.length ?? 0) > 0 && mode !== 'add') {
@@ -990,6 +1080,8 @@ const FormPengeluaran = ({
           tglinvoiceemkl: item.tglinvoiceemkl ?? '',
           nofakturpajakemkl: item.nofakturpajakemkl ?? '',
           perioderefund: item.perioderefund ?? '',
+          transaksibiaya_nobukti: item.transaksibiaya_nobukti ?? '',
+          transaksilain_nobukti: item.transaksilain_nobukti ?? '',
           isNew: false
         }));
 
@@ -1012,6 +1104,8 @@ const FormPengeluaran = ({
             tglinvoiceemkl: '',
             nofakturpajakemkl: '',
             perioderefund: '',
+            transaksibiaya_nobukti: '',
+            transaksilain_nobukti: '',
             isNew: true
           },
           { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
@@ -1037,9 +1131,12 @@ const FormPengeluaran = ({
             tglinvoiceemkl,
             nofakturpajakemkl,
             perioderefund,
+            transaksibiaya_nobukti,
+            transaksilain_nobukti,
             ...rest
           }) => ({
             ...rest,
+            nobukti: transaksilain_nobukti ? String(transaksilain_nobukti) : '',
             coadebet: coadebet ? String(coadebet) : '',
             coadebet_text: coadebet_text ? String(coadebet_text) : '',
             keterangan: keterangan ? String(keterangan) : '',
@@ -1050,7 +1147,13 @@ const FormPengeluaran = ({
             nofakturpajakemkl: nofakturpajakemkl
               ? String(nofakturpajakemkl)
               : '',
-            perioderefund: perioderefund ? String(perioderefund) : ''
+            perioderefund: perioderefund ? String(perioderefund) : '',
+            transaksibiaya_nobukti: transaksibiaya_nobukti
+              ? String(transaksibiaya_nobukti)
+              : '',
+            transaksilain_nobukti: transaksilain_nobukti
+              ? String(transaksilain_nobukti)
+              : ''
           })
         );
 
@@ -1059,11 +1162,11 @@ const FormPengeluaran = ({
   }, [rows]);
 
   useEffect(() => {
-    if (isSubmitSuccessful) {
+    if (submitSuccessful) {
       resetDetailAndAddNewRow();
     }
-  }, [isSubmitSuccessful]);
-
+  }, [submitSuccessful]);
+  console.log('forms', forms.getValues('details'));
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1381,7 +1484,7 @@ const FormPengeluaran = ({
                     </div>
                   </div>
 
-                  <div className="h-[400px] min-h-[400px]">
+                  <div className="h-[500px] min-h-[500px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div
                         className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
@@ -1389,7 +1492,63 @@ const FormPengeluaran = ({
                           background:
                             'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
                         }}
-                      ></div>
+                      >
+                        {mode !== 'view' && mode !== 'delete' && (
+                          <>
+                            <Button
+                              type="button"
+                              onClick={() =>
+                                dispatch(setOpenNameModal('PENGELUARAN EMKL'))
+                              }
+                              className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                              size="sm"
+                            >
+                              <Search className="text-lg" />
+                              Cari
+                            </Button>
+                            <LookUpModalPengeluaran
+                              hideInput={true}
+                              disabled={mode === 'view' || mode === 'delete'}
+                              lookupValue={(id) =>
+                                forms.setValue('daftarbank_id', Number(id))
+                              }
+                              lookupNama={forms.getValues('daftarbank_text')}
+                              columns={[
+                                { key: 'nobukti', name: 'NO BUKTI' },
+                                { key: 'tglbukti', name: 'TANGGAL BUKTI' },
+                                { key: 'keterangan', name: 'KETERANGAN' },
+                                {
+                                  key: 'total_nominal',
+                                  name: 'NOMINAL',
+                                  isCurrency: true
+                                },
+                                {
+                                  key: 'statusformat_nama',
+                                  name: 'JENIS POSTING'
+                                }
+                              ]}
+                              onSelectRow={(val) => {
+                                handleSetRowsLookup(val);
+                              }}
+                              onClear={() => {
+                                forms.setValue('pengeluaran_nobukti', null);
+                                forms.setValue('statusformat', null);
+                              }}
+                              filterby={{ ispenarikan: true }}
+                              labelLookup={'PENGELUARAN EMKL LOOKUP'}
+                              required={true}
+                              selectedRequired={true}
+                              endpoint={'pengeluaranemklheader'}
+                              label={'PENGELUARAN EMKL'}
+                              singleColumn={false}
+                              pageSize={20}
+                              showOnButton={true}
+                              postData={'nobukti'}
+                              dataToPost={'id'}
+                            />
+                          </>
+                        )}
+                      </div>
 
                       <DataGrid
                         key={dataGridKey}

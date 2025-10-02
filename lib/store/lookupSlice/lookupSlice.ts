@@ -5,6 +5,7 @@ interface AcosState {
   type: Record<string, string>;
   isdefault: Record<string, string>;
   openName: string; // Menambahkan openName ke dalam state
+  openNameModal: string; // Menambahkan openName ke dalam state
   focus: string; // Menambahkan openName ke dalam state
   clearLookup: boolean; // Menambahkan openName ke dalam state
   submitClicked: boolean; // Menambahkan openName ke dalam state
@@ -15,6 +16,7 @@ const initialState: AcosState = {
   type: {}, // Default type kosong
   isdefault: {}, // Default type kosong
   openName: '', // Default openName kosong
+  openNameModal: '', // Default openName kosong
   focus: '', // Default openName kosong
   clearLookup: false, // Default openName kosong
   submitClicked: false // Default openName kosong
@@ -48,11 +50,17 @@ const lookupSlice = createSlice({
     setOpenName(state, action: PayloadAction<string>) {
       state.openName = action.payload;
     },
+    setOpenNameModal(state, action: PayloadAction<string>) {
+      state.openNameModal = action.payload;
+    },
     setFocusLookup(state, action: PayloadAction<string>) {
       state.focus = action.payload;
     },
     clearOpenName(state) {
       state.openName = ''; // Clears the openName
+    },
+    clearOpenNameModal(state) {
+      state.openNameModal = ''; // Clears the openName
     }
   }
 });
@@ -62,10 +70,12 @@ export const {
   setType,
   setDefault,
   setOpenName,
+  setOpenNameModal,
   clearOpenName,
   setClearLookup,
   setFocusLookup,
-  setSubmitClicked
+  setSubmitClicked,
+  clearOpenNameModal
 } = lookupSlice.actions;
 
 export default lookupSlice.reducer;

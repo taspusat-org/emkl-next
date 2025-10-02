@@ -442,7 +442,7 @@
       "tglbukti": 250,
       "bank_nama": 150,
       "tgljatuhtempo": 300,
-      "pengeluaran_nobukti": 300,
+      "pengeluaran_nobukti": 422,
       "karyawan_nama": 300,
       "keterangan": 300,
       "jenisposting": 150,
@@ -500,11 +500,41 @@
       "tglbukti": 250,
       "keterangan": 250,
       "postingdari": 250,
-      "statusapproval": 103,
+      "statusapproval": 283,
       "statuscetak": 106,
       "modifiedby": 150,
       "created_at": 250,
       "updated_at": 250
+    }
+  },
+  "GridPenerimaanDetail-1": {
+    "columnsOrder": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "columnsWidth": {
+      "nomor": 50,
+      "nobukti": 200,
+      "coa_nama": 150,
+      "keterangan": 150,
+      "nominal": 150,
+      "transaksibiaya_nobukti": 150,
+      "transaksilain_nobukti": 150,
+      "pengeluaranemklheader_nobukti": 316,
+      "penerimaanemklheader_nobukti": 252,
+      "modifiedby": 150,
+      "created_at": 200,
+      "updated_at": 200
     }
   }
 }

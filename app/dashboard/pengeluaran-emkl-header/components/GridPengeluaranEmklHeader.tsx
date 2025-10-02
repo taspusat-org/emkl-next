@@ -1642,6 +1642,8 @@ const GridPengeluaranEmklHeader = () => {
   }
   const onSuccess = async (indexOnPage: any, pageNumber: any) => {
     try {
+      console.log('indexOnPage', indexOnPage);
+      console.log('pageNumber', pageNumber);
       forms.reset();
       setPopOver(false);
       setIsFetchingManually(true);
@@ -2295,21 +2297,21 @@ const GridPengeluaranEmklHeader = () => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
 
-      forms.setValue('nobukti', row.nobukti);
-      forms.setValue('tglbukti', row.tglbukti);
-      forms.setValue('tgljatuhtempo', row.tgljatuhtempo);
-      forms.setValue('keterangan', row.keterangan ?? '');
-      forms.setValue('bank_id', Number(row.bank_id) ?? null);
-      forms.setValue('nowarkat', row.nowarkat ?? '');
-      forms.setValue('bank_nama', row.bank_nama);
-      forms.setValue('karyawan_id', Number(row.karyawan_id) ?? null);
-      forms.setValue('karyawan_nama', row.karyawan_nama);
-      forms.setValue('jenisposting', Number(row.jenisposting) ?? null);
-      forms.setValue('format', Number(row.statusformat) ?? null);
-      forms.setValue('jenisposting_nama', row.jenisposting_nama ?? null);
-      forms.setValue('pengeluaran_nobukti', row.pengeluaran_nobukti ?? null);
-      forms.setValue('hutang_nobukti', row.hutang_nobukti ?? null);
-      forms.setValue('statusformat_nama', row.statusformat_nama ?? null);
+      forms.setValue('nobukti', row?.nobukti);
+      forms.setValue('tglbukti', row?.tglbukti);
+      forms.setValue('tgljatuhtempo', row?.tgljatuhtempo);
+      forms.setValue('keterangan', row?.keterangan ?? '');
+      forms.setValue('bank_id', Number(row?.bank_id) ?? null);
+      forms.setValue('nowarkat', row?.nowarkat ?? '');
+      forms.setValue('bank_nama', row?.bank_nama);
+      forms.setValue('karyawan_id', Number(row?.karyawan_id) ?? null);
+      forms.setValue('karyawan_nama', row?.karyawan_nama);
+      forms.setValue('jenisposting', Number(row?.jenisposting) ?? null);
+      forms.setValue('format', Number(row?.statusformat) ?? null);
+      forms.setValue('jenisposting_nama', row?.jenisposting_nama ?? null);
+      forms.setValue('pengeluaran_nobukti', row?.pengeluaran_nobukti ?? null);
+      forms.setValue('hutang_nobukti', row?.hutang_nobukti ?? null);
+      forms.setValue('statusformat_nama', row?.statusformat_nama ?? null);
 
       // Saat form pertama kali di-render
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
@@ -2360,6 +2362,8 @@ const GridPengeluaranEmklHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [onReload, refetch]); // Dependency array termasuk filters dan refetch
+  console.log('filters', filters);
+  console.log('currentPage', currentPage);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
