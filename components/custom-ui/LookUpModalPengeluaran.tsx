@@ -29,9 +29,9 @@ import DataGrid, {
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
-  clearOpenName,
+  clearOpenNameModal,
   setClearLookup,
-  setOpenName,
+  setOpenNameModal,
   setSubmitClicked,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
@@ -43,6 +43,7 @@ import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import InputDatePicker from './InputDatePicker';
 import { formatCurrency } from '@/lib/utils';
+import LookUp from './LookUp';
 
 interface LookUpProps {
   columns: {
@@ -91,7 +92,7 @@ interface Row {
   [key: string]: any; // Add this line
 }
 
-export default function LookUpModal({
+export default function LookUpModalPengeluaran({
   columns: rawColumns,
   endpoint,
   extendSize,
@@ -154,7 +155,9 @@ export default function LookUpModal({
     (state: RootState) => state.lookup.isdefault[label || '']
   );
 
-  const openName = useSelector((state: RootState) => state.lookup.openName);
+  const openNameModal = useSelector(
+    (state: RootState) => state.lookup.openNameModal
+  );
   const clearLookup = useSelector(
     (state: RootState) => state.lookup.clearLookup
   );
@@ -313,7 +316,7 @@ export default function LookUpModal({
       };
 
       setFilters(next);
-      dispatch(setOpenName(label || ''));
+      dispatch(setOpenNameModal(label || ''));
       setFiltering(true);
 
       // UX focus
@@ -355,7 +358,7 @@ export default function LookUpModal({
     debounceTimerRef.current = setTimeout(() => {
       if (type !== 'local' && endpoint) {
         setTimeout(() => {
-          dispatch(setOpenName(label || '')); // Update Redux state
+          dispatch(setOpenNameModal(label || '')); // Update Redux state
         }, 100);
       } else {
         // Apply local filtering
@@ -409,17 +412,17 @@ export default function LookUpModal({
   const handleButtonClick = () => {
     if (disabled) return; // Jangan lakukan apa-apa jika disabled
 
-    // Jika label sama dengan openName dan lookup sudah terbuka, tutup lookup
-    if (label === openName) {
+    // Jika label sama dengan openNameModal dan lookup sudah terbuka, tutup lookup
+    if (label === openNameModal) {
       if (open) {
         setOpen(false); // Tutup lookup jika sudah terbuka
-        dispatch(clearOpenName()); // Clear openName dari Redux
+        dispatch(clearOpenNameModal()); // Clear openNameModal dari Redux
       } else {
         setOpen(true); // Buka lookup jika belum terbuka
       }
     } else {
-      setOpen(true); // Buka lookup jika label berbeda dengan openName
-      dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+      setOpen(true); // Buka lookup jika label berbeda dengan openNameModal
+      dispatch(setOpenNameModal(label || '')); // Set openNameModal dengan label yang diklik
     }
 
     setTimeout(
@@ -441,12 +444,11 @@ export default function LookUpModal({
     }
     setDeleteClicked(true);
     dispatch(setSearchTerm(''));
-    dispatch(clearOpenName()); // Clear openName ketika input dibersihkan
+    dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
     setOpen(false);
     if (onClear) {
       onClear(); // Trigger the passed onClear function
     }
-    onSelectRow?.(); // panggil tanpa argumen dengan aman
   };
 
   const handleSort = (column: string) => {
@@ -605,8 +607,8 @@ export default function LookUpModal({
     const value = clickedRow[dataToPost as any];
 
     lookupValue?.(value);
-    onSelectRow?.(value); // cukup satu kali, tanpa else
-    dispatch(clearOpenName());
+    onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
+    dispatch(clearOpenNameModal());
   }
   function handleCellClick(args: any) {
     const clickedRow = args.row;
@@ -621,7 +623,7 @@ export default function LookUpModal({
     args: CellKeyDownArgs<Row>,
     event: React.KeyboardEvent
   ) => {
-    if (!openName) {
+    if (!openNameModal) {
       return;
     }
     const visibleRowCount = 8;
@@ -663,7 +665,7 @@ export default function LookUpModal({
         return newRow;
       });
     } else if (event.key === 'Enter') {
-      dispatch(clearOpenName());
+      dispatch(clearOpenNameModal());
       setInputValue(classValue);
       const value = dataToPost ? clickedRow[dataToPost] : clickedRow.id;
       lookupValue?.(value);
@@ -736,7 +738,7 @@ export default function LookUpModal({
     );
   }
   const handleInputKeydown = (event: any) => {
-    if ((!open && !filters.filters) || !openName) {
+    if ((!open && !filters.filters) || !openNameModal) {
       return;
     }
     const rowData = rows[selectedRow];
@@ -744,7 +746,7 @@ export default function LookUpModal({
     const visibleRowCount = 12; // You can adjust this value based on your visible row count
 
     if (event.key === 'Enter') {
-      dispatch(clearOpenName());
+      dispatch(clearOpenNameModal());
       setInputValue(rowData[postData as string]);
       const value = dataToPost ? rowData[dataToPost] : rowData.id;
       lookupValue?.(value);
@@ -839,6 +841,9 @@ export default function LookUpModal({
     setTglDari(fmt(firstOfMonth));
     setTglSampai(fmt(lastOfMonth));
   }, [dispatch]);
+  console.log('label', label);
+  console.log('openNameModal', openNameModal);
+  console.log('open', open);
   useEffect(() => {
     if (open) {
       setIsFirstLoad(true);
@@ -978,8 +983,10 @@ export default function LookUpModal({
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (selectedRequired) {
+        console.log('handleClickOutside222');
         return;
       }
+      console.log('handleClickOutside333');
 
       if (
         popoverRef.current &&
@@ -990,7 +997,7 @@ export default function LookUpModal({
         setClickedOutside(true);
         setFiltering(false);
         setOpen(false);
-        dispatch(clearOpenName());
+        dispatch(clearOpenNameModal());
         if (
           (filters.search.trim() !== '' ||
             Object.keys(filters.filters).length > 0) &&
@@ -1041,6 +1048,7 @@ export default function LookUpModal({
       setInputValue(lookupNama); // Assuming "text" is the display column
     }
   }, [lookupNama]);
+
   useEffect(() => {
     if (clearLookup) {
       setInputValue(''); // Assuming "text" is the display column
@@ -1067,13 +1075,13 @@ export default function LookUpModal({
   }, []);
 
   useEffect(() => {
-    // Update status open jika openName sama dengan label
-    if (label === openName) {
-      setOpen(true); // Jika label sama dengan openName, buka lookup
+    // Update status open jika openNameModal sama dengan label
+    if (label === openNameModal) {
+      setOpen(true); // Jika label sama dengan openNameModal, buka lookup
     } else {
       setOpen(false); // Jika tidak sama, tutup lookup
     }
-  }, [openName, label]); // Efek dijalankan setiap kali openName atau label berubah
+  }, [openNameModal, label]); // Efek dijalankan setiap kali openNameModal atau label berubah
 
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
@@ -1179,6 +1187,7 @@ export default function LookUpModal({
               className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
               onClick={() => {
                 setOpen(false);
+                dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
               }}
             >
               <IoMdClose className="h-5 w-5 font-bold text-white" />
@@ -1192,7 +1201,7 @@ export default function LookUpModal({
           >
             <div className="h-full min-w-full border border-blue-500 bg-white p-6">
               <div className="rounded-sm border border-blue-500 p-4">
-                <div className="flex w-full flex-row gap-4">
+                <div className="grid w-full grid-cols-2 gap-4">
                   <div className="flex w-full flex-row items-center">
                     <FormLabel
                       required={true}
@@ -1209,7 +1218,7 @@ export default function LookUpModal({
                       />
                     </div>
                   </div>
-                  <div className="flex w-full flex-row items-center lg:ml-4">
+                  <div className="flex w-full flex-row items-center">
                     <FormLabel
                       required={true}
                       className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
@@ -1222,6 +1231,76 @@ export default function LookUpModal({
                         showCalendar
                         onChange={handleDateChange2}
                         onSelect={handleCalendarSelect2}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[30%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        RELASI
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[70%]">
+                      <LookUp
+                        lookupValue={(id) =>
+                          setFilters((prevFilters) => ({
+                            ...prevFilters,
+                            filters: {
+                              ...prevFilters.filters,
+                              relasi_id: id?.toString() || ''
+                            },
+                            page: 1
+                          }))
+                        }
+                        columns={[{ key: 'nama', name: 'RELASI' }]}
+                        labelLookup={'RELASI LOOKUP'}
+                        required={false}
+                        selectedRequired={false}
+                        endpoint={'relasi'}
+                        label={'LOOKUP MODAL RELASI'}
+                        singleColumn={true}
+                        pageSize={20}
+                        showOnButton={true}
+                        postData={'nama'}
+                        dataToPost={'id'}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[30%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        JENIS PENGELUARAN
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[70%]">
+                      <LookUp
+                        lookupValue={(id) =>
+                          setFilters((prevFilters) => ({
+                            ...prevFilters,
+                            filters: {
+                              ...prevFilters.filters,
+                              statusformat: id?.toString() || ''
+                            },
+                            page: 1
+                          }))
+                        }
+                        columns={[{ key: 'nama', name: 'JENIS PENGELUARAN' }]}
+                        labelLookup={'JENIS PENGELUARAN LOOKUP'}
+                        required={false}
+                        selectedRequired={false}
+                        endpoint={'pengeluaranemkl'}
+                        label={'LOOKUP MODAL JENIS PENGELUARAN'}
+                        singleColumn={true}
+                        pageSize={20}
+                        showOnButton={true}
+                        postData={'nama'}
+                        dataToPost={'format'}
                       />
                     </div>
                   </div>
@@ -1299,14 +1378,13 @@ export default function LookUpModal({
                 />
                 {isLoading ? (
                   <div
-                    className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
+                    className="flex w-full flex-row gap-2 py-1"
                     style={{
                       background:
                         'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
                     }}
                   >
                     <LoadRowsRenderer />
-                    <p className="text-sm text-zinc-600">Loading...</p>
                   </div>
                 ) : null}
               </div>
@@ -1317,7 +1395,10 @@ export default function LookUpModal({
               type="button"
               variant="secondary"
               className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
+              }}
             >
               <IoMdClose /> <p className="text-center text-white">Cancel</p>
             </Button>

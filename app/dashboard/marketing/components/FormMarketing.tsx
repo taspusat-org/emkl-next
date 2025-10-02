@@ -2274,7 +2274,7 @@ const FormMarketing = ({
                     </div>
                   </div>
 
-                  <div className="h-[400px] min-h-[400px]">
+                  <div className="h-[500px] min-h-[500px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <FormTabs mode={mode} forms={forms} />
 

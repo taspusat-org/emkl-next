@@ -7,6 +7,9 @@ export const pengeluaranDetailSchema = z.object({
   keterangan: z.string().nullable(),
   nominal: z.string().nullable(),
   dpp: z.string().nullable(),
+
+  transaksibiaya_nobukti: z.string().nullable(),
+  transaksilain_nobukti: z.string().nullable(),
   noinvoiceemkl: z.string().nullable(),
   tglinvoiceemkl: z.string().nullable(),
   nofakturpajakemkl: z.string().nullable(),

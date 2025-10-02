@@ -138,6 +138,7 @@ const GridPengeluaranHeader = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
+  const [submitSuccessful, setSubmitSuccessful] = useState(false);
   const [rows, setRows] = useState<PengeluaranHeader[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
@@ -178,6 +179,7 @@ const GridPengeluaranHeader = () => {
   const {
     setFocus,
     reset,
+
     formState: { isSubmitSuccessful }
   } = forms;
   const gridRef = useRef<DataGridHandle>(null);
@@ -1722,6 +1724,7 @@ const GridPengeluaranHeader = () => {
               });
             }, 200);
           }
+          setSubmitSuccessful(true);
         }
 
         setIsFetchingManually(false);
@@ -1731,6 +1734,7 @@ const GridPengeluaranHeader = () => {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
       setIsDataUpdated(false);
+      setSubmitSuccessful(false);
     }
   };
   const onSubmit = async (
@@ -1803,6 +1807,7 @@ const GridPengeluaranHeader = () => {
       console.error(error);
     } finally {
       dispatch(setProcessed());
+      setSubmitSuccessful(false);
     }
   };
 
@@ -2521,7 +2526,7 @@ const GridPengeluaranHeader = () => {
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
-        isSubmitSuccessful={isSubmitSuccessful}
+        submitSuccessful={submitSuccessful}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}
         forms={forms}

@@ -33,7 +33,13 @@ import DataGrid, {
   DataGridHandle
 } from 'react-data-grid';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  FaChevronDown,
+  FaSort,
+  FaSortDown,
+  FaSortUp,
+  FaTimes
+} from 'react-icons/fa';
 import {
   clearOpenName,
   setClearLookup,
@@ -600,7 +606,7 @@ export default function LookUp({
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
     if (isLoading || !hasMore || rows.length === 0) return;
-
+    console.log('isLoading', isLoading);
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
       while (page > 0 && fetchedPages.has(page)) {
@@ -1266,6 +1272,7 @@ export default function LookUp({
       }, 100);
     }
   }, [focus, name, inputRef, submitClicked]);
+  console.log('rows.length', rows.length);
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
@@ -1332,7 +1339,7 @@ export default function LookUp({
                           onClick={handleButtonClick}
                           disabled={disabled}
                         >
-                          <TbLayoutNavbarFilled />
+                          <FaChevronDown />
                         </Button>
                       )}
                     </div>
@@ -1392,7 +1399,7 @@ export default function LookUp({
                     onClick={handleButtonClick}
                     disabled={disabled}
                   >
-                    <TbLayoutNavbarFilled />
+                    <FaChevronDown />
                   </Button>
                 )}
               </div>
@@ -1465,7 +1472,7 @@ export default function LookUp({
                         : singleColumn && rows.length <= 0
                         ? 'h-[30px]'
                         : 'h-[100px]'
-                    }${rows.length < 10 ? 'overflow-hidden' : ''}`}
+                    } ${rows.length < 10 ? 'overflow-hidden' : ''}`}
                     // className="rdg-light fill-grid overflow-hidden"
                     onColumnsReorder={onColumnsReorder}
                     renderers={{

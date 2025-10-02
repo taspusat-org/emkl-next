@@ -783,7 +783,7 @@ const GridPenerimaanEmklHeader = () => {
       },
       {
         key: 'penerimaan_nobukti',
-        name: 'No.BUKTI PENGELUARAN',
+        name: 'No.BUKTI PENERIMAAN',
         resizable: true,
         draggable: true,
         width: 300,
@@ -802,7 +802,7 @@ const GridPenerimaanEmklHeader = () => {
                     : 'font-normal'
                 }`}
               >
-                No.BUKTI PENGELUARAN
+                No.BUKTI PENERIMAAN
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'penerimaan_nobukti' &&

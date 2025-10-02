@@ -77,7 +77,7 @@ const GridPengeluaranDetail = ({
       ...prev,
       filters: {
         ...filterPengeluaranDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -106,7 +106,7 @@ const GridPengeluaranDetail = ({
   //           pengeluaran_nobukti: headerData?.pengeluaran_nobukti || '',
   //           nobukti:
   //             !headerData?.pengeluaran_nobukti && headerData?.nobukti
-  //               ? headerData.nobukti
+  //               ? headerData?.nobukti
   //               : ''
   //         }
   //       }
@@ -179,7 +179,7 @@ const GridPengeluaranDetail = ({
                   search: '',
                   filters: {
                     ...filterPengeluaranDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -1174,7 +1174,7 @@ const GridPengeluaranDetail = ({
       ...prev,
       filters: {
         ...prev.filters,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -1215,10 +1215,10 @@ const GridPengeluaranDetail = ({
     loadGridConfig(user.id, 'GridPengeluaranDetail');
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
       }));
     } else {
       setFilters((prev) => ({
@@ -1226,7 +1226,7 @@ const GridPengeluaranDetail = ({
         filters: { ...prev.filters, nobukti: '' }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -1234,10 +1234,10 @@ const GridPengeluaranDetail = ({
     };
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
       }));
     } else {
       setFilters((prev) => ({
@@ -1245,7 +1245,7 @@ const GridPengeluaranDetail = ({
         filters: { ...prev.filters, nobukti: '' }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     if (detail) {
       const formattedRows = detail?.data?.map((item: any) => ({

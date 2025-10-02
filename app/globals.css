@@ -620,3 +620,7 @@ input[value='-YYYY'] {
   color: gray; /* Warna abu-abu */
   opacity: 0.5; /* Opasitas setengah transparan */
 }
+.calendar-dropdown-content {
+  z-index: 10000 !important;
+  position: fixed !important;
+}
