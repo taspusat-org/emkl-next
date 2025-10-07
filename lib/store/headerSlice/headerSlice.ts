@@ -3,11 +3,13 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface HeaderDataState {
   headerData: Record<string, any>; // Menyimpan objek JSON
   detailData: Record<string, any>; // Menyimpan objek JSON
+  urlApproval: string;
 }
 
 const initialState: HeaderDataState = {
   headerData: {}, // Inisialisasi dengan objek kosong
-  detailData: {}
+  detailData: {},
+  urlApproval: ''
 };
 
 const headerData = createSlice({
@@ -19,20 +21,18 @@ const headerData = createSlice({
     },
     clearHeaderData(state) {
       state.headerData = {}; // Clear openName (menutup lookup)
+      state.detailData = {};
+      state.urlApproval = '';
     },
     setDetailData(state, action: PayloadAction<Record<string, any>>) {
       state.detailData = action.payload; // Menyimpan objek JSON
     },
-    clearDetailData(state) {
-      state.detailData = {}; // Clear openName (menutup lookup)
+    setUrlApproval(state, action: PayloadAction<string>) {
+      state.urlApproval = action.payload;
     }
   }
 });
 
-export const {
-  setHeaderData,
-  clearHeaderData,
-  setDetailData,
-  clearDetailData
-} = headerData.actions;
+export const { setHeaderData, clearHeaderData, setDetailData, setUrlApproval } =
+  headerData.actions;
 export default headerData.reducer;
