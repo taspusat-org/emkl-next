@@ -11,10 +11,10 @@ import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
+import { useSearchParams } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
-import FormBookingMuatan from './FormBookingOrderanMuatan';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import {
@@ -31,53 +31,34 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-import {
-  BookingOrderanMuatan,
-  filterBookingOrderanMuatan
-} from '@/lib/types/bookingOrderanHeader.type';
-import {
-  checkValidationBookingOrderanHeaderFn,
-  getBookingOrderanMuatanByIdFn
-} from '@/lib/apis/bookingOrderanHeader.api';
-import {
-  bookingOrderanMuatanInput,
-  bookingOrderanMuatanSchema,
-  jobPartyHeaderInput,
-  jobPartyHeaderSchema
-} from '@/lib/validations/bookingorderanheader.validation';
+
 import DataGrid, {
   CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import {
-  useCreateBookingMuatanParty,
-  useCreateBookingOrderanHeader,
-  useDeleteBookingOrderanHeader,
-  useGetAllBookingOrderanHeader,
-  useUpdateBookingOrderanHeader
-} from '@/lib/server/useBookingOrderanHeader';
 import { formatCurrency, formatDateToDDMMYYYY } from '@/lib/utils';
-import {
-  JENISORDERMUATAN,
-  JENISORDERMUATANNAMA
-} from '@/constants/bookingorderan';
 import {
   setDetailDataReport,
   setReportData
 } from '@/lib/store/reportSlice/reportSlice';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import FormJobParty from './FormJobParty';
 import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
 import { useApprovalDialog } from '@/lib/store/client/useDialogApproval';
 import JsxParser from 'react-jsx-parser';
+import {
+  filterOrderanMuatan,
+  OrderanMuatan
+} from '@/lib/types/orderanHeader.type';
+import { useGetAllBookingOrderanHeader } from '@/lib/server/useBookingOrderanHeader';
+import { useGetAllOrderanMuatan } from '@/lib/server/useOrderanHeader';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterBookingOrderanMuatan;
+  filters: typeof filterOrderanMuatan;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
@@ -87,11 +68,12 @@ interface GridConfig {
   columnsWidth: { [key: string]: number };
 }
 
-const GridBookingMuatan = () => {
+const GridOrderanMuatan = () => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
+  const searchParams = useSearchParams();
   const { closeDialog } = useLainnyaDialog();
   const { successApproved } = useApprovalDialog();
 
@@ -132,7 +114,7 @@ const GridBookingMuatan = () => {
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [deleteMode, setDeleteMode] = useState<boolean>(false);
   const [reloadForm, setReloadForm] = useState<boolean>(false);
-  const [rows, setRows] = useState<BookingOrderanMuatan[]>([]);
+  const [rows, setRows] = useState<OrderanMuatan[]>([]);
   const [isFetchingManually, setIsFetchingManually] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
@@ -148,7 +130,7 @@ const GridBookingMuatan = () => {
     page: 1,
     limit: 30,
     filters: {
-      ...filterBookingOrderanMuatan,
+      ...filterOrderanMuatan,
       tglDari: selectedDate,
       tglSampai: selectedDate2,
       jenisOrderan: String(selectedJenisOrderan)
@@ -158,6 +140,7 @@ const GridBookingMuatan = () => {
     sortDirection: 'asc'
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+
   console.log(
     'selectedJenisOrderan',
     selectedJenisOrderan,
@@ -170,44 +153,36 @@ const GridBookingMuatan = () => {
   );
 
   const {
-    data: allDataBookingMuatan,
-    isLoading: isLoadingBookingMuatan,
+    data: allDataOrderanMuatan,
+    isLoading: isLoadingOrderanMuatan,
     refetch
-  } = useGetAllBookingOrderanHeader(
+  } = useGetAllOrderanMuatan(
     { ...filters, page: currentPage },
     abortControllerRef.current?.signal
   );
 
-  const { mutateAsync: createBookingMuatan, isLoading: isLoadingCreate } =
-    useCreateBookingOrderanHeader();
-  const {
-    mutateAsync: createBookingMuatanParty,
-    isLoading: isLoadingCreateParty
-  } = useCreateBookingMuatanParty();
-  const { mutateAsync: updateBookingMuatan, isLoading: isLoadingUpdate } =
-    useUpdateBookingOrderanHeader();
-  const { mutateAsync: deleteBookingMuatan, isLoading: isLoadingDelete } =
-    useDeleteBookingOrderanHeader();
+  // const { mutateAsync: createBookingMuatan, isLoading: isLoadingCreate } =
+  //   useCreateBookingOrderanHeader();
+  // const { mutateAsync: createBookingMuatanParty, isLoading: isLoadingCreateParty } =
+  //   useCreateBookingMuatanParty();
+  // const { mutateAsync: updateBookingMuatan, isLoading: isLoadingUpdate } =
+  //   useUpdateBookingOrderanHeader();
+  // const { mutateAsync: deleteBookingMuatan, isLoading: isLoadingDelete } =
+  //   useDeleteBookingOrderanHeader();
 
-  const forms = useForm<bookingOrderanMuatanInput>({
-    resolver: zodResolver(bookingOrderanMuatanSchema),
-    mode: 'onSubmit',
-    defaultValues: {
-      nobukti: ''
-    }
-  });
+  // const forms = useForm<bookingOrderanMuatanInput>({
+  //   resolver: zodResolver(bookingOrderanMuatanSchema),
+  //   mode: 'onSubmit',
+  //   defaultValues: {
+  //     nobukti: ''
+  //   }
+  // });
 
-  const formsJobParty = useForm<jobPartyHeaderInput>({
-    resolver: zodResolver(jobPartyHeaderSchema),
-    mode: 'onSubmit'
-  });
-  // console.log('formsJobParty.getValues()', formsJobParty.getValues());
-
-  const {
-    setFocus,
-    reset,
-    formState: { isSubmitSuccessful }
-  } = forms;
+  // const {
+  //   setFocus,
+  //   reset,
+  //   formState: { isSubmitSuccessful }
+  // } = forms;
 
   const cancelPreviousRequest = () => {
     if (abortControllerRef.current) {
@@ -268,7 +243,7 @@ const GridBookingMuatan = () => {
       setCurrentPage(1);
       setFilters((prev) => ({
         ...prev,
-        filters: filterBookingOrderanMuatan, // Gunakan filter yang relevan
+        filters: filterOrderanMuatan, // Gunakan filter yang relevan
         tglDari: selectedDate,
         tglSampai: selectedDate2,
         jenisOrderan: String(selectedJenisOrderan),
@@ -356,7 +331,7 @@ const GridBookingMuatan = () => {
     setContextMenu({ x: event.clientX, y: event.clientY });
   };
 
-  const columns = useMemo((): Column<BookingOrderanMuatan>[] => {
+  const columns = useMemo((): Column<OrderanMuatan>[] => {
     return [
       {
         key: 'nomor',
@@ -377,7 +352,7 @@ const GridBookingMuatan = () => {
                 setFilters({
                   ...filters,
                   search: '',
-                  filters: filterBookingOrderanMuatan
+                  filters: filterOrderanMuatan
                 }),
                   setInputValue('');
                 setTimeout(() => {
@@ -416,7 +391,7 @@ const GridBookingMuatan = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: BookingOrderanMuatan }) => (
+        renderCell: ({ row }: { row: OrderanMuatan }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -497,90 +472,6 @@ const GridBookingMuatan = () => {
                 filters.search,
                 columnFilter
               )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'orderan_nobukti',
-        name: 'orderan Nomor Bukti',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('orderan_nobukti')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'orderan_nobukti'
-                    ? 'text-red-500'
-                    : 'font-normal'
-                }`}
-              >
-                No Bukti Orderan
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'orderan_nobukti' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'orderan_nobukti' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['orderan_nobukti'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.orderan_nobukti
-                    ? filters.filters.orderan_nobukti?.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('orderan_nobukti', value);
-                }}
-              />
-              {filters.filters.orderan_nobukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('orderan_nobukti', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.orderan_nobukti || '';
-          const value = props.row.orderan_nobukti; // atau dari props.row
-          // Buat component wrapper untuk highlightText
-          const HighlightWrapper = () => {
-            return highlightText(value, filters.search, columnFilter);
-          };
-          return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              <JsxParser
-                components={{ HighlightWrapper }}
-                jsx={props.row.link}
-                renderInWrapper={false}
-              />
             </div>
           );
         }
@@ -2751,60 +2642,6 @@ const GridBookingMuatan = () => {
         }
       },
       {
-        key: 'approval',
-        name: 'approval',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
-            >
-              <p className="text-sm font-normal">STATUS APPROVAL</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS APPROVAL', subgrp: 'STATUS APPROVAL' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('approval_text', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.approval_memo
-            ? JSON.parse(props.row.approval_memo)
-            : null;
-          if (memoData) {
-            return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
-            );
-          }
-          return <div className="text-xs text-gray-500"></div>;
-        }
-      },
-      {
         key: 'modifiedby',
         name: 'Modified By',
         resizable: true,
@@ -3039,301 +2876,300 @@ const GridBookingMuatan = () => {
     }));
   }, [orderedColumns, columnsWidth]);
 
-  const handleAdd = async () => {
-    setMode('add');
-    setPopOver(true);
-    forms.reset();
-  };
+  // const handleAdd = async () => {
+  //   setMode('add');
+  //   setPopOver(true);
+  //   forms.reset();
+  // };
 
-  const handleEdit = async () => {
-    if (selectedRow === null || checkedRows.size > 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI EDIT!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return;
-    }
-    if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-      const result = await checkValidationBookingOrderanHeaderFn({
-        aksi: 'EDIT',
-        value: rowData.id,
-        jenisOrderan: selectedJenisOrderan
-      });
-      if (result.data.status == 'failed') {
-        alert({
-          title: result.data.message,
-          variant: 'danger',
-          submitText: 'OK'
-        });
-      } else {
-        setPopOver(true);
-        setMode('edit');
-      }
-    }
-  };
+  // const handleEdit = async () => {
+  //   if (selectedRow === null || checkedRows.size > 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI EDIT!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return;
+  //   }
+  //   if (selectedRow !== null) {
+  //     const rowData = rows[selectedRow];
+  //     const result = await checkValidationBookingOrderanHeaderFn({
+  //       aksi: 'EDIT',
+  //       value: rowData.id,
+  //       jenisOrderan: selectedJenisOrderan
+  //     });
+  //     if (result.data.status == 'failed') {
+  //       alert({
+  //         title: result.data.message,
+  //         variant: 'danger',
+  //         submitText: 'OK'
+  //       });
+  //     } else {
+  //       setPopOver(true);
+  //       setMode('edit');
+  //     }
+  //   }
+  // };
 
-  const handleMultipleDelete = async (idsToDelete: number[]) => {
-    try {
-      for (const id of idsToDelete) {
-        // Hapus data satu per satu
-        await deleteBookingMuatan({
-          id: id as unknown as string,
-          jenisOrderan: String(selectedJenisOrderan)
-        });
-      }
+  // const handleMultipleDelete = async (idsToDelete: number[]) => {
+  //   try {
+  //     for (const id of idsToDelete) {
+  //       // Hapus data satu per satu
+  //       await deleteBookingMuatan({
+  //         id: id as unknown as string,
+  //         jenisOrderan: String(selectedJenisOrderan)
+  //       });
+  //     }
 
-      setRows(
-        (
-          prevRows // Update state setelah semua data berhasil dihapus
-        ) => prevRows.filter((row) => !idsToDelete.includes(row.id))
-      );
-      setCheckedRows(new Set()); // Reset checked rows
-      setIsAllSelected(false);
+  //     setRows(
+  //       (
+  //         prevRows // Update state setelah semua data berhasil dihapus
+  //       ) => prevRows.filter((row) => !idsToDelete.includes(row.id))
+  //     );
+  //     setCheckedRows(new Set()); // Reset checked rows
+  //     setIsAllSelected(false);
 
-      // Update selected row
-      if (selectedRow >= rows.length - idsToDelete.length) {
-        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
-      }
+  //     // Update selected row
+  //     if (selectedRow >= rows.length - idsToDelete.length) {
+  //       setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+  //     }
 
-      setTimeout(() => {
-        // Focus grid
-        gridRef?.current?.selectCell({
-          rowIdx: Math.max(0, selectedRow - 1),
-          idx: 1
-        });
-      }, 100);
+  //     setTimeout(() => {
+  //       // Focus grid
+  //       gridRef?.current?.selectCell({
+  //         rowIdx: Math.max(0, selectedRow - 1),
+  //         idx: 1
+  //       });
+  //     }, 100);
 
-      alert({
-        title: 'Berhasil!',
-        variant: 'success',
-        submitText: 'OK'
-      });
-    } catch (error) {
-      console.error('Error in handleMultipleDelete:', error);
-      alert({
-        title: 'Error!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    }
-  };
+  //     alert({
+  //       title: 'Berhasil!',
+  //       variant: 'success',
+  //       submitText: 'OK'
+  //     });
+  //   } catch (error) {
+  //     console.error('Error in handleMultipleDelete:', error);
+  //     alert({
+  //       title: 'Error!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
 
-  const handleDelete = async () => {
-    try {
-      dispatch(setProcessing());
+  // const handleDelete = async () => {
+  //   try {
+  //     dispatch(setProcessing());
 
-      if (checkedRows.size === 0) {
-        if (selectedRow !== null) {
-          const rowData = rows[selectedRow];
+  //     if (checkedRows.size === 0) {
+  //       if (selectedRow !== null) {
+  //         const rowData = rows[selectedRow];
 
-          const result = await checkValidationBookingOrderanHeaderFn({
-            aksi: 'DELETE',
-            value: rowData.id,
-            jenisOrderan: selectedJenisOrderan
-          });
+  //         const result = await checkValidationBookingOrderanHeaderFn({
+  //           aksi: 'DELETE',
+  //           value: rowData.id,
+  //           jenisOrderan: selectedJenisOrderan
+  //         });
 
-          if (result.data.status == 'failed') {
-            alert({
-              title: result.data.message,
-              variant: 'danger',
-              submitText: 'OK'
-            });
-          } else {
-            setMode('delete');
-            setPopOver(true);
-          }
-        }
-      } else {
-        const checkedRowsArray = Array.from(checkedRows);
-        const validationPromises = checkedRowsArray.map(async (id) => {
-          try {
-            const response = await checkValidationBookingOrderanHeaderFn({
-              aksi: 'DELETE',
-              value: id,
-              jenisOrderan: selectedJenisOrderan
-            });
-            return {
-              id,
-              canDelete: response.data.status === 'success',
-              message: response.data?.message
-            };
-          } catch (error) {
-            return { id, canDelete: false, message: 'Error validating data' };
-          }
-        });
+  //         if (result.data.status == 'failed') {
+  //           alert({
+  //             title: result.data.message,
+  //             variant: 'danger',
+  //             submitText: 'OK'
+  //           });
+  //         } else {
+  //           setMode('delete');
+  //           setPopOver(true);
+  //         }
+  //       }
+  //     } else {
+  //       const checkedRowsArray = Array.from(checkedRows);
+  //       const validationPromises = checkedRowsArray.map(async (id) => {
+  //         try {
+  //           const response = await checkValidationBookingOrderanHeaderFn({
+  //             aksi: 'DELETE',
+  //             value: id,
+  //             jenisOrderan: selectedJenisOrderan
+  //           });
+  //           return {
+  //             id,
+  //             canDelete: response.data.status === 'success',
+  //             message: response.data?.message
+  //           };
+  //         } catch (error) {
+  //           return { id, canDelete: false, message: 'Error validating data' };
+  //         }
+  //       });
 
-        const validationResults = await Promise.all(validationPromises);
-        const cannotDeleteItems = validationResults.filter(
-          (result) => !result.canDelete
-        );
+  //       const validationResults = await Promise.all(validationPromises);
+  //       const cannotDeleteItems = validationResults.filter(
+  //         (result) => !result.canDelete
+  //       );
 
-        if (cannotDeleteItems.length > 0) {
-          const cannotDeleteIds = cannotDeleteItems
-            .map((item) => item.id)
-            .join(', ');
+  //       if (cannotDeleteItems.length > 0) {
+  //         const cannotDeleteIds = cannotDeleteItems
+  //           .map((item) => item.id)
+  //           .join(', ');
 
-          alert({
-            title: 'Beberapa data tidak dapat dihapus!',
-            variant: 'danger',
-            submitText: 'OK'
-          });
-          return;
-        }
+  //         alert({
+  //           title: 'Beberapa data tidak dapat dihapus!',
+  //           variant: 'danger',
+  //           submitText: 'OK'
+  //         });
+  //         return;
+  //       }
 
-        try {
-          await alert({
-            title: 'Apakah anda yakin ingin menghapus data ini ?',
-            variant: 'danger',
-            submitText: 'YA',
-            catchOnCancel: true,
-            cancelText: 'TIDAK'
-          });
+  //       try {
+  //         await alert({
+  //           title: 'Apakah anda yakin ingin menghapus data ini ?',
+  //           variant: 'danger',
+  //           submitText: 'YA',
+  //           catchOnCancel: true,
+  //           cancelText: 'TIDAK'
+  //         });
 
-          await handleMultipleDelete(checkedRowsArray);
-          dispatch(setProcessed());
-        } catch (alertError) {
-          dispatch(setProcessed());
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleDelete:', error);
-      alert({
-        title: 'Error!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
+  //         await handleMultipleDelete(checkedRowsArray);
+  //         dispatch(setProcessed());
+  //       } catch (alertError) {
+  //         dispatch(setProcessed());
+  //         return;
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in handleDelete:', error);
+  //     alert({
+  //       title: 'Error!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   } finally {
+  //     dispatch(setProcessed());
+  //   }
+  // };
 
-  const handleView = () => {
-    if (selectedRow !== null) {
-      setMode('view');
-      setPopOver(true);
-    }
-  };
+  // const handleView = () => {
+  //   if (selectedRow !== null) {
+  //     setMode('view');
+  //     setPopOver(true);
+  //   }
+  // };
 
-  const handleClose = () => {
-    setPopOver(false);
-    setMode('');
-    clearError();
-    closeDialog();
-    forms.reset();
-    formsJobParty.reset();
-    setReloadForm(false);
-  };
+  // const handleClose = () => {
+  //   setPopOver(false);
+  //   setMode('');
+  //   clearError();
+  //   closeDialog();
+  //   forms.reset();
+  //   setReloadForm(false);
+  // };
 
-  const handleReport = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    if (checkedRows.size > 1) {
-      alert({
-        title: 'HANYA BISA MEMILIH SATU DATA!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
+  // const handleReport = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+  //   if (checkedRows.size > 1) {
+  //     alert({
+  //       title: 'HANYA BISA MEMILIH SATU DATA!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
 
-    try {
-      dispatch(setProcessing());
-      const rowId = Array.from(checkedRows)[0];
-      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+  //   try {
+  //     dispatch(setProcessing());
+  //     const rowId = Array.from(checkedRows)[0];
+  //     const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
 
-      const response = await getBookingOrderanMuatanByIdFn(rowId);
-      // const responseDetail = await getPengeluaranEmklDetailFn({
-      //   filters: { nobukti: selectedRowNobukti }
-      // });
-      // const totalNominal = responseDetail.data.reduce(
-      //   (sum: number, i: any) => sum + Number(i.nominal || 0),
-      //   0
-      // );
+  //     const response = await getBookingOrderanMuatanByIdFn(rowId);
+  //     // const responseDetail = await getPengeluaranEmklDetailFn({
+  //     //   filters: { nobukti: selectedRowNobukti }
+  //     // });
+  //     // const totalNominal = responseDetail.data.reduce(
+  //     //   (sum: number, i: any) => sum + Number(i.nominal || 0),
+  //     //   0
+  //     // );
 
-      if (response.data === null || response.data.length === 0) {
-        alert({
-          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
-          variant: 'danger',
-          submitText: 'OK'
-        });
-        return;
-      }
-      const reportRows = response.data.map((row) => ({
-        ...row,
-        judullaporan: 'Laporan booking Orderan Muatan',
-        usercetak: user.username,
-        tglcetak: new Date().toLocaleDateString(),
-        // terbilang: numberToTerbilang(totalNominal),
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-      }));
-      sessionStorage.setItem('dataId', rowId as unknown as string);
-      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-        .then((module) => {
-          const { Stimulsoft } = module;
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'TahomaBD'
-          );
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahoma.ttf',
-            'Tahoma'
-          );
-          Stimulsoft.Base.StiLicense.Key =
-            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+  //     if (response.data === null || response.data.length === 0) {
+  //       alert({
+  //         title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
+  //         variant: 'danger',
+  //         submitText: 'OK'
+  //       });
+  //       return;
+  //     }
+  //     const reportRows = response.data.map((row) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan booking Orderan Muatan',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       // terbilang: numberToTerbilang(totalNominal),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     sessionStorage.setItem('dataId', rowId as unknown as string);
+  //     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+  //       .then((module) => {
+  //         const { Stimulsoft } = module;
+  //         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+  //           '/fonts/tahomabd.ttf',
+  //           'TahomaBD'
+  //         );
+  //         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+  //           '/fonts/tahoma.ttf',
+  //           'Tahoma'
+  //         );
+  //         Stimulsoft.Base.StiLicense.Key =
+  //           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+  //           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+  //           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+  //           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+  //           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+  //           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+  //           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-          const report = new Stimulsoft.Report.StiReport();
-          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+  //         const report = new Stimulsoft.Report.StiReport();
+  //         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-          // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanPengeluaranKasEmklHeader.mrt');
-          report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows });
-          // dataSet.readJson({ detail: responseDetail.data });
-          report.regData(dataSet.dataSetName, '', dataSet);
-          report.dictionary.synchronize();
+  //         // Load the report template (MRT file)
+  //         report.loadFile('/reports/LaporanPengeluaranKasEmklHeader.mrt');
+  //         report.dictionary.dataSources.clear();
+  //         dataSet.readJson({ data: reportRows });
+  //         // dataSet.readJson({ detail: responseDetail.data });
+  //         report.regData(dataSet.dataSetName, '', dataSet);
+  //         report.dictionary.synchronize();
 
-          // Render the report asynchronously
+  //         // Render the report asynchronously
 
-          report.renderAsync(() => {
-            // Export the report to PDF asynchronously
-            report.exportDocumentAsync((pdfData: any) => {
-              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-                type: 'application/pdf'
-              });
-              const pdfUrl = URL.createObjectURL(pdfBlob);
+  //         report.renderAsync(() => {
+  //           // Export the report to PDF asynchronously
+  //           report.exportDocumentAsync((pdfData: any) => {
+  //             const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+  //               type: 'application/pdf'
+  //             });
+  //             const pdfUrl = URL.createObjectURL(pdfBlob);
 
-              // Store the Blob URL in sessionStorage
-              sessionStorage.setItem('pdfUrl', pdfUrl);
+  //             // Store the Blob URL in sessionStorage
+  //             sessionStorage.setItem('pdfUrl', pdfUrl);
 
-              // Navigate to the report page
-              window.open('/reports/pengeluaranemklheader', '_blank');
-            }, Stimulsoft.Report.StiExportFormat.Pdf);
-          });
-        })
-        .catch((error) => {
-          console.error('Failed to load Stimulsoft:', error);
-        });
-    } catch (error) {
-      console.error('Error generating report:', error);
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
+  //             // Navigate to the report page
+  //             window.open('/reports/pengeluaranemklheader', '_blank');
+  //           }, Stimulsoft.Report.StiExportFormat.Pdf);
+  //         });
+  //       })
+  //       .catch((error) => {
+  //         console.error('Failed to load Stimulsoft:', error);
+  //       });
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //   } finally {
+  //     dispatch(setProcessed());
+  //   }
+  // };
 
   // const handleReport = async () => {
   //   if (checkedRows.size === 0) {
@@ -3461,151 +3297,127 @@ const GridBookingMuatan = () => {
   //   }
   // };
 
-  const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
-  ) => {
-    dispatch(setClearLookup(true));
-    clearError();
-    closeDialog();
+  // const onSuccess = async (
+  //   indexOnPage: any,
+  //   pageNumber: any,
+  //   keepOpenModal: any = false
+  // ) => {
+  //   dispatch(setClearLookup(true));
+  //   clearError();
+  //   closeDialog();
 
-    try {
-      if (keepOpenModal) {
-        forms.reset();
-        setPopOver(true);
-      } else {
-        forms.reset();
-        setPopOver(false);
+  //   try {
+  //     if (keepOpenModal) {
+  //       forms.reset();
+  //       setPopOver(true);
+  //     } else {
+  //       forms.reset();
+  //       setPopOver(false);
 
-        // setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(
-            `/redis/get/bookingorderanheader-allItems`
-          );
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
+  //       // setRows([]);
+  //       if (mode !== 'delete') {
+  //         const response = await api2.get(
+  //           `/redis/get/bookingorderanheader-allItems`
+  //         );
+  //         // Set the rows only if the data has changed
+  //         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+  //           setRows(response.data);
+  //           setIsDataUpdated(true);
+  //           setCurrentPage(pageNumber);
+  //           setFetchedPages(new Set([pageNumber]));
+  //           setSelectedRow(indexOnPage);
+  //           setTimeout(() => {
+  //             gridRef?.current?.selectCell({
+  //               rowIdx: indexOnPage,
+  //               idx: 1
+  //             });
+  //           }, 200);
+  //         }
+  //       }
 
-        setIsDataUpdated(false);
-      }
-    } catch (error) {
-      console.error('Error during onSuccess:', error);
-      setIsDataUpdated(false);
-    } finally {
-      // dispatch(setClearLookup(false));
-      setIsDataUpdated(false);
-    }
-  };
+  //       setIsDataUpdated(false);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error during onSuccess:', error);
+  //     setIsDataUpdated(false);
+  //   } finally {
+  //     // dispatch(setClearLookup(false));
+  //     setIsDataUpdated(false);
+  //   }
+  // };
 
-  const onSubmit = async (
-    values: bookingOrderanMuatanInput,
-    keepOpenModal = false
-  ) => {
-    clearError();
-    const selectedRowId = rows[selectedRow]?.id;
-    const selectedRowHeaderId = rows[selectedRow]?.header_id;
+  // const onSubmit = async (
+  //   values: bookingOrderanMuatanInput,
+  //   keepOpenModal = false
+  // ) => {
+  //   clearError();
+  //   const selectedRowId = rows[selectedRow]?.id;
+  //   const selectedRowHeaderId = rows[selectedRow]?.header_id;
 
-    try {
-      dispatch(setProcessing());
-      if (mode === 'delete') {
-        if (selectedRowId) {
-          await deleteBookingMuatan(
-            {
-              id: selectedRowId as unknown as string,
-              jenisOrderan: String(selectedJenisOrderan)
-            },
-            {
-              onSuccess: () => {
-                setPopOver(false);
-                setRows((prevRows) =>
-                  prevRows.filter((row) => row.id !== selectedRowId)
-                );
-                if (selectedRow === 0) {
-                  setSelectedRow(selectedRow);
-                  gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-                } else {
-                  setSelectedRow(selectedRow - 1);
-                  gridRef?.current?.selectCell({
-                    rowIdx: selectedRow - 1,
-                    idx: 1
-                  });
-                }
-              }
-            }
-          );
-        }
-        return;
-      }
-      if (mode === 'add') {
-        const newOrder = await createBookingMuatan(
-          {
-            ...values,
-            ...filters // Kirim filter ke body/payload
-          },
-          {
-            onSuccess: (data) =>
-              onSuccess(data.dataIndex, data.pageNumber, keepOpenModal)
-          }
-        );
+  //   try {
+  //     dispatch(setProcessing());
+  //     if (mode === 'delete') {
+  //       if (selectedRowId) {
+  //         await deleteBookingMuatan(
+  //           {
+  //             id: selectedRowId as unknown as string,
+  //             jenisOrderan: String(selectedJenisOrderan)
+  //           },
+  //           {
+  //             onSuccess: () => {
+  //               setPopOver(false);
+  //               setRows((prevRows) =>
+  //                 prevRows.filter((row) => row.id !== selectedRowId)
+  //               );
+  //               if (selectedRow === 0) {
+  //                 setSelectedRow(selectedRow);
+  //                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+  //               } else {
+  //                 setSelectedRow(selectedRow - 1);
+  //                 gridRef?.current?.selectCell({
+  //                   rowIdx: selectedRow - 1,
+  //                   idx: 1
+  //                 });
+  //               }
+  //             }
+  //           }
+  //         );
+  //       }
+  //       return;
+  //     }
+  //     if (mode === 'add') {
+  //       const newOrder = await createBookingMuatan(
+  //         {
+  //           ...values,
+  //           ...filters // Kirim filter ke body/payload
+  //         },
+  //         {
+  //           onSuccess: (data) =>
+  //             onSuccess(data.dataIndex, data.pageNumber, keepOpenModal)
+  //         }
+  //       );
 
-        if (newOrder !== undefined && newOrder !== null) {
-        }
-        return;
-      }
+  //       if (newOrder !== undefined && newOrder !== null) {
+  //       }
+  //       return;
+  //     }
 
-      if (selectedRowId && mode === 'edit') {
-        await updateBookingMuatan(
-          {
-            id: selectedRowHeaderId as unknown as string,
-            fields: { ...values, ...filters }
-          },
-          { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
-        );
-        queryClient.invalidateQueries('bookingorderan');
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
-
-  const onSubmitParty = async (values: jobPartyHeaderInput) => {
-    clearError();
-    try {
-      dispatch(setProcessing());
-      const newOrder = await createBookingMuatanParty(
-        {
-          ...values,
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber)
-        }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
-      }
-      return;
-    } catch (error) {
-      console.error(error);
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
+  //     if (selectedRowId && mode === 'edit') {
+  //       await updateBookingMuatan(
+  //         {
+  //           id: selectedRowHeaderId as unknown as string,
+  //           fields: { ...values, ...filters }
+  //         },
+  //         { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
+  //       );
+  //       queryClient.invalidateQueries('bookingorderan');
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //   } finally {
+  //     dispatch(setProcessed());
+  //   }
+  // };
 
   const loadGridConfig = async (userId: string, gridName: string) => {
     try {
@@ -3699,7 +3511,7 @@ const GridBookingMuatan = () => {
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridBookingMuatan',
+        'GridOrderanMuatan',
         [...columnsOrder],
         newWidthMap
       );
@@ -3718,7 +3530,7 @@ const GridBookingMuatan = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridBookingMuatan', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridOrderanMuatan', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -3746,7 +3558,7 @@ const GridBookingMuatan = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridBookingMuatan',
+        'GridOrderanMuatan',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -3803,7 +3615,7 @@ const GridBookingMuatan = () => {
     );
   }
 
-  function handleCellClick(args: CellClickArgs<BookingOrderanMuatan>) {
+  function handleCellClick(args: CellClickArgs<OrderanMuatan>) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
@@ -3832,12 +3644,12 @@ const GridBookingMuatan = () => {
     );
   }
 
-  function getRowClass(row: BookingOrderanMuatan) {
+  function getRowClass(row: OrderanMuatan) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: BookingOrderanMuatan) {
+  function rowKeyGetter(row: OrderanMuatan) {
     return row.id;
   }
 
@@ -3856,7 +3668,7 @@ const GridBookingMuatan = () => {
   }
 
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingBookingMuatan || !hasMore || rows.length === 0) return;
+    if (isLoadingOrderanMuatan || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -3884,7 +3696,7 @@ const GridBookingMuatan = () => {
   }
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<BookingOrderanMuatan>,
+    args: CellKeyDownArgs<OrderanMuatan>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -3943,17 +3755,25 @@ const GridBookingMuatan = () => {
 
   useEffect(() => {
     setIsFirstLoad(true);
-    loadGridConfig(user.id, 'GridBookingMuatan');
-    dispatch(setUrlApproval('bookingorderanheader/approvalBooking'));
-    setFilters((prevFilters) => ({
+    loadGridConfig(user.id, 'GridOrderanMuatan');
+
+    const rawNobukti = searchParams.get('orderan_nobukti');
+
+    // Set filters
+    setFilters((prevFilters: Filter) => ({
       ...prevFilters,
       filters: {
         ...prevFilters.filters,
-        tglDari: selectedDate,
-        tglSampai: selectedDate2,
-        jenisOrderan: String(selectedJenisOrderan)
+        nobukti: rawNobukti ?? ''
       }
     }));
+
+    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('orderan_nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
   }, []);
 
   useEffect(() => {
@@ -3987,8 +3807,7 @@ const GridBookingMuatan = () => {
           filters: {
             ...prevFilters.filters,
             tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            jenisOrderan: String(selectedJenisOrderan)
+            tglSampai: selectedDate2
           }
         }));
       }
@@ -4004,8 +3823,7 @@ const GridBookingMuatan = () => {
           filters: {
             ...prevFilters.filters,
             tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            jenisOrderan: String(selectedJenisOrderan)
+            tglSampai: selectedDate2
           }
         }));
       }
@@ -4013,9 +3831,9 @@ const GridBookingMuatan = () => {
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
 
   useEffect(() => {
-    if (!allDataBookingMuatan || isDataUpdated) return;
+    if (!allDataOrderanMuatan || isDataUpdated) return;
 
-    const newRows = allDataBookingMuatan.data || [];
+    const newRows = allDataOrderanMuatan.data || [];
 
     setRows((prevRows) => {
       if (currentPage === 1 || filters !== prevFilters) {
@@ -4033,15 +3851,15 @@ const GridBookingMuatan = () => {
       return prevRows;
     });
 
-    if (allDataBookingMuatan.pagination.totalPages) {
-      setTotalPages(allDataBookingMuatan.pagination.totalPages);
+    if (allDataOrderanMuatan.pagination.totalPages) {
+      setTotalPages(allDataOrderanMuatan.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setIsFirstLoad(false);
     setPrevFilters(filters);
-  }, [allDataBookingMuatan, currentPage, filters, isDataUpdated]);
+  }, [allDataOrderanMuatan, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
@@ -4096,97 +3914,97 @@ const GridBookingMuatan = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const rowData = rows[selectedRow];
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      forms.setValue('nobukti', rowData.nobukti);
-      forms.setValue('tglbukti', rowData.tglbukti);
-      forms.setValue(
-        'jenisorder_id',
-        Number(selectedJenisOrderan) || JENISORDERMUATAN
-      );
-      forms.setValue(
-        'jenisorder_nama',
-        selectedJenisOrderanNama || JENISORDERMUATANNAMA
-      );
-      forms.setValue('container_id', Number(rowData?.container_id));
-      forms.setValue('container_nama', rowData?.container_nama);
-      forms.setValue('shipper_id', Number(rowData?.shipper_id));
-      forms.setValue('shipper_nama', rowData?.shipper_nama);
-      forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id));
-      forms.setValue('tujuankapal_nama', rowData?.tujuankapal_nama);
-      forms.setValue('marketing_id', Number(rowData?.marketing_id));
-      forms.setValue('marketing_nama', rowData?.marketing_nama);
-      forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('schedule_id', Number(rowData?.schedule_id));
-      forms.setValue('schedule_nama', rowData?.schedule_nama);
-      forms.setValue(
-        'pelayarancontainer_id',
-        Number(rowData?.pelayarancontainer_id)
-      );
-      forms.setValue(
-        'pelayarancontainer_nama',
-        rowData?.pelayarancontainer_nama
-      );
-      forms.setValue('jenismuatan_id', Number(rowData?.jenismuatan_id));
-      forms.setValue('jenismuatan_nama', rowData?.jenismuatan_nama);
-      forms.setValue('sandarkapal_id', Number(rowData?.sandarkapal_id));
-      forms.setValue('sandarkapal_nama', rowData?.sandarkapal_nama);
-      forms.setValue('tradoluar', Number(rowData?.tradoluar));
-      forms.setValue('tradoluar_nama', rowData?.tradoluar_nama);
-      forms.setValue('nopolisi', rowData?.nopolisi);
-      forms.setValue('nosp', rowData?.nosp);
-      forms.setValue('nocontainer', rowData?.nocontainer);
-      forms.setValue('noseal', rowData?.noseal);
-      forms.setValue('lokasistuffing', Number(rowData?.lokasistuffing));
-      forms.setValue('lokasistuffing_nama', rowData?.lokasistuffing_nama);
-      forms.setValue(
-        'nominalstuffing',
-        rowData.nominalstuffing == null
-          ? undefined
-          : formatCurrency(rowData?.nominalstuffing)
-      );
-      forms.setValue('emkllain_id', Number(rowData?.emkllain_id));
-      forms.setValue('emkllain_nama', rowData?.emkllain_nama);
-      forms.setValue('asalmuatan', rowData?.asalmuatan);
-      forms.setValue('daftarbl_id', Number(rowData?.daftarbl_id));
-      forms.setValue('daftarbl_nama', rowData?.daftarbl_nama);
-      forms.setValue('comodity', rowData?.comodity);
-      forms.setValue('gandengan', rowData?.gandengan);
-      forms.setValue('pisahbl', Number(rowData?.pisahbl));
-      forms.setValue('pisahbl_nama', rowData?.pisahbl_nama);
-      forms.setValue('jobptd', Number(rowData?.jobptd));
-      forms.setValue('jobptd_nama', rowData?.jobptd_nama);
-      forms.setValue('transit', Number(rowData?.transit));
-      forms.setValue('transit_nama', rowData?.transit_nama);
-      forms.setValue('stuffingdepo', Number(rowData?.stuffingdepo));
-      forms.setValue('stuffingdepo_nama', rowData?.stuffingdepo_nama);
-      forms.setValue('opendoor', Number(rowData?.opendoor));
-      forms.setValue('opendoor_nama', rowData?.opendoor_nama);
-      forms.setValue('batalmuat', Number(rowData?.batalmuat));
-      forms.setValue('batalmuat_nama', rowData?.batalmuat_nama);
-      forms.setValue('soc', Number(rowData?.soc));
-      forms.setValue('soc_nama', rowData?.soc_nama);
-      forms.setValue(
-        'pengurusandoorekspedisilain',
-        Number(rowData?.pengurusandoor)
-      );
-      forms.setValue(
-        'pengurusandoorekspedisilain_nama',
-        rowData?.pengurusandoor_nama
-      );
-    } else {
-      forms.setValue('nobukti', '');
-      forms.setValue(
-        'jenisorder_id',
-        Number(selectedJenisOrderan) || JENISORDERMUATAN
-      );
-      forms.setValue(
-        'jenisorder_nama',
-        selectedJenisOrderanNama || JENISORDERMUATANNAMA
-      );
-    }
-  }, [forms, selectedRow, rows, mode]);
+  // useEffect(() => {
+  //   const rowData = rows[selectedRow];
+  //   if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+  //     forms.setValue('nobukti', rowData.nobukti);
+  //     forms.setValue('tglbukti', rowData.tglbukti);
+  //     forms.setValue(
+  //       'jenisorder_id',
+  //       Number(selectedJenisOrderan) || JENISORDERMUATAN
+  //     );
+  //     forms.setValue(
+  //       'jenisorder_nama',
+  //       selectedJenisOrderanNama || JENISORDERMUATANNAMA
+  //     );
+  //     forms.setValue('container_id', Number(rowData?.container_id));
+  //     forms.setValue('container_nama', rowData?.container_nama);
+  //     forms.setValue('shipper_id', Number(rowData?.shipper_id));
+  //     forms.setValue('shipper_nama', rowData?.shipper_nama);
+  //     forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id));
+  //     forms.setValue('tujuankapal_nama', rowData?.tujuankapal_nama);
+  //     forms.setValue('marketing_id', Number(rowData?.marketing_id));
+  //     forms.setValue('marketing_nama', rowData?.marketing_nama);
+  //     forms.setValue('keterangan', rowData?.keterangan);
+  //     forms.setValue('schedule_id', Number(rowData?.schedule_id));
+  //     forms.setValue('schedule_nama', rowData?.schedule_nama);
+  //     forms.setValue(
+  //       'pelayarancontainer_id',
+  //       Number(rowData?.pelayarancontainer_id)
+  //     );
+  //     forms.setValue(
+  //       'pelayarancontainer_nama',
+  //       rowData?.pelayarancontainer_nama
+  //     );
+  //     forms.setValue('jenismuatan_id', Number(rowData?.jenismuatan_id));
+  //     forms.setValue('jenismuatan_nama', rowData?.jenismuatan_nama);
+  //     forms.setValue('sandarkapal_id', Number(rowData?.sandarkapal_id));
+  //     forms.setValue('sandarkapal_nama', rowData?.sandarkapal_nama);
+  //     forms.setValue('tradoluar', Number(rowData?.tradoluar));
+  //     forms.setValue('tradoluar_nama', rowData?.tradoluar_nama);
+  //     forms.setValue('nopolisi', rowData?.nopolisi);
+  //     forms.setValue('nosp', rowData?.nosp);
+  //     forms.setValue('nocontainer', rowData?.nocontainer);
+  //     forms.setValue('noseal', rowData?.noseal);
+  //     forms.setValue('lokasistuffing', Number(rowData?.lokasistuffing));
+  //     forms.setValue('lokasistuffing_nama', rowData?.lokasistuffing_nama);
+  //     forms.setValue(
+  //       'nominalstuffing',
+  //       rowData.nominalstuffing == null
+  //         ? undefined
+  //         : formatCurrency(rowData?.nominalstuffing)
+  //     );
+  //     forms.setValue('emkllain_id', Number(rowData?.emkllain_id));
+  //     forms.setValue('emkllain_nama', rowData?.emkllain_nama);
+  //     forms.setValue('asalmuatan', rowData?.asalmuatan);
+  //     forms.setValue('daftarbl_id', Number(rowData?.daftarbl_id));
+  //     forms.setValue('daftarbl_nama', rowData?.daftarbl_nama);
+  //     forms.setValue('comodity', rowData?.comodity);
+  //     forms.setValue('gandengan', rowData?.gandengan);
+  //     forms.setValue('pisahbl', Number(rowData?.pisahbl));
+  //     forms.setValue('pisahbl_nama', rowData?.pisahbl_nama);
+  //     forms.setValue('jobptd', Number(rowData?.jobptd));
+  //     forms.setValue('jobptd_nama', rowData?.jobptd_nama);
+  //     forms.setValue('transit', Number(rowData?.transit));
+  //     forms.setValue('transit_nama', rowData?.transit_nama);
+  //     forms.setValue('stuffingdepo', Number(rowData?.stuffingdepo));
+  //     forms.setValue('stuffingdepo_nama', rowData?.stuffingdepo_nama);
+  //     forms.setValue('opendoor', Number(rowData?.opendoor));
+  //     forms.setValue('opendoor_nama', rowData?.opendoor_nama);
+  //     forms.setValue('batalmuat', Number(rowData?.batalmuat));
+  //     forms.setValue('batalmuat_nama', rowData?.batalmuat_nama);
+  //     forms.setValue('soc', Number(rowData?.soc));
+  //     forms.setValue('soc_nama', rowData?.soc_nama);
+  //     forms.setValue(
+  //       'pengurusandoorekspedisilain',
+  //       Number(rowData?.pengurusandoor)
+  //     );
+  //     forms.setValue(
+  //       'pengurusandoorekspedisilain_nama',
+  //       rowData?.pengurusandoor_nama
+  //     );
+  //   } else {
+  //     forms.setValue('nobukti', '');
+  //     forms.setValue(
+  //       'jenisorder_id',
+  //       Number(selectedJenisOrderan) || JENISORDERMUATAN
+  //     );
+  //     forms.setValue(
+  //       'jenisorder_nama',
+  //       selectedJenisOrderanNama || JENISORDERMUATANNAMA
+  //     );
+  //   }
+  // }, [forms, selectedRow, rows, mode]);
 
   useEffect(() => {
     // Initialize the refs based on columns dynamically
@@ -4200,9 +4018,7 @@ const GridBookingMuatan = () => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        formsJobParty.reset();
-        // formsJobParty.resetField('details');
+        // forms.reset();
         setMode(''); // Reset the mode to empty
         clearError();
         setPopOver(false);
@@ -4219,7 +4035,8 @@ const GridBookingMuatan = () => {
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [forms, formsJobParty]);
+    // }, [forms]);
+  }, []);
 
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
@@ -4229,27 +4046,13 @@ const GridBookingMuatan = () => {
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
 
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('tglbukti'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
-
-  useEffect(() => {
-    if (successApproved) {
-      setIsFirstLoad(true);
-      setCheckedRows(new Set());
-      setCurrentPage(1);
-      setFetchedPages(new Set([1]));
-      setHasMore(true);
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        page: 1
-      }));
-    }
-  }, [successApproved]);
+  // useEffect(() => {
+  //   if (isSubmitSuccessful) {
+  //     // reset();
+  //     // Pastikan fokus terjadi setelah repaint
+  //     requestAnimationFrame(() => setFocus('tglbukti'));
+  //   }
+  // }, [isSubmitSuccessful, setFocus]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -4311,28 +4114,28 @@ const GridBookingMuatan = () => {
           }}
         >
           <ActionButton
-            module="BOOKINGORDERANMUATAN"
-            onAdd={handleAdd}
+            module="ORDERANMUATAN"
+            // onAdd={handleAdd}
             checkedRows={checkedRows}
-            onDelete={handleDelete}
-            onView={handleView}
-            onEdit={handleEdit}
-            customActions={[
-              {
-                label: 'Print',
-                icon: <FaPrint />,
-                onClick: () => handleReport(),
-                className: 'bg-cyan-500 hover:bg-cyan-700'
-              }
-              // {
-              //   label: 'Lainnya',
-              //   // icon: <FaPrint />,
-              //   onClick: () => handleJobParty(),
-              //   className: 'bg-cyan-500 hover:bg-cyan-700'
-              // }
-            ]}
+            // onDelete={handleDelete}
+            // onView={handleView}
+            // onEdit={handleEdit}
+            // customActions={[
+            //   {
+            //     label: 'Print',
+            //     icon: <FaPrint />,
+            //     onClick: () => handleReport(),
+            //     className: 'bg-cyan-500 hover:bg-cyan-700'
+            //   }
+            //   // {
+            //   //   label: 'Lainnya',
+            //   //   // icon: <FaPrint />,
+            //   //   onClick: () => handleJobParty(),
+            //   //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //   // }
+            // ]}
           />
-          {isLoadingBookingMuatan ? <LoadRowsRenderer /> : null}
+          {isLoadingOrderanMuatan ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -4354,7 +4157,7 @@ const GridBookingMuatan = () => {
           )}
         </div>
       </div>
-      <FormBookingMuatan
+      {/* <FormBookingMuatan
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -4364,23 +4167,9 @@ const GridBookingMuatan = () => {
         mode={mode}
         onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
-      />
-
-      <FormJobParty
-        forms={formsJobParty}
-        handleClose={handleClose}
-        setPopOver={setPopOver}
-        reloadForm={reloadForm}
-        setReloadForm={setReloadForm}
-        // isLoadingUpdate={isLoadingUpdate}
-        // isLoadingDelete={isLoadingDelete}
-        // popOver={popOver}
-        // mode={mode}
-        onSubmit={formsJobParty.handleSubmit(onSubmitParty as any)}
-        // isLoadingCreate={isLoadingCreate}
-      />
+      /> */}
     </div>
   );
 };
 
-export default GridBookingMuatan;
+export default GridOrderanMuatan;

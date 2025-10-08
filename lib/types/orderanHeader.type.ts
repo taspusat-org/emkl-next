@@ -1,10 +1,9 @@
 import { IMeta } from './error.type';
 
-export interface BookingOrderanMuatan {
+export interface OrderanMuatan {
   id: number;
   header_id: number;
   nobukti: string;
-  orderan_nobukti: string;
   tglbukti: string;
   jenisorder_id: number;
   jenisorder_nama: string | null;
@@ -64,8 +63,8 @@ export interface BookingOrderanMuatan {
   updated_at: string | null;
 }
 
-export interface IAllBookingOrderanMuatan {
-  data: BookingOrderanMuatan[];
+export interface IAllOrderanMuatan {
+  data: OrderanMuatan[];
   type: string;
   pagination: IMeta;
 }
@@ -76,9 +75,8 @@ export interface IErrorResponse {
   statusCode: number;
 }
 
-export const filterBookingOrderanMuatan = {
+export const filterOrderanMuatan = {
   nobukti: '',
-  orderan_nobukti: '',
   tglbukti: '',
   jenisorder_text: '',
   container_text: '',

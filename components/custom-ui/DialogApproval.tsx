@@ -36,14 +36,21 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { useQueryClient } from 'react-query';
 import { Textarea } from '../ui/textarea';
 import { getPermissionFn } from '@/lib/apis/menu.api';
+import InputDatePicker from './InputDatePicker';
 
 const DialogApproval: React.FC = ({}) => {
   const [showErrorKeterangan, setShowErrorKeterangan] = useState(false);
   const [dataParameter, setDataParameter] = useState<any>([]);
+  const [showTanggalDialog, setShowTanggalDialog] = useState(false);
   const [showKeteranganDialog, setShowKeteranganDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [tanggal, setTanggal] = useState('');
   const [keterangan, setKeterangan] = useState('');
   const { id } = useSelector((state: RootState) => state.auth);
+  const headerData = useSelector((state: RootState) => state.header.headerData);
+  const urlApproval = useSelector(
+    (state: RootState) => state.header.urlApproval
+  );
 
   const { open, module, closeDialog, mode, checkedRows } = useApprovalDialog();
   const queryClient = useQueryClient();
@@ -51,6 +58,7 @@ const DialogApproval: React.FC = ({}) => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const { toast } = useToast();
+
   const handleButtonClick = async (item: any) => {
     // Validasi checkedRows terlebih dahulu
     if ((checkedRows?.size ?? 0) <= 0) {
@@ -105,6 +113,22 @@ const DialogApproval: React.FC = ({}) => {
         setShowKeteranganDialog(true);
         setKeterangan('');
         useApprovalDialog.setState({ open: false });
+      } else if (
+        item.keterangan_wajib_isi === 'TIDAK' &&
+        item.tanggal_wajib_isi === 'YA'
+      ) {
+        if (mode === 'APPROVAL') {
+          setSelectedItem(item);
+          setShowTanggalDialog(true);
+          setTanggal('');
+          useApprovalDialog.setState({ open: false });
+        } else {
+          setSelectedItem(item);
+          setShowTanggalDialog(false);
+          setTanggal('');
+          useApprovalDialog.setState({ open: false });
+          onSubmitWithDate(item, '');
+        }
       } else {
         // Langsung submit tanpa dialog keterangan
         onSubmit(item, '');
@@ -130,6 +154,19 @@ const DialogApproval: React.FC = ({}) => {
     setKeterangan('');
     setSelectedItem(null);
   };
+  const handleTanggalSubmit = () => {
+    if (!tanggal.trim()) {
+      console.log('headerData', headerData);
+
+      setShowErrorKeterangan(true);
+      return;
+    }
+    setShowTanggalDialog(false);
+    onSubmitWithDate(selectedItem, tanggal);
+    setTanggal('');
+    setSelectedItem(null);
+  };
+
   const onSubmit = async (item: any, keteranganValue: string) => {
     if (mode === 'APPROVAL') {
       const payload = {
@@ -153,7 +190,7 @@ const DialogApproval: React.FC = ({}) => {
           });
           closeDialog();
         } else {
-          queryClient.invalidateQueries({ queryKey: ['jurnalumum'] });
+          // queryClient.invalidateQueries({ queryKey: ['jurnalumum'] });
           useApprovalDialog.setState({ successApproved: true });
           closeDialog();
         }
@@ -206,6 +243,89 @@ const DialogApproval: React.FC = ({}) => {
       }
     }
   };
+
+  const onSubmitWithDate = async (item: any, tgl: string) => {
+    if (mode === 'APPROVAL') {
+      const payload = {
+        tableName: item.subgrp,
+        id: item.id,
+        transaksi_id: Array.from(checkedRows || []),
+        value: item.nilai_ya,
+        text: item.text,
+        tanggal: tgl ? tgl : '',
+        mode: mode,
+        jenisorder_id: headerData?.jenisorder_id,
+        marketing_id: headerData?.marketing_id,
+        tujuankapal_id: headerData?.tujuankapal_id,
+        bookingheader_id: headerData?.header_id,
+        booking_id: headerData?.id
+      };
+      try {
+        dispatch(setProcessing());
+        const res = await approvalFn(payload, urlApproval);
+
+        if (res.status === 400) {
+          alert({
+            title: res.message,
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          closeDialog();
+        } else {
+          useApprovalDialog.setState({ successApproved: true });
+          closeDialog();
+        }
+      } catch (error) {
+        alert({
+          title: 'Terjadi Kesalahan saat memproses, coba lagi beberapa saat',
+          variant: 'danger',
+          submitText: 'OK'
+        });
+        closeDialog();
+      } finally {
+        dispatch(setProcessed());
+        closeDialog();
+      }
+    } else {
+      const payload = {
+        tableName: item.subgrp,
+        id: item.id,
+        transaksi_id: Array.from(checkedRows || []),
+        value: item.nilai_tidak,
+        text: item.text,
+        tanggal: tgl ? tgl : '',
+        mode: mode,
+        jenisorder_id: headerData?.jenisorder_id,
+        orderan_nobukti: headerData?.orderan_nobukti
+      };
+      try {
+        dispatch(setProcessing());
+        const res = await nonApprovalFn(payload, urlApproval);
+
+        if (res.status === 400) {
+          alert({
+            title: res.message,
+            variant: 'danger',
+            submitText: 'OK'
+          });
+        } else {
+          queryClient.invalidateQueries({
+            predicate: () => true
+          });
+          closeDialog();
+        }
+      } catch (error) {
+        alert({
+          title: 'Terjadi Kesalahan saat memproses, coba lagi beberapa saat',
+          variant: 'danger',
+          submitText: 'OK'
+        });
+      } finally {
+        dispatch(setProcessed());
+      }
+    }
+  };
+
   const fetchData = async () => {
     dispatch(setProcessing());
     try {
@@ -222,6 +342,7 @@ const DialogApproval: React.FC = ({}) => {
           const filteredData = data.data.filter((item: any) =>
             filteredPermission.some(
               (filteredItem: any) =>
+                filteredItem.subject === item.subgrp &&
                 Number(filteredItem.id) === Number(item.role_ya)
             )
           );
@@ -270,6 +391,7 @@ const DialogApproval: React.FC = ({}) => {
         setShowKeteranganDialog(false);
         setSelectedItem(null);
         setKeterangan('');
+        setTanggal('');
       }
     };
 
@@ -407,6 +529,95 @@ const DialogApproval: React.FC = ({}) => {
               <Button
                 type="submit"
                 onClick={handleKeteranganSubmit}
+                className="flex w-fit items-center gap-1 text-sm"
+              >
+                <FaSave />
+                <p className="text-center">SUBMIT</p>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTanggalDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center border-blue-500 bg-gray-500 bg-opacity-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowTanggalDialog(false);
+              setSelectedItem(null);
+              setShowErrorKeterangan(false);
+              setTanggal('');
+            }
+          }}
+        >
+          <div
+            className="max-h-[500px] min-h-[100px] w-full max-w-[400px] rounded bg-white shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-blue-500 px-2"
+              style={{
+                background:
+                  'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+              }}
+            >
+              <p className="text-sm font-semibold text-zinc-800">{mode}</p>
+              <div
+                className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
+                onClick={() => {
+                  setShowTanggalDialog(false);
+                  setSelectedItem(null);
+                  setTanggal('');
+                  setShowErrorKeterangan(false);
+                }}
+              >
+                <IoMdClose className="h-5 w-5 font-bold text-white" />
+              </div>
+            </div>
+            <div className="mb-4 p-4">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Tanggal Approval <span className="text-red-500">*</span>
+              </label>
+              {/* <Textarea
+                value={keterangan}
+                onChange={(e) => setTanggal(e.target.value)}
+                className="h-24 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Masukkan keterangan..."
+                autoFocus
+              /> */}
+              <InputDatePicker
+                value={keterangan}
+                onChange={(e) => setTanggal(e.target.value)}
+                showCalendar={true}
+                onSelect={(date) => {
+                  setTanggal(String(date));
+                  setShowErrorKeterangan(false);
+                }}
+              />
+              {showErrorKeterangan ? (
+                <p className="text-[0.8rem] text-destructive">
+                  TANGGAL WAJIB DIISI
+                </p>
+              ) : null}
+            </div>
+
+            <div className="flex justify-end gap-2 p-4">
+              <Button
+                variant="outline"
+                className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+                onClick={() => {
+                  setShowTanggalDialog(false);
+                  setSelectedItem(null);
+                  setTanggal('');
+                  setShowErrorKeterangan(false);
+                }}
+              >
+                <IoMdClose /> <p className="text-center text-white">Cancel</p>
+              </Button>
+              <Button
+                type="submit"
+                onClick={handleTanggalSubmit}
                 className="flex w-fit items-center gap-1 text-sm"
               >
                 <FaSave />
