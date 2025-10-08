@@ -193,9 +193,11 @@ const ReportMenuPage: React.FC = () => {
             options: {
               printer: destination,
               paperSize,
+              pages: pages,
               monochrome: colorMode === 'bw',
               copies: copies || 1,
-              orientation: layout
+              orientation: 'portrait',
+              scale: 'noscale'
             }
           });
 
