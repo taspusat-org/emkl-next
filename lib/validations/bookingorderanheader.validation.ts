@@ -25,7 +25,11 @@ export const bookingOrderanMuatanSchema = z.object({
     .min(1, { message: dynamicRequiredMessage('CONTAINER') }),
   container_nama: z.string().nullable().optional(),
 
-  shipper_id: z.number().nullable().optional(),
+  shipper_id: z
+    .number({
+      required_error: dynamicRequiredMessage('SHIPPER')
+    })
+    .min(1, { message: dynamicRequiredMessage('SHIPPER') }),
   shipper_nama: z.string().nullable().optional(),
 
   tujuankapal_id: z
