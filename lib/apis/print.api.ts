@@ -24,7 +24,7 @@ export interface PrintFileBody {
   options: PrintOptions;
 }
 
-const BASE = 'http://localhost:3004/api/printer';
+const BASE = '/api/bridge/printer';
 
 export async function getPrintersFn(): Promise<PrinterInfo[]> {
   try {
