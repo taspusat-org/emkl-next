@@ -58,6 +58,17 @@ export const exportShipperFn = async (filters: any): Promise<any> => {
   }
 };
 
+export const getColumnShipperFn = async () => {
+  try {
+    const response = await api2.get('/shipper/column');
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching shipper:', error);
+    throw new Error('Failed to fetch shipper');
+  }
+};
+
 // Correctly typed 'ids' and sending proper data format to the NestJS API
 // export const reportMenuBySelectFn = async (ids: { id: number }[]) => {
 //   try {
