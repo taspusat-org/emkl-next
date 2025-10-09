@@ -104,8 +104,14 @@ const ReportMenuPage: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  // ===== TOOLBAR ala Akuntansi =====
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  <CustomPrintModal
+    isOpen={isPrintModalOpen}
+    onClose={() => setIsPrintModalOpen(false)}
+    docUrl={pdfUrl ?? ''}
+    defaultOrientation="landscape"
+  />;
 
   const layoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [defaultTabs[0]],
