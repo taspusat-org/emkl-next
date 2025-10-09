@@ -134,14 +134,25 @@ const ReportMenuPage: React.FC = () => {
           console.log('Raw API response:', sizes);
 
           // Mapping agar name selalu string
-          const validSizes: PaperSize[] = (sizes || []).map(
-            (item: any, index: number) => {
-              return {
-                id: item.id || index + 1,
-                name: typeof item.name === 'object' ? item.name.name : item.name
-              };
-            }
-          );
+          // const validSizes: PaperSize[] = (sizes || []).map(
+          //   (item: any, index: number) => {
+          //     return {
+          //       id: item.id || index + 1,
+          //       name: typeof item.name === 'object' ? item.name.name : item.name
+          //     };
+          //   }
+          // );
+
+          const validSizes: PaperSize[] = (sizes || [])
+            .map((item: any, index: number) => ({
+              id: item.id || index + 1,
+              name: typeof item.name === 'object' ? item.name.name : item.name
+            }))
+            .filter(
+              (item) =>
+                item.name &&
+                !String(item.name).toLowerCase().includes('user-defined')
+            );
 
           console.log('Valid sizes after mapping:', validSizes);
 
@@ -260,7 +271,7 @@ const ReportMenuPage: React.FC = () => {
             </div>
 
             {/* Copies */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label
                 htmlFor="copies"
                 className="mb-1 block text-sm font-medium text-gray-700"
@@ -277,10 +288,10 @@ const ReportMenuPage: React.FC = () => {
                 }
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
               />
-            </div>
+            </div> */}
 
             {/* Layout */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label
                 htmlFor="layout"
                 className="mb-1 block text-sm font-medium text-gray-700"
@@ -298,10 +309,10 @@ const ReportMenuPage: React.FC = () => {
                 <option value="portrait">Portrait</option>
                 <option value="landscape">Landscape</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Color */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label
                 htmlFor="color"
                 className="mb-1 block text-sm font-medium text-gray-700"
@@ -317,7 +328,7 @@ const ReportMenuPage: React.FC = () => {
                 <option value="color">Color</option>
                 <option value="bw">Black &amp; White</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Paper Size */}
             <div className="mb-6">
@@ -339,7 +350,9 @@ const ReportMenuPage: React.FC = () => {
                 {destination === 'save_as_pdf' ? (
                   <option value="">(Tidak tersedia untuk Save as PDF)</option>
                 ) : paperSizes.length === 0 ? (
-                  <option value="">(Paper size tidak tersedia)</option>
+                  <option value="">
+                    (Paper size tidak tersedia / sedang di proses)
+                  </option>
                 ) : (
                   paperSizes.map((s) => (
                     <option key={s.id} value={s.name}>

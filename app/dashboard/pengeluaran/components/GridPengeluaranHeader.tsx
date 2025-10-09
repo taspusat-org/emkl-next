@@ -1979,11 +1979,14 @@ const GridPengeluaranHeader = () => {
 
   //   try {
   //     const response = await getPengeluaranHeaderByIdFn(
-  //       rowId,
-  //       filtersWithoutLimit
+  //       rowId
+  //       // filtersWithoutLimit
   //     );
 
-  //     const responseDetail = await getPengeluaranDetailFn(rowId);
+  //     const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+  //     const responseDetail = await getPengeluaranDetailFn({
+  //       filters: { nobukti: selectedRowNobukti }
+  //     });
   //     const totalNominal = responseDetail.data.reduce(
   //       (sum: number, i: any) => sum + Number(i.nominal || 0),
   //       0
@@ -2358,24 +2361,24 @@ const GridPengeluaranHeader = () => {
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
-      forms.setValue('nobukti', row.nobukti);
-      forms.setValue('tglbukti', row.tglbukti);
-      forms.setValue('relasi_id', Number(row.relasi_id));
-      forms.setValue('relasi_text', row.relasi_text);
-      forms.setValue('keterangan', row.keterangan);
-      forms.setValue('bank_id', Number(row.bank_id));
-      forms.setValue('bank_text', row.bank_text);
-      forms.setValue('postingdari', row.postingdari);
-      forms.setValue('coakredit', row.coakredit);
-      forms.setValue('coakredit_text', row.coakredit_text);
-      forms.setValue('dibayarke', row.dibayarke);
-      forms.setValue('alatbayar_id', Number(row.alatbayar_id));
-      forms.setValue('alatbayar_text', row.alatbayar_text);
-      forms.setValue('nowarkat', row.nowarkat);
-      forms.setValue('tgljatuhtempo', row.tgljatuhtempo);
-      forms.setValue('daftarbank_id', Number(row.daftarbank_id));
-      forms.setValue('daftarbank_text', row.daftarbank_text);
-      forms.setValue('statusformat', row.statusformat);
+      forms.setValue('nobukti', row?.nobukti);
+      forms.setValue('tglbukti', row?.tglbukti);
+      forms.setValue('relasi_id', Number(row?.relasi_id));
+      forms.setValue('relasi_text', row?.relasi_text);
+      forms.setValue('keterangan', row?.keterangan);
+      forms.setValue('bank_id', Number(row?.bank_id));
+      forms.setValue('bank_text', row?.bank_text);
+      forms.setValue('postingdari', row?.postingdari);
+      forms.setValue('coakredit', row?.coakredit);
+      forms.setValue('coakredit_text', row?.coakredit_text);
+      forms.setValue('dibayarke', row?.dibayarke);
+      forms.setValue('alatbayar_id', Number(row?.alatbayar_id));
+      forms.setValue('alatbayar_text', row?.alatbayar_text);
+      forms.setValue('nowarkat', row?.nowarkat);
+      forms.setValue('tgljatuhtempo', row?.tgljatuhtempo);
+      forms.setValue('daftarbank_id', Number(row?.daftarbank_id));
+      forms.setValue('daftarbank_text', row?.daftarbank_text);
+      forms.setValue('statusformat', row?.statusformat);
       forms.setValue('details', []);
     } else {
       const currentDate = new Date();

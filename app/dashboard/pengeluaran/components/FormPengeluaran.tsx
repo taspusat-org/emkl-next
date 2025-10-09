@@ -242,49 +242,53 @@ const FormPengeluaran = ({
   const PERSENTASE = 2 / 100;
 
   const handleNominalChange = (rowIdx: number, value: string) => {
-    setRows((prev) => {
-      const updated = [...prev];
-      const current = updated[rowIdx];
+    if (Number(value) > 0) {
+      setRows((prev) => {
+        const updated = [...prev];
+        const current = updated[rowIdx];
 
-      const parsedValue = parseCurrency(value);
+        const parsedValue = parseCurrency(value);
 
-      current.nominal = value;
-      current.dpp = '0';
+        current.nominal = value;
+        current.dpp = '0';
 
-      if (parsedValue === 0 && parseCurrency(current.dpp) === 0) {
-        current.disableNominal = false;
-        current.disableDpp = false;
-      } else {
-        current.disableNominal = false;
-        current.disableDpp = true;
-      }
+        if (parsedValue === 0 && parseCurrency(current.dpp) === 0) {
+          current.disableNominal = false;
+          current.disableDpp = false;
+        } else {
+          current.disableNominal = false;
+          current.disableDpp = true;
+        }
 
-      return updated;
-    });
+        return updated;
+      });
+    }
   };
 
   const handleDppChange = (rowIdx: number, value: string) => {
-    setRows((prev) => {
-      const updated = [...prev];
-      const current = updated[rowIdx];
+    if (Number(value) > 0) {
+      setRows((prev) => {
+        const updated = [...prev];
+        const current = updated[rowIdx];
 
-      const parsedDpp = parseCurrency(value);
+        const parsedDpp = parseCurrency(value);
 
-      current.dpp = value;
+        current.dpp = value;
 
-      const nominalValue = parsedDpp * PERSENTASE;
-      current.nominal = formatCurrency(nominalValue);
+        const nominalValue = parsedDpp * PERSENTASE;
+        current.nominal = formatCurrency(nominalValue);
 
-      if (parsedDpp === 0 && parseCurrency(current.nominal) === 0) {
-        current.disableNominal = false;
-        current.disableDpp = false;
-      } else {
-        current.disableNominal = true;
-        current.disableDpp = false;
-      }
+        if (parsedDpp === 0 && parseCurrency(current.nominal) === 0) {
+          current.disableNominal = false;
+          current.disableDpp = false;
+        } else {
+          current.disableNominal = true;
+          current.disableDpp = false;
+        }
 
-      return updated;
-    });
+        return updated;
+      });
+    }
   };
 
   const columns = useMemo((): Column<PengeluaranDetail>[] => {
