@@ -126,7 +126,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         file: fileBlob,
         options: {
           printer: destination,
-          paperSize,
+          // paperSize,
           pages: pages,
           monochrome: colorMode === 'bw',
           copies: copies || 1,
