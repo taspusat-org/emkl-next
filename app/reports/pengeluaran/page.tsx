@@ -188,7 +188,7 @@ const ReportMenuPage: React.FC = () => {
             isOpen={isPrintModalOpen}
             onClose={() => setIsPrintModalOpen(false)}
             docUrl={pdfUrl ?? ''}
-            defaultOrientation="landscape"
+            defaultOrientation="portrait"
           />
         )}
 
