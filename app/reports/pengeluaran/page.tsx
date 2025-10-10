@@ -106,13 +106,6 @@ const ReportMenuPage: React.FC = () => {
 
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  <CustomPrintModal
-    isOpen={isPrintModalOpen}
-    onClose={() => setIsPrintModalOpen(false)}
-    docUrl={pdfUrl ?? ''}
-    defaultOrientation="landscape"
-  />;
-
   const layoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [defaultTabs[0]],
     renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
@@ -194,7 +187,8 @@ const ReportMenuPage: React.FC = () => {
           <CustomPrintModal
             isOpen={isPrintModalOpen}
             onClose={() => setIsPrintModalOpen(false)}
-            docUrl={pdfUrl}
+            docUrl={pdfUrl ?? ''}
+            defaultOrientation="landscape"
           />
         )}
 
