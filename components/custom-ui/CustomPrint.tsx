@@ -1,11 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
-import {
-  getPrintersFn,
-  getPaperSizesFn,
-  printFileFn,
-  PrinterInfo
-} from '@/lib/apis/print.api';
+import { getPrintersFn, printFileFn, PrinterInfo } from '@/lib/apis/print.api';
 
 interface ReportSetting {
   paperSize: string;
@@ -32,10 +27,9 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const [destination, setDestination] = useState('');
   const [printers, setPrinters] = useState<PrinterInfo[]>([]);
   const [loadingPrinters, setLoadingPrinters] = useState(false);
-  const [copies, setCopies] = useState(1);
   const [layout, setLayout] = useState<'portrait' | 'landscape'>('portrait');
+  const [paperSize, setPaperSize] = useState('A4'); // ✅ Tambah state ini
   const [colorMode, setColorMode] = useState<'color' | 'bw'>(defaultColorMode);
-
   const [pageOption, setPageOption] = useState<
     'all' | 'odd' | 'even' | 'custom'
   >('all');
@@ -48,21 +42,28 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
       try {
         const configUrl = process.env.NEXT_PUBLIC_REPORT_CONFIG_PATH;
         if (!configUrl) return;
+
         const res = await fetch(configUrl, { cache: 'no-store' });
         const json = await res.json();
         const config: Record<string, ReportSetting> = json;
         const report = config[reportName];
+
         if (report) {
+          setPaperSize(report.paperSize || 'A4'); // ✅ ambil paper size dari config
           setLayout(
             report.orientation.toLowerCase() === 'landscape'
               ? 'landscape'
               : 'portrait'
           );
+          console.log(`Loaded config for ${reportName}:`, report);
+        } else {
+          console.warn(`Konfigurasi '${reportName}' tidak ditemukan`);
         }
       } catch (err) {
         console.error('Gagal membaca konfigurasi laporan:', err);
       }
     };
+
     if (isOpen) loadReportConfig();
   }, [isOpen, reportName]);
 
@@ -100,15 +101,23 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
       if (pageOption === 'odd') subset = 'odd';
       if (pageOption === 'even') subset = 'even';
 
+      console.log('🖨️ Final Print Options:', {
+        printer: destination,
+        paperSize,
+        pages: pageOption === 'custom' ? customPages : '',
+        subset,
+        orientation: layout
+      });
+
       await printFileFn({
         file: fileBlob,
         options: {
           printer: destination,
-          paperSize: 'A4', // tidak perlu pilih manual
+          paperSize,
           pages: pageOption === 'custom' ? customPages : '',
           subset,
           monochrome: colorMode === 'bw',
-          copies: copies || 1,
+          copies: 1,
           orientation: layout,
           scale: defaultScale
         }
@@ -124,11 +133,13 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40">
       <div className="flex h-[90vh] w-[92vw] max-w-7xl border border-gray-300 bg-white">
+        {/* Sidebar kiri */}
         <div className="flex w-[420px] flex-col border-r border-gray-300 bg-[#f8f9fb] px-6 py-5">
           <h2 className="mb-5 text-xl font-semibold tracking-wide text-gray-800">
             PRINT
           </h2>
 
+          {/* Destination */}
           <div className="mb-4">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-600">
               Destination
@@ -156,6 +167,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
             </select>
           </div>
 
+          {/* Pages */}
           <div className="mb-4">
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-600">
               Pages
@@ -170,20 +182,18 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
               <option value="even">Even pages only</option>
               <option value="custom">Customised</option>
             </select>
-
             {pageOption === 'custom' && (
               <input
                 type="text"
                 placeholder="Contoh: 1-5, 7, 10"
                 value={customPages}
                 onChange={(e) => setCustomPages(e.target.value)}
-                className="mt-2 w-full border border-gray-400 bg-white px-2 py-1.5 
-               text-sm text-gray-800 placeholder-gray-400 
-               focus:border-blue-500 focus:outline-none"
+                className="mt-2 w-full border border-gray-400 bg-white px-2 py-1.5 text-sm text-gray-800 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
               />
             )}
           </div>
 
+          {/* Tombol */}
           <div className="mt-auto flex justify-end gap-3 border-t border-gray-300 pt-4">
             <button
               onClick={onClose}

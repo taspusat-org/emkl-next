@@ -179,7 +179,6 @@ const ReportMenuPage: React.FC = () => {
     }
   }, []);
 
-  // ===== RENDER =====
   return (
     <div className="flex h-screen w-screen flex-col">
       <main className="flex-1 overflow-hidden">
