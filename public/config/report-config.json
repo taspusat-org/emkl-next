@@ -1,5 +1,11 @@
 {
   "LaporanPengeluaran": { "paperSize": "faktur", "orientation": "landscape" },
-  "LaporanPenerimaan": { "paperSize": "A4", "orientation": "portrait" },
-  "LaporanContainer": { "paperSize": "A4", "orientation": "portrait" }
+  "LaporanPenerimaan": {
+    "paperSize": "A4 210 x 297 mm",
+    "orientation": "portrait"
+  },
+  "LaporanContainer": {
+    "paperSize": "A4 210 x 297 mm",
+    "orientation": "portrait"
+  }
 }
