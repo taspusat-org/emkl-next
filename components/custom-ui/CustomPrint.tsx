@@ -130,7 +130,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           pages: pages,
           monochrome: colorMode === 'bw',
           copies: copies || 1,
-          orientation: layout,
+          orientation: defaultOrientation,
           scale: defaultScale
         }
       });
