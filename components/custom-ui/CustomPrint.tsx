@@ -155,14 +155,16 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
             >
               {loadingPrinters ? (
                 <option disabled>Loading printers…</option>
-              ) : printers.length === 0 ? (
-                <option disabled>Tidak ada printer</option>
+              ) : printers.filter((p) => p.status === 'Online').length === 0 ? (
+                <option disabled>Tidak ada printer online</option>
               ) : (
-                printers.map((p) => (
-                  <option key={p.name} value={p.name.replace(/\\/g, '\\\\')}>
-                    {p.name}
-                  </option>
-                ))
+                printers
+                  .filter((p) => p.status === 'Online')
+                  .map((p) => (
+                    <option key={p.name} value={p.name.replace(/\\/g, '\\\\')}>
+                      {p.name}
+                    </option>
+                  ))
               )}
             </select>
           </div>
