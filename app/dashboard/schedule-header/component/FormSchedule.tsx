@@ -1273,6 +1273,7 @@ const FormSchedule = ({
             }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
+            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">
@@ -1285,6 +1286,7 @@ const FormSchedule = ({
             <Button
               type="submit"
               variant="success"
+              loading={isLoadingCreate}
               // onClick={onSubmit}
               onClick={(e) => {
                 e.preventDefault();

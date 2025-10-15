@@ -15,7 +15,9 @@ import {
   setSelectedDate,
   setSelectedDate2,
   setSelectedJenisOrderan,
-  setSelectedJenisOrderanNama
+  setSelectedJenisOrderanNama,
+  setSelectedJenisStatusJob,
+  setSelectedJenisStatusJobNama
 } from '@/lib/store/filterSlice/filterSlice';
 import { useSelector } from 'react-redux';
 import { IoReload } from 'react-icons/io5';
@@ -23,7 +25,10 @@ import { Button } from '@/components/ui/button';
 import { IoMdRefresh } from 'react-icons/io';
 import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { getParameterFn } from '@/lib/apis/parameter.api';
+import {
+  JENISORDERMUATANNAMA,
+  STATUSJOBMASUKGUDANGNAMA
+} from '@/constants/statusjob';
 
 interface ApiResponse {
   type: string;
@@ -33,6 +38,8 @@ interface ApiResponse {
 const FilterGrid = () => {
   const dispatch = useDispatch();
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
+  const [jenisOrderanNama, setJenisOrderanNama] = useState<string>('');
+  const [statusJobNama, setStatusJobNama] = useState<string>('');
   const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
   const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: any) => state.filter
@@ -42,13 +49,28 @@ const FilterGrid = () => {
     {
       columns: [{ key: 'nama', name: 'JENIS ORDERAN' }],
       labelLookup: 'JENIS ORDERAN LOOKUP',
-      // required: true,
       selectedRequired: false,
       endpoint: 'JenisOrderan',
       label: 'JENIS ORDER',
       singleColumn: true,
       pageSize: 20,
       postData: 'nama',
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookUpJenisStatus = [
+    {
+      columns: [{ key: 'text', name: 'NAMA' }],
+      labelLookup: 'JENIS STATUS LOOKUP',
+      selectedRequired: false,
+      endpoint: jenisOrderanNama
+        ? `parameter?grp=data+status+job&subgrp=orderan${jenisOrderanNama.toLowerCase()}`
+        : `parameter?grp=flagnull`,
+      label: 'JENIS STATUS',
+      singleColumn: true,
+      pageSize: 20,
+      postData: 'text',
       dataToPost: 'id'
     }
   ];
@@ -151,7 +173,7 @@ const FilterGrid = () => {
               className="w-full text-sm font-bold text-black lg:w-[20%]"
             >
               Jenis Orderan:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
+              {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
             </label>
             <div className="relative w-full text-black lg:w-[60%]">
               {lookUpJenisOrderan.map((props, index) => (
@@ -159,17 +181,49 @@ const FilterGrid = () => {
                   key={index}
                   {...props}
                   onSelectRow={(val) => {
+                    setJenisOrderanNama(val.nama);
                     dispatch(setSelectedJenisOrderan(Number(val.id)));
                     dispatch(setSelectedJenisOrderanNama(val.nama));
-                    // setJenisOrderanNama(val.nama);
-                    // setJenisOrderan(val.id);
                   }}
                   onClear={() => {
-                    // setJenisOrderanNama('');
-                    // setJenisOrderan(0);
+                    setJenisOrderanNama('');
                     dispatch(setSelectedJenisOrderan(null));
                     dispatch(setSelectedJenisOrderanNama(''));
                   }}
+                  lookupNama={
+                    jenisOrderanNama ? jenisOrderanNama : JENISORDERMUATANNAMA
+                  }
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
+            <label
+              htmlFor=""
+              className="w-full text-sm font-bold text-black lg:w-[20%]"
+            >
+              Jenis Status:
+              {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
+            </label>
+            <div className="relative w-full text-black lg:w-[60%]">
+              {lookUpJenisStatus.map((props, index) => (
+                <LookUp
+                  key={index}
+                  {...props}
+                  onSelectRow={(val) => {
+                    setStatusJobNama(val.nama);
+                    dispatch(setSelectedJenisStatusJob(Number(val.id)));
+                    dispatch(setSelectedJenisStatusJobNama(val.text));
+                  }}
+                  onClear={() => {
+                    setStatusJobNama('');
+                    dispatch(setSelectedJenisStatusJob(null));
+                    dispatch(setSelectedJenisStatusJobNama(''));
+                  }}
+                  lookupNama={
+                    statusJobNama ? statusJobNama : STATUSJOBMASUKGUDANGNAMA
+                  }
                 />
               ))}
             </div>

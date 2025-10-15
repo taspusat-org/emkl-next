@@ -37,10 +37,9 @@ const FormJobParty = ({
   reloadForm,
   setReloadForm,
   // popOver,
-  onSubmit
-} // mode,
-// isLoadingCreate,
-// isLoadingUpdate,
+  onSubmit,
+  isLoadingCreate // mode,
+} // isLoadingUpdate,
 // isLoadingDelete
 : any) => {
   const dispatch = useDispatch();
@@ -1251,7 +1250,7 @@ const FormJobParty = ({
               dispatch(setSubmitClicked(true));
             }}
             className="flex w-fit items-center gap-1 text-sm"
-            // loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+            loading={isLoadingCreate}
           >
             <FaSave />
             <p className="text-center">SAVE</p>
