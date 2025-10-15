@@ -42,9 +42,8 @@ const Page = () => {
   const dispatch = useDispatch();
 
   const [modegrid, setGrid] = useState<string | number | null>('');
-  const { selectedJenisOrderan, onReload } = useSelector(
-    (state: RootState) => state.filter
-  );
+  const { selectedJenisOrderan, selectedJenisOrderanNama, onReload } =
+    useSelector((state: RootState) => state.filter);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -293,11 +292,15 @@ const Page = () => {
     fetchData();
   }, [dispatch]);
 
+  console.log(
+    'selectedJenisOrderan di page',
+    selectedJenisOrderan,
+    selectedJenisOrderanNama
+  );
+
   const renderedGrid = () => {
     switch (selectedJenisOrderan) {
       case JENISORDERMUATAN:
-        console.log('MASUK SINII');
-
         return <GridOrderanMuatan />;
       case JENISORDERBONGKARAN:
         return <></>;

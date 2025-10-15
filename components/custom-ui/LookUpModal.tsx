@@ -605,7 +605,7 @@ export default function LookUpModal({
     const value = clickedRow[dataToPost as any];
 
     lookupValue?.(value);
-    onSelectRow?.(value); // cukup satu kali, tanpa else
+    onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
   function handleCellClick(args: any) {
