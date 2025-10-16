@@ -1522,12 +1522,6 @@ const GridStatusJob = () => {
       forms.setValue('statusjob_nama', selectedJenisStatusJobNama);
     }
   }, [forms, selectedRow, rows, mode, popOver]);
-  console.log('selectedJenisStatusJob', selectedJenisStatusJob);
-  console.log('selectedJenisOrderan', selectedJenisOrderan);
-  console.log('selectedJenisOrderanNama', selectedJenisOrderanNama);
-  console.log('selectedJenisStatusJobNama', selectedJenisStatusJobNama);
-  console.log('filters', filters);
-  console.log('moduleValue', moduleValue);
 
   useEffect(() => {
     // Initialize the refs based on columns dynamically
