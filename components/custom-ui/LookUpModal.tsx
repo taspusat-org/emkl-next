@@ -30,6 +30,7 @@ import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
   clearOpenName,
+  clearOpenNameModal,
   setClearLookup,
   setOpenName,
   setSubmitClicked,

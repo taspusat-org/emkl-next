@@ -60,6 +60,7 @@ const FormStatusJobMasukGudang = ({
       | (Partial<StatusJobMasukGudang> & { isNew: boolean })
     )[]
   >([]);
+  const [addedRow, setAddedRow] = useState<any[]>([]);
 
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);
@@ -437,15 +438,26 @@ const FormStatusJobMasukGudang = ({
                       handleInputChange(props.rowIdx, 'job', Number(id));
                     }}
                     notIn={{
-                      nobukti: rows
-                        .filter((row, idx) => {
-                          return (
-                            row?.job_nama &&
-                            row?.job_nama !== '' &&
-                            idx !== props.rowIdx // Exclude row saat ini
-                          );
-                        })
-                        .map((row) => row?.job_nama)
+                      nobukti: [
+                        // Data dari rows yang sedang di-input (exclude row saat ini)
+                        ...rows
+                          .filter((row, idx) => {
+                            return (
+                              row?.job_nama &&
+                              row?.job_nama !== '' &&
+                              idx !== props.rowIdx && // Exclude row saat ini
+                              !row.isAddRow // Exclude tombol "Add Row"
+                            );
+                          })
+                          .map((row) => row?.job_nama),
+
+                        // Data dari addedRow yang sudah pernah disimpan
+                        ...addedRow
+                          .filter(
+                            (row) => row?.job_nama && row?.job_nama !== ''
+                          )
+                          .map((row) => row?.job_nama)
+                      ]
                     }}
                     onSelectRow={(val) => {
                       handleInputChange(props.rowIdx, 'job_nama', val?.nobukti);
@@ -880,6 +892,9 @@ const FormStatusJobMasukGudang = ({
           { isAddRow: true, id: 'add_row', isNew: false }
         ]);
       } else {
+        const formattedRows = allDataDetail.data.map((item: any) => ({
+          job_nama: item.job_nama ?? ''
+        }));
         setRows([
           // If no data, add one editable row and the "Add Row" button row at the end
           {
@@ -898,6 +913,7 @@ const FormStatusJobMasukGudang = ({
           },
           { isAddRow: true, id: 'add_row', isNew: false } // Row for the "Add Row" button
         ]);
+        setAddedRow(formattedRows);
       }
     }
   }, [allDataDetail, headerData?.id, popOver, mode]);
