@@ -816,7 +816,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
               onChange={(e: any) => setTglDari(e.target.value)}
               disabled={mode === 'view' || mode === 'delete'}
               showCalendar
-              onSelect={(date) => setTglDari(date.toISOString())}
+              onSelect={(date) => setTglDari(String(date))}
             />
           </div>
         </div>
@@ -833,7 +833,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
               onChange={(e: any) => setTglSampai(e.target.value)}
               disabled={mode === 'view' || mode === 'delete'}
               showCalendar
-              onSelect={(date) => setTglSampai(date.toISOString())}
+              onSelect={(date) => setTglSampai(String(date))}
             />
           </div>
         </div>

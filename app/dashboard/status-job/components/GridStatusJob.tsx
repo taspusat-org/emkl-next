@@ -181,7 +181,6 @@ const GridStatusJob = () => {
     resolver: zodResolver(statusJobHeaderSchema),
     mode: 'onSubmit'
   });
-  console.log('forms.getValues()', forms.getValues());
 
   const {
     setFocus,
@@ -1350,20 +1349,6 @@ const GridStatusJob = () => {
   useEffect(() => {
     setIsFirstLoad(true);
     loadGridConfig(user.id, 'GridStatusJob');
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        tglDari: selectedDate,
-        tglSampai: selectedDate2,
-        jenisOrderan: selectedJenisOrderan
-          ? String(selectedJenisOrderan)
-          : String(JENISORDERMUATAN),
-        jenisStatusJob: selectedJenisStatusJob
-          ? String(selectedJenisStatusJob)
-          : String(statusJobMasukGudang)
-      }
-    }));
 
     const fetchPermission = async () => {
       const res = await getPermissionFn(String(id)); // GET ACOS
@@ -1385,9 +1370,6 @@ const GridStatusJob = () => {
       });
 
       if (selectedJenisOrderan && selectedJenisStatusJob) {
-        // CEK PERMISSION BY data text parameter with selectedJenisStatusJobNama
-        // AND relevantPermission include selectedJenisStatusJobNama -> 'YA'
-        // AND relavantPermision id === role_ya data parameter
         const filteredPermission = data.data.filter(
           (item: any) =>
             item.text === selectedJenisStatusJobNama &&
@@ -1397,7 +1379,7 @@ const GridStatusJob = () => {
                 Number(p.id) === Number(item.role_ya)
             )
         );
-
+        console.log('filteredPermission', filteredPermission);
         if (filteredPermission && filteredPermission.length > 0) {
           setModuleValue('STATUS-JOB');
         } else {
@@ -1409,7 +1391,7 @@ const GridStatusJob = () => {
     };
 
     fetchPermission();
-  }, [selectedJenisOrderan, selectedJenisStatusJob]);
+  }, [selectedJenisStatusJob, selectedJenisOrderan]);
 
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
@@ -1424,7 +1406,9 @@ const GridStatusJob = () => {
     if (isFirstLoad) {
       if (
         selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
+        selectedDate2 !== filters.filters.tglSampai ||
+        String(selectedJenisOrderan) !== filters.filters.jenisOrderan ||
+        String(selectedJenisOrderan) !== filters.filters.jenisStatusJob
       ) {
         setFilters((prevFilters) => ({
           ...prevFilters,
@@ -1432,8 +1416,12 @@ const GridStatusJob = () => {
             ...prevFilters.filters,
             tglDari: selectedDate,
             tglSampai: selectedDate2,
-            jenisOrderan: String(selectedJenisOrderan),
-            jenisStatusJob: String(selectedJenisStatusJob)
+            jenisOrderan: selectedJenisOrderan
+              ? String(selectedJenisOrderan)
+              : String(JENISORDERMUATAN),
+            jenisStatusJob: selectedJenisStatusJob
+              ? String(selectedJenisStatusJob)
+              : String(statusJobMasukGudang)
           }
         }));
       }
@@ -1441,7 +1429,9 @@ const GridStatusJob = () => {
       // Jika onReload diklik, update filter tanggal
       if (
         selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
+        selectedDate2 !== filters.filters.tglSampai ||
+        String(selectedJenisOrderan) !== filters.filters.jenisOrderan ||
+        String(selectedJenisStatusJob) !== filters.filters.jenisStatusJob
       ) {
         setFilters((prevFilters) => ({
           ...prevFilters,
@@ -1455,38 +1445,14 @@ const GridStatusJob = () => {
         }));
       }
     }
-  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
-
-  useEffect(() => {
-    if (!allDataStatusJob || isDataUpdated) return;
-
-    const newRows = allDataStatusJob.data || [];
-
-    setRows((prevRows) => {
-      if (currentPage === 1 || filters !== prevFilters) {
-        // Reset data jika filter berubah (halaman pertama)
-        setCurrentPage(1); // Reset currentPage ke 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages ke [1]
-        return newRows; // Pakai data baru langsung
-      }
-
-      // Tambah data baru di bawah untuk infinite scroll
-      if (!fetchedPages.has(currentPage)) {
-        return [...prevRows, ...newRows];
-      }
-
-      return prevRows;
-    });
-
-    if (allDataStatusJob.pagination.totalPages) {
-      setTotalPages(allDataStatusJob.pagination.totalPages);
-    }
-
-    setHasMore(newRows.length === filters.limit);
-    setFetchedPages((prev) => new Set(prev).add(currentPage));
-    setIsFirstLoad(false);
-    setPrevFilters(filters);
-  }, [allDataStatusJob, currentPage, filters, isDataUpdated]);
+  }, [
+    selectedDate,
+    selectedDate2,
+    onReload,
+    isFirstLoad,
+    selectedJenisStatusJob,
+    selectedJenisOrderan
+  ]);
 
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
@@ -1556,6 +1522,12 @@ const GridStatusJob = () => {
       forms.setValue('statusjob_nama', selectedJenisStatusJobNama);
     }
   }, [forms, selectedRow, rows, mode, popOver]);
+  console.log('selectedJenisStatusJob', selectedJenisStatusJob);
+  console.log('selectedJenisOrderan', selectedJenisOrderan);
+  console.log('selectedJenisOrderanNama', selectedJenisOrderanNama);
+  console.log('selectedJenisStatusJobNama', selectedJenisStatusJobNama);
+  console.log('filters', filters);
+  console.log('moduleValue', moduleValue);
 
   useEffect(() => {
     // Initialize the refs based on columns dynamically
@@ -1593,7 +1565,14 @@ const GridStatusJob = () => {
       refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
       setPrevFilters(filters); // Simpan filters terbaru
     }
-  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
+  }, [filters]); // Dependency array termasuk filters dan refetch
+  useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
+    if (onReload) {
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
+    }
+  }, [onReload]); // Dependency array termasuk filters dan ref
 
   useEffect(() => {
     if (isSubmitSuccessful) {
@@ -1602,6 +1581,36 @@ const GridStatusJob = () => {
       requestAnimationFrame(() => setFocus('tglstatus'));
     }
   }, [isSubmitSuccessful, setFocus]);
+  useEffect(() => {
+    if (!allDataStatusJob || isDataUpdated) return;
+
+    const newRows = allDataStatusJob.data || [];
+
+    setRows((prevRows) => {
+      if (currentPage === 1 || filters !== prevFilters) {
+        // Reset data jika filter berubah (halaman pertama)
+        setCurrentPage(1); // Reset currentPage ke 1
+        setFetchedPages(new Set([1])); // Reset fetchedPages ke [1]
+        return newRows; // Pakai data baru langsung
+      }
+
+      // Tambah data baru di bawah untuk infinite scroll
+      if (!fetchedPages.has(currentPage)) {
+        return [...prevRows, ...newRows];
+      }
+
+      return prevRows;
+    });
+
+    if (allDataStatusJob.pagination.totalPages) {
+      setTotalPages(allDataStatusJob.pagination.totalPages);
+    }
+
+    setHasMore(newRows.length === filters.limit);
+    setFetchedPages((prev) => new Set(prev).add(currentPage));
+    setIsFirstLoad(false);
+    setPrevFilters(filters);
+  }, [allDataStatusJob, currentPage, filters, isDataUpdated]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>

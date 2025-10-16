@@ -171,14 +171,12 @@ const FormPenerimaan = ({
             );
           }
 
-          // Otherwise, render the delete button for rows with data
-          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
               <button
                 type="button"
                 className="rounded bg-transparent text-xs text-red-500"
-                onClick={() => deleteRow(rowIndex)}
+                onClick={() => deleteRow(props.rowIdx)}
               >
                 <FaTrashAlt className="text-2xl" />
               </button>
@@ -557,7 +555,6 @@ const FormPenerimaan = ({
       forms.setValue('details', filteredRows);
     }
   }, [rows]);
-
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>

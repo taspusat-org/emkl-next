@@ -20,6 +20,8 @@ import {
   updatePengeluaranEmklHeaderFn
 } from '../apis/pengeluaranemklheader.api';
 import { getPengeluaranEmklListFn } from '../apis/pengeluaranemkl.api';
+import { useFormError } from '../hooks/formErrorContext';
+import { useAlert } from '../store/client/useAlert';
 
 export const useGetPengeluaranEmklHeader = (
   filters: {
@@ -80,7 +82,9 @@ export const useGetPengeluaranEmklHeader = (
 export const useCreatePengeluaranEmklHeader = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
-  const { toast } = useToast();
+  const { alert } = useAlert();
+
+  const { setError } = useFormError();
 
   return useMutation(storePengeluaranEmklHeaderFn, {
     // before the mutation fn runs
@@ -90,20 +94,42 @@ export const useCreatePengeluaranEmklHeader = () => {
     // on success, invalidate + toast + clear loading
     onSuccess: () => {
       void queryClient.invalidateQueries(['pengeluaranemklheader']);
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
+      alert({
+        variant: 'success',
+        submitText: 'OK',
+        title: 'Data Berhasil Ditambahkan'
       });
       dispatch(setProcessed());
     },
     // on error, toast + clear loading
     onError: (error: AxiosError) => {
-      const err = (error.response?.data as IErrorResponse) ?? {};
-      toast({
-        variant: 'destructive',
-        title: err.message ?? 'Gagal',
-        description: 'Terjadi masalah dengan permintaan Anda.'
-      });
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        // Menangani error berdasarkan path
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          alert({
+            variant: 'danger',
+            submitText: 'OK',
+            title:
+              'TERJADI MASALAH DENGAN PERMINTAAN ANDA, SILAHKAN COBA BEBERAPA SAAT LAGI'
+          });
+        }
+      }
+      // toast({
+      //   variant: 'destructive',
+      //   title: err.message ?? 'Gagal',
+      //   description: 'Terjadi masalah dengan permintaan Anda.'
+      // });
       dispatch(setProcessed());
     }
     // alternatively: always clear loading, whether success or fail

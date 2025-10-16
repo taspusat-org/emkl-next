@@ -170,12 +170,7 @@ export default function SignInViewPage() {
         setCredentials({
           user: (session.user as User) ?? null,
           id: session.user.id ?? null,
-          token: session.token ?? null,
-          refreshToken: session.refreshToken ?? null,
-          cabang_id: session.cabang_id ?? null,
-          accessTokenExpires: session?.accessTokenExpires ?? undefined,
-          refreshTokenExpires: session?.refreshTokenExpires ?? undefined,
-          autoLogoutExpires: Date.now()
+          cabang_id: session.cabang_id ?? null
         })
       );
       // Jika sesi sudah diupdate, arahkan ke dashboard
