@@ -669,6 +669,7 @@ export default function LookUp({
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
+  console.log('inputValue', inputValue);
   function onSelectedCellChange(args: { row: Row }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -1207,7 +1208,7 @@ export default function LookUp({
     setPopoverWidth(newWidth);
   }, [extendSize]);
   useEffect(() => {
-    if (lookupNama && !deleteClicked) {
+    if (lookupNama && !deleteClicked && !clicked) {
       setInputValue(lookupNama);
       const foundRow = rows.find(
         (row) => String(row[postData as string]) === String(lookupNama)
