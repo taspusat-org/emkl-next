@@ -1047,7 +1047,7 @@ const FormPengeluaran = ({
         coadebet: val.coadebet ?? '',
         coadebet_text: val.coadebet_text ?? '',
         keterangan: val.keterangan ?? '',
-        nominal: val.total_nominal ?? '',
+        nominal: val.sisa ?? '',
         dpp: val.dpp ?? '',
         noinvoiceemkl: val.noinvoiceemkl ?? '',
         tglinvoiceemkl: val.tglinvoiceemkl ?? '',
@@ -1170,7 +1170,6 @@ const FormPengeluaran = ({
       resetDetailAndAddNewRow();
     }
   }, [submitSuccessful]);
-  console.log('forms', forms.getValues('details'));
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1522,13 +1521,14 @@ const FormPengeluaran = ({
                                 { key: 'tglbukti', name: 'TANGGAL BUKTI' },
                                 { key: 'keterangan', name: 'KETERANGAN' },
                                 {
-                                  key: 'total_nominal',
-                                  name: 'NOMINAL',
+                                  key: 'sisa',
+                                  name: 'SISA',
                                   isCurrency: true
                                 },
                                 {
-                                  key: 'statusformat_nama',
-                                  name: 'JENIS POSTING'
+                                  key: 'sudah_dibayar',
+                                  name: 'SUDAH DIBAYAR',
+                                  isCurrency: true
                                 }
                               ]}
                               onSelectRow={(val) => {
@@ -1538,11 +1538,14 @@ const FormPengeluaran = ({
                                 forms.setValue('pengeluaran_nobukti', null);
                                 forms.setValue('statusformat', null);
                               }}
-                              filterby={{ ispenarikan: true }}
                               labelLookup={'PENGELUARAN EMKL LOOKUP'}
                               required={true}
                               selectedRequired={true}
-                              endpoint={'pengeluaranemklheader'}
+                              endpoint={
+                                'pengeluaranemklheader/list-pengeluaran'
+                              }
+                              dateFromParam={'dari'}
+                              dateToParam={'sampai'}
                               label={'PENGELUARAN EMKL'}
                               singleColumn={false}
                               pageSize={20}

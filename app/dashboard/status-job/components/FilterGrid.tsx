@@ -26,7 +26,9 @@ import { IoMdRefresh } from 'react-icons/io';
 import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import {
+  JENISORDERMUATAN,
   JENISORDERMUATANNAMA,
+  statusJobMasukGudang,
   STATUSJOBMASUKGUDANGNAMA
 } from '@/constants/statusjob';
 
@@ -116,8 +118,19 @@ const FilterGrid = () => {
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+    // Set tanggal
     dispatch(setSelectedDate(fmt(firstOfMonth)));
     dispatch(setSelectedDate2(fmt(lastOfMonth)));
+
+    // ✅ KUNCI: Set default jenis orderan dan status job
+    dispatch(setSelectedJenisOrderan(JENISORDERMUATAN));
+    dispatch(setSelectedJenisOrderanNama(JENISORDERMUATANNAMA));
+    dispatch(setSelectedJenisStatusJob(statusJobMasukGudang));
+    dispatch(setSelectedJenisStatusJobNama(STATUSJOBMASUKGUDANGNAMA));
+
+    // Set local state
+    setJenisOrderanNama(JENISORDERMUATANNAMA);
+    setStatusJobNama(STATUSJOBMASUKGUDANGNAMA);
   }, [dispatch]);
 
   useEffect(() => {

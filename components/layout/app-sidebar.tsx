@@ -35,7 +35,7 @@ import { setCollapse } from '@/lib/store/collapseSlice/collapseSlice';
 import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { persistor, RootState, store } from '@/lib/store/store';
-import { api, api2 } from '@/lib/utils/AxiosInstance';
+import { api, api2, tokenCache } from '@/lib/utils/AxiosInstance';
 import JsxParser from 'react-jsx-parser';
 import { useLocation } from 'react-router-dom';
 import { useGetSearchMenu } from '@/lib/server/useMenu';
@@ -77,13 +77,13 @@ export default function AppSidebar({
   const [menuData, setMenuData] = React.useState<string | null>(null);
   const [currentDateTime, setCurrentDateTime] = React.useState(initialDateTime);
   const [searchResults, setSearchResults] = React.useState<any[]>([]);
+
   const dispatch = useDispatch();
   const logout = async () => {
-    signOut();
-    await deleteCookie();
+    tokenCache.clearCache();
     dispatch(clearCredentials());
     await persistor.purge();
-    router.push('/auth/signin');
+    await signOut({ callbackUrl: '/auth/signin' });
   };
   const { user, token } = useSelector((state: RootState) => state.auth);
   const [isCollapsed, setIsCollapsed] = React.useState(false);

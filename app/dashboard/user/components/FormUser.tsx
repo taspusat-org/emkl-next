@@ -82,7 +82,8 @@ const FormUser = ({
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'text'
+      postData: 'text',
+      dataToPost: 'id'
     }
   ];
   const lookUpPropsKaryawan = [
@@ -97,7 +98,8 @@ const FormUser = ({
       singleColumn: true,
       pageSize: 20,
       showOnButton: true,
-      postData: 'namakaryawan'
+      postData: 'namakaryawan',
+      dataToPost: 'id'
     }
   ];
   const [dataMaxLength, setDataMaxLength] = useState<{ [key: string]: number }>(

@@ -16,17 +16,17 @@ import FormLabel, {
   FormItem,
   FormMessage
 } from '@/components/ui/form';
-import LookUp from '@/components/custom-ui/LookUp';
+import LookUpModal from '@/components/custom-ui/LookUpModal';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 import { useDispatch } from 'react-redux';
 import InputDateTimePicker from '@/components/custom-ui/InputDateTimePicker';
-import LookUpModal from '@/components/custom-ui/LookUpModal';
 import {
   filterStatusJobMasukGudang,
   StatusJobMasukGudang
 } from '@/lib/types/statusJob.type';
 import { useGetAllStatusJobMasukGudangByTglStatus } from '@/lib/server/useStatusJob';
 import { JENISORDERMUATAN, statusJobMasukGudang } from '@/constants/statusjob';
+import LookUp from '@/components/custom-ui/LookUp';
 
 interface Filter {
   page: number;
@@ -97,18 +97,6 @@ const FormStatusJobMasukGudang = ({
     abortControllerRef.current?.signal
   );
 
-  console.log(
-    'FORM selectedJenisOrderan',
-    selectedJenisOrderan,
-    'selectedJenisOrderanNama',
-    selectedJenisOrderanNama,
-    'selectedJenisStatusJob',
-    selectedJenisStatusJob,
-    'selectedJenisStatusJobNama',
-    selectedJenisStatusJobNama,
-    'filters',
-    filters
-  );
   const lookupOrderan = [
     {
       columns: [
@@ -215,7 +203,66 @@ const FormStatusJobMasukGudang = ({
       return updatedData;
     });
   };
+  const handleMultipleInputChange = (
+    updates: Array<{ index: number; field: string; value: string | number }>
+  ) => {
+    console.log('updates', updates);
+    setRows((prevRows) => {
+      // Buat copy dari prevRows
+      let updatedData = [...prevRows];
 
+      // Filter out row "Add Row" dulu
+      const addRowIndex = updatedData.findIndex((row) => row.isAddRow);
+      const addRow = addRowIndex !== -1 ? updatedData[addRowIndex] : null;
+      if (addRowIndex !== -1) {
+        updatedData = updatedData.filter((_, i) => i !== addRowIndex);
+      }
+
+      // Cari index maksimal yang dibutuhkan
+      const maxIndex = Math.max(...updates.map((u) => u.index));
+
+      // Pastikan array cukup panjang
+      while (updatedData.length <= maxIndex) {
+        updatedData.push({
+          id: 0,
+          job: 0,
+          job_nama: '',
+          tglorder: '',
+          nocontainer: '',
+          noseal: '',
+          shipper_id: 0,
+          shipper_nama: '',
+          lokasistuffing_id: 0,
+          lokasistuffing_nama: '',
+          keterangan: '',
+          isNew: true
+        });
+      }
+
+      // Apply semua updates
+      updates.forEach(({ index, field, value }) => {
+        if (updatedData[index]) {
+          updatedData[index][field] = value;
+
+          // Check jika row sudah lengkap
+          if (
+            updatedData[index].isNew &&
+            Object.values(updatedData[index]).every((val) => val !== '')
+          ) {
+            updatedData[index].isNew = false;
+          }
+        }
+      });
+
+      // Tambahkan kembali "Add Row" di akhir
+      if (addRow) {
+        updatedData.push(addRow);
+      }
+
+      return updatedData;
+    });
+  };
+  console.log('rows', rows);
   const columns = useMemo((): Column<StatusJobMasukGudang>[] => {
     return [
       {
@@ -246,13 +293,15 @@ const FormStatusJobMasukGudang = ({
           }
 
           // Otherwise, render the delete button for rows with data
-          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          const rowIndex = rows.findIndex(
+            (row) => Number(row.id) === Number(props.row.id)
+          );
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
               <button
                 type="button"
                 className="rounded bg-transparent text-xs text-red-500"
-                onClick={() => deleteRow(rowIndex)}
+                onClick={() => deleteRow(props.rowIdx)}
               >
                 <FaTrashAlt className="text-2xl" />
               </button>
@@ -315,12 +364,88 @@ const FormStatusJobMasukGudang = ({
             {props.row.isAddRow
               ? ''
               : lookupOrderan.map((lookupOrderan, index) => (
-                  <LookUp
+                  <LookUpModal
                     key={index}
                     {...lookupOrderan}
-                    label={`NO JOB ${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
+                    label={`NO JOB ${props.rowIdx}`}
+                    enableMultiSelect={true}
+                    onSelectMultipleRows={(selectedRows) => {
+                      // Kumpulkan semua updates dulu
+                      const allUpdates: Array<{
+                        index: number;
+                        field: string;
+                        value: string | number;
+                      }> = [];
+
+                      selectedRows.forEach((val, idx) => {
+                        const targetRowIdx = props.rowIdx + idx;
+
+                        // Kumpulkan semua field updates untuk row ini
+                        allUpdates.push(
+                          {
+                            index: targetRowIdx,
+                            field: 'job',
+                            value: Number(val.id)
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'job_nama',
+                            value: val?.nobukti || ''
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'tglorder',
+                            value: val?.tglbukti || ''
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'nocontainer',
+                            value: val?.nocontainer || ''
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'noseal',
+                            value: val?.noseal || ''
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'shipper_id',
+                            value: Number(val?.shipper_id) || 0
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'shipper_nama',
+                            value: val?.shipper_nama || ''
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'lokasistuffing',
+                            value: Number(val?.lokasistuffing) || 0
+                          },
+                          {
+                            index: targetRowIdx,
+                            field: 'lokasistuffing_nama',
+                            value: val?.lokasistuffing_nama || ''
+                          }
+                        );
+                      });
+
+                      // Update semua sekaligus dalam satu call
+                      handleMultipleInputChange(allUpdates);
+                    }}
                     lookupValue={(id) => {
-                      handleInputChange(props.rowIdx, 'job', Number(id)); // Use props.rowIdx to get the correct index
+                      handleInputChange(props.rowIdx, 'job', Number(id));
+                    }}
+                    notIn={{
+                      nobukti: rows
+                        .filter((row, idx) => {
+                          return (
+                            row?.job_nama &&
+                            row?.job_nama !== '' &&
+                            idx !== props.rowIdx // Exclude row saat ini
+                          );
+                        })
+                        .map((row) => row?.job_nama)
                     }}
                     onSelectRow={(val) => {
                       handleInputChange(props.rowIdx, 'job_nama', val?.nobukti);

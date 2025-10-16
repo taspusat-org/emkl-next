@@ -43,6 +43,7 @@ import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import InputDatePicker from './InputDatePicker';
 import { formatCurrency } from '@/lib/utils';
+import { Checkbox } from '../ui/checkbox';
 
 interface LookUpProps {
   columns: {
@@ -77,6 +78,9 @@ interface LookUpProps {
   dateToParam?: string; // default 'tglSampai' jika tidak ada props
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
   onClear?: () => void;
+  onSelectMultipleRows?: (selectedRows: Row[]) => void;
+  enableMultiSelect?: boolean;
+  notIn?: Record<string, any>;
 }
 interface Filter {
   page: number;
@@ -115,7 +119,10 @@ export default function LookUpModal({
   filterby,
   onSelectRow,
   onClear,
-  hideInput = false
+  hideInput = false,
+  onSelectMultipleRows,
+  enableMultiSelect = false,
+  notIn
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
@@ -153,7 +160,8 @@ export default function LookUpModal({
   const isdefault = useSelector(
     (state: RootState) => state.lookup.isdefault[label || '']
   );
-
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const clearLookup = useSelector(
     (state: RootState) => state.lookup.clearLookup
@@ -178,16 +186,6 @@ export default function LookUpModal({
   const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
 
-  // Shallow compare sederhana untuk objek flat (filters, sort, dll)
-  function shallowEqual(a: Record<string, any>, b: Record<string, any>) {
-    if (a === b) return true;
-    const ka = Object.keys(a),
-      kb = Object.keys(b);
-    if (ka.length !== kb.length) return false;
-    for (const k of ka) if (a[k] !== b[k]) return false;
-    return true;
-  }
-
   const onReload = () => {
     setIsLoading(true);
 
@@ -206,6 +204,8 @@ export default function LookUpModal({
   };
 
   // Gabung params dari state & props
+  // Gabung params dari state & props
+  console.log('notIn', notIn);
   const buildParams = useCallback(() => {
     const params: Record<string, any> = {
       page: currentPage,
@@ -219,15 +219,30 @@ export default function LookUpModal({
       for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
     }
     if (filterby && !Array.isArray(filterby)) {
-      // Pastikan filterby berfungsi dengan baik
       for (const [k, v] of Object.entries(filterby)) {
-        params[k] = v; // menambahkan filterby ke params untuk API
+        params[k] = v;
       }
     }
+
+    // Handle notIn parameter dengan validasi
+    if (notIn && typeof notIn === 'object') {
+      // Cek apakah ada array yang tidak kosong
+      const hasValidValues = Object.values(notIn).some(
+        (val) => Array.isArray(val) && val.length > 0
+      );
+
+      // Hanya kirim notIn jika ada nilai yang valid
+      if (hasValidValues) {
+        params['notIn'] = JSON.stringify(notIn);
+      }
+    } else if (typeof notIn === 'string' && notIn?.trim() !== '') {
+      params['notIn'] = notIn;
+    }
+
     const effFrom = tglDari;
     const effTo = tglSampai;
-    if (effFrom) params[dateFromParam] = effFrom; // kirim dengan nama field yang diinginkan
-    if (effTo) params[dateToParam] = effTo; // kirim dengan nama field yang diinginkan
+    if (effFrom) params[dateFromParam] = effFrom;
+    if (effTo) params[dateToParam] = effTo;
     return params;
   }, [
     currentPage,
@@ -236,7 +251,8 @@ export default function LookUpModal({
     dateFromParam,
     dateToParam,
     tglDari,
-    tglSampai
+    tglSampai,
+    notIn
   ]);
 
   // Mapping API → Row[]
@@ -471,14 +487,57 @@ export default function LookUpModal({
     setRows([]);
   };
 
+  const handleRowSelect = (rowId: number) => {
+    setCheckedRows((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
+      } else {
+        updated.add(rowId);
+      }
+
+      setIsAllSelected(updated.size === rows.length);
+      return updated;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setCheckedRows(new Set());
+    } else {
+      const allIds = rows.map((row) => Number(row.id));
+      setCheckedRows(new Set(allIds));
+    }
+    setIsAllSelected(!isAllSelected);
+  };
+  const handleSubmitSelected = () => {
+    const selectedRowsData = rows.filter((row) =>
+      checkedRows.has(Number(row.id))
+    );
+
+    if (selectedRowsData.length === 0) {
+      alert('Pilih minimal 1 baris!');
+      return;
+    }
+
+    // Call the multi-select callback with selected rows
+    if (onSelectMultipleRows) {
+      onSelectMultipleRows(selectedRowsData);
+    }
+
+    // Reset selections and close modal
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setOpen(false);
+    setInputValue('');
+  };
+
   const columns: readonly Column<Row>[] = useMemo(() => {
-    return rawColumns.map((col, index) => ({
+    const dataColumns = rawColumns.map((col, index) => ({
       ...col,
       key: col.key,
-
       headerCellClass: 'column-headers',
-      // Set width to 100% if singleColumn is true, else use the default width
-      width: singleColumn ? '100%' : col.width ?? 250, // Default width if not specified
+      width: singleColumn ? '100%' : col.width ?? 250,
       resizable: true,
       renderHeaderCell: () => (
         <div
@@ -511,13 +570,11 @@ export default function LookUpModal({
           <div className="relative h-[50%] w-full px-1">
             <Input
               ref={(el) => {
-                // Menyimpan ref input berdasarkan kolom key
                 columnInputRefs.current[col.name] = el;
               }}
               type="text"
               className="filter-input z-[999999] h-8 w-full rounded-none"
               value={filters.filters[col.key] || ''}
-              // onKeyDown={(e) => handleColumnInputKeydown(e, col.name)}
               onChange={(e) => {
                 const value = e.target.value;
                 handleColumnFilterChange(col.key, value);
@@ -538,23 +595,60 @@ export default function LookUpModal({
       renderCell: (props: any) => {
         const columnFilter = filters.filters[props.column.key] || '';
         let cellValue = props.row[props.column.key as keyof Row] || '';
-        // Jika kolom punya property isCurrency, format sebagai currency
-        if (col.isCurrency) {
-          cellValue = formatCurrency(cellValue);
-        }
+
         return (
-          <div
-            className={`m-0 flex h-full cursor-pointer items-center p-0  text-[12px] ${
-              col.isCurrency ? 'justify-end' : 'justify-start'
-            }`}
-          >
+          <div className="m-0 flex h-full cursor-pointer items-center p-0 text-[12px]">
             {highlightText(cellValue, filters.search, columnFilter)}
           </div>
         );
       }
     }));
-  }, [filters, rawColumns, currentPage, singleColumn]);
 
+    // Add checkbox column if multi-select is enabled
+    if (enableMultiSelect) {
+      const selectColumn: Column<Row> = {
+        key: 'select',
+        name: '',
+        width: 50,
+        resizable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%]"></div>
+            <div className="flex h-[50%] w-full items-center justify-center">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={() => handleSelectAll()}
+                id="header-checkbox"
+                className="mb-2"
+              />
+            </div>
+          </div>
+        ),
+        renderCell: ({ row }: { row: Row }) => (
+          <div className="flex h-full items-center justify-center">
+            <Checkbox
+              checked={checkedRows.has(Number(row.id))}
+              onCheckedChange={() => handleRowSelect(Number(row.id))}
+              id={`row-checkbox-${row.id}`}
+            />
+          </div>
+        )
+      };
+
+      return [selectColumn, ...dataColumns];
+    }
+
+    return dataColumns;
+  }, [
+    filters,
+    rawColumns,
+    singleColumn,
+    enableMultiSelect,
+    isAllSelected,
+    checkedRows,
+    rows
+  ]);
   const [columnsOrder, setColumnsOrder] = useState((): readonly number[] =>
     columns.map((_, index) => index)
   );
@@ -886,9 +980,27 @@ export default function LookUpModal({
           )
         );
       }
+      if (notIn) {
+        try {
+          const notInObj =
+            typeof notIn === 'string' ? JSON.parse(notIn) : notIn;
+          if (notInObj && typeof notInObj === 'object') {
+            for (const [key, values] of Object.entries(notInObj)) {
+              if (Array.isArray(values)) {
+                filtered = filtered.filter((row: Row) => {
+                  const rowValue = String(row[key]);
+                  return !values.some((v) => String(v) === rowValue);
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing notIn parameter:', error);
+        }
+      }
       return filtered;
     },
-    [filterby, filters, columns]
+    [filterby, filters, columns, notIn]
   );
 
   useEffect(() => {
@@ -1179,6 +1291,7 @@ export default function LookUpModal({
               className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
               onClick={() => {
                 setOpen(false);
+                dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
               }}
             >
               <IoMdClose className="h-5 w-5 font-bold text-white" />
@@ -1299,14 +1412,13 @@ export default function LookUpModal({
                 />
                 {isLoading ? (
                   <div
-                    className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
+                    className="flex w-full flex-row gap-2 py-1"
                     style={{
                       background:
                         'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
                     }}
                   >
                     <LoadRowsRenderer />
-                    <p className="text-sm text-zinc-600">Loading...</p>
                   </div>
                 ) : null}
               </div>
@@ -1317,10 +1429,24 @@ export default function LookUpModal({
               type="button"
               variant="secondary"
               className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
+              }}
             >
               <IoMdClose /> <p className="text-center text-white">Cancel</p>
             </Button>
+            {enableMultiSelect && (
+              <Button
+                type="button"
+                variant="default"
+                className="flex items-center gap-1"
+                onClick={handleSubmitSelected}
+                disabled={checkedRows.size === 0}
+              >
+                ✓ Pilih ({checkedRows.size})
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

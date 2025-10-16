@@ -196,6 +196,15 @@ export default function LookUp({
     for (const k of ka) if (a[k] !== b[k]) return false;
     return true;
   }
+
+  const initializeColumnFilters = useCallback(() => {
+    const initialFilters: Record<string, string> = {};
+    rawColumns.forEach((col) => {
+      initialFilters[col.key] = '';
+    });
+    return initialFilters;
+  }, [rawColumns]);
+
   // Gabung params dari state & props
   const buildParams = useCallback(() => {
     const params: Record<string, any> = {
@@ -206,19 +215,28 @@ export default function LookUp({
       sortDirection: filters.sortDirection
     };
 
+    // Selalu kirim semua column filters (termasuk yang kosong)
     if (filters.filters) {
-      for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
+      // Pastikan semua column ada dalam filters
+      rawColumns.forEach((col) => {
+        params[col.key] = filters.filters[col.key] || '';
+      });
+    } else {
+      // Jika filters.filters belum ada, inisialisasi dengan nilai kosong
+      rawColumns.forEach((col) => {
+        params[col.key] = '';
+      });
     }
+
+    // Tambahkan filterby jika ada
     if (filterby && !Array.isArray(filterby)) {
-      // Pastikan filterby berfungsi dengan baik
       for (const [k, v] of Object.entries(filterby)) {
-        params[k] = v; // menambahkan filterby ke params untuk API
+        params[k] = v;
       }
     }
 
     return params;
-  }, [currentPage, filters, filterby]);
-
+  }, [currentPage, filters, filterby, rawColumns]);
   // Mapping API → Row[]
   const mapApiToRows = useCallback(
     (payload: any[]): Row[] => {
@@ -232,7 +250,7 @@ export default function LookUp({
           !clicked
         ) {
           setInputValue(item.text);
-          const value = item[dataToPost as string] || item.id;
+          const value = dataToPost ? item[dataToPost as string] : item.id;
           lookupValue?.(value);
           onSelectRow?.(value);
         }
@@ -256,38 +274,53 @@ export default function LookUp({
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
-    setFilters((prev) => ({
-      ...prev,
-      filters: {}, // reset column filter
-      search: searchValue,
-      page: 1
-    }));
-    dispatch(setOpenName(label || ''));
-    setFiltering(true);
-    setShowError({ label: label ?? '', status: false, message: '' });
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  };
 
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      setFilters((prev) => ({
+        ...prev,
+        // Pertahankan column filters yang sudah ada
+        filters: initializeColumnFilters(),
+        search: searchValue,
+        page: 1
+      }));
+      setFiltering(true);
+      setRows([]);
+      setCurrentPage(1);
+    }, 200);
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 250);
+  };
+  // Modifikasi handleColumnFilterChange untuk mempertahankan search global
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
-    if (disabled) return; // Prevent filter change if disabled
+    if (disabled) return;
     setCurrentPage(1);
 
-    // Set initial filter value and reset pagination
-    setInputValue('');
-    setFilters((prev) => ({
-      ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
-      search: '', // Ensure search is cleared when column filter is applied
-      page: 1
-    }));
+    setFilters((prev) => {
+      // Inisialisasi dengan semua column filters kosong jika belum ada
+      const currentFilters = prev.filters || initializeColumnFilters();
+
+      return {
+        ...prev,
+        filters: {
+          ...currentFilters,
+          [colKey]: value // Update column filter yang spesifik
+        },
+        // Pertahankan search global yang sudah ada
+        search: prev.search || '',
+        page: 1
+      };
+    });
     setFiltering(true);
   };
 
@@ -333,14 +366,14 @@ export default function LookUp({
     if (disabled) return;
     try {
       const pasted = event.trim();
-      // Misal kolom display dengan key 'text', sesuaikan dengan kolom utama di aplikasi Anda
+      // Misal kolom display dengan key 'text', sesuaikac;n dengan kolom utama di aplikasi Anda
       const match = rows.find(
-        (row) => String(row[postData as string]) === pasted.toUpperCase()
+        (row) =>
+          String(row[postData as string]).toUpperCase() === pasted.toUpperCase()
       );
       setInputValue(pasted.toUpperCase());
-
       if (match) {
-        lookupValue?.(match[dataToPost || 'id']);
+        lookupValue?.(dataToPost ? match[dataToPost as string] : match.id);
         onSelectRow?.(match);
         setShowError({ label: label ?? '', status: false, message: '' });
 
@@ -416,10 +449,6 @@ export default function LookUp({
       // Local sorting logic
       const currentSortBy = filters.sortBy;
       const currentSortDirection = filters.sortDirection;
-
-      console.log('currentSortBy', currentSortBy);
-      console.log('currentSortDirection', currentSortDirection);
-      console.log('column', column);
       // Determine new sort direction
       let newSortDirection: 'asc' | 'desc' = 'asc';
       if (currentSortBy === column && currentSortDirection === 'asc') {
@@ -463,7 +492,6 @@ export default function LookUp({
         }
         return 0;
       });
-      console.log('sortedRows', sortedRows);
       // For local sorting, also handle pagination reset if applicable
       setCurrentPage(1);
       setSelectedRow(0);
@@ -606,7 +634,6 @@ export default function LookUp({
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
     if (isLoading || !hasMore || rows.length === 0) return;
-    console.log('isLoading', isLoading);
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
       while (page > 0 && fetchedPages.has(page)) {
@@ -637,7 +664,7 @@ export default function LookUp({
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-    const value = clickedRow[dataToPost as any];
+    const value = dataToPost ? clickedRow[dataToPost as string] : clickedRow.id;
     lookupValue?.(value);
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
@@ -771,6 +798,8 @@ export default function LookUp({
     );
   }
   const handleInputKeydown = (event: any) => {
+    event.stopPropagation();
+
     if ((!open && !filters.filters) || !openName) {
       return;
     }
@@ -937,7 +966,6 @@ export default function LookUp({
       );
     }
   };
-  console.log('selectedRow', selectedRow);
   useEffect(() => {
     if (open) {
       setIsFirstLoad(true);
@@ -1001,11 +1029,12 @@ export default function LookUp({
           const defaultRow = filteredRows.find(
             (row: any) => row.default === 'YA'
           );
-          console.log('defaultRow222', defaultRow);
           if (defaultRow && !clicked) {
             setInputValue(defaultRow?.text);
             if (lookupValue) {
-              lookupValue(defaultRow[dataToPost as string] || defaultRow?.id);
+              lookupValue(
+                dataToPost ? defaultRow[dataToPost as string] : defaultRow?.id
+              );
             }
           }
         }
@@ -1117,11 +1146,17 @@ export default function LookUp({
             ...filters,
             search: rows[0][postData as string] || ''
           });
-          console.log('rows222', rows[0][postData as string]);
           setInputValue(rows[0][postData as string] || '');
-          const value = rows[0][dataToPost as string] || '';
+          const value = dataToPost ? rows[0][dataToPost as string] : rows[0].id;
           lookupValue?.(value);
           onSelectRow?.(value); // cukup satu kali, tanpa else
+        }
+        if (inputValue && rows.length === 0) {
+          setShowError({
+            label: label ?? '',
+            status: true,
+            message: 'DATA TIDAK DITEMUKAN'
+          });
         }
       }
     };
@@ -1272,7 +1307,6 @@ export default function LookUp({
       }, 100);
     }
   }, [focus, name, inputRef, submitClicked]);
-  console.log('rows.length', rows.length);
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
@@ -1296,7 +1330,7 @@ export default function LookUp({
                       <Input
                         {...field}
                         ref={inputRef}
-                        // autoFocus
+                        autoFocus
                         onPaste={(e) =>
                           handlePaste(e.clipboardData.getData('text'))
                         }
@@ -1305,6 +1339,7 @@ export default function LookUp({
                         } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                         disabled={disabled}
                         value={inputValue}
+                        onClick={(e) => e.stopPropagation()}
                         onKeyDown={handleInputKeydown}
                         onChange={(e) => {
                           handleInputChange(e);
@@ -1344,15 +1379,7 @@ export default function LookUp({
                       )}
                     </div>
                   </FormControl>
-                  {name && forms ? (
-                    <FormMessage />
-                  ) : (
-                    <p className="text-[0.8rem] text-destructive">
-                      {showError.status === true && label === showError.label
-                        ? showError.message
-                        : null}
-                    </p>
-                  )}
+                  {name && forms && !inputValue ? <FormMessage /> : null}
                 </FormItem>
               )}
             />
@@ -1372,6 +1399,7 @@ export default function LookUp({
                   } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                   disabled={disabled}
                   value={inputValue}
+                  onClick={(e) => e.stopPropagation()}
                   onKeyDown={handleInputKeydown}
                   onChange={(e) => {
                     handleInputChange(e);

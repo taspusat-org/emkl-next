@@ -17,7 +17,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         isLoading={isLoading || false}
         isProcessing={isProcessing || false}
       />
-      <SessionProvider>{children}</SessionProvider>
+      {/* ✅ PERBAIKAN: Disable auto refetch untuk menghindari session call berulang */}
+      <SessionProvider
+        refetchInterval={0} // Tidak auto-refetch berdasarkan interval
+        refetchOnWindowFocus={true} // ✅ KUNCI: Disable refetch saat window focus
+        // refetchWhenOffline={true} // Disable refetch saat offline
+      >
+        {children}
+      </SessionProvider>
     </ThemeProvider>
   );
 }
