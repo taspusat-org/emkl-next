@@ -8,13 +8,19 @@ const FilterInput = memo(
     value,
     onChange,
     onClear,
-    inputRef
+    inputRef,
+    autoFocus = false,
+    tabIndex = 0,
+    onClick = () => {}
   }: {
     colKey: string;
     value: string;
     onChange: (value: string) => void;
     onClear: () => void;
     inputRef: (el: HTMLInputElement | null) => void;
+    autoFocus?: boolean;
+    tabIndex?: number;
+    onClick?: (e: React.MouseEvent<HTMLInputElement>) => void;
   }) => {
     const [localValue, setLocalValue] = useState(value);
 
@@ -40,6 +46,9 @@ const FilterInput = memo(
           value={localValue}
           type="text"
           onChange={handleChange}
+          autoFocus={autoFocus}
+          tabIndex={tabIndex}
+          onClick={onClick}
         />
         {localValue && (
           <button
