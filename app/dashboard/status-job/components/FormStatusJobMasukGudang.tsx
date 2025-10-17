@@ -369,6 +369,7 @@ const FormStatusJobMasukGudang = ({
                     key={index}
                     {...lookupOrderan}
                     label={`NO JOB ${props.rowIdx}`}
+                    autoSearch={false}
                     enableMultiSelect={true}
                     onSelectMultipleRows={(selectedRows) => {
                       // Kumpulkan semua updates dulu

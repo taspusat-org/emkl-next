@@ -159,9 +159,6 @@ const GridJurnalUmumHeader = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const colTimersRef = useRef<
-    Map<keyof Filter['filters'], ReturnType<typeof setTimeout>>
-  >(new Map());
   const router = useRouter();
   const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: RootState) => state.filter
@@ -190,7 +187,14 @@ const GridJurnalUmumHeader = () => {
     page: currentPage
   });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelPreviousRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Buat AbortController baru untuk request berikutnya
+    abortControllerRef.current = new AbortController();
+  };
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setFilters((prev) => ({
@@ -207,11 +211,13 @@ const GridJurnalUmumHeader = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
+      cancelPreviousRequest();
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest();
     debouncedFilterUpdate.cancel(); // Cancel pending updates
 
     setFilters((prev) => ({
@@ -231,6 +237,7 @@ const GridJurnalUmumHeader = () => {
     setInputValue(searchValue);
 
     // Menunggu beberapa waktu sebelum update filter
+    cancelPreviousRequest();
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
     debounceTimerRef.current = setTimeout(() => {
@@ -299,8 +306,6 @@ const GridJurnalUmumHeader = () => {
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      colTimersRef.current.forEach((t) => clearTimeout(t));
-      colTimersRef.current.clear();
     };
   }, []);
   const handleSort = (column: string) => {
@@ -348,6 +353,7 @@ const GridJurnalUmumHeader = () => {
     setIsAllSelected(!isAllSelected);
   };
   const handleClearInput = () => {
+    cancelPreviousRequest();
     setFilters((prev) => ({
       ...prev,
       filters: {

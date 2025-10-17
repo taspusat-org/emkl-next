@@ -312,6 +312,14 @@ const GridPengeluaranHeader = () => {
     setRows([]);
   };
   const handleSort = (column: string) => {
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -324,7 +332,7 @@ const GridPengeluaranHeader = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 

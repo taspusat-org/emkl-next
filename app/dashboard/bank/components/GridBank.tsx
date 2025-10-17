@@ -274,8 +274,6 @@ const GridBank = () => {
     // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
 
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)

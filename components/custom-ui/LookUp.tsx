@@ -53,6 +53,8 @@ import Image from 'next/image';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice';
 import { formatCurrency } from '@/lib/utils';
+import { debounce } from 'lodash';
+import FilterInput from './FilterInput';
 
 interface LookUpProps {
   columns: {
@@ -272,31 +274,36 @@ export default function LookUp({
     if (disabled || onPaste) return;
     setOnPaste(false);
     const searchValue = e.target.value;
-    setInputValue(searchValue);
-    setCurrentPage(1);
 
+    // Update input value immediately untuk UX yang responsive
+    setInputValue(searchValue);
+
+    // Clear previous debounce timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
+    // Set new debounce timer
     debounceTimerRef.current = setTimeout(() => {
+      // Update filters setelah delay
       setFilters((prev) => ({
         ...prev,
-        // Pertahankan column filters yang sudah ada
-        filters: initializeColumnFilters(),
+        filters: initializeColumnFilters(), // Reset column filters
         search: searchValue,
         page: 1
       }));
       setFiltering(true);
       setRows([]);
       setCurrentPage(1);
-    }, 200);
+      setFetchedPages(new Set([1])); // Reset fetched pages
 
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 250);
+      // Focus back to input after filter applied
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 100);
+    }, 500); // Debounce 500ms - bisa disesuaikan
   };
   // Modifikasi handleColumnFilterChange untuk mempertahankan search global
   const handleColumnFilterChange = (
@@ -305,25 +312,57 @@ export default function LookUp({
   ) => {
     if (disabled) return;
     setCurrentPage(1);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      setFilters((prev) => {
+        // Inisialisasi dengan semua column filters kosong jika belum ada
+        const currentFilters = prev.filters || initializeColumnFilters();
 
-    setFilters((prev) => {
-      // Inisialisasi dengan semua column filters kosong jika belum ada
-      const currentFilters = prev.filters || initializeColumnFilters();
-
-      return {
-        ...prev,
-        filters: {
-          ...currentFilters,
-          [colKey]: value // Update column filter yang spesifik
-        },
-        // Pertahankan search global yang sudah ada
-        search: prev.search || '',
-        page: 1
-      };
-    });
-    setFiltering(true);
+        return {
+          ...prev,
+          filters: {
+            ...currentFilters,
+            [colKey]: value // Update column filter yang spesifik
+          },
+          // Pertahankan search global yang sudah ada
+          search: prev.search || '',
+          page: 1
+        };
+      });
+      setFiltering(true);
+    }, 500);
   };
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setInputValue('');
+      setFilters((prev) => ({
+        ...prev,
+        search: '',
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCurrentPage(1);
+    }, 500) // Bisa dikurangi jadi 250-300ms
+  ).current;
 
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
   const gridRef = useRef<DataGridHandle | null>(null);
   function highlightText(
     text: string | number | null | undefined,
@@ -566,7 +605,21 @@ export default function LookUp({
             </div>
           </div>
           <div className="relative h-[50%] w-full px-1">
-            <Input
+            <FilterInput
+              colKey={col.name}
+              value={filters.filters[col.name] || ''}
+              onChange={(value) => handleFilterInputChange(col.name, value)}
+              autoFocus={false}
+              tabIndex={-1}
+              onClick={(e: React.MouseEvent<HTMLInputElement>) =>
+                e.stopPropagation()
+              }
+              onClear={() => handleClearFilter(col.name)}
+              inputRef={(el) => {
+                columnInputRefs.current[col.name] = el;
+              }}
+            />
+            {/* <Input
               ref={(el) => {
                 // Menyimpan ref input berdasarkan kolom key
                 columnInputRefs.current[col.name] = el;
@@ -581,18 +634,18 @@ export default function LookUp({
               // onKeyDown={(e) => handleColumnInputKeydown(e, col.name)}
               onChange={(e) => {
                 const value = e.target.value;
-                handleColumnFilterChange(col.key, value);
+                handleFilterInputChange(col.key, value);
               }}
             />
             {filters.filters[col.key] && (
               <button
                 className="absolute right-2 top-2 text-xs text-gray-500"
-                onClick={() => handleColumnFilterChange(col.key, '')}
+                onClick={() => handleClearFilter(col.key)}
                 type="button"
               >
                 <FaTimes />
               </button>
-            )}
+            )} */}
           </div>
         </div>
       ),
@@ -1308,6 +1361,11 @@ export default function LookUp({
       }, 100);
     }
   }, [focus, name, inputRef, submitClicked]);
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, []);
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
