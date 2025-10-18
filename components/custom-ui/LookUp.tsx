@@ -1077,7 +1077,7 @@ export default function LookUp({
       const filteredRows = data ? applyFilters(data) : [];
 
       // Check if we're not clearing input and lookupNama is undefined
-      if (isdefault && !deleteClicked) {
+      if (isdefault && !deleteClicked && !lookupNama) {
         // Only set default value if inputValue is empty (cleared)
         if (isdefault === 'YA') {
           const defaultRow = filteredRows.find(
@@ -1153,7 +1153,8 @@ export default function LookUp({
     filters,
     totalPages,
     deleteClicked,
-    clicked
+    clicked,
+    lookupNama
   ]);
 
   useEffect(() => {

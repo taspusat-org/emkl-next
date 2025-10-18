@@ -48,19 +48,14 @@ export const updateOrderanMuatanFn = async ({
 
 export const deleteOrderanMuatanFn = async ({
   id,
-  jenisOrderan,
-  nobukti
+  jenisOrderan
 }: {
   id: string;
   jenisOrderan: string;
-  nobukti: string;
 }) => {
   try {
     const response = await api2.delete(`orderanheader/${id}`, {
-      data: {
-        jenisOrderan,
-        nobukti
-      }
+      data: { jenisOrderan }
     });
 
     return response;

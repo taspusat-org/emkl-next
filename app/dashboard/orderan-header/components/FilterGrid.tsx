@@ -1,15 +1,11 @@
 'use client';
+
+import { IoMdRefresh } from 'react-icons/io';
+import { Button } from '@/components/ui/button';
 import React, { useEffect, useState } from 'react';
-import { CalendarIcon } from '@radix-ui/react-icons';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import InputMask from 'react-input-mask';
 import LookUp from '@/components/custom-ui/LookUp';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
+import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import {
   setOnReload,
   setSelectedDate,
@@ -17,13 +13,6 @@ import {
   setSelectedJenisOrderan,
   setSelectedJenisOrderanNama
 } from '@/lib/store/filterSlice/filterSlice';
-import { useSelector } from 'react-redux';
-import { IoReload } from 'react-icons/io5';
-import { Button } from '@/components/ui/button';
-import { IoMdRefresh } from 'react-icons/io';
-import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { getParameterFn } from '@/lib/apis/parameter.api';
 
 interface ApiResponse {
   type: string;
@@ -32,8 +21,8 @@ interface ApiResponse {
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
   const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
+  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
   const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: any) => state.filter
   );
