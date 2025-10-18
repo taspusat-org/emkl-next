@@ -4,11 +4,11 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { IoMdClose } from 'react-icons/io';
 import { RootState } from '@/lib/store/store';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import LookUp from '@/components/custom-ui/LookUp';
-import InputNumeric from '@/components/custom-ui/InputNumeric';
+import InputCurrency from '@/components/custom-ui/InputCurrency';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import InputMonthPicker from '@/components/custom-ui/InputMonthPicker';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
@@ -18,10 +18,6 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import InputMask from '@mona-health/react-input-mask';
-import InputCurrency from '@/components/custom-ui/InputCurrency';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import InputMonthPicker from '@/components/custom-ui/InputMonthPicker';
 
 const FormLabaRugiKalkulasi = ({
   forms,

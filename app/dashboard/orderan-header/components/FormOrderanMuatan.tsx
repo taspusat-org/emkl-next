@@ -1,5 +1,4 @@
 import { FaSave } from 'react-icons/fa';
-import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import { IoMdClose } from 'react-icons/io';
@@ -7,9 +6,14 @@ import { RootState } from '@/lib/store/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import LookUp from '@/components/custom-ui/LookUp';
-import InputNumeric from '@/components/custom-ui/InputNumeric';
+import { useEffect, useRef, useState } from 'react';
+import { STATUSDATAPENDUKUNGTIDAK } from '@/constants/orderan';
+import InputCurrency from '@/components/custom-ui/InputCurrency';
+import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import InputDateTimePicker from '@/components/custom-ui/InputDateTimePicker';
 import {
   Form,
   FormControl,
@@ -18,11 +22,6 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import InputCurrency from '@/components/custom-ui/InputCurrency';
-import InputDateTimePicker from '@/components/custom-ui/InputDateTimePicker';
-import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
-import { STATUSDATAPENDUKUNGTIDAK } from '@/constants/orderan';
 
 const FormOrderanMuatan = ({
   forms,
@@ -572,8 +571,8 @@ const FormOrderanMuatan = ({
                               <InputDatePicker
                                 value={field.value}
                                 onChange={field.onChange}
-                                showCalendar={mode == 'add' || mode == 'edit'}
-                                disabled={mode == 'delete' || mode == 'view'}
+                                showCalendar={true}
+                                disabled={mode !== 'add'}
                                 onSelect={(date) => {
                                   forms.setValue('tglbukti', date);
                                   forms.setValue('tgljatuhtempo', date);

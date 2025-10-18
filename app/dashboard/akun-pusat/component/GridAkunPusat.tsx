@@ -16,7 +16,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { QueryClient, useQueryClient } from 'react-query';
 import { useFormError } from '@/lib/hooks/formErrorContext';
-import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
@@ -72,6 +71,13 @@ import {
 } from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -80,11 +86,6 @@ interface Filter {
   sortBy: string;
   sortDirection: 'asc' | 'desc';
   filters: typeof filterAkunpusat;
-}
-
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
 }
 
 const GridAkunPusat = () => {
@@ -174,13 +175,13 @@ const GridAkunPusat = () => {
   // console.log(forms.getValues());
 
   // Fungsi untuk cancel request yang sedang berjalan
-  const cancelPreviousRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    // Buat AbortController baru untuk request berikutnya
-    abortControllerRef.current = new AbortController();
-  };
+  // const cancelPreviousRequest = () => {
+  //   if (abortControllerRef.current) {
+  //     abortControllerRef.current.abort();
+  //   }
+  //   // Buat AbortController baru untuk request berikutnya
+  //   abortControllerRef.current = new AbortController();
+  // };
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -200,13 +201,13 @@ const GridAkunPusat = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
-      cancelPreviousRequest();
+      cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
-    cancelPreviousRequest();
+    cancelPreviousRequest(abortControllerRef);
     debouncedFilterUpdate.cancel(); // Cancel pending updates
     setFilters((prev) => ({
       ...prev,
@@ -220,7 +221,7 @@ const GridAkunPusat = () => {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    cancelPreviousRequest();
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -343,10 +344,10 @@ const GridAkunPusat = () => {
     setIsAllSelected(!isAllSelected);
   };
 
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
+  // const handleContextMenu = (event: React.MouseEvent) => {
+  //   event.preventDefault();
+  //   setContextMenu({ x: event.clientX, y: event.clientY });
+  // };
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -439,7 +440,10 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('type_nama')}
-              onContextMenu={handleContextMenu}
+              // onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -509,7 +513,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('level')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -578,7 +584,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coa')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -646,7 +654,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('parent')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -715,7 +725,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -786,7 +798,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('cabang_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -853,7 +867,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -922,7 +938,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -993,7 +1011,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1064,7 +1084,9 @@ const GridAkunPusat = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1420,79 +1442,79 @@ const GridAkunPusat = () => {
     }
   };
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
+  // const loadGridConfig = async (userId: string, gridName: string) => {
+  //   try {
+  //     const response = await fetch(
+  //       `/api/loadgrid?userId=${userId}&gridName=${gridName}`
+  //     );
+  //     if (!response.ok) {
+  //       throw new Error('Failed to load grid configuration');
+  //     }
 
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
+  //     const { columnsOrder, columnsWidth }: GridConfig = await response.json();
 
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
+  //     setColumnsOrder(
+  //       columnsOrder && columnsOrder.length
+  //         ? columnsOrder
+  //         : columns.map((_, index) => index)
+  //     );
+  //     setColumnsWidth(
+  //       columnsWidth && Object.keys(columnsWidth).length
+  //         ? columnsWidth
+  //         : columns.reduce(
+  //             (acc, column) => ({
+  //               ...acc,
+  //               [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
+  //             }),
+  //             {}
+  //           )
+  //     );
+  //   } catch (error) {
+  //     console.error('Failed to load grid configuration:', error);
 
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
+  //     // If configuration is not available or error occurs, fallback to original column widths
+  //     setColumnsOrder(columns.map((_, index) => index));
 
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
+  //     setColumnsWidth(
+  //       columns.reduce(
+  //         (acc, column) => {
+  //           // Use the original column width instead of '1fr' when configuration is missing or error occurs
+  //           acc[column.key] =
+  //             typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
+  //           return acc;
+  //         },
+  //         {} as { [key: string]: number }
+  //       )
+  //     );
+  //   }
+  // };
 
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
+  // const saveGridConfig = async (
+  //   userId: string, // userId sebagai identifier
+  //   gridName: string,
+  //   columnsOrder: number[],
+  //   columnsWidth: { [key: string]: number }
+  // ) => {
+  //   try {
+  //     const response = await fetch('/api/savegrid', {
+  //       method: 'POST',
+  //       headers: {
+  //         'Content-Type': 'application/json'
+  //       },
+  //       body: JSON.stringify({
+  //         userId,
+  //         gridName,
+  //         config: { columnsOrder, columnsWidth }
+  //       })
+  //     });
 
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
+  //     if (!response.ok) {
+  //       throw new Error('Failed to save grid configuration');
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to save grid configuration:', error);
+  //   }
+  // };
 
   const onColumnResize = (index: number, width: number) => {
     const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
@@ -1529,35 +1551,35 @@ const GridAkunPusat = () => {
     });
   };
 
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
+  // const resetGridConfig = () => {
+  //   // Nilai default untuk columnsOrder dan columnsWidth
+  //   const defaultColumnsOrder = columns.map((_, index) => index);
+  //   const defaultColumnsWidth = columns.reduce(
+  //     (acc, column) => {
+  //       acc[column.key] = typeof column.width === 'number' ? column.width : 0;
+  //       return acc;
+  //     },
+  //     {} as { [key: string]: number }
+  //   );
 
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
+  //   // Set state kembali ke nilai default
+  //   setColumnsOrder(defaultColumnsOrder);
+  //   setColumnsWidth(defaultColumnsWidth);
+  //   setContextMenu(null);
+  //   setDataGridKey((prevKey) => prevKey + 1);
 
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+  //   gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
 
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridAkunPusat',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
+  //   // Simpan konfigurasi reset ke server (atau backend)
+  //   if (user.id) {
+  //     saveGridConfig(
+  //       user.id,
+  //       'GridAkunPusat',
+  //       defaultColumnsOrder,
+  //       defaultColumnsWidth
+  //     );
+  //   }
+  // };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
@@ -1836,7 +1858,14 @@ const GridAkunPusat = () => {
   //   }
   // };
   useEffect(() => {
-    loadGridConfig(user.id, 'GridAkunPusat');
+    // loadGridConfig(user.id, 'GridAkunPusat');
+    loadGridConfig(
+      user.id,
+      'GridAkunPusat',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
 
   useEffect(() => {
@@ -2090,7 +2119,22 @@ const GridAkunPusat = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                // onClick={resetGridConfig}
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridAkunPusat',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>
