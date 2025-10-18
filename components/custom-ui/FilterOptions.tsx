@@ -36,7 +36,6 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
     []
   );
   const [localSelectedValue, setLocalSelectedValue] = useState<string>('');
-
   const fetchData = async () => {
     try {
       const response = await api2.get(`/${endpoint}`, { params: filterBy });

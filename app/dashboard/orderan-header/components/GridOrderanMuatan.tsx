@@ -52,7 +52,18 @@ import {
   OrderanMuatan
 } from '@/lib/types/orderanHeader.type';
 import { useGetAllBookingOrderanHeader } from '@/lib/server/useBookingOrderanHeader';
-import { useGetAllOrderanMuatan } from '@/lib/server/useOrderanHeader';
+import {
+  useDeleteOrderanHeader,
+  useGetAllOrderanMuatan,
+  useUpdateOrderanHeader
+} from '@/lib/server/useOrderanHeader';
+import { checkValidationOrderanHeaderFn } from '@/lib/apis/orderanHeader.api';
+import {
+  orderanMuatanInput,
+  orderanMuatanSchema
+} from '@/lib/validations/orderanheader.validation';
+import FormOrderanMuatan from './FormOrderanMuatan';
+import { JENISORDERMUATAN, JENISORDERMUATANNAMA } from '@/constants/orderan';
 
 interface Filter {
   page: number;
@@ -74,7 +85,6 @@ const GridOrderanMuatan = () => {
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
   const searchParams = useSearchParams();
-  const { closeDialog } = useLainnyaDialog();
   const { successApproved } = useApprovalDialog();
 
   const { user } = useSelector((state: RootState) => state.auth);
@@ -161,28 +171,24 @@ const GridOrderanMuatan = () => {
     abortControllerRef.current?.signal
   );
 
-  // const { mutateAsync: createBookingMuatan, isLoading: isLoadingCreate } =
-  //   useCreateBookingOrderanHeader();
-  // const { mutateAsync: createBookingMuatanParty, isLoading: isLoadingCreateParty } =
-  //   useCreateBookingMuatanParty();
-  // const { mutateAsync: updateBookingMuatan, isLoading: isLoadingUpdate } =
-  //   useUpdateBookingOrderanHeader();
-  // const { mutateAsync: deleteBookingMuatan, isLoading: isLoadingDelete } =
-  //   useDeleteBookingOrderanHeader();
+  const { mutateAsync: updateOrderanMuatan, isLoading: isLoadingUpdate } =
+    useUpdateOrderanHeader();
+  const { mutateAsync: deleteOrderanMuatan, isLoading: isLoadingDelete } =
+    useDeleteOrderanHeader();
 
-  // const forms = useForm<bookingOrderanMuatanInput>({
-  //   resolver: zodResolver(bookingOrderanMuatanSchema),
-  //   mode: 'onSubmit',
-  //   defaultValues: {
-  //     nobukti: ''
-  //   }
-  // });
+  const forms = useForm<orderanMuatanInput>({
+    resolver: zodResolver(orderanMuatanSchema),
+    mode: 'onSubmit',
+    defaultValues: {
+      nobukti: ''
+    }
+  });
 
-  // const {
-  //   setFocus,
-  //   reset,
-  //   formState: { isSubmitSuccessful }
-  // } = forms;
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
 
   const cancelPreviousRequest = () => {
     if (abortControllerRef.current) {
@@ -2876,300 +2882,298 @@ const GridOrderanMuatan = () => {
     }));
   }, [orderedColumns, columnsWidth]);
 
-  // const handleAdd = async () => {
-  //   setMode('add');
-  //   setPopOver(true);
-  //   forms.reset();
-  // };
+  const handleEdit = async () => {
+    if (selectedRow === null || checkedRows.size > 0) {
+      alert({
+        title: 'PILIH DATA YANG INGIN DI EDIT!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      return;
+    }
+    if (selectedRow !== null) {
+      const rowData = rows[selectedRow];
+      const result = await checkValidationOrderanHeaderFn({
+        aksi: 'EDIT',
+        value: rowData.id,
+        jenisOrderan: selectedJenisOrderan
+      });
+      if (result.data.status == 'failed') {
+        alert({
+          title: result.data.message,
+          variant: 'danger',
+          submitText: 'OK'
+        });
+      } else {
+        setPopOver(true);
+        setMode('edit');
+      }
+    }
+  };
 
-  // const handleEdit = async () => {
-  //   if (selectedRow === null || checkedRows.size > 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI EDIT!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return;
-  //   }
-  //   if (selectedRow !== null) {
-  //     const rowData = rows[selectedRow];
-  //     const result = await checkValidationBookingOrderanHeaderFn({
-  //       aksi: 'EDIT',
-  //       value: rowData.id,
-  //       jenisOrderan: selectedJenisOrderan
-  //     });
-  //     if (result.data.status == 'failed') {
-  //       alert({
-  //         title: result.data.message,
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //     } else {
-  //       setPopOver(true);
-  //       setMode('edit');
-  //     }
-  //   }
-  // };
+  const handleMultipleDelete = async (
+    idsToDelete: number[],
+    nobukti: string
+  ) => {
+    try {
+      for (const id of idsToDelete) {
+        // Hapus data satu per satu
+        await deleteOrderanMuatan({
+          id: id as unknown as string,
+          jenisOrderan: String(selectedJenisOrderan),
+          nobukti: nobukti
+        });
+      }
 
-  // const handleMultipleDelete = async (idsToDelete: number[]) => {
-  //   try {
-  //     for (const id of idsToDelete) {
-  //       // Hapus data satu per satu
-  //       await deleteBookingMuatan({
-  //         id: id as unknown as string,
-  //         jenisOrderan: String(selectedJenisOrderan)
-  //       });
-  //     }
+      setRows(
+        (
+          prevRows // Update state setelah semua data berhasil dihapus
+        ) => prevRows.filter((row) => !idsToDelete.includes(row.id))
+      );
+      setCheckedRows(new Set()); // Reset checked rows
+      setIsAllSelected(false);
 
-  //     setRows(
-  //       (
-  //         prevRows // Update state setelah semua data berhasil dihapus
-  //       ) => prevRows.filter((row) => !idsToDelete.includes(row.id))
-  //     );
-  //     setCheckedRows(new Set()); // Reset checked rows
-  //     setIsAllSelected(false);
+      // Update selected row
+      if (selectedRow >= rows.length - idsToDelete.length) {
+        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
+      }
 
-  //     // Update selected row
-  //     if (selectedRow >= rows.length - idsToDelete.length) {
-  //       setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
-  //     }
+      setTimeout(() => {
+        // Focus grid
+        gridRef?.current?.selectCell({
+          rowIdx: Math.max(0, selectedRow - 1),
+          idx: 1
+        });
+      }, 100);
 
-  //     setTimeout(() => {
-  //       // Focus grid
-  //       gridRef?.current?.selectCell({
-  //         rowIdx: Math.max(0, selectedRow - 1),
-  //         idx: 1
-  //       });
-  //     }, 100);
+      alert({
+        title: 'Berhasil!',
+        variant: 'success',
+        submitText: 'OK'
+      });
+    } catch (error) {
+      console.error('Error in handleMultipleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    }
+  };
 
-  //     alert({
-  //       title: 'Berhasil!',
-  //       variant: 'success',
-  //       submitText: 'OK'
-  //     });
-  //   } catch (error) {
-  //     console.error('Error in handleMultipleDelete:', error);
-  //     alert({
-  //       title: 'Error!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
+  const handleDelete = async () => {
+    try {
+      dispatch(setProcessing());
 
-  // const handleDelete = async () => {
-  //   try {
-  //     dispatch(setProcessing());
+      if (checkedRows.size === 0) {
+        if (selectedRow !== null) {
+          const rowData = rows[selectedRow];
 
-  //     if (checkedRows.size === 0) {
-  //       if (selectedRow !== null) {
-  //         const rowData = rows[selectedRow];
+          const result = await checkValidationOrderanHeaderFn({
+            aksi: 'DELETE',
+            value: rowData.id,
+            jenisOrderan: selectedJenisOrderan
+          });
 
-  //         const result = await checkValidationBookingOrderanHeaderFn({
-  //           aksi: 'DELETE',
-  //           value: rowData.id,
-  //           jenisOrderan: selectedJenisOrderan
-  //         });
+          if (result.data.status == 'failed') {
+            alert({
+              title: result.data.message,
+              variant: 'danger',
+              submitText: 'OK'
+            });
+          } else {
+            setMode('delete');
+            setPopOver(true);
+          }
+        }
+      } else {
+        const selectedNoBukti = rows[selectedRow]?.nobukti;
+        const checkedRowsArray = Array.from(checkedRows);
+        const validationPromises = checkedRowsArray.map(async (id) => {
+          try {
+            const response = await checkValidationOrderanHeaderFn({
+              aksi: 'DELETE',
+              value: id,
+              jenisOrderan: selectedJenisOrderan
+            });
+            return {
+              id,
+              canDelete: response.data.status === 'success',
+              message: response.data?.message
+            };
+          } catch (error) {
+            return { id, canDelete: false, message: 'Error validating data' };
+          }
+        });
 
-  //         if (result.data.status == 'failed') {
-  //           alert({
-  //             title: result.data.message,
-  //             variant: 'danger',
-  //             submitText: 'OK'
-  //           });
-  //         } else {
-  //           setMode('delete');
-  //           setPopOver(true);
-  //         }
-  //       }
-  //     } else {
-  //       const checkedRowsArray = Array.from(checkedRows);
-  //       const validationPromises = checkedRowsArray.map(async (id) => {
-  //         try {
-  //           const response = await checkValidationBookingOrderanHeaderFn({
-  //             aksi: 'DELETE',
-  //             value: id,
-  //             jenisOrderan: selectedJenisOrderan
-  //           });
-  //           return {
-  //             id,
-  //             canDelete: response.data.status === 'success',
-  //             message: response.data?.message
-  //           };
-  //         } catch (error) {
-  //           return { id, canDelete: false, message: 'Error validating data' };
-  //         }
-  //       });
+        const validationResults = await Promise.all(validationPromises);
+        const cannotDeleteItems = validationResults.filter(
+          (result) => !result.canDelete
+        );
 
-  //       const validationResults = await Promise.all(validationPromises);
-  //       const cannotDeleteItems = validationResults.filter(
-  //         (result) => !result.canDelete
-  //       );
+        if (cannotDeleteItems.length > 0) {
+          const cannotDeleteIds = cannotDeleteItems
+            .map((item) => item.id)
+            .join(', ');
 
-  //       if (cannotDeleteItems.length > 0) {
-  //         const cannotDeleteIds = cannotDeleteItems
-  //           .map((item) => item.id)
-  //           .join(', ');
+          alert({
+            title: 'Beberapa data tidak dapat dihapus!',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+          return;
+        }
 
-  //         alert({
-  //           title: 'Beberapa data tidak dapat dihapus!',
-  //           variant: 'danger',
-  //           submitText: 'OK'
-  //         });
-  //         return;
-  //       }
+        try {
+          await alert({
+            title: 'Apakah anda yakin ingin menghapus data ini ?',
+            variant: 'danger',
+            submitText: 'YA',
+            catchOnCancel: true,
+            cancelText: 'TIDAK'
+          });
 
-  //       try {
-  //         await alert({
-  //           title: 'Apakah anda yakin ingin menghapus data ini ?',
-  //           variant: 'danger',
-  //           submitText: 'YA',
-  //           catchOnCancel: true,
-  //           cancelText: 'TIDAK'
-  //         });
+          await handleMultipleDelete(checkedRowsArray, selectedNoBukti);
+          dispatch(setProcessed());
+        } catch (alertError) {
+          dispatch(setProcessed());
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleDelete:', error);
+      alert({
+        title: 'Error!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
 
-  //         await handleMultipleDelete(checkedRowsArray);
-  //         dispatch(setProcessed());
-  //       } catch (alertError) {
-  //         dispatch(setProcessed());
-  //         return;
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error in handleDelete:', error);
-  //     alert({
-  //       title: 'Error!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   } finally {
-  //     dispatch(setProcessed());
-  //   }
-  // };
+  const handleView = () => {
+    if (selectedRow !== null) {
+      setMode('view');
+      setPopOver(true);
+    }
+  };
 
-  // const handleView = () => {
-  //   if (selectedRow !== null) {
-  //     setMode('view');
-  //     setPopOver(true);
-  //   }
-  // };
+  const handleClose = () => {
+    setPopOver(false);
+    setMode('');
+    clearError();
+    forms.reset();
+    setReloadForm(false);
+  };
 
-  // const handleClose = () => {
-  //   setPopOver(false);
-  //   setMode('');
-  //   clearError();
-  //   closeDialog();
-  //   forms.reset();
-  //   setReloadForm(false);
-  // };
+  const handleReport = async () => {
+    if (checkedRows.size === 0) {
+      alert({
+        title: 'PILIH DATA YANG INGIN DI CETAK!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      return; // Stop execution if no rows are selected
+    }
+    if (checkedRows.size > 1) {
+      alert({
+        title: 'HANYA BISA MEMILIH SATU DATA!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      return; // Stop execution if no rows are selected
+    }
 
-  // const handleReport = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
-  //   if (checkedRows.size > 1) {
-  //     alert({
-  //       title: 'HANYA BISA MEMILIH SATU DATA!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
+    try {
+      dispatch(setProcessing());
+      const rowId = Array.from(checkedRows)[0];
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
 
-  //   try {
-  //     dispatch(setProcessing());
-  //     const rowId = Array.from(checkedRows)[0];
-  //     const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+      // const response = await getBookingOrderanMuatanByIdFn(rowId);
+      // const responseDetail = await getPengeluaranEmklDetailFn({
+      //   filters: { nobukti: selectedRowNobukti }
+      // });
+      // const totalNominal = responseDetail.data.reduce(
+      //   (sum: number, i: any) => sum + Number(i.nominal || 0),
+      //   0
+      // );
 
-  //     const response = await getBookingOrderanMuatanByIdFn(rowId);
-  //     // const responseDetail = await getPengeluaranEmklDetailFn({
-  //     //   filters: { nobukti: selectedRowNobukti }
-  //     // });
-  //     // const totalNominal = responseDetail.data.reduce(
-  //     //   (sum: number, i: any) => sum + Number(i.nominal || 0),
-  //     //   0
-  //     // );
+      // if (response.data === null || response.data.length === 0) {
+      //   alert({
+      //     title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
+      //     variant: 'danger',
+      //     submitText: 'OK'
+      //   });
+      //   return;
+      // }
+      // const reportRows = response.data.map((row) => ({
+      //   ...row,
+      //   judullaporan: 'Laporan booking Orderan Muatan',
+      //   usercetak: user.username,
+      //   tglcetak: new Date().toLocaleDateString(),
+      //   // terbilang: numberToTerbilang(totalNominal),
+      //   judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      // }));
+      // sessionStorage.setItem('dataId', rowId as unknown as string);
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'TahomaBD'
+          );
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          );
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //       return;
-  //     }
-  //     const reportRows = response.data.map((row) => ({
-  //       ...row,
-  //       judullaporan: 'Laporan booking Orderan Muatan',
-  //       usercetak: user.username,
-  //       tglcetak: new Date().toLocaleDateString(),
-  //       // terbilang: numberToTerbilang(totalNominal),
-  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //     }));
-  //     sessionStorage.setItem('dataId', rowId as unknown as string);
-  //     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-  //       .then((module) => {
-  //         const { Stimulsoft } = module;
-  //         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-  //           '/fonts/tahomabd.ttf',
-  //           'TahomaBD'
-  //         );
-  //         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-  //           '/fonts/tahoma.ttf',
-  //           'Tahoma'
-  //         );
-  //         Stimulsoft.Base.StiLicense.Key =
-  //           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-  //           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-  //           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-  //           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-  //           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-  //           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-  //           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-  //         const report = new Stimulsoft.Report.StiReport();
-  //         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanPengeluaranKasEmklHeader.mrt');
+          report.dictionary.dataSources.clear();
+          // dataSet.readJson({ data: reportRows });
+          // dataSet.readJson({ detail: responseDetail.data });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
 
-  //         // Load the report template (MRT file)
-  //         report.loadFile('/reports/LaporanPengeluaranKasEmklHeader.mrt');
-  //         report.dictionary.dataSources.clear();
-  //         dataSet.readJson({ data: reportRows });
-  //         // dataSet.readJson({ detail: responseDetail.data });
-  //         report.regData(dataSet.dataSetName, '', dataSet);
-  //         report.dictionary.synchronize();
+          // Render the report asynchronously
 
-  //         // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
 
-  //         report.renderAsync(() => {
-  //           // Export the report to PDF asynchronously
-  //           report.exportDocumentAsync((pdfData: any) => {
-  //             const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-  //               type: 'application/pdf'
-  //             });
-  //             const pdfUrl = URL.createObjectURL(pdfBlob);
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
 
-  //             // Store the Blob URL in sessionStorage
-  //             sessionStorage.setItem('pdfUrl', pdfUrl);
-
-  //             // Navigate to the report page
-  //             window.open('/reports/pengeluaranemklheader', '_blank');
-  //           }, Stimulsoft.Report.StiExportFormat.Pdf);
-  //         });
-  //       })
-  //       .catch((error) => {
-  //         console.error('Failed to load Stimulsoft:', error);
-  //       });
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //   } finally {
-  //     dispatch(setProcessed());
-  //   }
-  // };
+              // Navigate to the report page
+              window.open('/reports/pengeluaranemklheader', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
+        });
+    } catch (error) {
+      console.error('Error generating report:', error);
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
 
   // const handleReport = async () => {
   //   if (checkedRows.size === 0) {
@@ -3297,127 +3301,112 @@ const GridOrderanMuatan = () => {
   //   }
   // };
 
-  // const onSuccess = async (
-  //   indexOnPage: any,
-  //   pageNumber: any,
-  //   keepOpenModal: any = false
-  // ) => {
-  //   dispatch(setClearLookup(true));
-  //   clearError();
-  //   closeDialog();
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    clearError();
 
-  //   try {
-  //     if (keepOpenModal) {
-  //       forms.reset();
-  //       setPopOver(true);
-  //     } else {
-  //       forms.reset();
-  //       setPopOver(false);
+    try {
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
 
-  //       // setRows([]);
-  //       if (mode !== 'delete') {
-  //         const response = await api2.get(
-  //           `/redis/get/bookingorderanheader-allItems`
-  //         );
-  //         // Set the rows only if the data has changed
-  //         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-  //           setRows(response.data);
-  //           setIsDataUpdated(true);
-  //           setCurrentPage(pageNumber);
-  //           setFetchedPages(new Set([pageNumber]));
-  //           setSelectedRow(indexOnPage);
-  //           setTimeout(() => {
-  //             gridRef?.current?.selectCell({
-  //               rowIdx: indexOnPage,
-  //               idx: 1
-  //             });
-  //           }, 200);
-  //         }
-  //       }
+        // setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(
+            `/redis/get/bookingorderanheader-allItems`
+          );
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
+        }
 
-  //       setIsDataUpdated(false);
-  //     }
-  //   } catch (error) {
-  //     console.error('Error during onSuccess:', error);
-  //     setIsDataUpdated(false);
-  //   } finally {
-  //     // dispatch(setClearLookup(false));
-  //     setIsDataUpdated(false);
-  //   }
-  // };
+        setIsDataUpdated(false);
+      }
+    } catch (error) {
+      console.error('Error during onSuccess:', error);
+      setIsDataUpdated(false);
+    } finally {
+      // dispatch(setClearLookup(false));
+      setIsDataUpdated(false);
+    }
+  };
 
-  // const onSubmit = async (
-  //   values: bookingOrderanMuatanInput,
-  //   keepOpenModal = false
-  // ) => {
-  //   clearError();
-  //   const selectedRowId = rows[selectedRow]?.id;
-  //   const selectedRowHeaderId = rows[selectedRow]?.header_id;
+  const onSubmit = async (
+    values: orderanMuatanInput,
+    keepOpenModal = false
+  ) => {
+    clearError();
+    const selectedRowId = rows[selectedRow]?.id;
+    const selectedRowHeaderId = rows[selectedRow]?.header_id;
+    const selectedNoBukti = rows[selectedRow]?.nobukti;
 
-  //   try {
-  //     dispatch(setProcessing());
-  //     if (mode === 'delete') {
-  //       if (selectedRowId) {
-  //         await deleteBookingMuatan(
-  //           {
-  //             id: selectedRowId as unknown as string,
-  //             jenisOrderan: String(selectedJenisOrderan)
-  //           },
-  //           {
-  //             onSuccess: () => {
-  //               setPopOver(false);
-  //               setRows((prevRows) =>
-  //                 prevRows.filter((row) => row.id !== selectedRowId)
-  //               );
-  //               if (selectedRow === 0) {
-  //                 setSelectedRow(selectedRow);
-  //                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-  //               } else {
-  //                 setSelectedRow(selectedRow - 1);
-  //                 gridRef?.current?.selectCell({
-  //                   rowIdx: selectedRow - 1,
-  //                   idx: 1
-  //                 });
-  //               }
-  //             }
-  //           }
-  //         );
-  //       }
-  //       return;
-  //     }
-  //     if (mode === 'add') {
-  //       const newOrder = await createBookingMuatan(
-  //         {
-  //           ...values,
-  //           ...filters // Kirim filter ke body/payload
-  //         },
-  //         {
-  //           onSuccess: (data) =>
-  //             onSuccess(data.dataIndex, data.pageNumber, keepOpenModal)
-  //         }
-  //       );
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteOrderanMuatan(
+            {
+              id: selectedRowId as unknown as string,
+              jenisOrderan: String(selectedJenisOrderan),
+              nobukti: selectedNoBukti
+            },
+            {
+              onSuccess: () => {
+                setPopOver(false);
+                setRows((prevRows) =>
+                  prevRows.filter((row) => row.id !== selectedRowId)
+                );
+                if (selectedRow === 0) {
+                  setSelectedRow(selectedRow);
+                  gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+                } else {
+                  setSelectedRow(selectedRow - 1);
+                  gridRef?.current?.selectCell({
+                    rowIdx: selectedRow - 1,
+                    idx: 1
+                  });
+                }
+              }
+            }
+          );
+        }
+        return;
+      }
 
-  //       if (newOrder !== undefined && newOrder !== null) {
-  //       }
-  //       return;
-  //     }
-
-  //     if (selectedRowId && mode === 'edit') {
-  //       await updateBookingMuatan(
-  //         {
-  //           id: selectedRowHeaderId as unknown as string,
-  //           fields: { ...values, ...filters }
-  //         },
-  //         { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
-  //       );
-  //       queryClient.invalidateQueries('bookingorderan');
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //   } finally {
-  //     dispatch(setProcessed());
-  //   }
-  // };
+      if (selectedRowId && mode === 'edit') {
+        await updateOrderanMuatan(
+          {
+            id: selectedRowHeaderId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('orderanheader');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
+    }
+  };
 
   const loadGridConfig = async (userId: string, gridName: string) => {
     try {
@@ -3756,15 +3745,15 @@ const GridOrderanMuatan = () => {
   useEffect(() => {
     setIsFirstLoad(true);
     loadGridConfig(user.id, 'GridOrderanMuatan');
-
     const rawNobukti = searchParams.get('orderan_nobukti');
-
-    // Set filters
     setFilters((prevFilters: Filter) => ({
       ...prevFilters,
       filters: {
         ...prevFilters.filters,
-        nobukti: rawNobukti ?? ''
+        nobukti: rawNobukti ?? '',
+        tglDari: selectedDate,
+        tglSampai: selectedDate2,
+        jenisOrderan: String(selectedJenisOrderan)
       }
     }));
 
@@ -3801,13 +3790,13 @@ const GridOrderanMuatan = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        // console.log('masuk1');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
             ...prevFilters.filters,
             tglDari: selectedDate,
-            tglSampai: selectedDate2
+            tglSampai: selectedDate2,
+            jenisOrderan: String(selectedJenisOrderan)
           }
         }));
       }
@@ -3817,13 +3806,13 @@ const GridOrderanMuatan = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        // console.log('masuk2');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
             ...prevFilters.filters,
             tglDari: selectedDate,
-            tglSampai: selectedDate2
+            tglSampai: selectedDate2,
+            jenisOrderan: String(selectedJenisOrderan)
           }
         }));
       }
@@ -3914,97 +3903,87 @@ const GridOrderanMuatan = () => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   const rowData = rows[selectedRow];
-  //   if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-  //     forms.setValue('nobukti', rowData.nobukti);
-  //     forms.setValue('tglbukti', rowData.tglbukti);
-  //     forms.setValue(
-  //       'jenisorder_id',
-  //       Number(selectedJenisOrderan) || JENISORDERMUATAN
-  //     );
-  //     forms.setValue(
-  //       'jenisorder_nama',
-  //       selectedJenisOrderanNama || JENISORDERMUATANNAMA
-  //     );
-  //     forms.setValue('container_id', Number(rowData?.container_id));
-  //     forms.setValue('container_nama', rowData?.container_nama);
-  //     forms.setValue('shipper_id', Number(rowData?.shipper_id));
-  //     forms.setValue('shipper_nama', rowData?.shipper_nama);
-  //     forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id));
-  //     forms.setValue('tujuankapal_nama', rowData?.tujuankapal_nama);
-  //     forms.setValue('marketing_id', Number(rowData?.marketing_id));
-  //     forms.setValue('marketing_nama', rowData?.marketing_nama);
-  //     forms.setValue('keterangan', rowData?.keterangan);
-  //     forms.setValue('schedule_id', Number(rowData?.schedule_id));
-  //     forms.setValue('schedule_nama', rowData?.schedule_nama);
-  //     forms.setValue(
-  //       'pelayarancontainer_id',
-  //       Number(rowData?.pelayarancontainer_id)
-  //     );
-  //     forms.setValue(
-  //       'pelayarancontainer_nama',
-  //       rowData?.pelayarancontainer_nama
-  //     );
-  //     forms.setValue('jenismuatan_id', Number(rowData?.jenismuatan_id));
-  //     forms.setValue('jenismuatan_nama', rowData?.jenismuatan_nama);
-  //     forms.setValue('sandarkapal_id', Number(rowData?.sandarkapal_id));
-  //     forms.setValue('sandarkapal_nama', rowData?.sandarkapal_nama);
-  //     forms.setValue('tradoluar', Number(rowData?.tradoluar));
-  //     forms.setValue('tradoluar_nama', rowData?.tradoluar_nama);
-  //     forms.setValue('nopolisi', rowData?.nopolisi);
-  //     forms.setValue('nosp', rowData?.nosp);
-  //     forms.setValue('nocontainer', rowData?.nocontainer);
-  //     forms.setValue('noseal', rowData?.noseal);
-  //     forms.setValue('lokasistuffing', Number(rowData?.lokasistuffing));
-  //     forms.setValue('lokasistuffing_nama', rowData?.lokasistuffing_nama);
-  //     forms.setValue(
-  //       'nominalstuffing',
-  //       rowData.nominalstuffing == null
-  //         ? undefined
-  //         : formatCurrency(rowData?.nominalstuffing)
-  //     );
-  //     forms.setValue('emkllain_id', Number(rowData?.emkllain_id));
-  //     forms.setValue('emkllain_nama', rowData?.emkllain_nama);
-  //     forms.setValue('asalmuatan', rowData?.asalmuatan);
-  //     forms.setValue('daftarbl_id', Number(rowData?.daftarbl_id));
-  //     forms.setValue('daftarbl_nama', rowData?.daftarbl_nama);
-  //     forms.setValue('comodity', rowData?.comodity);
-  //     forms.setValue('gandengan', rowData?.gandengan);
-  //     forms.setValue('pisahbl', Number(rowData?.pisahbl));
-  //     forms.setValue('pisahbl_nama', rowData?.pisahbl_nama);
-  //     forms.setValue('jobptd', Number(rowData?.jobptd));
-  //     forms.setValue('jobptd_nama', rowData?.jobptd_nama);
-  //     forms.setValue('transit', Number(rowData?.transit));
-  //     forms.setValue('transit_nama', rowData?.transit_nama);
-  //     forms.setValue('stuffingdepo', Number(rowData?.stuffingdepo));
-  //     forms.setValue('stuffingdepo_nama', rowData?.stuffingdepo_nama);
-  //     forms.setValue('opendoor', Number(rowData?.opendoor));
-  //     forms.setValue('opendoor_nama', rowData?.opendoor_nama);
-  //     forms.setValue('batalmuat', Number(rowData?.batalmuat));
-  //     forms.setValue('batalmuat_nama', rowData?.batalmuat_nama);
-  //     forms.setValue('soc', Number(rowData?.soc));
-  //     forms.setValue('soc_nama', rowData?.soc_nama);
-  //     forms.setValue(
-  //       'pengurusandoorekspedisilain',
-  //       Number(rowData?.pengurusandoor)
-  //     );
-  //     forms.setValue(
-  //       'pengurusandoorekspedisilain_nama',
-  //       rowData?.pengurusandoor_nama
-  //     );
-  //   } else {
-  //     forms.setValue('nobukti', '');
-  //     forms.setValue(
-  //       'jenisorder_id',
-  //       Number(selectedJenisOrderan) || JENISORDERMUATAN
-  //     );
-  //     forms.setValue(
-  //       'jenisorder_nama',
-  //       selectedJenisOrderanNama || JENISORDERMUATANNAMA
-  //     );
-  //   }
-  // }, [forms, selectedRow, rows, mode]);
+  useEffect(() => {
+    const rowData = rows[selectedRow];
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+      forms.setValue('nobukti', rowData.nobukti);
+      forms.setValue('tglbukti', rowData.tglbukti);
+      forms.setValue(
+        'jenisorder_id',
+        Number(selectedJenisOrderan) || JENISORDERMUATAN
+      );
+      forms.setValue(
+        'jenisorder_nama',
+        selectedJenisOrderanNama || JENISORDERMUATANNAMA
+      );
+      forms.setValue('container_id', Number(rowData?.container_id));
+      forms.setValue('container_nama', rowData?.container_nama);
+      forms.setValue('shipper_id', Number(rowData?.shipper_id));
+      forms.setValue('shipper_nama', rowData?.shipper_nama);
+      forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id));
+      forms.setValue('tujuankapal_nama', rowData?.tujuankapal_nama);
+      forms.setValue('marketing_id', Number(rowData?.marketing_id));
+      forms.setValue('marketing_nama', rowData?.marketing_nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('schedule_id', Number(rowData?.schedule_id));
+      forms.setValue('schedule_nama', rowData?.schedule_nama);
+      forms.setValue(
+        'pelayarancontainer_id',
+        Number(rowData?.pelayarancontainer_id)
+      );
+      forms.setValue(
+        'pelayarancontainer_nama',
+        rowData?.pelayarancontainer_nama
+      );
+      forms.setValue('jenismuatan_id', Number(rowData?.jenismuatan_id));
+      forms.setValue('jenismuatan_nama', rowData?.jenismuatan_nama);
+      forms.setValue('sandarkapal_id', Number(rowData?.sandarkapal_id));
+      forms.setValue('sandarkapal_nama', rowData?.sandarkapal_nama);
+      forms.setValue('tradoluar', Number(rowData?.tradoluar));
+      forms.setValue('tradoluar_nama', rowData?.tradoluar_nama);
+      forms.setValue('nopolisi', rowData?.nopolisi);
+      forms.setValue('nosp', rowData?.nosp);
+      forms.setValue('nocontainer', rowData?.nocontainer);
+      forms.setValue('noseal', rowData?.noseal);
+      forms.setValue('lokasistuffing', Number(rowData?.lokasistuffing));
+      forms.setValue('lokasistuffing_nama', rowData?.lokasistuffing_nama);
+      forms.setValue(
+        'nominalstuffing',
+        rowData.nominalstuffing == null
+          ? undefined
+          : formatCurrency(rowData?.nominalstuffing)
+      );
+      forms.setValue('emkllain_id', Number(rowData?.emkllain_id));
+      forms.setValue('emkllain_nama', rowData?.emkllain_nama);
+      forms.setValue('asalmuatan', rowData?.asalmuatan);
+      forms.setValue('daftarbl_id', Number(rowData?.daftarbl_id));
+      forms.setValue('daftarbl_nama', rowData?.daftarbl_nama);
+      forms.setValue('comodity', rowData?.comodity);
+      forms.setValue('gandengan', rowData?.gandengan);
+      forms.setValue('pisahbl', Number(rowData?.pisahbl));
+      forms.setValue('pisahbl_nama', rowData?.pisahbl_nama);
+      forms.setValue('jobptd', Number(rowData?.jobptd));
+      forms.setValue('jobptd_nama', rowData?.jobptd_nama);
+      forms.setValue('transit', Number(rowData?.transit));
+      forms.setValue('transit_nama', rowData?.transit_nama);
+      forms.setValue('stuffingdepo', Number(rowData?.stuffingdepo));
+      forms.setValue('stuffingdepo_nama', rowData?.stuffingdepo_nama);
+      forms.setValue('opendoor', Number(rowData?.opendoor));
+      forms.setValue('opendoor_nama', rowData?.opendoor_nama);
+      forms.setValue('batalmuat', Number(rowData?.batalmuat));
+      forms.setValue('batalmuat_nama', rowData?.batalmuat_nama);
+      forms.setValue('soc', Number(rowData?.soc));
+      forms.setValue('soc_nama', rowData?.soc_nama);
+      forms.setValue(
+        'pengurusandoorekspedisilain',
+        Number(rowData?.pengurusandoor)
+      );
+      forms.setValue(
+        'pengurusandoorekspedisilain_nama',
+        rowData?.pengurusandoor_nama
+      );
+    }
+  }, [forms, selectedRow, rows, mode, popOver]);
 
   useEffect(() => {
     // Initialize the refs based on columns dynamically
@@ -4023,7 +4002,6 @@ const GridOrderanMuatan = () => {
         clearError();
         setPopOver(false);
         dispatch(clearOpenName());
-        closeDialog();
         setReloadForm(false);
       }
     };
@@ -4035,8 +4013,7 @@ const GridOrderanMuatan = () => {
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-    // }, [forms]);
-  }, []);
+  }, [forms]);
 
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
@@ -4046,13 +4023,13 @@ const GridOrderanMuatan = () => {
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
 
-  // useEffect(() => {
-  //   if (isSubmitSuccessful) {
-  //     // reset();
-  //     // Pastikan fokus terjadi setelah repaint
-  //     requestAnimationFrame(() => setFocus('tglbukti'));
-  //   }
-  // }, [isSubmitSuccessful, setFocus]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('tglbukti'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -4115,25 +4092,18 @@ const GridOrderanMuatan = () => {
         >
           <ActionButton
             module="ORDERANMUATAN"
-            // onAdd={handleAdd}
             checkedRows={checkedRows}
-            // onDelete={handleDelete}
-            // onView={handleView}
-            // onEdit={handleEdit}
-            // customActions={[
-            //   {
-            //     label: 'Print',
-            //     icon: <FaPrint />,
-            //     onClick: () => handleReport(),
-            //     className: 'bg-cyan-500 hover:bg-cyan-700'
-            //   }
-            //   // {
-            //   //   label: 'Lainnya',
-            //   //   // icon: <FaPrint />,
-            //   //   onClick: () => handleJobParty(),
-            //   //   className: 'bg-cyan-500 hover:bg-cyan-700'
-            //   // }
-            // ]}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onView={handleView}
+            customActions={[
+              {
+                label: 'Print',
+                icon: <FaPrint />,
+                onClick: () => handleReport(),
+                className: 'bg-cyan-500 hover:bg-cyan-700'
+              }
+            ]}
           />
           {isLoadingOrderanMuatan ? <LoadRowsRenderer /> : null}
           {contextMenu && (
@@ -4157,17 +4127,17 @@ const GridOrderanMuatan = () => {
           )}
         </div>
       </div>
-      {/* <FormBookingMuatan
+      <FormOrderanMuatan
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
+        // isLoadingCreate={isLoadingCreate}
         isLoadingUpdate={isLoadingUpdate}
-        isLoadingDelete={isLoadingDelete}
+        // isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
         onSubmit={forms.handleSubmit(onSubmit as any)}
-        isLoadingCreate={isLoadingCreate}
-      /> */}
+      />
     </div>
   );
 };

@@ -1,5 +1,11 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback
+} from 'react';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -12,21 +18,7 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormMenu from './FormDaftarbl';
 import { useQueryClient } from 'react-query';
-import {
-  DaftarblInput,
-  daftarblSchema
-} from '@/lib/validations/daftarbl.validation';
-
-import {
-  useCreateDaftarbl,
-  useDeleteDaftarbl,
-  useGetDaftarbl,
-  useUpdateDaftarbl
-} from '@/lib/server/useDaftarbl';
-
-import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import {
@@ -49,12 +41,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {
-  exportMenuBySelectFn,
-  exportMenuFn,
-  getMenuFn,
-  reportMenuBySelectFn
-} from '@/lib/apis/menu.api';
 import { HiDocument } from 'react-icons/hi2';
 import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
@@ -63,20 +49,37 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import ReportDesignerMenu from '@/app/reports/menu/page';
-import { IDaftarbl } from '@/lib/types/daftarbl.type';
-import { number } from 'zod';
+import { IJenisOrderan } from '@/lib/types/jenisorderan.type';
+import {
+  JenisOrderanInput,
+  jenisorderanSchema
+} from '@/lib/validations/jenisorderan.validation';
+import {
+  useCreateJenisOrderan,
+  useDeleteJenisOrderan,
+  useGetJenisOrderan,
+  useUpdateJenisOrderan
+} from '@/lib/server/useJenisOrderan';
+import FormJenisOrderan from './FormJenisOrderan';
+import { getJenisOrderanFn } from '@/lib/apis/jenisorderan.api';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import {
-  setProcessing,
-  setProcessed
-} from '@/lib/store/loadingSlice/loadingSlice';
 import { useFormError } from '@/lib/hooks/formErrorContext';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { debounce } from 'lodash';
+import FilterInput from '@/components/custom-ui/FilterInput';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { getDaftarblFn } from '@/lib/apis/daftarbl.api';
 
 interface Filter {
   page: number;
@@ -85,10 +88,12 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    text: string;
+    statusaktif: string;
+    modifiedby: string;
     created_at: string;
     updated_at: string;
-    statusaktif: string;
+    text: string;
+    format_text: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -98,23 +103,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridDaftarbl = () => {
+const GridJenisOrderan = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createDaftarbl, isLoading: isLoadingCreate } =
-    useCreateDaftarbl();
-  const { mutateAsync: updateDaftarbl, isLoading: isLoadingUpdate } =
-    useUpdateDaftarbl();
+  const { mutateAsync: createJenisOrderan, isLoading: isLoadingCreate } =
+    useCreateJenisOrderan();
+  const { mutateAsync: updateJenisOrderan, isLoading: isLoadingUpdate } =
+    useUpdateJenisOrderan();
+  const { mutateAsync: deleteJenisOrderan, isLoading: isLoadingDelete } =
+    useDeleteJenisOrderan();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteDaftarbl, isLoading: isLoadingDelete } =
-    useDeleteDaftarbl();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -131,7 +136,7 @@ const GridDaftarbl = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IDaftarbl[]>([]);
+  const [rows, setRows] = useState<IJenisOrderan[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -140,17 +145,15 @@ const GridDaftarbl = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<DaftarblInput>({
+  const forms = useForm<JenisOrderanInput>({
     resolver:
       mode === 'delete'
         ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(daftarblSchema),
+        : zodResolver(jenisorderanSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
-      keterangan: '',
-      statusaktif: 1,
-      statusaktif_nama: ''
+      keterangan: ''
     }
   });
   const {
@@ -165,10 +168,12 @@ const GridDaftarbl = () => {
     filters: {
       nama: '',
       keterangan: '',
+      statusaktif: '',
+      modifiedby: '',
       created_at: '',
       updated_at: '',
       text: '',
-      statusaktif: ''
+      format_text: ''
     },
     search: '',
     sortBy: 'nama',
@@ -176,27 +181,56 @@ const GridDaftarbl = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allDaftarbl, isLoading: isLoadingDaftarbl } = useGetDaftarbl({
-    ...filters,
-    page: currentPage
-  });
+  const { data: allJenisOrderan, isLoading: isLoadingJenisOrderan } =
+    useGetJenisOrderan({
+      ...filters,
+      page: currentPage
+    });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
-    // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
-
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
         : originalIndex;
 
-    // update filter seperti biasa…
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: value },
@@ -207,12 +241,10 @@ const GridDaftarbl = () => {
     setCheckedRows(new Set());
     setIsAllSelected(false);
 
-    // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
 
-    // 4. focus input filter
     setTimeout(() => {
       const ref = inputColRefs.current[colKey];
       ref?.focus();
@@ -266,11 +298,12 @@ const GridDaftarbl = () => {
       filters: {
         nama: '',
         keterangan: '',
-        icon: '',
+        statusaktif: '',
+        modifiedby: '',
         created_at: '',
         updated_at: '',
         text: '',
-        statusaktif: ''
+        format_text: ''
       },
       search: searchValue,
       page: 1
@@ -292,6 +325,14 @@ const GridDaftarbl = () => {
     setRows([]);
   };
   const handleSort = (column: string) => {
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -304,7 +345,7 @@ const GridDaftarbl = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -312,25 +353,6 @@ const GridDaftarbl = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        clearError();
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
   useEffect(() => {
     if (isSubmitSuccessful) {
       // reset();
@@ -360,6 +382,7 @@ const GridDaftarbl = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+  console.log(forms.getValues());
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -371,7 +394,7 @@ const GridDaftarbl = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IDaftarbl>[] => {
+  const columns = useMemo((): Column<IJenisOrderan>[] => {
     return [
       {
         key: 'nomor',
@@ -395,10 +418,12 @@ const GridDaftarbl = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    text: '',
+                    statusaktif: '',
+                    modifiedby: '',
                     created_at: '',
                     updated_at: '',
-                    statusaktif: ''
+                    text: '',
+                    format_text: ''
                   }
                 }),
                   setInputValue('');
@@ -438,7 +463,7 @@ const GridDaftarbl = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IDaftarbl }) => (
+        renderCell: ({ row }: { row: IJenisOrderan }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -465,7 +490,7 @@ const GridDaftarbl = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama
@@ -473,52 +498,47 @@ const GridDaftarbl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nama"
+                value={filters.filters.nama || ''}
+                onChange={(value) => handleFilterInputChange('nama', value)}
+                onClear={() => handleClearFilter('nama')}
+                inputRef={(el) => {
                   inputColRefs.current['nama'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nama', value);
-                }}
               />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nama || '';
+          const cellValue = props.row.nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -538,9 +558,7 @@ const GridDaftarbl = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Keterangan
@@ -548,10 +566,10 @@ const GridDaftarbl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -559,42 +577,39 @@ const GridDaftarbl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
-                }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -609,23 +624,86 @@ const GridDaftarbl = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('statusaktif')}
+              onContextMenu={handleContextMenu}
+            >
+              <p className="text-sm font-normal">Status Aktif</p>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'format',
+        name: 'format',
+        resizable: true,
+        draggable: true,
+        headerCellClass: 'column-headers',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('format_text')}
               onContextMenu={handleContextMenu}
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'statusaktif'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'format' ? 'text-red-500' : 'font-normal'
                 }`}
               >
-                Status Aktif
+                FORMAT
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'statusaktif' &&
+                {filters.sortBy === 'format_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'statusaktif' &&
+                ) : filters.sortBy === 'format_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="text-red-500" />
                 ) : (
@@ -633,48 +711,120 @@ const GridDaftarbl = () => {
                 )}
               </div>
             </div>
+
             <div className="relative h-[50%] w-full px-1">
-              <div className="relative h-[50%] w-full px-1">
-                <FilterOptions
-                  endpoint="parameter"
-                  value="id"
-                  label="text"
-                  filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
-                  onChange={(value) =>
-                    handleColumnFilterChange('statusaktif', value)
-                  } // Menangani perubahan nilai di parent
-                />
-              </div>
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['format'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.format_text.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('format_text', value);
+                }}
+              />
+              {filters.filters.format_text && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('format_text', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-
-          if (memoData) {
-            return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          const columnFilter = filters.filters.format_text || '';
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.format_nama !== null &&
+                  props.row.format_nama !== undefined
+                  ? props.row.format_nama
+                  : '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
+          );
         }
       },
+      {
+        key: 'modifiedby',
+        name: 'Modified By',
+        resizable: true,
+        draggable: true,
 
+        headerCellClass: 'column-headers',
+
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('modifiedby')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                MODIFIED BY
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'modifiedby' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'modifiedby' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="modifiedby"
+                value={filters.filters.modifiedby || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
+                  inputColRefs.current['modifiedby'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
       {
         key: 'created_at',
         name: 'Created At',
@@ -691,9 +841,7 @@ const GridDaftarbl = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -701,10 +849,10 @@ const GridDaftarbl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -712,39 +860,39 @@ const GridDaftarbl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="created_at"
+                value={filters.filters.created_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.created_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('created_at', value);
-                }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -766,9 +914,7 @@ const GridDaftarbl = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -776,10 +922,10 @@ const GridDaftarbl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -787,39 +933,39 @@ const GridDaftarbl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.updated_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('updated_at', value);
+              <FilterInput
+                colKey="updated_at"
+                value={filters.filters.updated_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
+                  inputColRefs.current['updated_at'] = el;
                 }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -842,7 +988,12 @@ const GridDaftarbl = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridDaftarbl', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        user.id,
+        'GridJenisOrderan',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -857,7 +1008,7 @@ const GridDaftarbl = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridDaftarbl', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridJenisOrderan', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -874,7 +1025,7 @@ const GridDaftarbl = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingDaftarbl || !hasMore || rows.length === 0) return;
+    if (isLoadingJenisOrderan || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -901,7 +1052,7 @@ const GridDaftarbl = () => {
     }
   }
 
-  function handleCellClick(args: { row: IDaftarbl }) {
+  function handleCellClick(args: { row: IJenisOrderan }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -909,7 +1060,7 @@ const GridDaftarbl = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IDaftarbl>,
+    args: CellKeyDownArgs<IJenisOrderan>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -962,9 +1113,8 @@ const GridDaftarbl = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    clearError();
     dispatch(setClearLookup(true));
-
+    clearError();
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -975,7 +1125,7 @@ const GridDaftarbl = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/daftarbl-allItems`);
+          const response = await api2.get(`/redis/get/jenisorderan-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1001,67 +1151,58 @@ const GridDaftarbl = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: DaftarblInput, keepOpenModal = false) => {
+  const onSubmit = async (values: JenisOrderanInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
-    clearError();
-    try {
-      dispatch(setProcessing());
-      if (mode === 'delete') {
-        if (selectedRowId) {
-          await deleteDaftarbl(selectedRowId as unknown as string, {
-            onSuccess: () => {
-              setPopOver(false);
-              setRows((prevRows) =>
-                prevRows.filter((row) => row.id !== selectedRowId)
-              );
-              if (selectedRow === 0) {
-                setSelectedRow(selectedRow);
-                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-              } else {
-                setSelectedRow(selectedRow - 1);
-                gridRef?.current?.selectCell({
-                  rowIdx: selectedRow - 1,
-                  idx: 1
-                });
-              }
-            }
-          });
-        }
-        return;
-      }
-      if (mode === 'add') {
-        const newOrder = await createDaftarbl(
-          {
-            ...values,
-            ...filters // Kirim filter ke body/payload
-          },
-          {
-            onSuccess: (data) =>
-              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
-          }
-        );
 
-        if (newOrder !== undefined && newOrder !== null) {
+    if (mode === 'delete') {
+      if (selectedRowId) {
+        await deleteJenisOrderan(selectedRowId as unknown as string, {
+          onSuccess: () => {
+            setPopOver(false);
+            setRows((prevRows) =>
+              prevRows.filter((row) => row.id !== selectedRowId)
+            );
+            if (selectedRow === 0) {
+              setSelectedRow(selectedRow);
+              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+            } else {
+              setSelectedRow(selectedRow - 1);
+              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+            }
+          }
+        });
+      }
+      return;
+    }
+    if (mode === 'add') {
+      const newOrder = await createJenisOrderan(
+        {
+          ...values,
+          ...filters
+        },
+        {
+          onSuccess: (data) =>
+            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
         }
-        return;
+      );
+
+      if (newOrder !== undefined && newOrder !== null) {
       }
-      if (selectedRowId && mode === 'edit') {
-        await updateDaftarbl(
-          {
-            id: selectedRowId as unknown as string,
-            fields: { ...values, ...filters }
-          },
-          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-        );
-        queryClient.invalidateQueries('daftarbl');
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      dispatch(setProcessed());
+      return;
+    }
+
+    if (selectedRowId && mode === 'edit') {
+      await updateJenisOrderan(
+        {
+          id: selectedRowId as unknown as string,
+          fields: { ...values, ...filters }
+        },
+        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+      );
+      queryClient.invalidateQueries('jenisorderans');
     }
   };
-  console.log(forms.getValues());
+
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -1081,61 +1222,6 @@ const GridDaftarbl = () => {
       setPopOver(true);
     }
   };
-
-  // const handleExport = async () => {
-  //   try {
-  //     const { page, limit, ...filtersWithoutLimit } = filters;
-
-  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
-
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
-
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting user data:', error);
-  //   }
-  // };
-
-  // const handleExportBySelect = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
-
-  //   // Mengubah checkedRows menjadi format JSON
-  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-  //   try {
-  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
-
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
-
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting menu data:', error);
-  //     alert({
-  //       title: 'Failed to generate the export. Please try again.',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
-
   const handleReport = async () => {
     try {
       dispatch(setProcessing());
@@ -1148,10 +1234,10 @@ const GridDaftarbl = () => {
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await getDaftarblFn(filtersWithoutLimit);
+      const response = await getJenisOrderanFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Daftar BL',
+        judullaporan: 'Laporan Jenis Orderan',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1185,7 +1271,7 @@ const GridDaftarbl = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanDaftarbl.mrt');
+          report.loadFile('/reports/LaporanJenisorderan.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1204,7 +1290,7 @@ const GridDaftarbl = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/daftarbl', '_blank');
+              window.open('/reports/jenisorderan', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1218,47 +1304,15 @@ const GridDaftarbl = () => {
     }
   };
 
-  // const handleReportBySelect = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
-
-  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-  //   try {
-  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
-  //     const reportRows = response.map((row: any) => ({
-  //       ...row,
-  //       judullaporan: 'Laporan Menu',
-  //       usercetak: user.username,
-  //       tglcetak: new Date().toLocaleDateString(),
-  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //     }));
-  //     dispatch(setReportData(reportRows));
-  //     window.open('/reports/menu', '_blank');
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //     alert({
-  //       title: 'Failed to generate the report. Please try again.',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
-
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IDaftarbl) {
+  function getRowClass(row: IJenisOrderan) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IDaftarbl) {
+  function rowKeyGetter(row: IJenisOrderan) {
     return row.id;
   }
 
@@ -1272,9 +1326,6 @@ const GridDaftarbl = () => {
       </div>
     );
   }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
   function LoadRowsRenderer() {
     return (
       <div>
@@ -1289,17 +1340,11 @@ const GridDaftarbl = () => {
     forms.reset();
   };
   const handleAdd = async () => {
-    try {
-      // Jalankan API sinkronisasi
-      const syncResponse = await syncAcosFn();
-      setMode('add');
+    setMode('add');
 
-      setPopOver(true);
+    setPopOver(true);
 
-      forms.reset();
-    } catch (error) {
-      console.error('Error syncing ACOS:', error);
-    }
+    forms.reset();
   };
   const saveGridConfig = async (
     userId: string, // userId sebagai identifier
@@ -1350,7 +1395,7 @@ const GridDaftarbl = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridDaftarbl',
+        'GridJenisOrderan',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
@@ -1435,7 +1480,7 @@ const GridDaftarbl = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridDaftarbl');
+    loadGridConfig(user.id, 'GridJenisOrderan');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1447,11 +1492,10 @@ const GridDaftarbl = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-
   useEffect(() => {
-    if (!allDaftarbl || isFetchingManually || isDataUpdated) return;
+    if (!allJenisOrderan || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allDaftarbl.data || [];
+    const newRows = allJenisOrderan.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1469,14 +1513,20 @@ const GridDaftarbl = () => {
       return prevRows;
     });
 
-    if (allDaftarbl.pagination.totalPages) {
-      setTotalPages(allDaftarbl.pagination.totalPages);
+    if (allJenisOrderan.pagination.totalPages) {
+      setTotalPages(allJenisOrderan.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allDaftarbl, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [
+    allJenisOrderan,
+    currentPage,
+    filters,
+    isFetchingManually,
+    isDataUpdated
+  ]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1494,6 +1544,13 @@ const GridDaftarbl = () => {
   }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        clearError();
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
       // Cek apakah target yang sedang fokus adalah input atau textarea
       if (
         event.key === ' ' &&
@@ -1521,7 +1578,6 @@ const GridDaftarbl = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (
@@ -1529,13 +1585,15 @@ const GridDaftarbl = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', rowData?.statusaktif || 1);
+      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('statusformat', Number(rowData?.statusformat) || 0);
+      forms.setValue('statusformat_nama', rowData?.format_nama || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_nama', rowData?.text || '');
+      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1546,6 +1604,12 @@ const GridDaftarbl = () => {
       }
     });
   }, []);
+  useEffect(() => {
+    return () => {
+      debouncedFilterUpdate.cancel();
+    };
+  }, []);
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1608,7 +1672,7 @@ const GridDaftarbl = () => {
           }}
         >
           <ActionButton
-            module="DAFTARBL"
+            module="JenisOrderan"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
@@ -1622,53 +1686,8 @@ const GridDaftarbl = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
-            // customActions={[
-            //   {
-            //     label: 'Resequence',
-            //     icon: <FaPlus />, // Custom icon
-            //     onClick: () => handleResequence(),
-            //     variant: 'success', // Optional styling variant
-            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
-            //   }
-            // ]}
-            // dropdownMenus={[
-            //   {
-            //     label: 'Report',
-            //     icon: <FaPrint />,
-            //     className: 'bg-cyan-500 hover:bg-cyan-700',
-            //     actions: [
-            //       {
-            //         label: 'REPORT ALL',
-            //         onClick: () => handleReport(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       },
-            //       {
-            //         label: 'REPORT BY SELECT',
-            //         onClick: () => handleReportBySelect(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       }
-            //     ]
-            //   },
-            //   {
-            //     label: 'Export',
-            //     icon: <FaFileExport />,
-            //     className: 'bg-green-600 hover:bg-green-700',
-            //     actions: [
-            //       {
-            //         label: 'EXPORT ALL',
-            //         onClick: () => handleExport(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       },
-            //       {
-            //         label: 'EXPORT BY SELECT',
-            //         onClick: () => handleExportBySelect(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       }
-            //     ]
-            //   }
-            // ]}
           />
-          {isLoadingDaftarbl ? <LoadRowsRenderer /> : null}
+          {isLoadingJenisOrderan ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1690,7 +1709,7 @@ const GridDaftarbl = () => {
           )}
         </div>
       </div>
-      <FormMenu
+      <FormJenisOrderan
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1705,4 +1724,4 @@ const GridDaftarbl = () => {
   );
 };
 
-export default GridDaftarbl;
+export default GridJenisOrderan;

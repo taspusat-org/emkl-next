@@ -3,56 +3,254 @@ import axios, {
   AxiosResponse,
   InternalAxiosRequestConfig
 } from 'axios';
-import { getSession } from 'next-auth/react'; // Untuk mendapatkan session token terbaru
-import { setCookie, deleteCookie } from './cookie-actions'; // Mengimpor setCookie dan deleteCookie
-import { RootState, store } from '../store/store';
-import {
-  setCredentials,
-  clearCredentials,
-  setIsRefreshing
-} from '../store/authSlice/authSlice';
+import { getSession, signOut } from 'next-auth/react';
 
-let isRefreshing = false;
-let refreshSubscribers: ((token: string) => void)[] = [];
+interface TokenCache {
+  accessToken: string | null;
+  refreshToken: string | null;
+  expiresAt: number;
+}
 
-const subscribeTokenRefresh = (callback: (token: string) => void) => {
-  refreshSubscribers.push(callback);
-};
+class SessionTokenCache {
+  private static instance: SessionTokenCache;
+  private cache: TokenCache = {
+    accessToken: null,
+    refreshToken: null,
+    expiresAt: 0
+  };
 
-const onRefreshed = (newToken: string) => {
-  refreshSubscribers.forEach((callback) => callback(newToken));
-  refreshSubscribers = [];
-};
+  private isRefreshing = false;
+  private refreshSubscribers: Array<(token: string) => void> = [];
+  private sessionPromise: Promise<string | null> | null = null;
 
-const onRefreshFailed = () => {
-  refreshSubscribers = [];
-};
+  private constructor() {
+    this.initializeToken();
+  }
+
+  static getInstance(): SessionTokenCache {
+    if (!SessionTokenCache.instance) {
+      SessionTokenCache.instance = new SessionTokenCache();
+    }
+    return SessionTokenCache.instance;
+  }
+
+  private async initializeToken(): Promise<void> {
+    try {
+      const session = await getSession();
+
+      // ✅ PERBAIKAN: Check error di session
+      if (session?.error) {
+        console.error('⛔ Session has error, logging out...');
+        await this.handleLogout();
+        return;
+      }
+
+      if (session?.token) {
+        this.updateCache({
+          accessToken: session.token,
+          refreshToken: session.refreshToken || null,
+          expiresAt: session.accessTokenExpires
+            ? new Date(session.accessTokenExpires).getTime()
+            : 0
+        });
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize token:', error);
+    }
+  }
+
+  async getAccessToken(): Promise<string | null> {
+    // 1. Check cache
+    if (this.cache.accessToken && this.isTokenValid()) {
+      return this.cache.accessToken;
+    }
+
+    // 2. Use existing session promise
+    if (this.sessionPromise) {
+      return this.sessionPromise;
+    }
+
+    // 3. Fetch new session
+    this.sessionPromise = this.fetchSessionToken();
+
+    try {
+      const token = await this.sessionPromise;
+      return token;
+    } finally {
+      this.sessionPromise = null;
+    }
+  }
+
+  private async fetchSessionToken(): Promise<string | null> {
+    try {
+      const session = await getSession();
+
+      // ✅ PERBAIKAN: Check error field
+      if (session?.error) {
+        console.error('⛔ Session contains error:', session.error);
+        await this.handleLogout();
+        return null;
+      }
+
+      if (session?.token) {
+        this.updateCache({
+          accessToken: session.token,
+          refreshToken: session.refreshToken || null,
+          expiresAt: session.accessTokenExpires
+            ? new Date(session.accessTokenExpires).getTime()
+            : 0
+        });
+        return session.token;
+      }
+
+      // ✅ No session, logout
+      console.warn('⚠️ No valid session found');
+      await this.handleLogout();
+      return null;
+    } catch (error) {
+      console.error('❌ Failed to fetch session token:', error);
+      return null;
+    }
+  }
+
+  private isTokenValid(): boolean {
+    if (!this.cache.expiresAt) return true;
+    const bufferTime = 2 * 60 * 1000;
+    return Date.now() < this.cache.expiresAt - bufferTime;
+  }
+
+  updateCache(newCache: TokenCache): void {
+    this.cache = newCache;
+  }
+
+  async handleTokenRefresh(): Promise<string | null> {
+    // Queue mechanism
+    if (this.isRefreshing) {
+      return new Promise((resolve) => {
+        this.refreshSubscribers.push((token: string) => {
+          resolve(token);
+        });
+      });
+    }
+
+    this.isRefreshing = true;
+
+    try {
+      const session = await getSession();
+
+      // ✅ PERBAIKAN: Check error field sebelum check token
+      if (session?.error) {
+        console.error('⛔ Session has error during refresh:', session.error);
+        throw new Error('Session contains error: ' + session.error);
+      }
+
+      if (!session?.token) {
+        console.error('⛔ No session or token available');
+        throw new Error('No valid session');
+      }
+
+      // Update cache
+      this.updateCache({
+        accessToken: session.token,
+        refreshToken: session.refreshToken || null,
+        expiresAt: session.accessTokenExpires
+          ? new Date(session.accessTokenExpires).getTime()
+          : 0
+      });
+
+      // Notify subscribers
+      this.refreshSubscribers.forEach((callback) =>
+        callback(session.token as string)
+      );
+      this.refreshSubscribers = [];
+
+      return session.token;
+    } catch (error) {
+      console.error('❌ Token refresh failed:', error);
+
+      // Clear subscribers with null
+      this.refreshSubscribers.forEach((callback) => callback(''));
+      this.refreshSubscribers = [];
+
+      await this.handleLogout();
+      return null;
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+
+  /**
+   * ✅ BARU: Centralized logout handler
+   */
+  private async handleLogout(): Promise<void> {
+    this.clearCache();
+
+    if (typeof window !== 'undefined') {
+      await signOut({
+        callbackUrl: '/auth/signin',
+        redirect: true
+      });
+    }
+  }
+
+  clearCache(): void {
+    this.cache = {
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: 0
+    };
+    this.sessionPromise = null;
+  }
+
+  async forceRefresh(): Promise<void> {
+    this.cache.accessToken = null;
+    await this.getAccessToken();
+  }
+
+  getCacheInfo() {
+    const now = Date.now();
+    const expiresIn = this.cache.expiresAt ? this.cache.expiresAt - now : 0;
+
+    return {
+      hasToken: !!this.cache.accessToken,
+      tokenPreview: this.cache.accessToken
+        ? `${this.cache.accessToken.substring(0, 20)}...`
+        : null,
+      expiresAt: this.cache.expiresAt
+        ? new Date(this.cache.expiresAt).toISOString()
+        : null,
+      expiresInSeconds: Math.floor(expiresIn / 1000),
+      isValid: this.isTokenValid(),
+      isRefreshing: this.isRefreshing
+    };
+  }
+}
+
+const tokenCache = SessionTokenCache.getInstance();
 
 const configureAxios = (baseURL: string): AxiosInstance => {
   const apiInstance = axios.create({
-    baseURL: baseURL || ''
+    baseURL: baseURL || '',
+    timeout: 30000
   });
 
-  // --- Request Interceptor ---
   apiInstance.interceptors.request.use(
     async (
       config: InternalAxiosRequestConfig
     ): Promise<InternalAxiosRequestConfig> => {
-      const dispatch = store.dispatch;
+      if (
+        config.url?.includes('/auth/login') ||
+        config.url?.includes('/auth/refresh-token')
+      ) {
+        return config;
+      }
 
-      dispatch(
-        setCredentials({
-          ...store.getState().auth,
-          autoLogoutExpires: Date.now(),
-          cabang_id: store.getState().auth.cabang_id || null
-        })
-      );
-
-      const { token } = store.getState().auth;
-
+      const token = await tokenCache.getAccessToken();
       if (token) {
         config.headers = config.headers ?? {};
-        (config.headers as any).Authorization = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token}`;
+      } else {
+        console.warn('⚠️ No token available for request:', config.url);
       }
 
       const hasBody = !!config.data;
@@ -60,7 +258,7 @@ const configureAxios = (baseURL: string): AxiosInstance => {
         typeof FormData !== 'undefined' && config.data instanceof FormData;
 
       if (hasBody && !isFormData) {
-        (config.headers as any)['Content-Type'] = 'application/json';
+        config.headers['Content-Type'] = 'application/json';
       }
 
       return config;
@@ -68,125 +266,34 @@ const configureAxios = (baseURL: string): AxiosInstance => {
     (error) => Promise.reject(error)
   );
 
-  // --- Helper: Refresh Token (single flight) ---
-  const refreshAccessToken = async (): Promise<string> => {
-    const state = store.getState().auth;
-    const dispatch = store.dispatch;
-
-    if (!state?.refreshToken) {
-      throw new Error('No refresh token');
-    }
-
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        subscribeTokenRefresh(resolve);
-      });
-    }
-
-    try {
-      isRefreshing = true; // Set isRefreshing ke true sebelum melakukan request refresh token
-      dispatch(setIsRefreshing(true)); // Set status refreshing di Redux sebelum refresh dimulai
-
-      // Lakukan refresh token
-      const resp = await axios.post(
-        `${process.env.NEXT_PUBLIC_BASE_URL2}/auth/refresh-token`,
-        { refreshToken: state.refreshToken }
-      );
-
-      const {
-        accessToken,
-        refreshToken,
-        users,
-        accessTokenExpires,
-        refreshTokenExpires,
-        cabang_id
-      } = resp.data;
-
-      // Update Redux store dengan token yang baru
-      dispatch(
-        setCredentials({
-          user: users,
-          token: accessToken,
-          id: users.id,
-          refreshToken,
-          accessTokenExpires,
-          refreshTokenExpires,
-          autoLogoutExpires: Date.now(),
-          cabang_id
-        })
-      );
-
-      await setCookie(accessToken); // Set cookies setelah berhasil refresh token
-      onRefreshed(accessToken); // Notifikasi jika refresh token berhasil
-      return accessToken;
-    } catch (err) {
-      console.error('Failed to refresh access token:', err);
-      onRefreshFailed();
-      dispatch(clearCredentials());
-
-      // Jika refresh gagal, arahkan ke halaman login hanya sekali
-      if (typeof window !== 'undefined') {
-        window.location.href = '/auth/signin';
-      }
-      throw err;
-    } finally {
-      isRefreshing = false; // Reset status isRefreshing di akhir proses
-      dispatch(setIsRefreshing(false)); // Update Redux state isRefreshing ke false setelah selesai
-    }
-  };
-
-  // --- Response Interceptor ---
   apiInstance.interceptors.response.use(
     (response: AxiosResponse) => response,
     async (error) => {
-      const originalRequest = error.config as InternalAxiosRequestConfig & {
-        _retry?: boolean;
-      };
+      const originalRequest = error.config;
 
-      const dispatch = store.dispatch;
-      const state = store.getState().auth;
-      const { accessTokenExpires } = state || {};
-
-      const expiresAt = accessTokenExpires
-        ? new Date(String(accessTokenExpires)).getTime()
-        : 0;
-      const isExpired = expiresAt > 0 && Date.now() >= expiresAt; // Cek kadaluarsa token
-
-      const status = error?.response?.status;
-
-      const shouldTryRefresh =
-        !originalRequest._retry &&
-        state?.refreshToken &&
-        (isExpired || status === 401);
-
-      if (shouldTryRefresh) {
+      if (
+        (error.response?.status === 401 || error.response?.status === 403) &&
+        !originalRequest._retry
+      ) {
         originalRequest._retry = true;
 
-        try {
-          const newToken = await refreshAccessToken(); // Refresh token jika kadaluarsa
+        console.log('🔄 Token expired, refreshing...');
+        const newToken = await tokenCache.handleTokenRefresh();
 
-          originalRequest.headers = originalRequest.headers ?? {};
-          (originalRequest.headers as any).Authorization = `Bearer ${newToken}`;
-
-          return apiInstance(originalRequest); // Retry request dengan token baru
-        } catch (refreshErr) {
-          return Promise.reject(refreshErr);
+        if (newToken) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return apiInstance(originalRequest);
+        } else {
+          console.log('❌ Token refresh failed, user logged out');
+          // handleTokenRefresh sudah handle logout
         }
       }
 
-      // Jika refresh token gagal, lakukan logout
-      if (
-        status === 401 &&
-        originalRequest.url?.includes('/auth/refresh-token')
-      ) {
-        await deleteCookie(); // Hapus cookie jika refresh token gagal
-        dispatch(clearCredentials());
-        if (typeof window !== 'undefined') {
-          window.location.href = '/auth/signin'; // Redirect ke login
-        }
+      if (!error.response) {
+        console.error('🌐 Network Error:', error.message);
       }
 
-      return Promise.reject(error); // Jika tidak ada error yang bisa ditangani
+      return Promise.reject(error);
     }
   );
 
@@ -196,4 +303,4 @@ const configureAxios = (baseURL: string): AxiosInstance => {
 const api = configureAxios(process.env.NEXT_PUBLIC_BASE_URL || '');
 const api2 = configureAxios(process.env.NEXT_PUBLIC_BASE_URL2 || '');
 
-export { api, api2 };
+export { api, api2, tokenCache };

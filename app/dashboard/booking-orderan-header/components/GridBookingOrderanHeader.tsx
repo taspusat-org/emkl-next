@@ -4186,7 +4186,7 @@ const GridBookingMuatan = () => {
         selectedJenisOrderanNama || JENISORDERMUATANNAMA
       );
     }
-  }, [forms, selectedRow, rows, mode]);
+  }, [forms, selectedRow, rows, mode, popOver]);
 
   useEffect(() => {
     // Initialize the refs based on columns dynamically
@@ -4377,7 +4377,7 @@ const GridBookingMuatan = () => {
         // popOver={popOver}
         // mode={mode}
         onSubmit={formsJobParty.handleSubmit(onSubmitParty as any)}
-        // isLoadingCreate={isLoadingCreate}
+        isLoadingCreate={isLoadingCreateParty}
       />
     </div>
   );

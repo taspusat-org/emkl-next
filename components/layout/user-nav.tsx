@@ -18,17 +18,29 @@ import { useDispatch } from 'react-redux';
 import { persistor } from '@/lib/store/store';
 import { deleteCookie } from '@/lib/utils/cookie-actions';
 import { useRouter } from 'next/navigation';
+import { tokenCache } from '@/lib/utils/AxiosInstance';
+
 export function UserNav() {
   const { data: session } = useSession();
   const router = useRouter();
   const dispatch = useDispatch();
+
   const logout = async () => {
-    signOut();
-    await deleteCookie();
-    dispatch(clearCredentials());
-    await persistor.purge();
-    router.push('/auth/signin');
+    try {
+      // Clear token cache dari axios instance
+      tokenCache.clearCache();
+
+      await persistor.purge();
+      dispatch(clearCredentials());
+      // Sign out dari NextAuth
+      await signOut({ callbackUrl: '/auth/signin' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Tetap redirect meskipun ada error
+      router.push('/auth/signin');
+    }
   };
+
   if (session) {
     return (
       <DropdownMenu>

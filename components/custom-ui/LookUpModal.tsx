@@ -30,6 +30,7 @@ import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
   clearOpenName,
+  clearOpenNameModal,
   setClearLookup,
   setOpenName,
   setSubmitClicked,
@@ -43,6 +44,7 @@ import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import InputDatePicker from './InputDatePicker';
 import { formatCurrency } from '@/lib/utils';
+import { Checkbox } from '../ui/checkbox';
 
 interface LookUpProps {
   columns: {
@@ -77,6 +79,11 @@ interface LookUpProps {
   dateToParam?: string; // default 'tglSampai' jika tidak ada props
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
   onClear?: () => void;
+  onSelectMultipleRows?: (selectedRows: Row[]) => void;
+  enableMultiSelect?: boolean;
+  notIn?: Record<string, any>;
+  filterOnEnter?: boolean;
+  autoSearch?: boolean; // Tambahkan ini
 }
 interface Filter {
   page: number;
@@ -115,7 +122,11 @@ export default function LookUpModal({
   filterby,
   onSelectRow,
   onClear,
-  hideInput = false
+  hideInput = false,
+  onSelectMultipleRows,
+  enableMultiSelect = false,
+  notIn,
+  autoSearch = true
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
@@ -153,7 +164,8 @@ export default function LookUpModal({
   const isdefault = useSelector(
     (state: RootState) => state.lookup.isdefault[label || '']
   );
-
+  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const [isAllSelected, setIsAllSelected] = useState(false);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const clearLookup = useSelector(
     (state: RootState) => state.lookup.clearLookup
@@ -178,16 +190,6 @@ export default function LookUpModal({
   const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
 
-  // Shallow compare sederhana untuk objek flat (filters, sort, dll)
-  function shallowEqual(a: Record<string, any>, b: Record<string, any>) {
-    if (a === b) return true;
-    const ka = Object.keys(a),
-      kb = Object.keys(b);
-    if (ka.length !== kb.length) return false;
-    for (const k of ka) if (a[k] !== b[k]) return false;
-    return true;
-  }
-
   const onReload = () => {
     setIsLoading(true);
 
@@ -204,30 +206,46 @@ export default function LookUpModal({
         setIsLoading(false); // Jangan lupa set loading false meskipun gagal
       });
   };
-
-  // Gabung params dari state & props
   const buildParams = useCallback(() => {
     const params: Record<string, any> = {
       page: currentPage,
       limit: filters.limit,
-      search: filters.search || '',
       sortBy: filters.sortBy,
       sortDirection: filters.sortDirection
     };
-
+    if (!autoSearch) {
+      params['exactMatch'] = filters.search || ''; // exact search
+    } else {
+      params['search'] = filters.search || ''; // like search
+    }
     if (filters.filters) {
       for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
     }
     if (filterby && !Array.isArray(filterby)) {
-      // Pastikan filterby berfungsi dengan baik
       for (const [k, v] of Object.entries(filterby)) {
-        params[k] = v; // menambahkan filterby ke params untuk API
+        params[k] = v;
       }
     }
+
+    // Handle notIn parameter dengan validasi
+    if (notIn && typeof notIn === 'object') {
+      // Cek apakah ada array yang tidak kosong
+      const hasValidValues = Object.values(notIn).some(
+        (val) => Array.isArray(val) && val.length > 0
+      );
+
+      // Hanya kirim notIn jika ada nilai yang valid
+      if (hasValidValues) {
+        params['notIn'] = JSON.stringify(notIn);
+      }
+    } else if (typeof notIn === 'string' && notIn?.trim() !== '') {
+      params['notIn'] = notIn;
+    }
+
     const effFrom = tglDari;
     const effTo = tglSampai;
-    if (effFrom) params[dateFromParam] = effFrom; // kirim dengan nama field yang diinginkan
-    if (effTo) params[dateToParam] = effTo; // kirim dengan nama field yang diinginkan
+    if (effFrom) params[dateFromParam] = effFrom;
+    if (effTo) params[dateToParam] = effTo;
     return params;
   }, [
     currentPage,
@@ -236,7 +254,8 @@ export default function LookUpModal({
     dateFromParam,
     dateToParam,
     tglDari,
-    tglSampai
+    tglSampai,
+    notIn
   ]);
 
   // Mapping API → Row[]
@@ -294,6 +313,27 @@ export default function LookUpModal({
     }
   };
 
+  // Fungsi untuk select baris pertama saat Enter di input (jika autoSearch false)
+  const selectFirstRow = () => {
+    if (rows.length > 0) {
+      const firstRow = rows[0];
+      const classValue = firstRow[postData as string];
+
+      setInputValue(classValue);
+      setClicked(true); // TAMBAHKAN: Set clicked true
+      dispatch(setLookUpValue(firstRow || ''));
+      dispatch(setSelectLookup({ key: label ?? '', data: firstRow }));
+
+      const value = firstRow[dataToPost as any];
+      lookupValue?.(value);
+      onSelectRow?.(firstRow);
+
+      // PENTING: Jangan langsung close dan clear
+      // setOpen(false);
+      // dispatch(clearOpenName());
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled) return;
     const searchValue = e.target.value;
@@ -302,21 +342,23 @@ export default function LookUpModal({
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
     debounceTimerRef.current = setTimeout(() => {
-      // Batalkan request yang sedang berjalan
       abortRef.current?.abort('New filter applied');
 
       const next = {
         ...filters,
-        filters: {}, // optional reset kolom filter
+        filters: {},
         search: searchValue,
         page: 1
       };
 
       setFilters(next);
-      dispatch(setOpenName(label || ''));
-      setFiltering(true);
 
-      // UX focus
+      // PERUBAHAN: Hanya set openName dan filtering jika autoSearch true
+      if (autoSearch) {
+        dispatch(setOpenName(label || ''));
+        setFiltering(true);
+      }
+
       setTimeout(() => {
         setSelectedRow(0);
         gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
@@ -441,12 +483,9 @@ export default function LookUpModal({
     }
     setDeleteClicked(true);
     dispatch(setSearchTerm(''));
-    dispatch(clearOpenName()); // Clear openName ketika input dibersihkan
-    setOpen(false);
     if (onClear) {
       onClear(); // Trigger the passed onClear function
     }
-    onSelectRow?.(); // panggil tanpa argumen dengan aman
   };
 
   const handleSort = (column: string) => {
@@ -471,14 +510,57 @@ export default function LookUpModal({
     setRows([]);
   };
 
+  const handleRowSelect = (rowId: number) => {
+    setCheckedRows((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
+      } else {
+        updated.add(rowId);
+      }
+
+      setIsAllSelected(updated.size === rows.length);
+      return updated;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setCheckedRows(new Set());
+    } else {
+      const allIds = rows.map((row) => Number(row.id));
+      setCheckedRows(new Set(allIds));
+    }
+    setIsAllSelected(!isAllSelected);
+  };
+  const handleSubmitSelected = () => {
+    const selectedRowsData = rows.filter((row) =>
+      checkedRows.has(Number(row.id))
+    );
+
+    if (selectedRowsData.length === 0) {
+      alert('Pilih minimal 1 baris!');
+      return;
+    }
+
+    // Call the multi-select callback with selected rows
+    if (onSelectMultipleRows) {
+      onSelectMultipleRows(selectedRowsData);
+    }
+
+    // Reset selections and close modal
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setOpen(false);
+    setInputValue('');
+  };
+
   const columns: readonly Column<Row>[] = useMemo(() => {
-    return rawColumns.map((col, index) => ({
+    const dataColumns = rawColumns.map((col, index) => ({
       ...col,
       key: col.key,
-
       headerCellClass: 'column-headers',
-      // Set width to 100% if singleColumn is true, else use the default width
-      width: singleColumn ? '100%' : col.width ?? 250, // Default width if not specified
+      width: singleColumn ? '100%' : col.width ?? 250,
       resizable: true,
       renderHeaderCell: () => (
         <div
@@ -511,13 +593,11 @@ export default function LookUpModal({
           <div className="relative h-[50%] w-full px-1">
             <Input
               ref={(el) => {
-                // Menyimpan ref input berdasarkan kolom key
                 columnInputRefs.current[col.name] = el;
               }}
               type="text"
               className="filter-input z-[999999] h-8 w-full rounded-none"
               value={filters.filters[col.key] || ''}
-              // onKeyDown={(e) => handleColumnInputKeydown(e, col.name)}
               onChange={(e) => {
                 const value = e.target.value;
                 handleColumnFilterChange(col.key, value);
@@ -538,23 +618,60 @@ export default function LookUpModal({
       renderCell: (props: any) => {
         const columnFilter = filters.filters[props.column.key] || '';
         let cellValue = props.row[props.column.key as keyof Row] || '';
-        // Jika kolom punya property isCurrency, format sebagai currency
-        if (col.isCurrency) {
-          cellValue = formatCurrency(cellValue);
-        }
+
         return (
-          <div
-            className={`m-0 flex h-full cursor-pointer items-center p-0  text-[12px] ${
-              col.isCurrency ? 'justify-end' : 'justify-start'
-            }`}
-          >
+          <div className="m-0 flex h-full cursor-pointer items-center p-0 text-[12px]">
             {highlightText(cellValue, filters.search, columnFilter)}
           </div>
         );
       }
     }));
-  }, [filters, rawColumns, currentPage, singleColumn]);
 
+    // Add checkbox column if multi-select is enabled
+    if (enableMultiSelect) {
+      const selectColumn: Column<Row> = {
+        key: 'select',
+        name: '',
+        width: 50,
+        resizable: true,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%]"></div>
+            <div className="flex h-[50%] w-full items-center justify-center">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={() => handleSelectAll()}
+                id="header-checkbox"
+                className="mb-2"
+              />
+            </div>
+          </div>
+        ),
+        renderCell: ({ row }: { row: Row }) => (
+          <div className="flex h-full items-center justify-center">
+            <Checkbox
+              checked={checkedRows.has(Number(row.id))}
+              onCheckedChange={() => handleRowSelect(Number(row.id))}
+              id={`row-checkbox-${row.id}`}
+            />
+          </div>
+        )
+      };
+
+      return [selectColumn, ...dataColumns];
+    }
+
+    return dataColumns;
+  }, [
+    filters,
+    rawColumns,
+    singleColumn,
+    enableMultiSelect,
+    isAllSelected,
+    checkedRows,
+    rows
+  ]);
   const [columnsOrder, setColumnsOrder] = useState((): readonly number[] =>
     columns.map((_, index) => index)
   );
@@ -582,7 +699,6 @@ export default function LookUpModal({
     if (isAtBottom(event)) {
       const nextPage = findUnfetchedPage(1);
       if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
-        console.log('masuk', nextPage);
         setCurrentPage(nextPage);
       }
     }
@@ -605,7 +721,7 @@ export default function LookUpModal({
     const value = clickedRow[dataToPost as any];
 
     lookupValue?.(value);
-    onSelectRow?.(value); // cukup satu kali, tanpa else
+    onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
   function handleCellClick(args: any) {
@@ -736,6 +852,19 @@ export default function LookUpModal({
     );
   }
   const handleInputKeydown = (event: any) => {
+    if (!autoSearch && event.key === 'Enter') {
+      event.preventDefault();
+
+      // PERBAIKAN: Cek apakah ada data di rows sebelum select
+      if (rows.length > 0) {
+        selectFirstRow();
+      } else {
+        // Jika rows kosong, trigger fetch dulu jika perlu
+        console.log('No rows available, data may still be loading');
+      }
+      return;
+    }
+
     if ((!open && !filters.filters) || !openName) {
       return;
     }
@@ -886,9 +1015,27 @@ export default function LookUpModal({
           )
         );
       }
+      if (notIn) {
+        try {
+          const notInObj =
+            typeof notIn === 'string' ? JSON.parse(notIn) : notIn;
+          if (notInObj && typeof notInObj === 'object') {
+            for (const [key, values] of Object.entries(notInObj)) {
+              if (Array.isArray(values)) {
+                filtered = filtered.filter((row: Row) => {
+                  const rowValue = String(row[key]);
+                  return !values.some((v) => String(v) === rowValue);
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing notIn parameter:', error);
+        }
+      }
       return filtered;
     },
-    [filterby, filters, columns]
+    [filterby, filters, columns, notIn]
   );
 
   useEffect(() => {
@@ -964,16 +1111,7 @@ export default function LookUpModal({
     })();
 
     return () => controller.abort();
-  }, [
-    open,
-    endpoint,
-    type,
-    currentPage,
-    filters,
-    totalPages,
-    deleteClicked,
-    clicked
-  ]);
+  }, [open, endpoint, type, currentPage, filters, totalPages]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1013,29 +1151,36 @@ export default function LookUpModal({
     };
   }, [filters.search, filters.filters, rows, postData, selectedRequired]); // Tambahka
   useEffect(() => {
-    // Check if search is not empty and if we're not clicking outside
-    if (filters.search.trim() !== '' && !clickedOutside && filtering) {
-      setOpen(true); // Open the lookup grid if there's search value and not clicking outside
-      setSelectedRow(0); // Select the first row
-    } else if (
-      filters.search.trim() === '' &&
-      !clickedOutside &&
-      filtering &&
-      filters.filters
-    ) {
-      // Keep the lookup open if search is empty but we're still filtering
-      setOpen(true);
-      setSelectedRow(0); // Select the first row
-    } else {
-      setOpen(false); // Close the lookup grid when no search and no filtering
+    // PERUBAHAN: Tambahkan kondisi autoSearch
+    if (autoSearch) {
+      // Behavior lama: buka modal otomatis saat ada search
+      if (
+        filters.search.trim() !== '' &&
+        !clickedOutside &&
+        filtering &&
+        !deleteClicked
+      ) {
+        setOpen(true);
+        setSelectedRow(0);
+      } else if (
+        filters.search.trim() === '' &&
+        !clickedOutside &&
+        filtering &&
+        filters.filters &&
+        !deleteClicked
+      ) {
+        setOpen(true);
+        setSelectedRow(0);
+      } else {
+        setOpen(false);
+      }
     }
+    // Jika autoSearch false, modal hanya dibuka manual via button
 
-    // Reset clickedOutside after handling
     if (clickedOutside) {
       setClickedOutside(false);
     }
-  }, [filters.search, clickedOutside, filtering]);
-
+  }, [filters.search, clickedOutside, filtering, autoSearch]);
   useEffect(() => {
     if (lookupNama) {
       setInputValue(lookupNama); // Assuming "text" is the display column
@@ -1111,7 +1256,17 @@ export default function LookUpModal({
       setShowError({ label: label ?? '', status: false });
     }
   }, [lookupNama, inputValue, label, showError.label]);
+  useEffect(() => {
+    // Reset clicked state saat inputValue berubah (user mulai ketik lagi)
+    if (inputValue !== '' && clicked) {
+      setClicked(false);
+    }
 
+    // Reset deleteClicked juga jika perlu
+    if (inputValue !== '' && deleteClicked) {
+      setDeleteClicked(false);
+    }
+  }, [inputValue, clicked, deleteClicked]);
   return (
     <>
       <div className="flex w-full flex-col">
@@ -1128,6 +1283,7 @@ export default function LookUpModal({
                   showOnButton ? 'rounded-r-none border-r-0' : ''
                 } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                 disabled={disabled}
+                onClick={(e) => e.stopPropagation()}
                 value={inputValue}
                 onKeyDown={handleInputKeydown}
                 onChange={(e) => {
@@ -1179,6 +1335,7 @@ export default function LookUpModal({
               className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
               onClick={() => {
                 setOpen(false);
+                dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
               }}
             >
               <IoMdClose className="h-5 w-5 font-bold text-white" />
@@ -1299,14 +1456,13 @@ export default function LookUpModal({
                 />
                 {isLoading ? (
                   <div
-                    className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
+                    className="flex w-full flex-row gap-2 py-1"
                     style={{
                       background:
                         'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
                     }}
                   >
                     <LoadRowsRenderer />
-                    <p className="text-sm text-zinc-600">Loading...</p>
                   </div>
                 ) : null}
               </div>
@@ -1317,10 +1473,24 @@ export default function LookUpModal({
               type="button"
               variant="secondary"
               className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                setOpen(false);
+                dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
+              }}
             >
               <IoMdClose /> <p className="text-center text-white">Cancel</p>
             </Button>
+            {enableMultiSelect && (
+              <Button
+                type="button"
+                variant="default"
+                className="flex items-center gap-1"
+                onClick={handleSubmitSelected}
+                disabled={checkedRows.size === 0}
+              >
+                ✓ Pilih ({checkedRows.size})
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

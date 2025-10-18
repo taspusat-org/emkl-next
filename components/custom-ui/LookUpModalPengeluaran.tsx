@@ -695,8 +695,8 @@ export default function LookUpModalPengeluaran({
         params: buildParams(),
         signal
       });
-
-      const { data, pagination } = response.data || {};
+      console.log('response', response);
+      const { data, pagination } = response || {};
       if (pagination?.totalPages) setTotalPages(pagination.totalPages);
 
       const rows = Array.isArray(data) ? mapApiToRows(data) : [];

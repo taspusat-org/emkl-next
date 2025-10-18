@@ -41,7 +41,10 @@ const FormMarketing = ({
   forms,
   onSubmit,
   mode,
-  handleClose
+  handleClose,
+  isLoadingCreate,
+  isLoadingUpdate,
+  isLoadingDelete
 }: any) => {
   let hasValueMarketingOrderan: any;
   let hasValueMarketingBiaya: any;
@@ -2379,6 +2382,7 @@ const FormMarketing = ({
             }}
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
+            loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <FaSave />
             <p className="text-center">
@@ -2390,6 +2394,7 @@ const FormMarketing = ({
             <Button
               type="submit"
               variant="success"
+              loading={isLoadingCreate}
               // onClick={onSubmit}
               onClick={(e) => {
                 e.preventDefault();

@@ -19,6 +19,7 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportJenissealFn } from '@/lib/apis/jenisseal.api';
+import CustomPrintModal from '@/components/custom-ui/CustomPrint';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
@@ -66,6 +67,7 @@ const ReportMenuPage: React.FC = () => {
       console.error('Error exporting jenisseal data:', error);
     }
   };
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const layoutPluginInstance = defaultLayoutPlugin({
     sidebarTabs: (defaultTabs) => [defaultTabs[0]],
@@ -120,7 +122,7 @@ const ReportMenuPage: React.FC = () => {
                 <Print>
                   {(props: RenderPrintProps) => (
                     <button
-                      onClick={props.onClick}
+                      onClick={() => setIsPrintModalOpen(true)}
                       className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
                     >
                       <FaPrint /> Print
@@ -157,6 +159,14 @@ const ReportMenuPage: React.FC = () => {
   return (
     <div className="flex h-screen w-screen flex-col">
       <main className="flex-1 overflow-hidden">
+        {pdfUrl && (
+          <CustomPrintModal
+            isOpen={isPrintModalOpen}
+            onClose={() => setIsPrintModalOpen(false)}
+            docUrl={pdfUrl ?? ''}
+            reportName="LaporanJenisseal"
+          />
+        )}
         {pdfUrl ? (
           <Worker workerUrl="/pdf.worker.min.js">
             <Viewer

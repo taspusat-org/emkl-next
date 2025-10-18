@@ -409,7 +409,44 @@ const FormPengeluaran = ({
           );
         }
       },
-
+      {
+        key: 'keterangan',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 400,
+        renderHeaderCell: () => (
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Keterangan</p>
+          </div>
+        ),
+        name: 'KETERANGAN',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.keterangan}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'keterangan',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
       {
         key: 'dpp',
         resizable: true,
@@ -533,44 +570,7 @@ const FormPengeluaran = ({
           );
         }
       },
-      {
-        key: 'keterangan',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 400,
-        renderHeaderCell: () => (
-          <div className="flex h-[100%] w-full flex-col justify-center">
-            <p className={`text-left text-sm font-normal`}>Keterangan</p>
-          </div>
-        ),
-        name: 'KETERANGAN',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                  value={props.row.keterangan}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'keterangan',
-                      e.target.value
-                    )
-                  }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
-            </div>
-          );
-        }
-      },
+
       {
         key: 'noinvoiceemkl',
         resizable: true,
@@ -1047,7 +1047,7 @@ const FormPengeluaran = ({
         coadebet: val.coadebet ?? '',
         coadebet_text: val.coadebet_text ?? '',
         keterangan: val.keterangan ?? '',
-        nominal: val.total_nominal ?? '',
+        nominal: val.sisa ?? '',
         dpp: val.dpp ?? '',
         noinvoiceemkl: val.noinvoiceemkl ?? '',
         tglinvoiceemkl: val.tglinvoiceemkl ?? '',
@@ -1170,7 +1170,6 @@ const FormPengeluaran = ({
       resetDetailAndAddNewRow();
     }
   }, [submitSuccessful]);
-  console.log('forms', forms.getValues('details'));
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -1211,7 +1210,7 @@ const FormPengeluaran = ({
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                           <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
-                            NOMOR BUKTI
+                            NOBUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
@@ -1237,7 +1236,7 @@ const FormPengeluaran = ({
                             required={true}
                             className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
                           >
-                            TANGGAL BUKTI
+                            TGL BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
@@ -1522,13 +1521,14 @@ const FormPengeluaran = ({
                                 { key: 'tglbukti', name: 'TANGGAL BUKTI' },
                                 { key: 'keterangan', name: 'KETERANGAN' },
                                 {
-                                  key: 'total_nominal',
-                                  name: 'NOMINAL',
+                                  key: 'sisa',
+                                  name: 'SISA',
                                   isCurrency: true
                                 },
                                 {
-                                  key: 'statusformat_nama',
-                                  name: 'JENIS POSTING'
+                                  key: 'sudah_dibayar',
+                                  name: 'SUDAH DIBAYAR',
+                                  isCurrency: true
                                 }
                               ]}
                               onSelectRow={(val) => {
@@ -1538,11 +1538,14 @@ const FormPengeluaran = ({
                                 forms.setValue('pengeluaran_nobukti', null);
                                 forms.setValue('statusformat', null);
                               }}
-                              filterby={{ ispenarikan: true }}
                               labelLookup={'PENGELUARAN EMKL LOOKUP'}
                               required={true}
                               selectedRequired={true}
-                              endpoint={'pengeluaranemklheader'}
+                              endpoint={
+                                'pengeluaranemklheader/list-pengeluaran'
+                              }
+                              dateFromParam={'dari'}
+                              dateToParam={'sampai'}
                               label={'PENGELUARAN EMKL'}
                               singleColumn={false}
                               pageSize={20}

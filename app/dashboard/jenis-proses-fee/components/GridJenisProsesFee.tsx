@@ -1733,8 +1733,8 @@ const GridJenisProsesFee = () => {
         handleClose={handleClose}
         onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
-        // isLoadingUpdate={isLoadingUpdate}
-        // isLoadingDelete={isLoadingDelete}
+        isLoadingUpdate={isLoadingUpdate}
+        isLoadingDelete={isLoadingDelete}
       />
     </div>
   );

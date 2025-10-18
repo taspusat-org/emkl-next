@@ -2,11 +2,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { getPrintersFn, printFileFn, PrinterInfo } from '@/lib/apis/print.api';
 
-interface ReportSetting {
-  paperSize: string;
-  orientation: 'portrait' | 'landscape';
-}
-
 interface CustomPrintModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,43 +23,85 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const [printers, setPrinters] = useState<PrinterInfo[]>([]);
   const [loadingPrinters, setLoadingPrinters] = useState(false);
   const [layout, setLayout] = useState<'portrait' | 'landscape'>('portrait');
-  const [paperSize, setPaperSize] = useState('A4'); // ✅ Tambah state ini
+  const [paperSize, setPaperSize] = useState('');
   const [colorMode, setColorMode] = useState<'color' | 'bw'>(defaultColorMode);
   const [pageOption, setPageOption] = useState<
     'all' | 'odd' | 'even' | 'custom'
   >('all');
   const [customPages, setCustomPages] = useState('');
-  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    const loadReportConfig = async () => {
+    const loadFromMRT = async () => {
       try {
-        const configUrl = process.env.NEXT_PUBLIC_REPORT_CONFIG_PATH;
-        if (!configUrl) return;
+        const base = process.env.NEXT_PUBLIC_MRT_BASE_URL || '/reports';
+        const mrtUrl = `${base}/${reportName}.mrt`;
 
-        const res = await fetch(configUrl, { cache: 'no-store' });
-        const json = await res.json();
-        const config: Record<string, ReportSetting> = json;
-        const report = config[reportName];
+        console.log('🔍 Membaca MRT dari:', mrtUrl);
 
-        if (report) {
-          setPaperSize(report.paperSize || 'A4'); // ✅ ambil paper size dari config
-          setLayout(
-            report.orientation.toLowerCase() === 'landscape'
-              ? 'landscape'
-              : 'portrait'
-          );
-          console.log(`Loaded config for ${reportName}:`, report);
-        } else {
-          console.warn(`Konfigurasi '${reportName}' tidak ditemukan`);
+        const res = await fetch(mrtUrl, { cache: 'no-store' });
+
+        if (!res.ok) {
+          console.warn(`⚠️ Gagal fetch file MRT (${res.status})`);
+          return;
         }
+
+        const text = await res.text();
+        let pageHeight = 0;
+        let pageWidth = 0;
+
+        try {
+          const json = JSON.parse(text);
+
+          const pages = json.Pages;
+          const firstPage = pages?.['0'] || pages?.[0];
+
+          pageHeight = firstPage?.PageHeight ?? json.PageHeight ?? 0;
+          pageWidth = firstPage?.PageWidth ?? json.PageWidth ?? 0;
+
+          console.log('📊 Parsed JSON structure:', {
+            hasPages: !!pages,
+            firstPageKeys: firstPage ? Object.keys(firstPage) : [],
+            pageHeight,
+            pageWidth
+          });
+        } catch {
+          const matchH = text.match(/"PageHeight"\s*:\s*([\d.]+)/);
+          const matchW = text.match(/"PageWidth"\s*:\s*([\d.]+)/);
+          if (matchH) pageHeight = parseFloat(matchH[1]);
+          if (matchW) pageWidth = parseFloat(matchW[1]);
+        }
+
+        console.log('📄 MRT Loaded:', { reportName, pageHeight, pageWidth });
+
+        let selectedPaper = 'CUSTOM_A4';
+        let selectedLayout: 'portrait' | 'landscape' = 'portrait';
+
+        if (pageHeight === 210.1 || pageHeight === 296.9) {
+          selectedPaper = 'CUSTOM_A4';
+        } else if (pageHeight === 279.4) {
+          selectedPaper = 'CUSTOM_LETTER';
+        } else if (pageHeight === 139.7) {
+          selectedPaper = 'CUSTOM_FAKTUR';
+          selectedLayout = 'landscape';
+        } else if (pageHeight >= 350 && pageHeight <= 360) {
+          selectedPaper = 'CUSTOM_LEGAL';
+        } else {
+          selectedLayout = pageWidth > pageHeight ? 'landscape' : 'portrait';
+        }
+
+        setPaperSize(selectedPaper);
+        setLayout(selectedLayout);
+
+        console.log(
+          `✅ Ditetapkan dari MRT: ${selectedPaper}, ${selectedLayout}`
+        );
       } catch (err) {
-        console.error('Gagal membaca konfigurasi laporan:', err);
+        console.error('❌ Gagal membaca MRT:', err);
       }
     };
 
-    if (isOpen) loadReportConfig();
+    if (isOpen && reportName) loadFromMRT();
   }, [isOpen, reportName]);
 
   useEffect(() => {
@@ -87,7 +124,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
     if (!isOpen) return;
     const lastPrinter = localStorage.getItem('lastPrinter');
     if (lastPrinter) setDestination(lastPrinter);
-    setHasLoadedFromStorage(true);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -97,7 +133,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
       const response = await fetch(docUrl);
       const fileBlob = await response.blob();
 
-      let subset: 'odd' | 'even' | undefined = undefined;
+      let subset: 'odd' | 'even' | undefined;
       if (pageOption === 'odd') subset = 'odd';
       if (pageOption === 'even') subset = 'even';
 
