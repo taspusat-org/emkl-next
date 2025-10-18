@@ -50,6 +50,7 @@ export const filterManagerMarketing = {
   statusleader_text: '',
   statusaktif: null,
   text: '',
+  modifiedby: '',
   created_at: '',
   updated_at: ''
 };

@@ -1,5 +1,12 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback
+} from 'react';
+import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -12,7 +19,21 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import FormMenu from './FormTujuankapal';
 import { useQueryClient } from 'react-query';
+import {
+  TujuankapalInput,
+  tujuankapalSchema
+} from '@/lib/validations/tujuankapal.validation';
+
+import {
+  useCreateTujuankapal,
+  useDeleteTujuankapal,
+  useGetTujuankapal,
+  useUpdateTujuankapal
+} from '@/lib/server/useTujuankapal';
+
+import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import {
@@ -35,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+
 import { HiDocument } from 'react-icons/hi2';
 import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
@@ -43,39 +65,42 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import { IDaftarBank } from '@/lib/types/daftarbank.type';
-import {
-  DaftarBankInput,
-  daftarbankSchema
-} from '@/lib/validations/daftarbank.validation';
-import {
-  useCreateDaftarBank,
-  useDeleteDaftarBank,
-  useGetDaftarBank,
-  useUpdateDaftarBank
-} from '@/lib/server/useDaftarBank';
-import FormDaftarBank from './FormDaftarBank';
-import { getDaftarBankFn } from '@/lib/apis/daftarbank.api';
+import ReportDesignerMenu from '@/app/reports/menu/page';
+import { ITujuanKapal } from '@/lib/types/tujuankapal.type';
+import { number } from 'zod';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { useFormError } from '@/lib/hooks/formErrorContext';
 import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getTujuankapalFn } from '@/lib/apis/tujuankapal.api';
+import FilterInput from '@/components/custom-ui/FilterInput';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 interface Filter {
   page: number;
   limit: number;
   search: string;
   filters: {
     nama: string;
+    kode: string;
     keterangan: string;
+    text: string;
     created_at: string;
     updated_at: string;
-    text: string;
+    statusaktif: string;
+    namacabang: string;
+    cabang_id: string;
+    modifiedby: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -85,23 +110,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridDaftarBank = () => {
+const GridTujuankapal = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createDaftarBank, isLoading: isLoadingCreate } =
-    useCreateDaftarBank();
-  const { mutateAsync: updateDaftarBank, isLoading: isLoadingUpdate } =
-    useUpdateDaftarBank();
-  const { mutateAsync: deleteDaftarBank, isLoading: isLoadingDelete } =
-    useDeleteDaftarBank();
+  const { mutateAsync: createTujuankapal, isLoading: isLoadingCreate } =
+    useCreateTujuankapal();
+  const { mutateAsync: updateTujuankapal, isLoading: isLoadingUpdate } =
+    useUpdateTujuankapal();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { mutateAsync: deleteTujuankapal, isLoading: isLoadingDelete } =
+    useDeleteTujuankapal();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -118,7 +143,7 @@ const GridDaftarBank = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IDaftarBank[]>([]);
+  const [rows, setRows] = useState<ITujuanKapal[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -127,16 +152,17 @@ const GridDaftarBank = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<DaftarBankInput>({
+  const forms = useForm<TujuankapalInput>({
     resolver:
       mode === 'delete'
         ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(daftarbankSchema),
+        : zodResolver(tujuankapalSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 0,
+      cabang_id: 1
     }
   });
   const {
@@ -150,10 +176,15 @@ const GridDaftarBank = () => {
     limit: 30,
     filters: {
       nama: '',
+      kode: '',
       keterangan: '',
       created_at: '',
       updated_at: '',
-      text: ''
+      namacabang: '',
+      cabang_id: '',
+      text: '',
+      statusaktif: '',
+      modifiedby: ''
     },
     search: '',
     sortBy: 'nama',
@@ -161,23 +192,60 @@ const GridDaftarBank = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allDaftarBank, isLoading: isLoadingDaftarBank } =
-    useGetDaftarBank({
+  const { data: allTujuankapal, isLoading: isLoadingTujuankapal } =
+    useGetTujuankapal({
       ...filters,
       page: currentPage
     });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const { clearError } = useFormError();
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
+    // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
         : originalIndex;
 
+    // update filter seperti biasa…
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: value },
@@ -188,10 +256,12 @@ const GridDaftarBank = () => {
     setCheckedRows(new Set());
     setIsAllSelected(false);
 
+    // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
 
+    // 4. focus input filter
     setTimeout(() => {
       const ref = inputColRefs.current[colKey];
       ref?.focus();
@@ -236,6 +306,7 @@ const GridDaftarBank = () => {
       />
     );
   }
+  const { clearError } = useFormError();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
     setInputValue(searchValue);
@@ -244,10 +315,16 @@ const GridDaftarBank = () => {
       ...prev,
       filters: {
         nama: '',
+        kode: '',
         keterangan: '',
+        icon: '',
         created_at: '',
         updated_at: '',
-        text: 'AKTIF'
+        namacabang: '',
+        cabang_id: '',
+        text: '',
+        statusaktif: '',
+        modifiedby: ''
       },
       search: searchValue,
       page: 1
@@ -269,6 +346,14 @@ const GridDaftarBank = () => {
     setRows([]);
   };
   const handleSort = (column: string) => {
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -281,7 +366,7 @@ const GridDaftarBank = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -289,7 +374,13 @@ const GridDaftarBank = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -323,7 +414,7 @@ const GridDaftarBank = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IDaftarBank>[] => {
+  const columns = useMemo((): Column<ITujuanKapal>[] => {
     return [
       {
         key: 'nomor',
@@ -346,10 +437,15 @@ const GridDaftarBank = () => {
                   search: '',
                   filters: {
                     nama: '',
+                    kode: '',
                     keterangan: '',
+                    text: '',
                     created_at: '',
                     updated_at: '',
-                    text: ''
+                    statusaktif: '',
+                    namacabang: '',
+                    cabang_id: '',
+                    modifiedby: ''
                   }
                 }),
                   setInputValue('');
@@ -389,7 +485,7 @@ const GridDaftarBank = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IDaftarBank }) => (
+        renderCell: ({ row }: { row: ITujuanKapal }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -405,7 +501,7 @@ const GridDaftarBank = () => {
         name: 'Nama',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 300,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -416,7 +512,7 @@ const GridDaftarBank = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama
@@ -424,52 +520,185 @@ const GridDaftarBank = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nama"
+                value={filters.filters.nama || ''}
+                onChange={(value) => handleFilterInputChange('nama', value)}
+                onClear={() => handleClearFilter('nama')}
+                inputRef={(el) => {
                   inputColRefs.current['nama'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nama', value);
-                }}
               />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nama || '';
+          const cellValue = props.row.nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'kode',
+        name: 'kode',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('kode')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'kode' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                kode
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'kode' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'kode' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="kode"
+                value={filters.filters.kode || ''}
+                onChange={(value) => handleFilterInputChange('kode', value)}
+                onClear={() => handleClearFilter('kode')}
+                inputRef={(el) => {
+                  inputColRefs.current['kode'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.kode || '';
+          const cellValue = props.row.kode || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'cabang',
+        name: 'Nama Cabang',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('namacabang')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'namacabang' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Nama Cabang
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'namacabang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'namacabang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="namacabang"
+                value={filters.filters.namacabang || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('namacabang', value)
+                }
+                onClear={() => handleClearFilter('namacabang')}
+                inputRef={(el) => {
+                  inputColRefs.current['namacabang'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.namacabang || '';
+          const cellValue = props.row.namacabang || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -478,7 +707,7 @@ const GridDaftarBank = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -489,9 +718,7 @@ const GridDaftarBank = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Keterangan
@@ -499,10 +726,10 @@ const GridDaftarBank = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -510,42 +737,39 @@ const GridDaftarBank = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
-                }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -560,67 +784,149 @@ const GridDaftarBank = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusaktif')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Status Aktif</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-
           if (memoData) {
             return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             );
           }
 
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'modifiedby',
+        name: 'Updated At',
+        resizable: true,
+        draggable: true,
+
+        headerCellClass: 'column-headers',
+
+        width: 150,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('modifiedby')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                MODIFIED BY
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'modifiedby' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'modifiedby' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="modifiedby"
+                value={filters.filters.modifiedby || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
+                  inputColRefs.current['modifiedby'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
         }
       },
       {
@@ -639,9 +945,7 @@ const GridDaftarBank = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -649,10 +953,10 @@ const GridDaftarBank = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -660,42 +964,43 @@ const GridDaftarBank = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="created_at"
+                value={filters.filters.created_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.created_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('created_at', value);
-                }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
+
       {
         key: 'updated_at',
         name: 'Updated At',
@@ -714,9 +1019,7 @@ const GridDaftarBank = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -724,10 +1027,10 @@ const GridDaftarBank = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -735,39 +1038,39 @@ const GridDaftarBank = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.updated_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('updated_at', value);
+              <FilterInput
+                colKey="updated_at"
+                value={filters.filters.updated_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
+                  inputColRefs.current['updated_at'] = el;
                 }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -790,7 +1093,12 @@ const GridDaftarBank = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridDaftarBank', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        user.id,
+        'GridTujuankapal',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -805,7 +1113,7 @@ const GridDaftarBank = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridDaftarBank', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridTujuankapal', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -822,7 +1130,7 @@ const GridDaftarBank = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingDaftarBank || !hasMore || rows.length === 0) return;
+    if (isLoadingTujuankapal || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -849,7 +1157,7 @@ const GridDaftarBank = () => {
     }
   }
 
-  function handleCellClick(args: { row: IDaftarBank }) {
+  function handleCellClick(args: { row: ITujuanKapal }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -857,7 +1165,7 @@ const GridDaftarBank = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IDaftarBank>,
+    args: CellKeyDownArgs<ITujuanKapal>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -922,7 +1230,7 @@ const GridDaftarBank = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/daftarbank-allItems`);
+          const response = await api2.get(`/redis/get/tujuankapal-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -948,16 +1256,13 @@ const GridDaftarBank = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: DaftarBankInput, keepOpenModal = false) => {
-    forms.reset();
-    clearError();
+  const onSubmit = async (values: TujuankapalInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
-
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteDaftarBank(selectedRowId as unknown as string, {
+          await deleteTujuankapal(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -979,7 +1284,7 @@ const GridDaftarBank = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createDaftarBank(
+        const newOrder = await createTujuankapal(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -994,16 +1299,15 @@ const GridDaftarBank = () => {
         }
         return;
       }
-
       if (selectedRowId && mode === 'edit') {
-        await updateDaftarBank(
+        await updateTujuankapal(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('daftarbank');
+        queryClient.invalidateQueries('tujuankapal');
       }
     } catch (error) {
       console.error(error);
@@ -1032,6 +1336,60 @@ const GridDaftarBank = () => {
     }
   };
 
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
+
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
   const handleReport = async () => {
     try {
       dispatch(setProcessing());
@@ -1044,10 +1402,10 @@ const GridDaftarBank = () => {
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await getDaftarBankFn(filtersWithoutLimit);
+      const response = await getTujuankapalFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Daftar Bank',
+        judullaporan: 'Laporan Tujuan Kapal',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1081,7 +1439,7 @@ const GridDaftarBank = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanDaftarbank.mrt');
+          report.loadFile('/reports/LaporanTujuankapal.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1100,7 +1458,7 @@ const GridDaftarBank = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/daftarbank', '_blank');
+              window.open('/reports/tujuankapal', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1114,15 +1472,47 @@ const GridDaftarBank = () => {
     }
   };
 
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IDaftarBank) {
+  function getRowClass(row: ITujuanKapal) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IDaftarBank) {
+  function rowKeyGetter(row: ITujuanKapal) {
     return row.id;
   }
 
@@ -1136,6 +1526,9 @@ const GridDaftarBank = () => {
       </div>
     );
   }
+  const handleResequence = () => {
+    router.push('/dashboard/resequence');
+  };
   function LoadRowsRenderer() {
     return (
       <div>
@@ -1146,15 +1539,22 @@ const GridDaftarBank = () => {
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-    clearError();
+
     forms.reset();
+    clearError();
   };
   const handleAdd = async () => {
-    setMode('add');
+    try {
+      // Jalankan API sinkronisasi
+      const syncResponse = await syncAcosFn();
+      setMode('add');
 
-    setPopOver(true);
+      setPopOver(true);
 
-    forms.reset();
+      forms.reset();
+    } catch (error) {
+      console.error('Error syncing ACOS:', error);
+    }
   };
   const saveGridConfig = async (
     userId: string, // userId sebagai identifier
@@ -1205,12 +1605,32 @@ const GridDaftarBank = () => {
     if (user.id) {
       saveGridConfig(
         user.id,
-        'GridDaftarBank',
+        'GridTujuankapal',
         defaultColumnsOrder,
         defaultColumnsWidth
       );
     }
   };
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+        clearError();
+      }
+    };
+
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
 
   const loadGridConfig = async (userId: string, gridName: string) => {
     try {
@@ -1290,7 +1710,7 @@ const GridDaftarBank = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridDaftarBank');
+    loadGridConfig(user.id, 'GridTujuankapal');
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1302,10 +1722,11 @@ const GridDaftarBank = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  useEffect(() => {
-    if (!allDaftarBank || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allDaftarBank.data || [];
+  useEffect(() => {
+    if (!allTujuankapal || isFetchingManually || isDataUpdated) return;
+
+    const newRows = allTujuankapal.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1323,14 +1744,14 @@ const GridDaftarBank = () => {
       return prevRows;
     });
 
-    if (allDaftarBank.pagination.totalPages) {
-      setTotalPages(allDaftarBank.pagination.totalPages);
+    if (allTujuankapal.pagination.totalPages) {
+      setTotalPages(allTujuankapal.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allDaftarBank, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allTujuankapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1358,14 +1779,6 @@ const GridDaftarBank = () => {
       ) {
         event.preventDefault(); // Mencegah scroll pada tombol space jika bukan di input
       }
-
-      if (event.key === 'Escape') {
-        forms.reset();
-        setMode('');
-        setPopOver(false);
-        clearError();
-        dispatch(clearOpenName());
-      }
     };
 
     // Menambahkan event listener saat komponen di-mount
@@ -1383,20 +1796,25 @@ const GridDaftarBank = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const rowData = rows[selectedRow];
+    console.log(rowData);
     if (
       selectedRow !== null &&
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData?.nama);
-      forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('statusaktif', rowData?.statusaktif || 1);
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('nama', rowData.nama);
+      forms.setValue('kode', rowData.kode);
+      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('cabang_id', Number(rowData.cabang_id));
+      forms.setValue('namacabang', rowData.namacabang);
+      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1407,15 +1825,11 @@ const GridDaftarBank = () => {
       }
     });
   }, []);
-
   useEffect(() => {
-    if (isSubmitSuccessful) {
-      // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
-
+    return () => {
+      debouncedFilterUpdate.cancel();
+    };
+  }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1478,9 +1892,9 @@ const GridDaftarBank = () => {
           }}
         >
           <ActionButton
-            module="DAFTARBANK"
-            onAdd={handleAdd}
+            module="TUJUANKAPAL"
             checkedRows={checkedRows}
+            onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
@@ -1492,8 +1906,53 @@ const GridDaftarBank = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
+            // customActions={[
+            //   {
+            //     label: 'Resequence',
+            //     icon: <FaPlus />, // Custom icon
+            //     onClick: () => handleResequence(),
+            //     variant: 'success', // Optional styling variant
+            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
+            //   }
+            // ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Report',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: [
+            //       {
+            //         label: 'REPORT ALL',
+            //         onClick: () => handleReport(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       },
+            //       {
+            //         label: 'REPORT BY SELECT',
+            //         onClick: () => handleReportBySelect(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       }
+            //     ]
+            //   },
+            //   {
+            //     label: 'Export',
+            //     icon: <FaFileExport />,
+            //     className: 'bg-green-600 hover:bg-green-700',
+            //     actions: [
+            //       {
+            //         label: 'EXPORT ALL',
+            //         onClick: () => handleExport(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       },
+            //       {
+            //         label: 'EXPORT BY SELECT',
+            //         onClick: () => handleExportBySelect(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       }
+            //     ]
+            //   }
+            // ]}
           />
-          {isLoadingDaftarBank ? <LoadRowsRenderer /> : null}
+          {isLoadingTujuankapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1515,7 +1974,7 @@ const GridDaftarBank = () => {
           )}
         </div>
       </div>
-      <FormDaftarBank
+      <FormMenu
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1530,4 +1989,4 @@ const GridDaftarBank = () => {
   );
 };
 
-export default GridDaftarBank;
+export default GridTujuankapal;

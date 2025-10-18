@@ -179,7 +179,6 @@ const ReportMenuPage: React.FC = () => {
     }
   }, []);
 
-  // ===== RENDER =====
   return (
     <div className="flex h-screen w-screen flex-col">
       <main className="flex-1 overflow-hidden">
@@ -188,7 +187,7 @@ const ReportMenuPage: React.FC = () => {
             isOpen={isPrintModalOpen}
             onClose={() => setIsPrintModalOpen(false)}
             docUrl={pdfUrl ?? ''}
-            defaultOrientation="landscape"
+            reportName="LaporanPengeluaran"
           />
         )}
 
