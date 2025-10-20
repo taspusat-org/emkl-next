@@ -201,8 +201,8 @@ const ReportMenuPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen flex-col">
-      <main className="flex-1 overflow-hidden">
+    <div className="flex h-screen w-screen flex-col bg-slate-200">
+      <main className="flex-1 overflow-hidden bg-slate-200">
         {pdfUrl ? (
           <Worker workerUrl="/pdf.worker.min.js">
             <Viewer

@@ -167,7 +167,7 @@ const ReportMenuPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen flex-col">
+    <div className="flex h-screen w-screen flex-col bg-slate-200">
       <main className="flex-1 overflow-hidden">
         {pdfUrl ? (
           <Worker workerUrl="/pdf.worker.min.js">

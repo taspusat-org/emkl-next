@@ -72,6 +72,7 @@ import {
 } from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import { cancelPreviousRequest } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -171,17 +172,6 @@ const GridAkunPusat = () => {
     formState: { isSubmitSuccessful }
   } = forms;
 
-  // console.log(forms.getValues());
-
-  // Fungsi untuk cancel request yang sedang berjalan
-  const cancelPreviousRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    // Buat AbortController baru untuk request berikutnya
-    abortControllerRef.current = new AbortController();
-  };
-
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setInputValue('');
@@ -200,13 +190,13 @@ const GridAkunPusat = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
-      cancelPreviousRequest();
+      cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
-    cancelPreviousRequest();
+    cancelPreviousRequest(abortControllerRef);
     debouncedFilterUpdate.cancel(); // Cancel pending updates
     setFilters((prev) => ({
       ...prev,
@@ -220,7 +210,7 @@ const GridAkunPusat = () => {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    cancelPreviousRequest();
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -248,6 +238,7 @@ const GridAkunPusat = () => {
   };
 
   const handleClearInput = () => {
+    cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
       ...prev,
       filters: {

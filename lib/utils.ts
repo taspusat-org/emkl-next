@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { twMerge } from 'tailwind-merge';
 import { GetParams } from './types/all.type';
 import { REQUIRED_FIELD } from '@/constants/validation';
+import { RefObject } from 'react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -130,4 +131,11 @@ export const formatCurrency = (value: number | string): string => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   });
+};
+export const cancelPreviousRequest = (abortControllerRef: any) => {
+  if (abortControllerRef?.current) {
+    abortControllerRef.current.abort();
+  }
+  // Buat AbortController baru untuk request berikutnya
+  abortControllerRef.current = new AbortController();
 };
