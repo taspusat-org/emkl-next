@@ -496,7 +496,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.estkomisimarketing || '';
-          const cellValue = props.row.estkomisimarketing || '';
+          const cellValue =
+            props.row.estkomisimarketing != null &&
+            props.row.estkomisimarketing !== ''
+              ? formatCurrency(props.row.estkomisimarketing)
+              : '';
           // return (
           //   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
           //     {props.row.estkomisimarketing != null &&
@@ -582,7 +586,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.komisimarketing || '';
-          const cellValue = props.row.komisimarketing || '';
+          const cellValue =
+            props.row.komisimarketing != null &&
+            props.row.komisimarketing !== ''
+              ? formatCurrency(props.row.komisimarketing)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -656,7 +664,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.biayakantorpusat || '';
-          const cellValue = props.row.biayakantorpusat || '';
+          const cellValue =
+            props.row.biayakantorpusat != null &&
+            props.row.biayakantorpusat !== ''
+              ? formatCurrency(props.row.biayakantorpusat)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -728,7 +740,10 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.biayatour || '';
-          const cellValue = props.row.biayatour || '';
+          const cellValue =
+            props.row.biayatour != null && props.row.biayatour !== ''
+              ? formatCurrency(props.row.biayatour)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -800,7 +815,10 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.gajidireksi || '';
-          const cellValue = props.row.gajidireksi || '';
+          const cellValue =
+            props.row.gajidireksi != null && props.row.gajidireksi !== ''
+              ? formatCurrency(props.row.gajidireksi)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -874,7 +892,10 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.estkomisikacab || '';
-          const cellValue = props.row.estkomisikacab || '';
+          const cellValue =
+            props.row.estkomisikacab != null && props.row.estkomisikacab !== ''
+              ? formatCurrency(props.row.estkomisikacab)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -948,7 +969,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.biayabonustriwulan || '';
-          const cellValue = props.row.biayabonustriwulan || '';
+          const cellValue =
+            props.row.biayabonustriwulan != null &&
+            props.row.biayabonustriwulan !== ''
+              ? formatCurrency(props.row.biayabonustriwulan)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1022,7 +1047,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.estkomisimarketing2 || '';
-          const cellValue = props.row.estkomisimarketing2 || '';
+          const cellValue =
+            props.row.estkomisimarketing2 != null &&
+            props.row.estkomisimarketing2 !== ''
+              ? formatCurrency(props.row.estkomisimarketing2)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1096,7 +1125,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.estkomisikacabcabang1 || '';
-          const cellValue = props.row.estkomisikacabcabang1 || '';
+          const cellValue =
+            props.row.estkomisikacabcabang1 != null &&
+            props.row.estkomisikacabcabang1 !== ''
+              ? formatCurrency(props.row.estkomisikacabcabang1)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1170,7 +1203,11 @@ const GridLabaRugiKalkulasi = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.estkomisikacabcabang2 || '';
-          const cellValue = props.row.estkomisikacabcabang2 || '';
+          const cellValue =
+            props.row.estkomisikacabcabang2 != null &&
+            props.row.estkomisikacabcabang2 !== ''
+              ? formatCurrency(props.row.estkomisikacabcabang2)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1201,13 +1238,31 @@ const GridLabaRugiKalkulasi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusfinalkomisi')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
-              <p className="text-sm font-normal">
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusfinalkomisi'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
                 STATUS FINAL KOMISI MARKETING
               </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusfinalkomisi' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusfinalkomisi' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1259,11 +1314,31 @@ const GridLabaRugiKalkulasi = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusfinalbonus')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
-              <p className="text-sm font-normal">STATUS FINAL BONUS TRIWULAN</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusfinalbonus'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                STATUS FINAL BONUS TRIWULAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusfinalbonus' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusfinalbonus' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions

@@ -1,26 +1,41 @@
 'use client';
 
 import Image from 'next/image';
+import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
 import { ImSpinner2 } from 'react-icons/im';
-import { Input } from '@/components/ui/input';
+import { useQueryClient } from 'react-query';
 import { RootState } from '@/lib/store/store';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
+import FormPenerimaanEmkl from './FormPenerimaanEmkl';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
-import { QueryClient, useQueryClient } from 'react-query';
 import { useFormError } from '@/lib/hooks/formErrorContext';
-import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 import {
   filterPenerimaanEmkl,
   PenerimaanEmkl
@@ -52,12 +67,6 @@ import {
   checkValidationPenerimaanEmklFn,
   getAllPenerimaanEmklFn
 } from '@/lib/apis/penerimaanemkl.api';
-import FormPenerimaanEmkl from './FormPenerimaanEmkl';
-
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
 
 interface Filter {
   page: number;
@@ -83,16 +92,12 @@ const GridPenerimaanEmkl = () => {
   const [rows, setRows] = useState<PenerimaanEmkl[]>([]);
   const [mode, setMode] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
-  const [inputValue, setInputValue] = useState('');
   const [totalPages, setTotalPages] = useState(1);
+  const [inputValue, setInputValue] = useState('');
   const [dataGridKey, setDataGridKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const [addMode, setAddMode] = useState<boolean>(false);
-  const [editMode, setEditMode] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<boolean>(false);
-  const [deleteMode, setDeleteMode] = useState<boolean>(false);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -150,60 +155,30 @@ const GridPenerimaanEmkl = () => {
 
   console.log(forms.getValues());
 
-  const cancelPreviousRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController(); // Buat AbortController baru untuk request berikutnya
-  };
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
 
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // Set timeout baru untuk debounce
-    // Cancel request sebelumnya jika ada
-    cancelPreviousRequest();
-
-    // 1. cari index di array columns asli
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
-
-    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    setFilters((prev) => ({
-      // update filter seperti biasa…
-      ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
-      search: '',
-      page: 1
-    }));
-
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-
-    // 3. focus sel di grid pakai displayIndex
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    // 4. focus input filter
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-  };
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -232,6 +207,21 @@ const GridPenerimaanEmkl = () => {
     setRows([]);
   };
 
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -245,6 +235,16 @@ const GridPenerimaanEmkl = () => {
   };
 
   const handleSort = (column: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
+
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -256,11 +256,9 @@ const GridPenerimaanEmkl = () => {
       sortDirection: newSortOrder,
       page: 1
     }));
-
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 200);
-
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+    }, 250);
     setSelectedRow(0);
     setCurrentPage(1);
     setFetchedPages(new Set([1]));
@@ -289,11 +287,6 @@ const GridPenerimaanEmkl = () => {
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
-  };
-
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
   };
 
   const columns = useMemo((): Column<PenerimaanEmkl>[] => {
@@ -380,11 +373,13 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama
@@ -392,52 +387,47 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nama"
+                value={filters.filters.nama || ''}
+                onChange={(value) => handleFilterInputChange('nama', value)}
+                onClear={() => handleClearFilter('nama')}
+                inputRef={(el) => {
                   inputColRefs.current['nama'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nama', value);
-                }}
               />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nama || '';
+          const cellValue = props.row.nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -453,13 +443,13 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Keterangan
@@ -467,10 +457,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -478,39 +468,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
-                }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -526,11 +516,15 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coadebet_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coadebet' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'coadebet_text'
+                    ? 'font-bold'
+                    : 'font-normal'
                 }`}
               >
                 COA DEBET
@@ -538,10 +532,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coadebet_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coadebet_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -549,42 +543,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coadebet"
+                value={filters.filters.coadebet_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coadebet_text', value)
+                }
+                onClear={() => handleClearFilter('coadebet_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coadebet'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coadebet_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coadebet_text', value);
-                }}
               />
-              {filters.filters.coadebet_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coadebet_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coadebet_text || '';
+          const cellValue = props.row.coadebet_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coadebet_nama !== null &&
-                  props.row.coadebet_nama !== undefined
-                  ? props.row.coadebet_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -600,12 +591,14 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coakredit_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coakredit'
-                    ? 'text-red-500'
+                  filters.sortBy === 'coakredit_text'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -614,10 +607,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coakredit_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coakredit_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -625,42 +618,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coakredit"
+                value={filters.filters.coakredit_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coakredit_text', value)
+                }
+                onClear={() => handleClearFilter('coakredit_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coakredit'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coakredit_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coakredit_text', value);
-                }}
               />
-              {filters.filters.coakredit_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coakredit_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coakredit_text || '';
+          const cellValue = props.row.coakredit_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coakredit_nama !== null &&
-                  props.row.coakredit_nama !== undefined
-                  ? props.row.coakredit_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -676,12 +666,14 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coabankdebet_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coabankdebet'
-                    ? 'text-red-500'
+                  filters.sortBy === 'coabankdebet_text'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -690,10 +682,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coabankdebet_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coabankdebet_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -701,44 +693,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coabankdebet"
+                value={filters.filters.coabankdebet_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coabankdebet_text', value)
+                }
+                onClear={() => handleClearFilter('coabankdebet_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coabankdebet'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coabankdebet_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coabankdebet_text', value);
-                }}
               />
-              {filters.filters.coabankdebet_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('coabankdebet_text', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coabankdebet_text || '';
+          const cellValue = props.row.coabankdebet_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coabankdebet_nama !== null &&
-                  props.row.coabankdebet_nama !== undefined
-                  ? props.row.coabankdebet_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -754,12 +741,14 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coabankkredit_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coabankkredit'
-                    ? 'text-red-500'
+                  filters.sortBy === 'coabankkredit_text'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -768,10 +757,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coabankkredit_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coabankkredit_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -779,44 +768,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coabankkredit"
+                value={filters.filters.coabankkredit_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coabankkredit_text', value)
+                }
+                onClear={() => handleClearFilter('coabankkredit_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coabankkredit'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coabankkredit_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coabankkredit_text', value);
-                }}
               />
-              {filters.filters.coabankkredit_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('coabankkredit_text', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coabankkredit_text || '';
+          const cellValue = props.row.coabankkredit_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coabankkredit_nama !== null &&
-                  props.row.coabankkredit_nama !== undefined
-                  ? props.row.coabankkredit_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -832,12 +816,14 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coahutangdebet_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coahutangdebet'
-                    ? 'text-red-500'
+                  filters.sortBy === 'coahutangdebet_text'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -846,10 +832,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coahutangdebet_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coahutangdebet_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -857,44 +843,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coahutangdebet"
+                value={filters.filters.coahutangdebet_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coahutangdebet_text', value)
+                }
+                onClear={() => handleClearFilter('coahutangdebet_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coahutangdebet'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coahutangdebet_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coahutangdebet_text', value);
-                }}
               />
-              {filters.filters.coahutangdebet_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('coahutangdebet_text', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coahutangdebet_text || '';
+          const cellValue = props.row.coahutangdebet_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coahutangdebet_nama !== null &&
-                  props.row.coahutangdebet_nama !== undefined
-                  ? props.row.coahutangdebet_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -910,12 +891,14 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coahutangkredit_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coahutangkredit'
-                    ? 'text-red-500'
+                  filters.sortBy === 'coahutangkredit_text'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -924,10 +907,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coahutangkredit_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coahutangkredit_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -935,44 +918,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coahutangkredit"
+                value={filters.filters.coahutangkredit_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coahutangkredit_text', value)
+                }
+                onClear={() => handleClearFilter('coahutangkredit_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coahutangkredit'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coahutangkredit_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coahutangkredit_text', value);
-                }}
               />
-              {filters.filters.coahutangkredit_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('coahutangkredit_text', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coahutangkredit_text || '';
+          const cellValue = props.row.coahutangkredit_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coahutangkredit_nama !== null &&
-                  props.row.coahutangkredit_nama !== undefined
-                  ? props.row.coahutangkredit_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -988,12 +966,14 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coaproses_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coaproses'
-                    ? 'text-red-500'
+                  filters.sortBy === 'coaproses_text'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1002,10 +982,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coaproses_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coaproses_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1013,42 +993,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coaproses"
+                value={filters.filters.coaproses_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coaproses_text', value)
+                }
+                onClear={() => handleClearFilter('coaproses_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coaproses'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.coaproses_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('coaproses_text', value);
-                }}
               />
-              {filters.filters.coaproses_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coaproses_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coaproses_text || '';
+          const cellValue = props.row.coaproses_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coaproses_nama !== null &&
-                  props.row.coaproses_nama !== undefined
-                  ? props.row.coaproses_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1057,15 +1034,37 @@ const GridPenerimaanEmkl = () => {
         name: 'nilaiprosespenerimaan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('nilaiprosespenerimaan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
-              <p className="text-sm font-normal">NILAI PROSES PENERIMAAN</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nilaiprosespenerimaan'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NILAI PROSES PENERIMAAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nilaiprosespenerimaan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nilaiprosespenerimaan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1074,7 +1073,7 @@ const GridPenerimaanEmkl = () => {
                 label="text"
                 filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('nilaiprosespenerimaan_text', value)
+                  handleFilterInputChange('nilaiprosespenerimaan_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -1111,15 +1110,37 @@ const GridPenerimaanEmkl = () => {
         name: 'nilaiprosespengeluaran',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('nilaiprosespengeluaran')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
-              <p className="text-sm font-normal">NILAI PROSES PENGELUARAN</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nilaiprosespengeluaran'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NILAI PROSES PENGELUARAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nilaiprosespengeluaran' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nilaiprosespengeluaran' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1128,7 +1149,7 @@ const GridPenerimaanEmkl = () => {
                 label="text"
                 filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('nilaiprosespengeluaran_text', value)
+                  handleFilterInputChange('nilaiprosespengeluaran_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -1165,15 +1186,37 @@ const GridPenerimaanEmkl = () => {
         name: 'nilaiproseshutang',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('nilaiproseshutang')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
-              <p className="text-sm font-normal">NILAI PROSES HUTANG</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nilaiproseshutang'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NILAI PROSES HUTANG
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nilaiproseshutang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nilaiproseshutang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1182,7 +1225,7 @@ const GridPenerimaanEmkl = () => {
                 label="text"
                 filterBy={{ grp: 'NILAI PROSES', subgrp: 'NILAI PROSES' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('nilaiproseshutang_text', value)
+                  handleFilterInputChange('nilaiproseshutang_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -1225,9 +1268,31 @@ const GridPenerimaanEmkl = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('statuspenarikan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
-              <p className="text-sm font-normal">Status Penarikan</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statuspenarikan'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                Status Penarikan
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statuspenarikan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statuspenarikan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1236,7 +1301,7 @@ const GridPenerimaanEmkl = () => {
                 label="text"
                 filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('statuspenarikan_text', value)
+                  handleFilterInputChange('statuspenarikan_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -1280,11 +1345,13 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('format_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'format' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'format_text' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 FORMAT
@@ -1292,10 +1359,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'format_text' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'format_text' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1303,42 +1370,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="format"
+                value={filters.filters.format_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('format_text', value)
+                }
+                onClear={() => handleClearFilter('format_text')}
+                inputRef={(el) => {
                   inputColRefs.current['format'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.format_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('format_text', value);
-                }}
               />
-              {filters.filters.format_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('format_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.format_text || '';
+          const cellValue = props.row.format_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.format_nama !== null &&
-                  props.row.format_nama !== undefined
-                  ? props.row.format_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1353,9 +1417,29 @@ const GridPenerimaanEmkl = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
-              <p className="text-sm font-normal">Status Aktif</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -1364,7 +1448,7 @@ const GridPenerimaanEmkl = () => {
                 label="text"
                 filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('statusaktif_text', value)
+                  handleFilterInputChange('statusaktif_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -1406,13 +1490,13 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'modifiedby'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Modified By
@@ -1420,10 +1504,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'modifiedby' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1431,39 +1515,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="modifiedby"
+                value={filters.filters.modifiedby || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
                   inputColRefs.current['modifiedby'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.modifiedby || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('modifiedby', value);
-                }}
               />
-              {filters.filters.modifiedby && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('modifiedby', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.modifiedby || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1479,13 +1563,13 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -1493,10 +1577,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1504,39 +1588,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="created_at"
+                value={filters.filters.created_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.created_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('created_at', value);
-                }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1552,13 +1636,13 @@ const GridPenerimaanEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -1566,10 +1650,10 @@ const GridPenerimaanEmkl = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1577,39 +1661,39 @@ const GridPenerimaanEmkl = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="updated_at"
+                value={filters.filters.updated_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
                   inputColRefs.current['updated_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.updated_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('updated_at', value);
-                }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -1994,80 +2078,6 @@ const GridPenerimaanEmkl = () => {
     }
   };
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-
   const onColumnResize = (index: number, width: number) => {
     const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
 
@@ -2111,36 +2121,6 @@ const GridPenerimaanEmkl = () => {
       );
       return newOrder;
     });
-  };
-
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridPenerimaanEmkl',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -2328,7 +2308,13 @@ const GridPenerimaanEmkl = () => {
   }
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPenerimaanEmkl');
+    loadGridConfig(
+      user.id,
+      'GridPenerimaanEmkl',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
 
   useEffect(() => {
@@ -2618,7 +2604,21 @@ const GridPenerimaanEmkl = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridPenerimaanEmkl',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>
