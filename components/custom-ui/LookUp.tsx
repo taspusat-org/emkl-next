@@ -1460,7 +1460,21 @@ export default function LookUp({
                   disabled={disabled}
                   value={inputValue}
                   onClick={(e) => e.stopPropagation()}
-                  onKeyDown={handleInputKeydown}
+                  onKeyDownCapture={(e) => {
+                    // Tangkap event di capture phase (sebelum bubbling)
+                    if (
+                      e.key === 'ArrowLeft' ||
+                      e.key === 'ArrowRight' ||
+                      e.key === 'Home' ||
+                      e.key === 'End'
+                    ) {
+                      e.stopPropagation();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    handleInputKeydown(e);
+                  }}
                   onChange={(e) => {
                     handleInputChange(e);
                   }}

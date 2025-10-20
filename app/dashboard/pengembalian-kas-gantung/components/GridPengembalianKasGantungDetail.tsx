@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import 'react-data-grid/lib/styles.scss';
 
 import DataGrid, {
@@ -18,12 +24,19 @@ import {
   filterPengembalianKasGantungDetail,
   IPengembalianKasGantungDetail
 } from '@/lib/types/pengembaliankasgantung.type';
-import { formatCurrency } from '@/lib/utils';
+import { cancelPreviousRequest, formatCurrency } from '@/lib/utils';
 import { FaTimes } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import IcClose from '@/public/image/x.svg';
 import Image from 'next/image';
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { debounce } from 'lodash';
+import FilterInput from '@/components/custom-ui/FilterInput';
 interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
@@ -46,6 +59,7 @@ const GridPengembalianKasGantungDetail = ({
 
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [filters, setFilters] = useState<Filter>({
     filters: {
@@ -83,45 +97,36 @@ const GridPengembalianKasGantungDetail = ({
     x: number;
     y: number;
   } | null>(null);
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // 1. cari index di array columns asli
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setInputValue('');
+      setFilters((prev) => ({
+        ...prev,
+        search: '',
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setRows([]);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
 
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    // update filter seperti biasa…
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
     setFilters((prev) => ({
       ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value,
-        nobukti: headerData.nobukti
-      },
-      search: ''
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
     }));
-    setInputValue('');
-
-    // 3. focus sel di grid pakai displayIndex
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    // 4. focus input filter
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-  };
+    setRows([]);
+  }, []);
 
   function highlightText(
     text: string | number | null | undefined,
@@ -160,6 +165,7 @@ const GridPengembalianKasGantungDetail = ({
     );
   }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setFilters((prev) => ({
@@ -184,6 +190,7 @@ const GridPengembalianKasGantungDetail = ({
     setRows([]);
   };
   const handleClearInput = () => {
+    cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
       ...prev,
       filters: {
@@ -194,6 +201,7 @@ const GridPengembalianKasGantungDetail = ({
     setInputValue('');
   };
   const handleSort = (column: string) => {
+    cancelPreviousRequest(abortControllerRef);
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -277,9 +285,21 @@ const GridPengembalianKasGantungDetail = ({
         name: 'NO BUKTI',
         renderCell: (props: any) => {
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.nobukti}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                    {props.row.nobukti}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p> {props.row.nobukti}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -318,47 +338,40 @@ const GridPengembalianKasGantungDetail = ({
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="kasgantung_nobukti"
+                value={filters.filters.kasgantung_nobukti || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('kasgantung_nobukti', value)
+                }
+                onClear={() => handleClearFilter('kasgantung_nobukti')}
+                inputRef={(el) => {
                   inputColRefs.current['kasgantung_nobukti'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.kasgantung_nobukti
-                    ? filters.filters.kasgantung_nobukti.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('kasgantung_nobukti', value);
-                }}
               />
-              {filters.filters.kasgantung_nobukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('kasgantung_nobukti', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         name: 'NO BUKTI KAS GANTUNG',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.kasgantung_nobukti || '';
+          const cellValue = props.row.kasgantung_nobukti || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.kasgantung_nobukti || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -396,44 +409,39 @@ const GridPengembalianKasGantungDetail = ({
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.keterangan
-                    ? filters.filters.keterangan.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('keterangan', value);
-                }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -471,44 +479,37 @@ const GridPengembalianKasGantungDetail = ({
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nominal"
+                value={filters.filters.nominal || ''}
+                onChange={(value) => handleFilterInputChange('nominal', value)}
+                onClear={() => handleClearFilter('nominal')}
+                inputRef={(el) => {
                   inputColRefs.current['nominal'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nominal
-                    ? filters.filters.nominal.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nominal', value);
-                }}
               />
-              {filters.filters.nominal && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nominal', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
+          const cellValue = formatCurrency(props.row.nominal) || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {highlightText(
-                formatCurrency(props.row.nominal) || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -546,44 +547,39 @@ const GridPengembalianKasGantungDetail = ({
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="modifiedby"
+                value={filters.filters.modifiedby || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
                   inputColRefs.current['modifiedby'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.modifiedby
-                    ? filters.filters.modifiedby.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('modifiedby', value);
-                }}
               />
-              {filters.filters.modifiedby && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('modifiedby', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.modifiedby || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -621,44 +617,39 @@ const GridPengembalianKasGantungDetail = ({
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="created_at"
+                value={filters.filters.created_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.created_at
-                    ? filters.filters.created_at.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('created_at', value);
-                }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -696,44 +687,39 @@ const GridPengembalianKasGantungDetail = ({
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="updated_at"
+                value={filters.filters.updated_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
                   inputColRefs.current['updated_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.updated_at
-                    ? filters.filters.updated_at.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('updated_at', value);
-                }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -964,25 +950,25 @@ const GridPengembalianKasGantungDetail = ({
   useEffect(() => {
     if (detail && detail.data.length > 0) {
       const formattedRows = detail.data.map((item: any) => ({
-        id: item.id,
-        pengembaliankasgantung_id: item.pengembaliankasgantung_id, // Updated to match the field name
-        nobukti: item.nobukti, // Updated to match the field name
-        kasgantung_nobukti: item.kasgantung_nobukti, // Updated to match the field name
-        keterangan: item.keterangan, // Updated to match the field name
-        nominal: item.nominal, // Updated to match the field name
-        info: item.info, // Updated to match the field name
-        modifiedby: item.modifiedby, // Updated to match the field name
-        editing_by: item.editing_by, // Updated to match the field name
-        editing_at: item.editing_at, // Updated to match the field name
-        created_at: item.created_at, // Updated to match the field name
-        updated_at: item.updated_at // Updated to match the field name
+        id: item?.id,
+        pengembaliankasgantung_id: item?.pengembaliankasgantung_id, // Updated to match the field name
+        nobukti: item?.nobukti, // Updated to match the field name
+        kasgantung_nobukti: item?.kasgantung_nobukti, // Updated to match the field name
+        keterangan: item?.keterangan, // Updated to match the field name
+        nominal: item?.nominal, // Updated to match the field name
+        info: item?.info, // Updated to match the field name
+        modifiedby: item?.modifiedby, // Updated to match the field name
+        editing_by: item?.editing_by, // Updated to match the field name
+        editing_at: item?.editing_at, // Updated to match the field name
+        created_at: item?.created_at, // Updated to match the field name
+        updated_at: item?.updated_at // Updated to match the field name
       }));
 
       setRows(formattedRows);
-    } else if (!headerData?.id || detail?.data.length === 0) {
+    } else if (!headerData.nobukti || detail?.data.length === 0) {
       setRows([]);
     }
-  }, [detail, headerData?.id]);
+  }, [detail, headerData.nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<IPengembalianKasGantungDetail>,
@@ -1006,6 +992,30 @@ const GridPengembalianKasGantungDetail = ({
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
+  useEffect(() => {
+    if (headerData.nobukti) {
+      setFilters((prev) => ({
+        ...prev,
+        filters: {
+          ...filterPengembalianKasGantungDetail, // <--- semua filter dikosongkan dulu
+          nobukti: headerData.nobukti // <--- kecuali nobukti tetap diisi
+        }
+      }));
+    } else {
+      setFilters((prev) => ({
+        ...prev,
+        filters: {
+          ...filterPengembalianKasGantungDetail,
+          nobukti: '' // semua dikosongkan
+        }
+      }));
+    }
+  }, [headerData.nobukti]);
+  useEffect(() => {
+    return () => {
+      debouncedFilterUpdate.cancel();
+    };
+  }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
