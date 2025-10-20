@@ -245,7 +245,17 @@ const Page = () => {
             (item: any) => item.grp === 'STATUS NILAI'
           );
 
-          const multipleKey = ['STATUS TRADO LUAR'];
+          const multipleKey = [
+            'STATUS TRADO LUAR',
+            'STATUS PISAH BL',
+            'STATUS JOB PTD',
+            'STATUS TRANSIT',
+            'STATUS STUFFING DEPO',
+            'STATUS OPEN DOOR',
+            'STATUS BATAL MUAT',
+            'STATUS SOC',
+            'STATUS PENGURUSAN DOOR EKSPEDISI LAIN'
+          ];
 
           multipleKey.forEach((labelKey) => {
             dispatch(setData({ key: labelKey, data: statusNilaiData }));

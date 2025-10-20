@@ -5,6 +5,11 @@ import { GetParams } from './types/all.type';
 import { REQUIRED_FIELD } from '@/constants/validation';
 import { RefObject } from 'react';
 
+interface GridConfig {
+  columnsOrder: number[];
+  columnsWidth: { [key: string]: number };
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -132,10 +137,128 @@ export const formatCurrency = (value: number | string): string => {
     maximumFractionDigits: 2
   });
 };
+
 export const cancelPreviousRequest = (abortControllerRef: any) => {
-  if (abortControllerRef?.current) {
+  if (abortControllerRef.current) {
     abortControllerRef.current.abort();
   }
-  // Buat AbortController baru untuk request berikutnya
-  abortControllerRef.current = new AbortController();
+  abortControllerRef.current = new AbortController(); // Buat AbortController baru untuk request berikutnya
+};
+
+export const handleContextMenu = (event: React.MouseEvent) => {
+  event.preventDefault();
+  return { x: event.clientX, y: event.clientY };
+};
+
+export const saveGridConfig = async (
+  userId: string, // userId sebagai identifier
+  gridName: string,
+  columnsOrder: number[],
+  columnsWidth: { [key: string]: number }
+) => {
+  try {
+    const response = await fetch('/api/savegrid', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        userId,
+        gridName,
+        config: { columnsOrder, columnsWidth }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to save grid configuration');
+    }
+  } catch (error) {
+    console.error('Failed to save grid configuration:', error);
+  }
+};
+
+export const loadGridConfig = async (
+  userId: string,
+  gridName: string,
+  columns: any,
+  setColumnsOrder: React.Dispatch<React.SetStateAction<readonly number[]>>,
+  setColumnsWidth: React.Dispatch<
+    React.SetStateAction<{ [key: string]: number }>
+  >
+) => {
+  try {
+    const response = await fetch(
+      `/api/loadgrid?userId=${userId}&gridName=${gridName}`
+    );
+    if (!response.ok) {
+      throw new Error('Failed to load grid configuration');
+    }
+
+    const { columnsOrder, columnsWidth }: GridConfig = await response.json();
+
+    setColumnsOrder(
+      columnsOrder && columnsOrder.length
+        ? columnsOrder
+        : columns.map((_: any, index: number) => index)
+    );
+    setColumnsWidth(
+      columnsWidth && Object.keys(columnsWidth).length
+        ? columnsWidth
+        : columns.reduce(
+            (acc: any, column: any) => ({
+              ...acc,
+              [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
+            }),
+            {}
+          )
+    );
+  } catch (error) {
+    console.error('Failed to load grid configuration:', error);
+
+    // If configuration is not available or error occurs, fallback to original column widths
+    setColumnsOrder(columns.map((_: any, index: number) => index));
+    setColumnsWidth(
+      columns.reduce(
+        (acc: any, column: any) => {
+          // Use the original column width instead of '1fr' when configuration is missing or error occurs
+          acc[column.key] = typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
+          return acc;
+        },
+        {} as { [key: string]: number }
+      )
+    );
+  }
+};
+
+export const resetGridConfig = (
+  userId: string,
+  gridName: string,
+  columns: any,
+  setColumnsOrder: React.Dispatch<React.SetStateAction<readonly number[]>>,
+  setColumnsWidth: React.Dispatch<
+    React.SetStateAction<{ [key: string]: number }>
+  >
+) => {
+  // Nilai default untuk columnsOrder dan columnsWidth
+  const defaultColumnsOrder = columns.map((_: any, index: number) => index);
+  const defaultColumnsWidth = columns.reduce(
+    (acc: any, column: any) => {
+      acc[column.key] = typeof column.width === 'number' ? column.width : 0;
+      return acc;
+    },
+    {} as { [key: string]: number }
+  );
+
+  // Set state kembali ke nilai default
+  setColumnsOrder(defaultColumnsOrder);
+  setColumnsWidth(defaultColumnsWidth);
+  // setContextMenu(null);
+  // setDataGridKey((prevKey) => prevKey + 1);
+
+  // gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+
+  // Simpan konfigurasi reset ke server (atau backend)
+  if (userId) {
+    saveGridConfig(userId, gridName, defaultColumnsOrder, defaultColumnsWidth);
+  }
 };

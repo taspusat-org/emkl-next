@@ -39,8 +39,8 @@ const FormJobParty = ({
   // popOver,
   onSubmit,
   isLoadingCreate // mode,
-} // isLoadingUpdate,
-// isLoadingDelete
+  // isLoadingUpdate,
+} // isLoadingDelete
 : any) => {
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);

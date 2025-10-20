@@ -1059,7 +1059,7 @@ const FormHutang = ({
                             required={true}
                             className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
                           >
-                            NOMOR BUKTI
+                            NO BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
@@ -1085,7 +1085,7 @@ const FormHutang = ({
                             required={true}
                             className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
                           >
-                            TANGGAL BUKTI
+                            TGL BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>

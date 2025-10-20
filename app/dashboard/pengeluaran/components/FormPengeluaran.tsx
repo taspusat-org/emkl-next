@@ -409,7 +409,44 @@ const FormPengeluaran = ({
           );
         }
       },
-
+      {
+        key: 'keterangan',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 400,
+        renderHeaderCell: () => (
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Keterangan</p>
+          </div>
+        ),
+        name: 'KETERANGAN',
+        renderCell: (props: any) => {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  disabled={mode === 'view' || mode === 'delete'}
+                  value={props.row.keterangan}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) =>
+                    handleInputChange(
+                      props.rowIdx,
+                      'keterangan',
+                      e.target.value
+                    )
+                  }
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
       {
         key: 'dpp',
         resizable: true,
@@ -533,44 +570,7 @@ const FormPengeluaran = ({
           );
         }
       },
-      {
-        key: 'keterangan',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 400,
-        renderHeaderCell: () => (
-          <div className="flex h-[100%] w-full flex-col justify-center">
-            <p className={`text-left text-sm font-normal`}>Keterangan</p>
-          </div>
-        ),
-        name: 'KETERANGAN',
-        renderCell: (props: any) => {
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
-                  value={props.row.keterangan}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'keterangan',
-                      e.target.value
-                    )
-                  }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
-            </div>
-          );
-        }
-      },
+
       {
         key: 'noinvoiceemkl',
         resizable: true,
@@ -1210,7 +1210,7 @@ const FormPengeluaran = ({
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                           <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
-                            NOMOR BUKTI
+                            NOBUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
@@ -1236,7 +1236,7 @@ const FormPengeluaran = ({
                             required={true}
                             className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
                           >
-                            TANGGAL BUKTI
+                            TGL BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>

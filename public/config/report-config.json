@@ -1,0 +1,18 @@
+{
+  "LaporanPengeluaran": {
+    "paperSize": "CUSTOM_FAKTUR",
+    "orientation": "landscape"
+  },
+  "LaporanPenerimaan": {
+    "paperSize": "",
+    "orientation": "portrait"
+  },
+  "LaporanContainer": {
+    "paperSize": "CUSTOM_A4",
+    "orientation": "portrait"
+  },
+  "LaporanJenisseal": {
+    "paperSize": "CUSTOM_A4",
+    "orientation": "portrait"
+  }
+}

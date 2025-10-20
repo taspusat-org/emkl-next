@@ -40,9 +40,6 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true
-  },
-  experimental: {
-    middlewarePrefetch: 'flexible'
   }
 };
 
