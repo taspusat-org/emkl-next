@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
-import { useSelector, useDispatch } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
 import { ImSpinner2 } from 'react-icons/im';
 import { useQueryClient } from 'react-query';
@@ -13,39 +13,55 @@ import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { getPermissionFn } from '@/lib/apis/menu.api';
 import { useAlert } from '@/lib/store/client/useAlert';
+import { useSelector, useDispatch } from 'react-redux';
 import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
-import {
-  setHeaderData,
-  setUrlApproval
-} from '@/lib/store/headerSlice/headerSlice';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { getParameterApprovalFn } from '@/lib/apis/parameter.api';
+import FormStatusJobMasukGudang from './FormStatusJobMasukGudang';
+import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
+import { filterStatusJob, statusJob } from '@/lib/types/statusJob.type';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
 import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+  statusJobHeaderInput,
+  statusJobHeaderSchema
+} from '@/lib/validations/statusjob.validation';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 import DataGrid, {
   CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import { formatCurrency, formatDateToDDMMYYYY } from '@/lib/utils';
-import { setReportData } from '@/lib/store/reportSlice/reportSlice';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
-import JsxParser from 'react-jsx-parser';
-import FormStatusJobMasukGudang from './FormStatusJobMasukGudang';
-import {
-  statusJobHeaderInput,
-  statusJobHeaderSchema
-} from '@/lib/validations/statusjob.validation';
-import { filterStatusJob, statusJob } from '@/lib/types/statusJob.type';
 import {
   useCreateStatusJob,
   useDeleteStatusJob,
@@ -62,8 +78,6 @@ import {
   checkValidationStatusJobFn,
   getStatusJobMasukGudangByTglStatusFn
 } from '@/lib/apis/statusjob.api';
-import { getPermissionFn } from '@/lib/apis/menu.api';
-import { getParameterApprovalFn } from '@/lib/apis/parameter.api';
 
 interface Filter {
   page: number;
@@ -72,11 +86,6 @@ interface Filter {
   filters: typeof filterStatusJob;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
-}
-
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
 }
 
 const GridStatusJob = () => {
@@ -148,19 +157,6 @@ const GridStatusJob = () => {
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
-  // console.log(
-  //   'selectedJenisOrderan',
-  //   selectedJenisOrderan,
-  //   'selectedJenisOrderanNama',
-  //   selectedJenisOrderanNama,
-  //   'selectedJenisStatusJob',
-  //   selectedJenisStatusJob,
-  //   'selectedJenisStatusJobNama',
-  //   selectedJenisStatusJobNama,
-  //   'filters',
-  //   filters
-  // );
-
   const {
     data: allDataStatusJob,
     isLoading: isLoadingStatusJob,
@@ -188,55 +184,31 @@ const GridStatusJob = () => {
     formState: { isSubmitSuccessful }
   } = forms;
 
-  const cancelPreviousRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController(); // Buat AbortController baru untuk request berikutnya
-  };
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
 
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // Set timeout baru untuk debounce
-    // Cancel request sebelumnya jika ada
-    cancelPreviousRequest();
-
-    // Logika yang ada pada handleColumnFilterChange sebelumnya
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    setFilters((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [colKey]: value },
-      search: '',
-      page: 1
-    }));
-
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-    setCurrentPage(1);
-  };
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchValue = e.target.value;
-    // Langsung update input value tanpa debounce
+    cancelPreviousRequest(abortControllerRef);
+    const searchValue = e.target.value; // Langsung update input value tanpa debounce
     setInputValue(searchValue);
 
     // Menunggu beberapa waktu sebelum update filter
@@ -273,6 +245,21 @@ const GridStatusJob = () => {
     }, 300); // Mengatur debounce hanya untuk update filter
   };
 
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -290,6 +277,16 @@ const GridStatusJob = () => {
   };
 
   const handleSort = (column: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
+
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -302,10 +299,9 @@ const GridStatusJob = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 200);
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+    }, 250);
     setSelectedRow(0);
-
     setCurrentPage(1);
     setFetchedPages(new Set([1]));
     setRows([]);
@@ -333,11 +329,6 @@ const GridStatusJob = () => {
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
-  };
-
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
   };
 
   const columns = useMemo((): Column<statusJob>[] => {
@@ -424,13 +415,13 @@ const GridStatusJob = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tglstatus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglstatus'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'tglstatus' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 {selectedJenisStatusJobNama
@@ -440,10 +431,10 @@ const GridStatusJob = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglstatus' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglstatus' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -451,39 +442,39 @@ const GridStatusJob = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="tglstatus"
+                value={filters.filters.tglstatus || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('tglstatus', value)
+                }
+                onClear={() => handleClearFilter('tglstatus')}
+                inputRef={(el) => {
                   inputColRefs.current['tglstatus'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.tglstatus.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('tglstatus', value);
-                }}
               />
-              {filters.filters.tglstatus && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tglstatus', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglstatus || '';
+          const cellValue = props.row.tglstatus || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tglstatus || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -1015,80 +1006,6 @@ const GridStatusJob = () => {
     }
   };
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
@@ -1124,36 +1041,6 @@ const GridStatusJob = () => {
       saveGridConfig(user.id, 'GridStatusJob', [...newOrder], columnsWidth);
       return newOrder;
     });
-  };
-
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridStatusJob',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -1348,7 +1235,13 @@ const GridStatusJob = () => {
 
   useEffect(() => {
     setIsFirstLoad(true);
-    loadGridConfig(user.id, 'GridStatusJob');
+    loadGridConfig(
+      user.id,
+      'GridStatusJob',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
 
     const fetchPermission = async () => {
       const res = await getPermissionFn(String(id)); // GET ACOS
@@ -1699,7 +1592,21 @@ const GridStatusJob = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridStatusJob',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>

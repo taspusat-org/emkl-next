@@ -1,27 +1,43 @@
 'use client';
 
 import Image from 'next/image';
+import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
+import FormSupplier from './FormSupplier';
 import IcClose from '@/public/image/x.svg';
 import { ImSpinner2 } from 'react-icons/im';
-import { Input } from '@/components/ui/input';
+import { useQueryClient } from 'react-query';
 import { RootState } from '@/lib/store/store';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
-import { QueryClient, useQueryClient } from 'react-query';
 import { useFormError } from '@/lib/hooks/formErrorContext';
-import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
-import { filterSupplier, Supplier } from '@/lib/types/supplier.type';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { filterSupplier, Supplier } from '@/lib/types/supplier.type';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+  cancelPreviousRequest,
+  formatCurrency,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 import {
   clearOpenName,
   setClearLookup
@@ -31,11 +47,9 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import DataGrid, {
-  CellClickArgs,
   CellKeyDownArgs,
   Column,
-  DataGridHandle,
-  Row
+  DataGridHandle
 } from 'react-data-grid';
 import {
   useCreateSupplier,
@@ -43,21 +57,14 @@ import {
   useGetAllSupplier,
   useUpdateSupplier
 } from '@/lib/server/useSupplier';
-import { formatCurrency } from '@/lib/utils';
 import {
   supplierInput,
   supplierSchema
 } from '@/lib/validations/supplier.validation';
-import FormSupplier from './FormSupplier';
 import {
   checkValidationSupplierFn,
   getAllSupplierFn
 } from '@/lib/apis/supplier.api';
-
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
 
 interface Filter {
   page: number;
@@ -169,6 +176,16 @@ const GridSupplier = () => {
   };
 
   const handleSort = (column: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
+
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -180,106 +197,45 @@ const GridSupplier = () => {
       sortDirection: newSortOrder,
       page: 1
     }));
-
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 200);
-
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+    }, 250);
     setSelectedRow(0);
     setCurrentPage(1);
     setFetchedPages(new Set([1]));
     setRows([]);
   };
 
-  const cancelPreviousRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    // Buat AbortController baru untuk request berikutnya
-    abortControllerRef.current = new AbortController();
-  };
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
 
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    cancelPreviousRequest();
-
-    const originalIndex = columns.findIndex((col) => col.key === colKey); // 1. cari index di array columns asli
-
-    // 2. hitung index tampilan berdasar columnsOrder, jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    setFilters((prev) => ({
-      // update filter seperti biasa…
-      ...prev,
-      filters: {
-        ...prev.filters,
-        [colKey]: value
-      },
-      search: '',
-      page: 1
-    }));
-
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-
-    setTimeout(() => {
-      // 3. focus sel di grid pakai displayIndex
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    setTimeout(() => {
-      // 4. focus input filter
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-  };
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: {
-        nama: '',
-        keterangan: '',
-        contactperson: '',
-        ktp: '',
-        alamat: '',
-        coa_text: '',
-        coapiu_text: '',
-        coahut_text: '',
-        coagiro_text: '',
-        kota: '',
-        kodepos: '',
-        telp: '',
-        email: '',
-        fax: '',
-        web: '',
-        creditterm: '',
-        credittermplus: '',
-        npwp: '',
-        alamatfakturpajak: '',
-        namapajak: '',
-        nominalpph21: '',
-        nominalpph23: '',
-        noskb: '',
-        tglskb: '',
-        nosk: '',
-        tglsk: '',
-        statusaktif_text: '',
-        modifiedby: '',
-        created_at: '',
-        updated_at: ''
-      },
+      filters: filterSupplier,
       search: searchValue,
       page: 1
     }));
@@ -300,6 +256,21 @@ const GridSupplier = () => {
     setRows([]);
   };
 
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -310,11 +281,6 @@ const GridSupplier = () => {
       page: 1
     }));
     setInputValue('');
-  };
-
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
   };
 
   function highlightText(
@@ -445,11 +411,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama Supplier
@@ -457,52 +425,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nama"
+                value={filters.filters.nama || ''}
+                onChange={(value) => handleFilterInputChange('nama', value)}
+                onClear={() => handleClearFilter('nama')}
+                inputRef={(el) => {
                   inputColRefs.current['nama'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nama', value);
-                }}
               />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nama || '';
+          const cellValue = props.row.nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -518,13 +481,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 keterangan
@@ -532,54 +495,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.keterangan
-                    ? filters.filters.keterangan.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('keterangan', value);
-                }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -595,12 +553,14 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('contactperson')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'contactperson'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -609,54 +569,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'contactperson' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'contactperson' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="contactperson"
+                value={filters.filters.contactperson || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('contactperson', value)
+                }
+                onClear={() => handleClearFilter('contactperson')}
+                inputRef={(el) => {
                   inputColRefs.current['contactperson'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.contactperson
-                    ? filters.filters.contactperson.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('contactperson', value);
-                }}
               />
-              {filters.filters.contactperson && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('contactperson', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.contactperson || '';
+          const cellValue = props.row.contactperson || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.contactperson || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -672,59 +627,60 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('ktp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'ktp' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'ktp' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 ktp
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'ktp' && filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'ktp' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="ktp"
+                value={filters.filters.ktp || ''}
+                onChange={(value) => handleFilterInputChange('ktp', value)}
+                onClear={() => handleClearFilter('ktp')}
+                inputRef={(el) => {
                   inputColRefs.current['ktp'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.ktp ? filters.filters.ktp.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('ktp', value);
-                }}
               />
-              {filters.filters.ktp && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('ktp', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.ktp || '';
+          const cellValue = props.row.ktp || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.ktp || '', filters.search, columnFilter)}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -740,11 +696,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('alamat')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'alamat' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'alamat' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 alamat
@@ -752,54 +710,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'alamat' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'alamat' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="alamat"
+                value={filters.filters.alamat || ''}
+                onChange={(value) => handleFilterInputChange('alamat', value)}
+                onClear={() => handleClearFilter('alamat')}
+                inputRef={(el) => {
                   inputColRefs.current['alamat'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.alamat
-                    ? filters.filters.alamat.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('alamat', value);
-                }}
               />
-              {filters.filters.alamat && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('alamat', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.alamat || '';
+          const cellValue = props.row.alamat || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.alamat || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -815,65 +766,60 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coa')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coa' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'coa' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 coa
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'coa' && filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coa' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coa"
+                value={filters.filters.coa_text || ''}
+                onChange={(value) => handleFilterInputChange('coa_text', value)}
+                onClear={() => handleClearFilter('coa_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coa'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.coa_text
-                    ? filters.filters.coa_text.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coa_text', value);
-                }}
               />
-              {filters.filters.coa_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coa_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coa_text || '';
+          const cellValue = props.row.coa_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coa_nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -889,11 +835,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coapiu')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coapiu' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'coapiu' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 coa piutang
@@ -901,54 +849,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coapiu' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coapiu' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coapiu"
+                value={filters.filters.coapiu_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coapiu_text', value)
+                }
+                onClear={() => handleClearFilter('coapiu_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coapiu'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.coapiu_text
-                    ? filters.filters.coapiu_text.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coapiu_text', value);
-                }}
               />
-              {filters.filters.coapiu_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coapiu_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coapiu_text || '';
+          const cellValue = props.row.coapiu_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coapiu_nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -964,11 +907,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coahut')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coahut' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'coahut' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 coa hutang
@@ -976,54 +921,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coahut' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coahut' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coahut"
+                value={filters.filters.coahut_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coahut_text', value)
+                }
+                onClear={() => handleClearFilter('coahut_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coahut'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.coahut_text
-                    ? filters.filters.coahut_text.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coahut_text', value);
-                }}
               />
-              {filters.filters.coahut_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coahut_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coahut_text || '';
+          const cellValue = props.row.coahut_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coahut_nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1039,11 +979,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coagiro')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'coagiro' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'coagiro' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 coa giro
@@ -1051,54 +993,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coagiro' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coagiro' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coagiro"
+                value={filters.filters.coagiro_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coagiro_text', value)
+                }
+                onClear={() => handleClearFilter('coagiro_text')}
+                inputRef={(el) => {
                   inputColRefs.current['coagiro'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.coagiro_text
-                    ? filters.filters.coagiro_text.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coagiro_text', value);
-                }}
               />
-              {filters.filters.coagiro_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coagiro_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coagiro_text || '';
+          const cellValue = props.row.coagiro_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coagiro_nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1114,11 +1051,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('kota')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'kota' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'kota' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 kota
@@ -1126,52 +1065,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'kota' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'kota' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="kota"
+                value={filters.filters.kota || ''}
+                onChange={(value) => handleFilterInputChange('kota', value)}
+                onClear={() => handleClearFilter('kota')}
+                inputRef={(el) => {
                   inputColRefs.current['kota'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.kota ? filters.filters.kota.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('kota', value);
-                }}
               />
-              {filters.filters.kota && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('kota', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.kota || '';
+          const cellValue = props.row.kota || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.kota || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1187,11 +1121,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('kodepos')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'kodepos' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'kodepos' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 kode pos
@@ -1199,54 +1135,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'kodepos' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'kodepos' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="kodepos"
+                value={filters.filters.kodepos || ''}
+                onChange={(value) => handleFilterInputChange('kodepos', value)}
+                onClear={() => handleClearFilter('kodepos')}
+                inputRef={(el) => {
                   inputColRefs.current['kodepos'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.kodepos
-                    ? filters.filters.kodepos.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('kodepos', value);
-                }}
               />
-              {filters.filters.kodepos && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('kodepos', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.kodepos || '';
+          const cellValue = props.row.kodepos || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.kodepos || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1262,11 +1191,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('telp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'telp' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'telp' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 telp
@@ -1274,52 +1205,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'telp' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'telp' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="telp"
+                value={filters.filters.telp || ''}
+                onChange={(value) => handleFilterInputChange('telp', value)}
+                onClear={() => handleClearFilter('telp')}
+                inputRef={(el) => {
                   inputColRefs.current['telp'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.telp ? filters.filters.telp.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('telp', value);
-                }}
               />
-              {filters.filters.telp && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('telp', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.telp || '';
+          const cellValue = props.row.telp || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.telp || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1335,11 +1261,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('email')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'email' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'email' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 email
@@ -1347,54 +1275,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'email' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'email' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="email"
+                value={filters.filters.email || ''}
+                onChange={(value) => handleFilterInputChange('email', value)}
+                onClear={() => handleClearFilter('email')}
+                inputRef={(el) => {
                   inputColRefs.current['email'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.email
-                    ? filters.filters.email.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('email', value);
-                }}
               />
-              {filters.filters.email && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('email', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.email || '';
+          const cellValue = props.row.email || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.email || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1410,59 +1331,60 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('fax')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'fax' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'fax' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 fax
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'fax' && filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'fax' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="fax"
+                value={filters.filters.fax || ''}
+                onChange={(value) => handleFilterInputChange('fax', value)}
+                onClear={() => handleClearFilter('fax')}
+                inputRef={(el) => {
                   inputColRefs.current['fax'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.fax ? filters.filters.fax.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('fax', value);
-                }}
               />
-              {filters.filters.fax && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('fax', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.fax || '';
+          const cellValue = props.row.fax || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.fax || '', filters.search, columnFilter)}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1478,59 +1400,60 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('web')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'web' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'web' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 web
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'web' && filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'web' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="web"
+                value={filters.filters.web || ''}
+                onChange={(value) => handleFilterInputChange('web', value)}
+                onClear={() => handleClearFilter('web')}
+                inputRef={(el) => {
                   inputColRefs.current['web'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.web ? filters.filters.web.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('web', value);
-                }}
               />
-              {filters.filters.web && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('web', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.web || '';
+          const cellValue = props.row.web || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(props.row.web || '', filters.search, columnFilter)}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1546,13 +1469,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('creditterm')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'creditterm'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'creditterm' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 credit term
@@ -1560,54 +1483,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'creditterm' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'creditterm' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="creditterm"
+                value={filters.filters.creditterm || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('creditterm', value)
+                }
+                onClear={() => handleClearFilter('creditterm')}
+                inputRef={(el) => {
                   inputColRefs.current['creditterm'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.creditterm
-                    ? filters.filters.creditterm.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('creditterm', value);
-                }}
               />
-              {filters.filters.creditterm && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('creditterm', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.creditterm || '';
+          const cellValue = props.row.creditterm || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {highlightText(
-                props.row.creditterm || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1623,12 +1541,14 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('credittermplus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'credittermplus'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1637,54 +1557,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'credittermplus' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'credittermplus' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="credittermplus"
+                value={filters.filters.credittermplus || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('credittermplus', value)
+                }
+                onClear={() => handleClearFilter('credittermplus')}
+                inputRef={(el) => {
                   inputColRefs.current['credittermplus'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.credittermplus
-                    ? filters.filters.credittermplus.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('credittermplus', value);
-                }}
               />
-              {filters.filters.credittermplus && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('credittermplus', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.credittermplus || '';
+          const cellValue = props.row.credittermplus || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {highlightText(
-                props.row.credittermplus || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1700,11 +1615,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('npwp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'npwp' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'npwp' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 npwp
@@ -1712,52 +1629,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'npwp' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'npwp' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="npwp"
+                value={filters.filters.npwp || ''}
+                onChange={(value) => handleFilterInputChange('npwp', value)}
+                onClear={() => handleClearFilter('npwp')}
+                inputRef={(el) => {
                   inputColRefs.current['npwp'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.npwp ? filters.filters.npwp.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('npwp', value);
-                }}
               />
-              {filters.filters.npwp && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('npwp', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.npwp || '';
+          const cellValue = props.row.npwp || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.npwp || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1773,12 +1685,14 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('alamatfakturpajak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'alamatfakturpajak'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1787,56 +1701,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'alamatfakturpajak' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'alamatfakturpajak' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="alamatfakturpajak"
+                value={filters.filters.alamatfakturpajak || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('alamatfakturpajak', value)
+                }
+                onClear={() => handleClearFilter('alamatfakturpajak')}
+                inputRef={(el) => {
                   inputColRefs.current['alamatfakturpajak'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.alamatfakturpajak
-                    ? filters.filters.alamatfakturpajak.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('alamatfakturpajak', value);
-                }}
               />
-              {filters.filters.alamatfakturpajak && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('alamatfakturpajak', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.alamatfakturpajak || '';
+          const cellValue = props.row.alamatfakturpajak || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.alamatfakturpajak || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1852,13 +1759,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('namapajak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'namapajak'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'namapajak' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 nama pajak
@@ -1866,54 +1773,49 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'namapajak' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'namapajak' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="namapajak"
+                value={filters.filters.namapajak || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('namapajak', value)
+                }
+                onClear={() => handleClearFilter('namapajak')}
+                inputRef={(el) => {
                   inputColRefs.current['namapajak'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.namapajak
-                    ? filters.filters.namapajak.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('namapajak', value);
-                }}
               />
-              {filters.filters.namapajak && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('namapajak', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.namapajak || '';
+          const cellValue = props.row.namapajak || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.namapajak || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1929,12 +1831,14 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nominalpph21')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'nominalpph21'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1943,56 +1847,52 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nominalpph21' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nominalpph21' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nominalpph21"
+                value={filters.filters.nominalpph21 || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('nominalpph21', value)
+                }
+                onClear={() => handleClearFilter('nominalpph21')}
+                inputRef={(el) => {
                   inputColRefs.current['nominalpph21'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nominalpph21
-                    ? filters.filters.nominalpph21.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nominalpph21', value);
-                }}
               />
-              {filters.filters.nominalpph21 && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nominalpph21', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominalpph21 || '';
+          const cellValue =
+            props.row.nominalpph21 != null && props.row.nominalpph21 !== ''
+              ? formatCurrency(props.row.nominalpph21)
+              : '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {props.row.nominalpph21 != null && props.row.nominalpph21 !== ''
-                ? highlightText(
-                    formatCurrency(props.row.nominalpph21) || '',
-                    filters.search,
-                    columnFilter
-                  )
-                : ''}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2008,12 +1908,14 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nominalpph23')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'nominalpph23'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -2022,56 +1924,52 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nominalpph23' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nominalpph23' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nominalpph23"
+                value={filters.filters.nominalpph23 || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('nominalpph23', value)
+                }
+                onClear={() => handleClearFilter('nominalpph23')}
+                inputRef={(el) => {
                   inputColRefs.current['nominalpph23'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nominalpph23
-                    ? filters.filters.nominalpph23.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nominalpph23', value);
-                }}
               />
-              {filters.filters.nominalpph23 && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nominalpph23', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominalpph23 || '';
+          const cellValue =
+            props.row.nominalpph23 != null && props.row.nominalpph23 !== ''
+              ? formatCurrency(props.row.nominalpph23)
+              : '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-              {props.row.nominalpph23 != null && props.row.nominalpph23 !== ''
-                ? highlightText(
-                    formatCurrency(props.row.nominalpph23) || '',
-                    filters.search,
-                    columnFilter
-                  )
-                : ''}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2087,11 +1985,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('noskb')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'noskb' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'noskb' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 no skb
@@ -2099,54 +1999,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'noskb' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'noskb' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="noskb"
+                value={filters.filters.noskb || ''}
+                onChange={(value) => handleFilterInputChange('noskb', value)}
+                onClear={() => handleClearFilter('noskb')}
+                inputRef={(el) => {
                   inputColRefs.current['noskb'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.noskb
-                    ? filters.filters.noskb.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('noskb', value);
-                }}
               />
-              {filters.filters.noskb && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('noskb', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.noskb || '';
+          const cellValue = props.row.noskb || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.noskb || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2162,11 +2055,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('tglskb')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglskb' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'tglskb' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 tgl skb
@@ -2174,54 +2069,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglskb' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglskb' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="tglskb"
+                value={filters.filters.tglskb || ''}
+                onChange={(value) => handleFilterInputChange('tglskb', value)}
+                onClear={() => handleClearFilter('tglskb')}
+                inputRef={(el) => {
                   inputColRefs.current['tglskb'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.tglskb
-                    ? filters.filters.tglskb.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('tglskb', value);
-                }}
               />
-              {filters.filters.tglskb && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tglskb', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglskb || '';
+          const cellValue = props.row.tglskb || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tglskb || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2237,11 +2125,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nosk')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nosk' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nosk' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 nosk
@@ -2249,52 +2139,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nosk' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nosk' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nosk"
+                value={filters.filters.nosk || ''}
+                onChange={(value) => handleFilterInputChange('nosk', value)}
+                onClear={() => handleClearFilter('nosk')}
+                inputRef={(el) => {
                   inputColRefs.current['nosk'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nosk ? filters.filters.nosk.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nosk', value);
-                }}
               />
-              {filters.filters.nosk && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nosk', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nosk || '';
+          const cellValue = props.row.nosk || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nosk || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2310,11 +2195,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('tglsk')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglsk' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'tglsk' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 tglsk
@@ -2322,54 +2209,47 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglsk' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglsk' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="tglsk"
+                value={filters.filters.tglsk || ''}
+                onChange={(value) => handleFilterInputChange('tglsk', value)}
+                onClear={() => handleClearFilter('tglsk')}
+                inputRef={(el) => {
                   inputColRefs.current['tglsk'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.tglsk
-                    ? filters.filters.tglsk.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('tglsk', value);
-                }}
               />
-              {filters.filters.tglsk && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tglsk', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglsk || '';
+          const cellValue = props.row.tglsk || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tglsk || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2384,9 +2264,29 @@ const GridSupplier = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
-              <p className="text-sm font-normal">Status Aktif</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -2395,7 +2295,7 @@ const GridSupplier = () => {
                 label="text"
                 filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('statusaktif_text', value)
+                  handleFilterInputChange('statusaktif_text', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -2437,7 +2337,9 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2460,39 +2362,39 @@ const GridSupplier = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="modifiedby"
+                value={filters.filters.modifiedby || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
                   inputColRefs.current['modifiedby'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.modifiedby || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('modifiedby', value);
-                }}
               />
-              {filters.filters.modifiedby && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('modifiedby', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.modifiedby || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2508,13 +2410,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -2522,10 +2424,10 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -2533,39 +2435,39 @@ const GridSupplier = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="created_at"
+                value={filters.filters.created_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.created_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('created_at', value);
-                }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -2581,13 +2483,13 @@ const GridSupplier = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -2595,10 +2497,10 @@ const GridSupplier = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -2606,39 +2508,39 @@ const GridSupplier = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="updated_at"
+                value={filters.filters.updated_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
                   inputColRefs.current['updated_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.updated_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('updated_at', value);
-                }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -3023,80 +2925,6 @@ const GridSupplier = () => {
     }
   };
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-
   const onColumnResize = (index: number, width: number) => {
     const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
 
@@ -3128,36 +2956,6 @@ const GridSupplier = () => {
       saveGridConfig(user.id, 'GridSupplier', [...newOrder], columnsWidth);
       return newOrder;
     });
-  };
-
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridSupplier',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -3302,7 +3100,13 @@ const GridSupplier = () => {
   }
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridSupplier');
+    loadGridConfig(
+      user.id,
+      'GridSupplier',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
 
   useEffect(() => {
@@ -3575,7 +3379,21 @@ const GridSupplier = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridSupplier',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>

@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { cancelPreviousRequest, handleContextMenu } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -78,6 +79,7 @@ const GridScheduleKapal = () => {
   const gridRef = useRef<DataGridHandle>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
@@ -124,30 +126,13 @@ const GridScheduleKapal = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: {
-        jenisorderan_nama: '',
-        keterangan: '',
-        voyberangkat: '',
-        kapal_nama: '',
-        pelayaran_nama: '',
-        tujuankapal_nama: '',
-        asalkapal_nama: '',
-        tglberangkat: '',
-        tgltiba: '',
-        tglclosing: '',
-        statusberangkatkapal: '',
-        statustibakapal: '',
-        batasmuatankapal: '',
-        statusaktif_nama: '',
-        modifiedby: '',
-        created_at: '',
-        updated_at: ''
-      },
+      filters: defaultFilter,
       search: searchValue,
       page: 1
     }));
@@ -163,6 +148,8 @@ const GridScheduleKapal = () => {
       }
     }, 200);
 
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
     setSelectedRow(0);
     setCurrentPage(1);
     setRows([]);
@@ -263,11 +250,6 @@ const GridScheduleKapal = () => {
     setRows([]);
   };
 
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
-
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -359,13 +341,13 @@ const GridScheduleKapal = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Keterangan
@@ -373,10 +355,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -441,7 +423,7 @@ const GridScheduleKapal = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'voyberangkat'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -450,10 +432,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'voyberangkat' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'voyberangkat' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -516,7 +498,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'kapal' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'kapal' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 kapal
@@ -524,10 +506,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'kapal' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'kapal' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -590,9 +572,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'pelayaran'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'pelayaran' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 pelayaran
@@ -600,10 +580,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'pelayaran' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'pelayaran' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -666,9 +646,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tujuankapal'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'tujuankapal' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 tujuan kapal
@@ -676,10 +654,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tujuankapal' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tujuankapal' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -744,9 +722,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'asalkapal'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'asalkapal' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 asal kapal
@@ -754,10 +730,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'asalkapal' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'asalkapal' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -821,7 +797,7 @@ const GridScheduleKapal = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'tglberangkat'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -830,10 +806,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglberangkat' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglberangkat' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -896,7 +872,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tgltiba' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'tgltiba' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 tgl tiba
@@ -904,10 +880,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tgltiba' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tgltiba' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -969,9 +945,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglclosing'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'tglclosing' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 tgl closing
@@ -979,10 +953,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglclosing' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglclosing' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1046,7 +1020,7 @@ const GridScheduleKapal = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'jenisorderan'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1055,10 +1029,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'jenisorderan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'jenisorderan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1124,7 +1098,7 @@ const GridScheduleKapal = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'statusberangkatkapal'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1133,10 +1107,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'statusberangkatkapal' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'statusberangkatkapal' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1202,7 +1176,7 @@ const GridScheduleKapal = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'statustibakapal'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1211,10 +1185,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'statustibakapal' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'statustibakapal' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1280,7 +1254,7 @@ const GridScheduleKapal = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'batasmuatankapal'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -1289,10 +1263,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'batasmuatankapal' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'batasmuatankapal' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1500,9 +1474,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -1510,10 +1482,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1573,9 +1545,7 @@ const GridScheduleKapal = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -1583,10 +1553,10 @@ const GridScheduleKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
