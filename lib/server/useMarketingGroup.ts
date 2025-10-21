@@ -21,11 +21,15 @@ export const useGetMarketingGroup = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['marketinggroups', filters],
-    async () => await getMarketingGroupFn(filters)
+    async () => await getMarketingGroupFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

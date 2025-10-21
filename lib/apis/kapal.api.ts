@@ -11,17 +11,24 @@ interface UpdateMenuParams {
 }
 
 export const getKapalFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllKapal> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/kapal', { params: queryParams });
+    const response = await api2.get('/kapal', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    throw new Error('Failed to fetch menus');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching data', error);
+    throw new Error('Failed to fetch data');
   }
 };
 export const deleteKapalFn = async (id: string) => {

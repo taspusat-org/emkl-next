@@ -10,15 +10,24 @@ interface UpdateDaftarBankParams {
 }
 
 export const getDaftarBankFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllDaftarBank> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/daftarbank', { params: queryParams });
+
+    const response = await api2.get('/daftarbank', {
+      params: queryParams,
+      signal
+    });
+
     return response.data;
   } catch (error) {
-    console.error('Error fetching daftarbank:', error);
-    throw new Error('failed to fetch jenis orderan');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 

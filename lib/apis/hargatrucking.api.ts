@@ -10,17 +10,24 @@ interface UpdateMenuParams {
 }
 
 export const getHargatruckingFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllHargatrucking> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/hargatrucking', { params: queryParams });
+    const response = await api2.get('/hargatrucking', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching harga trucking:', error);
-    throw new Error('Failed to fetch harga trucking');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteHargatruckingFn = async (id: string) => {

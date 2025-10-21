@@ -16,17 +16,24 @@ interface validationFields {
 }
 
 export const getJenissealFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllJenisseal> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/jenisseal', { params: queryParams });
+    const response = await api2.get('/jenisseal', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    throw new Error('Failed to fetch menus');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteJenissealFn = async (id: string) => {

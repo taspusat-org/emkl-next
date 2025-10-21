@@ -10,17 +10,24 @@ interface UpdateMenuParams {
 }
 
 export const getAlatbayarFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllBank> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/alatbayar', { params: queryParams });
+    const response = await api2.get('/alatbayar', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching alat bayar:', error);
-    throw new Error('Failed to fetch alat bayar');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteAlatbayarFn = async (id: string) => {

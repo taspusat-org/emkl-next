@@ -25,11 +25,15 @@ export const useGetTujuankapal = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['tujuankapal', filters],
-    async () => await getTujuankapalFn(filters)
+    async () => await getTujuankapalFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

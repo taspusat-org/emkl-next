@@ -23,11 +23,15 @@ export const useGetDaftarbl = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['daftarbl', filters],
-    async () => await getDaftarblFn(filters)
+    async () => await getDaftarblFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

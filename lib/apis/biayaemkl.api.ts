@@ -10,17 +10,24 @@ interface UpdateBiayaemklParams {
 }
 
 export const getBiayaemklFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllBiayaemkl> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/biayaemkl', { params: queryParams });
+    const response = await api2.get('/biayaemkl', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Biaya emkl:', error);
-    throw new Error('Failed to fetch Biaya emkl');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteBiayaemklFn = async (id: string) => {

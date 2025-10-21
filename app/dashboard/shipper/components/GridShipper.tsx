@@ -90,6 +90,13 @@ import {
 } from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -238,11 +245,16 @@ const GridShipper = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allShipper, isLoading: isLoadingShipper } = useGetShipper({
-    ...filters,
-    page: currentPage
-  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const { data: allShipper, isLoading: isLoadingShipper } = useGetShipper(
+    {
+      ...filters,
+      page: currentPage
+    },
+    abortControllerRef.current?.signal
+  );
+
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setFilters((prev) => ({
@@ -259,13 +271,14 @@ const GridShipper = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
     debouncedFilterUpdate.cancel(); // Cancel pending updates
-
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
@@ -330,10 +343,7 @@ const GridShipper = () => {
     setIsAllSelected(false);
     setSelectedRow(0);
   };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
+
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -379,6 +389,7 @@ const GridShipper = () => {
     );
   }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -635,7 +646,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -703,7 +716,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -773,7 +788,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('contactperson')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -845,7 +862,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('alamat')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -913,7 +932,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coa')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -980,7 +1001,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coapiutang')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1050,7 +1073,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coahutang')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1120,7 +1145,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('kota')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1188,7 +1215,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('kodepos')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1256,7 +1285,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('telp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1324,7 +1355,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('email')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1392,7 +1425,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('fax')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1459,7 +1494,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('web')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1526,7 +1563,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('creditlimit')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1600,7 +1639,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('creditterm')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1674,7 +1715,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('credittermplus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1750,7 +1793,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('npwp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1818,7 +1863,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coagiro')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1888,7 +1935,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('ppn')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1959,7 +2008,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('titipke')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2027,7 +2078,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('ppnbatalmuat')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2103,7 +2156,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('grup')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2172,7 +2227,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatdeliveryreport')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2248,7 +2305,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('comodity')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2316,7 +2375,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('namashippercetak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2388,7 +2449,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('formatcetak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2458,7 +2521,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('marketing_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2530,7 +2595,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('blok')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2598,7 +2665,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('nomor')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2666,7 +2735,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('rt')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2733,7 +2804,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('rw')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2800,7 +2873,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('kelurahan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2870,7 +2945,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('kabupaten')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -2940,7 +3017,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('kecamatan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3010,7 +3089,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('propinsi')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3078,7 +3159,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('isdpp10psn')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3152,7 +3235,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('usertracing')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3222,7 +3307,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('passwordtracing')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3294,7 +3381,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('kodeprospek')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3364,7 +3453,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('namashipperprospek')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3436,7 +3527,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('emaildelay')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3506,7 +3599,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('keterangan1barisinvoice')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3578,7 +3673,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('nik')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3645,7 +3742,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('namaparaf')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3715,7 +3814,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('saldopiutang')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3791,7 +3892,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('keteranganshipperjobminus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3863,7 +3966,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tglemailshipperjobminus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -3936,7 +4041,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tgllahir')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4005,7 +4112,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('idshipperasal')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4077,7 +4186,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('initial')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4145,7 +4256,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('tipe')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4213,7 +4326,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('idtipe')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4281,7 +4396,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('idinitial')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4351,7 +4468,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('nshipperprospek')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4423,7 +4542,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('parentshipper_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4495,7 +4616,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('npwpnik')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4563,7 +4686,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('nitku')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4631,7 +4756,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%] px-4"
               onClick={() => handleSort('kodepajak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4783,7 +4910,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('statustidakasuransi')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4871,7 +5000,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('asuransi_tas')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -4959,7 +5090,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('top_field')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5045,7 +5178,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('open_field')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5130,7 +5265,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('bongkaran')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5216,7 +5353,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('delivery_report')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5304,7 +5443,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('final_asuransi_bulan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5392,7 +5533,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('job_banyak_invoice')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5480,7 +5623,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('job_pajak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5565,7 +5710,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('cetak_keterangan_shipper')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5655,7 +5802,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('fumigasi')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5740,7 +5889,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('adjust_tagih_warkat')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5827,7 +5978,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('job_non_ppn')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -5912,7 +6065,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('approval_pajakp_pisah_ongkos')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6002,7 +6157,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('decimal_invoice')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6089,7 +6246,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('reimbursement')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6176,7 +6335,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('not_invoice_tambahan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6263,7 +6424,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('invoice_jasa_pengurusan_transportasi')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6354,7 +6517,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('not_ucase_shipper')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6441,7 +6606,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('shipper_sttb')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6528,7 +6695,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('shipper_cabang')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6615,7 +6784,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('spk')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6699,7 +6870,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('ppn_warkat_eksport')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6786,7 +6959,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('ppn_11')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6871,7 +7046,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('non_prospek')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -6956,7 +7133,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('info_delay')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7041,7 +7220,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('job_minus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7126,7 +7307,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('shipper_sendiri')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7213,7 +7396,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('wajib_invoice_sebelum_biaya')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7303,7 +7488,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tanpa_nik_npwp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7390,7 +7577,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('pusat')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7475,7 +7664,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('app_saldo_piutang')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7563,7 +7754,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('nama_paraf')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7649,7 +7842,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('not_order_trucking')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7737,7 +7932,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('passport')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7822,7 +8019,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('ppn_kunci')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7907,7 +8106,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('approval_shipper_job_minus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -7997,7 +8198,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('approval_top')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8084,7 +8287,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('blacklist_shipper')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8171,7 +8376,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('non_lapor_pajak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8258,7 +8465,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('shipper_potongan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8345,7 +8554,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('shipper_tidak_tagih_invoice_utama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8435,7 +8646,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('not_tampil_web')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8523,7 +8736,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('not_free_admin')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8611,7 +8826,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('non_reimbursement')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8699,7 +8916,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('app_cetak_invoice_lain')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8786,7 +9005,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('lewat_hitung_ulang_ppn')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8874,7 +9095,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('online')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -8959,7 +9182,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan_buruh')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9046,7 +9271,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('edit_keterangan_invoice_utama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9136,7 +9363,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tampil_keterangan_tambahan_sttb')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9226,7 +9455,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('update_ppn_shiper_khusus')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9316,7 +9547,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('shipper_rincian')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9403,7 +9636,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('national_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9488,7 +9723,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('refdesc_po')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9577,7 +9814,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9648,7 +9887,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -9722,7 +9963,9 @@ const GridShipper = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -10268,61 +10511,6 @@ const GridShipper = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridShipper',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -10344,53 +10532,6 @@ const GridShipper = () => {
     };
   }, [forms]);
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
       // Mapping dan filter untuk menghindari undefined
@@ -10410,7 +10551,13 @@ const GridShipper = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridShipper');
+    loadGridConfig(
+      user.id,
+      'GridShipper',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -10806,7 +10953,22 @@ const GridShipper = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                // onClick={resetGridConfig}
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridShipper',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>

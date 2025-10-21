@@ -15,31 +15,45 @@ import { useFormError } from '../hooks/formErrorContext';
 export const useGetEmkl = (
   filters: {
     filters?: {
-      nama?: string;
-      contactperson?: string;
-      alamat?: string;
-      coagiro_ket?: string;
-      coapiutang_ket?: string;
-      coahutang_ket?: string;
-      kota?: string;
-      kodepos?: string;
-      notelp?: string;
-      email?: string;
-      fax?: string;
-      alamatweb?: string;
-      top?: number | null;
-      npwp?: string;
-      namapajak?: string;
-      alamatpajak?: string;
+      nama: string;
+      contactperson: string;
+      alamat: string;
+      coagiro_ket: string;
+      coapiutang_ket: string;
+      coahutang_ket: string;
+      kota: string;
+      kodepos: string;
+      notelp: string;
+      email: string;
+      fax: string;
+      alamatweb: string;
+      top: string;
+      npwp: string;
+      namapajak: string;
+      alamatpajak: string;
+      statusaktif: string;
+      statustrado: string;
+      statusaktif_text: string;
+      statustrado_text: string;
+      modifiedby: string;
+      created_at: string;
+      updated_at: string;
     };
     page?: number;
     sortBy?: string;
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
-  return useQuery(['emkls', filters], async () => await getEmklFn(filters));
+  return useQuery(
+    ['emkls', filters],
+    async () => await getEmklFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
+  );
 };
 
 export const useCreateEmkl = () => {

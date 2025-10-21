@@ -30,11 +30,15 @@ export const useGetShipper = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['shipper', filters],
-    async () => await getShipperFn(filters)
+    async () => await getShipperFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

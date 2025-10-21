@@ -24,11 +24,15 @@ export const useGetJabatan = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['jabatan', filters],
-    async () => await getJabatanFn(filters)
+    async () => await getJabatanFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

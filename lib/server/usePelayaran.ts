@@ -21,11 +21,15 @@ export const useGetPelayaran = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['pelayarans', filters],
-    async () => await getPelayaranFn(filters)
+    async () => await getPelayaranFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

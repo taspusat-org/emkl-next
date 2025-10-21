@@ -9,16 +9,25 @@ interface UpdateMenuParams {
   fields: BankInput;
 }
 
-export const getBankFn = async (filters: GetParams = {}): Promise<IAllBank> => {
+export const getBankFn = async (
+  filters: GetParams = {},
+  signal?: AbortSignal
+): Promise<IAllBank> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/bank', { params: queryParams });
+    const response = await api2.get('/bank', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching bank:', error);
-    throw new Error('Failed to fetch bank');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteBankFn = async (id: string) => {

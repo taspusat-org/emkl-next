@@ -42,11 +42,15 @@ export const useGetMasterBiaya = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['masterbiaya', filters],
-    async () => await getMasterBiayaFn(filters)
+    async () => await getMasterBiayaFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

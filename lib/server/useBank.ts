@@ -34,9 +34,16 @@ export const useGetBank = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
-  return useQuery(['bank', filters], async () => await getBankFn(filters));
+  return useQuery(
+    ['bank', filters],
+    async () => await getBankFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
+  );
 };
 
 export const useCreateBank = () => {

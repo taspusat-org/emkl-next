@@ -24,22 +24,16 @@ const Page = () => {
         const result = await fieldLength('asalkapal');
         dispatch(setFieldLength(result.data));
 
-        const [
-          getCabangLookup,
-          getContainerLookup,
-          getStatusAktifLookup
-        ] = await Promise.all([
-          getAllCabangFn({ isLookUp: 'true' }),
-          getContainerFn({ isLookUp: 'true' }),
-          getParameterFn({ isLookUp: 'true' })
-        ]);
-
+        const [getCabangLookup, getContainerLookup, getStatusAktifLookup] =
+          await Promise.all([
+            getAllCabangFn({ isLookUp: 'true' }),
+            getContainerFn({ isLookUp: 'true' }),
+            getParameterFn({ isLookUp: 'true' })
+          ]);
 
         // CABANG
         if (getCabangLookup.type === 'local') {
-          dispatch(
-            setData({ key: 'CABANG', data: getCabangLookup.data })
-          );
+          dispatch(setData({ key: 'CABANG', data: getCabangLookup.data }));
           const defaultValue =
             getCabangLookup.data
               .map((item: any) => item.default)
@@ -47,9 +41,7 @@ const Page = () => {
 
           dispatch(setDefault({ key: 'CABANG', isdefault: defaultValue }));
         }
-        dispatch(
-          setType({ key: 'CABANG', type: getCabangLookup.type })
-        );
+        dispatch(setType({ key: 'CABANG', type: getCabangLookup.type }));
 
         // CONTAINER
         if (getContainerLookup.type === 'local') {
@@ -63,9 +55,7 @@ const Page = () => {
 
           dispatch(setDefault({ key: 'CONTAINER', isdefault: defaultValue }));
         }
-        dispatch(
-          setType({ key: 'CONTAINER', type: getContainerLookup.type })
-        );
+        dispatch(setType({ key: 'CONTAINER', type: getContainerLookup.type }));
 
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];

@@ -23,11 +23,15 @@ export const useGetJenisseal = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['jenisseal', filters],
-    async () => await getJenissealFn(filters)
+    async () => await getJenissealFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

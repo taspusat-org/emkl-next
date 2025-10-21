@@ -28,11 +28,15 @@ export const useGetHargatrucking = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['hargatrucking', filters],
-    async () => await getHargatruckingFn(filters)
+    async () => await getHargatruckingFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

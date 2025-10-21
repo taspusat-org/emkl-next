@@ -11,17 +11,24 @@ interface UpdateMenuParams {
 }
 
 export const getAkuntansiFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllAkuntansi> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/akuntansi', { params: queryParams });
+    const response = await api2.get('/akuntansi', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    throw new Error('Failed to fetch menus');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteAkuntansiFn = async (id: string) => {

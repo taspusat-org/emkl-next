@@ -252,6 +252,9 @@ Button {
 table {
   font-family: 'DejaVu', sans-serif;
 }
+.tooltip-content {
+  font-family: 'DejaVu', sans-serif;
+}
 .rdg-cell {
   padding-left: 5px;
   padding-right: 4px;
@@ -260,13 +263,13 @@ table {
   letter-spacing: 0.9px; /* Tambahkan jarak antar huruf */
 
   border-right: 1px solid #9fc3fd;
-  border-bottom:  1px solid #9fc3fd;
+  border-bottom: 1px solid #9fc3fd;
 }
 .rdg > .rdg-row > .rdg-cell:last-child {
   border-right: 1px solid #9fc3fd;
 }
 .rdg-summary-row .rdg-cell {
-  border-top: 1px solid  #9fc3fd; /* Border atas khusus untuk summary row */
+  border-top: 1px solid #9fc3fd; /* Border atas khusus untuk summary row */
 }
 .rnvodz57-0-0-beta-47::before {
   grid-column: auto; /* Menonaktifkan grid-column dengan mengubahnya menjadi auto */
@@ -283,10 +286,10 @@ table {
   /* overscroll-behavior: contain; */
   border-collapse: collapse;
 }
-.rdg-bottom-summary-row{
+.rdg-bottom-summary-row {
   border-top: 1px solid #9fc3fd !important;
 }
-.rdg-summary-row{
+.rdg-summary-row {
   border-top: 1px solid #9fc3fd !important;
 }
 .headers-cell {
@@ -522,8 +525,8 @@ table {
   gap: 0.5rem;
 }
 
-.link-color{
-  color:#007bff;
+.link-color {
+  color: #007bff;
   text-decoration: underline;
   cursor: pointer;
   font-size: 0.875rem;

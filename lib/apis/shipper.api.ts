@@ -10,17 +10,24 @@ interface UpdateMenuParams {
 }
 
 export const getShipperFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllShipper> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/shipper', { params: queryParams });
+    const response = await api2.get('/shipper', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching shipper:', error);
-    throw new Error('Failed to fetch shipper');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteShipperFn = async (id: string) => {

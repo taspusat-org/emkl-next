@@ -10,17 +10,24 @@ interface UpdateMenuParams {
 }
 
 export const getTujuankapalFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllTujuanKapal> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/tujuankapal', { params: queryParams });
+    const response = await api2.get('/tujuankapal', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching menus:', error);
-    throw new Error('Failed to fetch menus');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteTujuankapalFn = async (id: string) => {

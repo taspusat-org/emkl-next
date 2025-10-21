@@ -15,19 +15,24 @@ interface validationFields {
   value: number | string;
 }
 export const getPengeluaranHeaderFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllPengeluaranHeader> => {
   try {
     const queryParams = buildQueryParams(filters);
 
     const response = await api2.get('/pengeluaranheader', {
-      params: queryParams
+      params: queryParams,
+      signal
     });
 
     return response.data;
   } catch (error) {
-    console.error('Error:', error);
-    throw new Error('Failed');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 

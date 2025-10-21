@@ -197,7 +197,6 @@ const FormAsalKapal = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
@@ -210,14 +209,14 @@ const FormAsalKapal = ({
                     <div className="w-full lg:w-[85%]">
                       {lookUpCabang.map((props, index) => (
                         <LookUp
-                        key={index}
-                        {...props}
-                        lookupValue={(id) =>
-                          forms.setValue('cabang_id', Number(id))
-                        }
-                        inputLookupValue={forms.getValues('cabang_id')}
-                        lookupNama={forms.getValues('cabang')}
-                        disabled={mode === 'view' || mode === 'delete'}
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('cabang_id', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('cabang_id')}
+                          lookupNama={forms.getValues('cabang')}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>
@@ -262,7 +261,6 @@ const FormAsalKapal = ({
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
-
                             <InputCurrency
                               value={field.value ?? ''}
                               readOnly={mode === 'view' || mode === 'delete'}
@@ -289,14 +287,14 @@ const FormAsalKapal = ({
                     <div className="w-full lg:w-[85%]">
                       {lookUpContainer.map((props, index) => (
                         <LookUp
-                        key={index}
-                        {...props}
-                        lookupValue={(id) =>
-                          forms.setValue('container_id', Number(id))
-                        }
-                        inputLookupValue={forms.getValues('container_id')}
-                        lookupNama={forms.getValues('container')}
-                        disabled={mode === 'view' || mode === 'delete'}
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('container_id', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('container_id')}
+                          lookupNama={forms.getValues('container')}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>

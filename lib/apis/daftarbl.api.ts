@@ -11,17 +11,24 @@ interface UpdateMenuParams {
 }
 
 export const getDaftarblFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllDaftarbl> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/daftarbl', { params: queryParams });
+    const response = await api2.get('/daftarbl', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching daftar bl:', error);
-    throw new Error('Failed to fetch daftar bl');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteDaftarblFn = async (id: string) => {

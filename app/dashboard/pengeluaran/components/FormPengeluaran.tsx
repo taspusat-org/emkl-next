@@ -1210,7 +1210,7 @@ const FormPengeluaran = ({
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                           <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
-                            NOBUKTI
+                            NO BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>

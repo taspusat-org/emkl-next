@@ -23,11 +23,15 @@ export const useGetAkuntansi = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['akuntansi', filters],
-    async () => await getAkuntansiFn(filters)
+    async () => await getAkuntansiFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 
