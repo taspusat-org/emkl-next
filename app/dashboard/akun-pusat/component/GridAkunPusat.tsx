@@ -172,17 +172,6 @@ const GridAkunPusat = () => {
     formState: { isSubmitSuccessful }
   } = forms;
 
-  // console.log(forms.getValues());
-
-  // Fungsi untuk cancel request yang sedang berjalan
-  // const cancelPreviousRequest = () => {
-  //   if (abortControllerRef.current) {
-  //     abortControllerRef.current.abort();
-  //   }
-  //   // Buat AbortController baru untuk request berikutnya
-  //   abortControllerRef.current = new AbortController();
-  // };
-
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setInputValue('');
@@ -249,6 +238,7 @@ const GridAkunPusat = () => {
   };
 
   const handleClearInput = () => {
+    cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
       ...prev,
       filters: {

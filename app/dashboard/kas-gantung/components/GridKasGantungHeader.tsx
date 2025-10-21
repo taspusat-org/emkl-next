@@ -1,5 +1,11 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -98,7 +104,16 @@ import {
 } from '@/lib/apis/kasgantungheader.api';
 import { formatDateToDDMMYYYY } from '@/lib/utils';
 import JsxParser from 'react-jsx-parser';
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import { debounce } from 'lodash';
+import FilterInput from '@/components/custom-ui/FilterInput';
+import { cancelPreviousRequest } from '@/lib/utils';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 interface Filter {
   page: number;
   limit: number;
@@ -154,6 +169,7 @@ const GridKasGantungHeader = () => {
   const dispatch = useDispatch();
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
   const { alert } = useAlert();
   const { user, cabang_id, token } = useSelector(
     (state: RootState) => state.auth
@@ -206,42 +222,45 @@ const GridKasGantungHeader = () => {
   });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // Logika yang ada pada handleColumnFilterChange sebelumnya
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setInputValue('');
+      setFilters((prev) => ({
+        ...prev,
+        search: '',
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
 
-    setInputValue('');
-    setSelectedRow(0);
-
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
     setFilters((prev) => ({
       ...prev,
-      filters: { ...prev.filters, [colKey]: value },
-      search: '',
+      filters: { ...prev.filters, [colKey]: '' },
       page: 1
     }));
     setCheckedRows(new Set());
     setIsAllSelected(false);
     setRows([]);
     setCurrentPage(1);
-  };
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     // Langsung update input value tanpa debounce
     setInputValue(searchValue);
@@ -320,6 +339,7 @@ const GridKasGantungHeader = () => {
     };
   }, []);
   const handleSort = (column: string) => {
+    cancelPreviousRequest(abortControllerRef);
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -364,6 +384,7 @@ const GridKasGantungHeader = () => {
     setIsAllSelected(!isAllSelected);
   };
   const handleClearInput = () => {
+    cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
       ...prev,
       filters: {
@@ -462,7 +483,7 @@ const GridKasGantungHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nobukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nomor Bukti
@@ -470,54 +491,47 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'nobukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nobukti"
+                value={filters.filters.nobukti || ''}
+                onChange={(value) => handleFilterInputChange('nobukti', value)}
+                onClear={() => handleClearFilter('nobukti')}
+                inputRef={(el) => {
                   inputColRefs.current['nobukti'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nobukti
-                    ? filters.filters.nobukti.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nobukti', value);
-                }}
               />
-              {filters.filters.nobukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nobukti', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
+          const cellValue = props.row.nobukti || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nobukti || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -537,7 +551,7 @@ const GridKasGantungHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglbukti' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'tglbukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Tanggal Bukti
@@ -545,10 +559,10 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'tglbukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'tglbukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -556,39 +570,37 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="tglbukti"
+                value={filters.filters.tglbukti || ''}
+                onChange={(value) => handleFilterInputChange('tglbukti', value)}
+                onClear={() => handleClearFilter('tglbukti')}
+                inputRef={(el) => {
                   inputColRefs.current['tglbukti'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.tglbukti.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('tglbukti', value);
-                }}
               />
-              {filters.filters.tglbukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tglbukti', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglbukti || '';
+          const cellValue = props.row.tglbukti || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tglbukti || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -608,7 +620,7 @@ const GridKasGantungHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'bank_id' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'bank_id' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Nama Bank
@@ -616,10 +628,10 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'bank_id' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'bank_id' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -627,49 +639,34 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('bank_id', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="bank"
+                value="id"
+                label="nama"
+                onChange={(value) => handleFilterInputChange('bank_id', value)} // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.bank_id || '';
+          const cellValue = props.row.bank_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.bank_nama !== null &&
-                  props.row.bank_nama !== undefined
-                  ? props.row.bank_nama
-                  : '',
-                filters.search
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -690,7 +687,7 @@ const GridKasGantungHeader = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'pengeluaran_nobukti'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -699,43 +696,27 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'pengeluaran_nobukti' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'pengeluaran_nobukti' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="pengeluaran_nobukti"
+                value={filters.filters.pengeluaran_nobukti || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('pengeluaran_nobukti', value)
+                }
+                onClear={() => handleClearFilter('pengeluaran_nobukti')}
+                inputRef={(el) => {
                   inputColRefs.current['pengeluaran_nobukti'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.pengeluaran_nobukti
-                    ? filters.filters.pengeluaran_nobukti?.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('pengeluaran_nobukti', value);
-                }}
               />
-              {filters.filters.pengeluaran_nobukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('pengeluaran_nobukti', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
@@ -747,13 +728,25 @@ const GridKasGantungHeader = () => {
             return highlightText(value, filters.search, columnFilter);
           };
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              <JsxParser
-                components={{ HighlightWrapper }}
-                jsx={props.row.link}
-                renderInWrapper={false}
-              />
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    <JsxParser
+                      components={{ HighlightWrapper }}
+                      jsx={props.row.link}
+                      renderInWrapper={false}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{value}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -774,7 +767,7 @@ const GridKasGantungHeader = () => {
               <p
                 className={`text-sm ${
                   filters.sortBy === 'coakaskeluar'
-                    ? 'text-red-500'
+                    ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
@@ -783,54 +776,49 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'coakaskeluar' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'coakaskeluar' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="coakaskeluar"
+                value={filters.filters.coakaskeluar || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('coakaskeluar', value)
+                }
+                onClear={() => handleClearFilter('coakaskeluar')}
+                inputRef={(el) => {
                   inputColRefs.current['coakaskeluar'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.coakaskeluar
-                    ? filters.filters.coakaskeluar?.toUpperCase()
-                    : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('coakaskeluar', value);
-                }}
               />
-              {filters.filters.coakaskeluar && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('coakaskeluar', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coakaskeluar || '';
+          const cellValue = props.row.coakaskeluar || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.coakaskeluar || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -850,9 +838,7 @@ const GridKasGantungHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'relasi_id'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'relasi_id' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Relasi
@@ -860,10 +846,10 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'relasi_id' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'relasi_id' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -871,49 +857,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('bank_id', value);
+              <FilterInput
+                colKey="relasi_nama"
+                value={filters.filters.relasi_nama || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('relasi_nama', value)
+                }
+                onClear={() => handleClearFilter('relasi_nama')}
+                inputRef={(el) => {
+                  inputColRefs.current['relasi_nama'] = el;
                 }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
+          const columnFilter = filters.filters.relasi_nama || '';
+          const cellValue = props.row.relasi_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.relasi_nama !== null &&
-                  props.row.relasi_nama !== undefined
-                  ? props.row.relasi_nama
-                  : '',
-                filters.search
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -952,39 +928,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="dibayarke"
+                value={filters.filters.dibayarke || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('dibayarke', value)
+                }
+                onClear={() => handleClearFilter('dibayarke')}
+                inputRef={(el) => {
                   inputColRefs.current['dibayarke'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.dibayarke || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('dibayarke', value);
-                }}
               />
-              {filters.filters.dibayarke && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('dibayarke', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.dibayarke || '';
+          const cellValue = props.row.dibayarke || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.dibayarke || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1025,39 +1001,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="alatbayar_nama"
+                value={filters.filters.alatbayar_nama || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('alatbayar_nama', value)
+                }
+                onClear={() => handleClearFilter('alatbayar_nama')}
+                inputRef={(el) => {
                   inputColRefs.current['alatbayar_nama'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.alatbayar_nama || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('alatbayar_nama', value);
-                }}
               />
-              {filters.filters.alatbayar_nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('alatbayar_nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.alatbayar_nama || '';
+          const cellValue = props.row.alatbayar_nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.alatbayar_nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1096,39 +1072,37 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="nowarkat"
+                value={filters.filters.nowarkat || ''}
+                onChange={(value) => handleFilterInputChange('nowarkat', value)}
+                onClear={() => handleClearFilter('nowarkat')}
+                inputRef={(el) => {
                   inputColRefs.current['nowarkat'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.nowarkat || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('nowarkat', value);
-                }}
               />
-              {filters.filters.nowarkat && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nowarkat', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nowarkat || '';
+          const cellValue = props.row.nowarkat || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nowarkat || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1169,39 +1143,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="tgljatuhtempo"
+                value={filters.filters.tgljatuhtempo || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('tgljatuhtempo', value)
+                }
+                onClear={() => handleClearFilter('tgljatuhtempo')}
+                inputRef={(el) => {
                   inputColRefs.current['tgljatuhtempo'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.tgljatuhtempo || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('tgljatuhtempo', value);
-                }}
               />
-              {filters.filters.tgljatuhtempo && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('tgljatuhtempo', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tgljatuhtempo || '';
+          const cellValue = props.row.tgljatuhtempo || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.tgljatuhtempo || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1242,41 +1216,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="gantungorderan_nobukti"
+                value={filters.filters.gantungorderan_nobukti || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('gantungorderan_nobukti', value)
+                }
+                onClear={() => handleClearFilter('gantungorderan_nobukti')}
+                inputRef={(el) => {
                   inputColRefs.current['gantungorderan_nobukti'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.gantungorderan_nobukti || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('gantungorderan_nobukti', value);
-                }}
               />
-              {filters.filters.gantungorderan_nobukti && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() =>
-                    handleColumnFilterChange('gantungorderan_nobukti', '')
-                  }
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.gantungorderan_nobukti || '';
+          const cellValue = props.row.gantungorderan_nobukti || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.gantungorderan_nobukti || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1315,39 +1287,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="modifiedby"
+                value={filters.filters.modifiedby || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
                   inputColRefs.current['modifiedby'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.modifiedby || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('modifiedby', value);
-                }}
               />
-              {filters.filters.modifiedby && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('modifiedby', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.modifiedby || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1367,9 +1339,7 @@ const GridKasGantungHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -1377,10 +1347,10 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1388,39 +1358,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="created_at"
+                value={filters.filters.created_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.created_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('created_at', value);
-                }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -1442,9 +1412,7 @@ const GridKasGantungHeader = () => {
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -1452,10 +1420,10 @@ const GridKasGantungHeader = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -1463,39 +1431,39 @@ const GridKasGantungHeader = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['created_at'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.updated_at.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('updated_at', value);
+              <FilterInput
+                colKey="updated_at"
+                value={filters.filters.updated_at || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
+                  inputColRefs.current['updated_at'] = el;
                 }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -1754,11 +1722,7 @@ const GridKasGantungHeader = () => {
         alert({
           title: result.message,
           variant: 'danger',
-          submitText: 'OK',
-          isForceEdit: true,
-          valueForceEdit: rowData.id,
-          tableNameForceEdit: 'kasgantungheader',
-          clickableText: 'LANJUT EDIT'
+          submitText: 'OK'
         });
       } else {
         setPopOver(true);
@@ -2389,7 +2353,6 @@ const GridKasGantungHeader = () => {
       forms.setValue('coakaskeluar', '');
     }
   }, [forms, selectedRow, rows, mode]);
-  console.log(forms.getValues(), 'xnxx');
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -2429,6 +2392,11 @@ const GridKasGantungHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [onReload, refetch]); // Dependency array termasuk filters dan refetch
+  useEffect(() => {
+    return () => {
+      debouncedFilterUpdate.cancel();
+    };
+  }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

@@ -1535,9 +1535,6 @@ const GridJurnalUmumHeader = () => {
       </div>
     );
   }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
   function LoadRowsRenderer() {
     return (
       <div>

@@ -1353,6 +1353,7 @@ const GridPengeluaranDetail = ({
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
+
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
     if (filters !== prevFilters) {

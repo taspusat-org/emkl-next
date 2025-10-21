@@ -29,10 +29,9 @@ import DataGrid, {
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
-  clearOpenName,
   clearOpenNameModal,
   setClearLookup,
-  setOpenName,
+  setOpenNameModal,
   setSubmitClicked,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
@@ -166,7 +165,9 @@ export default function LookUpModal({
   );
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
-  const openName = useSelector((state: RootState) => state.lookup.openName);
+  const openNameModal = useSelector(
+    (state: RootState) => state.lookup.openNameModal
+  );
   const clearLookup = useSelector(
     (state: RootState) => state.lookup.clearLookup
   );
@@ -238,7 +239,7 @@ export default function LookUpModal({
       if (hasValidValues) {
         params['notIn'] = JSON.stringify(notIn);
       }
-    } else if (typeof notIn === 'string' && notIn?.trim() !== '') {
+    } else if (typeof notIn === 'string' && (notIn as string).trim() !== '') {
       params['notIn'] = notIn;
     }
 
@@ -321,7 +322,6 @@ export default function LookUpModal({
 
       setInputValue(classValue);
       setClicked(true); // TAMBAHKAN: Set clicked true
-      dispatch(setLookUpValue(firstRow || ''));
       dispatch(setSelectLookup({ key: label ?? '', data: firstRow }));
 
       const value = firstRow[dataToPost as any];
@@ -330,7 +330,7 @@ export default function LookUpModal({
 
       // PENTING: Jangan langsung close dan clear
       // setOpen(false);
-      // dispatch(clearOpenName());
+      // dispatch(clearOpenNameModal());
     }
   };
 
@@ -353,9 +353,9 @@ export default function LookUpModal({
 
       setFilters(next);
 
-      // PERUBAHAN: Hanya set openName dan filtering jika autoSearch true
+      // PERUBAHAN: Hanya set openNameModal dan filtering jika autoSearch true
       if (autoSearch) {
-        dispatch(setOpenName(label || ''));
+        dispatch(setOpenNameModal(label || ''));
         setFiltering(true);
       }
 
@@ -397,7 +397,7 @@ export default function LookUpModal({
     debounceTimerRef.current = setTimeout(() => {
       if (type !== 'local' && endpoint) {
         setTimeout(() => {
-          dispatch(setOpenName(label || '')); // Update Redux state
+          dispatch(setOpenNameModal(label || '')); // Update Redux state
         }, 100);
       } else {
         // Apply local filtering
@@ -451,17 +451,17 @@ export default function LookUpModal({
   const handleButtonClick = () => {
     if (disabled) return; // Jangan lakukan apa-apa jika disabled
 
-    // Jika label sama dengan openName dan lookup sudah terbuka, tutup lookup
-    if (label === openName) {
+    // Jika label sama dengan openNameModal dan lookup sudah terbuka, tutup lookup
+    if (label === openNameModal) {
       if (open) {
         setOpen(false); // Tutup lookup jika sudah terbuka
-        dispatch(clearOpenName()); // Clear openName dari Redux
+        dispatch(clearOpenNameModal()); // Clear openNameModal dari Redux
       } else {
         setOpen(true); // Buka lookup jika belum terbuka
       }
     } else {
-      setOpen(true); // Buka lookup jika label berbeda dengan openName
-      dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+      setOpen(true); // Buka lookup jika label berbeda dengan openNameModal
+      dispatch(setOpenNameModal(label || '')); // Set openNameModal dengan label yang diklik
     }
 
     setTimeout(
@@ -722,7 +722,7 @@ export default function LookUpModal({
 
     lookupValue?.(value);
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
-    dispatch(clearOpenName());
+    dispatch(clearOpenNameModal());
   }
   function handleCellClick(args: any) {
     const clickedRow = args.row;
@@ -737,7 +737,7 @@ export default function LookUpModal({
     args: CellKeyDownArgs<Row>,
     event: React.KeyboardEvent
   ) => {
-    if (!openName) {
+    if (!openNameModal) {
       return;
     }
     const visibleRowCount = 8;
@@ -779,7 +779,7 @@ export default function LookUpModal({
         return newRow;
       });
     } else if (event.key === 'Enter') {
-      dispatch(clearOpenName());
+      dispatch(clearOpenNameModal());
       setInputValue(classValue);
       const value = dataToPost ? clickedRow[dataToPost] : clickedRow.id;
       lookupValue?.(value);
@@ -865,7 +865,7 @@ export default function LookUpModal({
       return;
     }
 
-    if ((!open && !filters.filters) || !openName) {
+    if ((!open && !filters.filters) || !openNameModal) {
       return;
     }
     const rowData = rows[selectedRow];
@@ -873,7 +873,7 @@ export default function LookUpModal({
     const visibleRowCount = 12; // You can adjust this value based on your visible row count
 
     if (event.key === 'Enter') {
-      dispatch(clearOpenName());
+      dispatch(clearOpenNameModal());
       setInputValue(rowData[postData as string]);
       const value = dataToPost ? rowData[dataToPost] : rowData.id;
       lookupValue?.(value);
@@ -1128,7 +1128,7 @@ export default function LookUpModal({
         setClickedOutside(true);
         setFiltering(false);
         setOpen(false);
-        dispatch(clearOpenName());
+        dispatch(clearOpenNameModal());
         if (
           (filters.search.trim() !== '' ||
             Object.keys(filters.filters).length > 0) &&
@@ -1212,13 +1212,13 @@ export default function LookUpModal({
   }, []);
 
   useEffect(() => {
-    // Update status open jika openName sama dengan label
-    if (label === openName) {
-      setOpen(true); // Jika label sama dengan openName, buka lookup
+    // Update status open jika openNameModal sama dengan label
+    if (label === openNameModal) {
+      setOpen(true); // Jika label sama dengan openNameModal, buka lookup
     } else {
       setOpen(false); // Jika tidak sama, tutup lookup
     }
-  }, [openName, label]); // Efek dijalankan setiap kali openName atau label berubah
+  }, [openNameModal, label]); // Efek dijalankan setiap kali openNameModal atau label berubah
 
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
@@ -1283,9 +1283,23 @@ export default function LookUpModal({
                   showOnButton ? 'rounded-r-none border-r-0' : ''
                 } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                 disabled={disabled}
+                onKeyDownCapture={(e) => {
+                  // Tangkap event di capture phase (sebelum bubbling)
+                  if (
+                    e.key === 'ArrowLeft' ||
+                    e.key === 'ArrowRight' ||
+                    e.key === 'Home' ||
+                    e.key === 'End'
+                  ) {
+                    e.stopPropagation();
+                  }
+                }}
                 onClick={(e) => e.stopPropagation()}
                 value={inputValue}
-                onKeyDown={handleInputKeydown}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  handleInputKeydown(e);
+                }}
                 onChange={(e) => {
                   handleInputChange(e);
                 }}

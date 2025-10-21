@@ -418,7 +418,22 @@ const FormPenerimaan = ({
   ];
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
+  async function handleGridKeyDown(
+    args: CellKeyDownArgs<any>,
+    event: React.KeyboardEvent
+  ) {
+    // Cek apakah focus ada di input element
+    const activeElement = document.activeElement;
+    if (
+      activeElement?.tagName === 'INPUT' ||
+      activeElement?.tagName === 'TEXTAREA'
+    ) {
+      return; // Jangan handle keyboard event
+    }
 
+    // Grid keyboard handling seperti biasa
+    // ...
+  }
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -426,6 +441,7 @@ const FormPenerimaan = ({
       if (openName) {
         return;
       }
+      // Di grid parent component
 
       const form = formRef.current;
 
@@ -885,6 +901,7 @@ const FormPenerimaan = ({
                         rows={rows}
                         headerRowHeight={70}
                         rowHeight={40}
+                        onCellKeyDown={handleGridKeyDown}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"
                       />
