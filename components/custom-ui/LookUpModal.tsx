@@ -1196,6 +1196,8 @@ export default function LookUpModal({
   useEffect(() => {
     if (lookupNama) {
       setInputValue(lookupNama); // Assuming "text" is the display column
+    } else {
+      setInputValue('');
     }
   }, [lookupNama]);
   useEffect(() => {

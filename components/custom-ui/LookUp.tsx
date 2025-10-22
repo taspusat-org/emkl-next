@@ -1270,6 +1270,8 @@ export default function LookUp({
       if (foundRow && onSelectRow) {
         onSelectRow(foundRow);
       }
+    } else if (!lookupNama && !deleteClicked && !clicked) {
+      setInputValue('');
     }
   }, [lookupNama, rows, deleteClicked]);
   useEffect(() => {
