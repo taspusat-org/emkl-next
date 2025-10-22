@@ -202,6 +202,7 @@ const GridPenerimaanEmklHeader = () => {
       setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
+      setSelectedRow(0);
     }, 300) // Bisa dikurangi jadi 250-300ms
   ).current;
 
@@ -2192,6 +2193,8 @@ const GridPenerimaanEmklHeader = () => {
     if (rows.length > 0 && selectedRow !== null) {
       const selectedRowData = rows[selectedRow];
       dispatch(setHeaderData(selectedRowData)); // Pastikan data sudah benar
+    } else {
+      dispatch(setHeaderData({}));
     }
   }, [rows, selectedRow, dispatch]);
   useEffect(() => {
