@@ -3854,6 +3854,8 @@ const GridOrderanMuatan = () => {
     if (rows.length > 0 && selectedRow !== null) {
       const selectedRowData = rows[selectedRow];
       dispatch(setHeaderData(selectedRowData)); // Pastikan data sudah benar
+    } else {
+      dispatch(setHeaderData({}));
     }
   }, [rows, selectedRow, dispatch]);
 

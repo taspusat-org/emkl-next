@@ -147,7 +147,8 @@ export default function LookUpModal({
   const [tglSampai, setTglSampai] = useState<string>('');
   const [showError, setShowError] = useState({
     label: label,
-    status: false
+    status: false,
+    message: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -214,11 +215,18 @@ export default function LookUpModal({
       sortBy: filters.sortBy,
       sortDirection: filters.sortDirection
     };
-    if (!autoSearch) {
-      params['exactMatch'] = filters.search || ''; // exact search
+
+    // PERUBAHAN: Jika modal terbuka, selalu gunakan search (like), jika tertutup ikuti autoSearch
+    if (open) {
+      params['search'] = filters.search || ''; // like search saat modal terbuka
     } else {
-      params['search'] = filters.search || ''; // like search
+      if (!autoSearch) {
+        params['exactMatch'] = filters.search || ''; // exact search
+      } else {
+        params['search'] = filters.search || ''; // like search
+      }
     }
+
     if (filters.filters) {
       for (const [k, v] of Object.entries(filters.filters)) params[k] = v;
     }
@@ -228,14 +236,11 @@ export default function LookUpModal({
       }
     }
 
-    // Handle notIn parameter dengan validasi
     if (notIn && typeof notIn === 'object') {
-      // Cek apakah ada array yang tidak kosong
       const hasValidValues = Object.values(notIn).some(
         (val) => Array.isArray(val) && val.length > 0
       );
 
-      // Hanya kirim notIn jika ada nilai yang valid
       if (hasValidValues) {
         params['notIn'] = JSON.stringify(notIn);
       }
@@ -256,7 +261,9 @@ export default function LookUpModal({
     dateToParam,
     tglDari,
     tglSampai,
-    notIn
+    notIn,
+    autoSearch,
+    open // Tambahkan dependency open
   ]);
 
   // Mapping API → Row[]
@@ -315,9 +322,10 @@ export default function LookUpModal({
   };
 
   // Fungsi untuk select baris pertama saat Enter di input (jika autoSearch false)
-  const selectFirstRow = () => {
-    if (rows.length > 0) {
-      const firstRow = rows[0];
+  const selectFirstRow = async () => {
+    const newRows = await fetchRows();
+    if (newRows.length > 0) {
+      const firstRow = newRows[0];
       const classValue = firstRow[postData as string];
 
       setInputValue(classValue);
@@ -327,10 +335,13 @@ export default function LookUpModal({
       const value = firstRow[dataToPost as any];
       lookupValue?.(value);
       onSelectRow?.(firstRow);
-
-      // PENTING: Jangan langsung close dan clear
-      // setOpen(false);
-      // dispatch(clearOpenNameModal());
+    } else {
+      console.log('masuk322');
+      setShowError({
+        label: label ?? '',
+        status: true,
+        message: 'DATA TIDAK DITEMUKAN'
+      });
     }
   };
 
@@ -339,22 +350,21 @@ export default function LookUpModal({
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
+
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
     debounceTimerRef.current = setTimeout(() => {
       abortRef.current?.abort('New filter applied');
-
       const next = {
         ...filters,
         filters: {},
         search: searchValue,
         page: 1
       };
-
       setFilters(next);
 
-      // PERUBAHAN: Hanya set openNameModal dan filtering jika autoSearch true
-      if (autoSearch) {
+      // PERUBAHAN: Jika autoSearch true ATAU modal terbuka, trigger filtering
+      if (autoSearch || open) {
         dispatch(setOpenNameModal(label || ''));
         setFiltering(true);
       }
@@ -363,12 +373,12 @@ export default function LookUpModal({
         setSelectedRow(0);
         gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
       }, 250);
+
       setTimeout(() => {
         inputRef.current?.focus();
       }, 350);
     }, 300);
   };
-
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -482,6 +492,8 @@ export default function LookUpModal({
       lookupValue(null);
     }
     setDeleteClicked(true);
+    setShowError({ label: label ?? '', status: false, message: '' });
+
     dispatch(setSearchTerm(''));
     if (onClear) {
       onClear(); // Trigger the passed onClear function
@@ -852,16 +864,9 @@ export default function LookUpModal({
     );
   }
   const handleInputKeydown = (event: any) => {
-    if (!autoSearch && event.key === 'Enter') {
+    if (!autoSearch && !open && event.key === 'Enter') {
       event.preventDefault();
-
-      // PERBAIKAN: Cek apakah ada data di rows sebelum select
-      if (rows.length > 0) {
-        selectFirstRow();
-      } else {
-        // Jika rows kosong, trigger fetch dulu jika perlu
-        console.log('No rows available, data may still be loading');
-      }
+      selectFirstRow();
       return;
     }
 
@@ -1040,17 +1045,13 @@ export default function LookUpModal({
 
   useEffect(() => {
     if (type === 'local' || !endpoint) {
-      // Mode local tetap seperti sebelumnya
       const filteredRows = data ? applyFilters(data) : [];
 
-      // Check if we're not clearing input and lookupNama is undefined
       if (isdefault && !deleteClicked) {
-        // Only set default value if inputValue is empty (cleared)
         if (isdefault === 'YA') {
           const defaultRow = filteredRows.find(
             (row: any) => row.default === 'YA'
           );
-          console.log('defaultRow222', defaultRow);
           if (defaultRow && !clicked) {
             setInputValue(defaultRow?.text);
             if (lookupValue) {
@@ -1073,31 +1074,35 @@ export default function LookUpModal({
 
     (async () => {
       try {
-        const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
+        // PERUBAHAN: Fetch jika (autoSearch true ATAU modal terbuka) DAN ada search term
+        const shouldFetch = autoSearch || open;
 
-        if (myRequestId !== requestIdRef.current) return;
-        setRows((prev) => {
-          if (currentPage === 1) return newRows;
+        if (shouldFetch) {
+          const newRows = await fetchRows(controller.signal);
 
-          // append + dedup by id
-          const seen = new Set<number | string>();
-          const merged = [...prev, ...newRows].filter((r) => {
-            const k = r.id;
-            if (seen.has(k)) return false;
-            seen.add(k);
-            return true;
+          if (myRequestId !== requestIdRef.current) return;
+          setRows((prev) => {
+            if (currentPage === 1) return newRows;
+
+            const seen = new Set<number | string>();
+            const merged = [...prev, ...newRows].filter((r) => {
+              const k = r.id;
+              if (seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            });
+            return merged;
           });
-          return merged;
-        });
 
-        // tandai halaman ini sudah diambil
-        setFetchedPages((prev) => {
-          const s = new Set(prev);
-          s.add(currentPage);
-          return s;
-        });
+          setFetchedPages((prev) => {
+            const s = new Set(prev);
+            s.add(currentPage);
+            return s;
+          });
+        } else {
+          return;
+        }
 
-        // update hasMore berdasar totalPages
         setHasMore(currentPage < totalPages);
       } catch (err) {
         if (myRequestId === requestIdRef.current) {
@@ -1111,7 +1116,7 @@ export default function LookUpModal({
     })();
 
     return () => controller.abort();
-  }, [open, endpoint, type, currentPage, filters, totalPages]);
+  }, [open, endpoint, type, currentPage, filters, totalPages, autoSearch]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -1149,7 +1154,14 @@ export default function LookUpModal({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [filters.search, filters.filters, rows, postData, selectedRequired]); // Tambahka
+  }, [
+    filters.search,
+    filters.filters,
+    rows,
+    postData,
+    selectedRequired,
+    autoSearch
+  ]); // Tambahka
   useEffect(() => {
     // PERUBAHAN: Tambahkan kondisi autoSearch
     if (autoSearch) {
@@ -1239,10 +1251,14 @@ export default function LookUpModal({
         showError.label?.toLowerCase() === label?.toLowerCase() &&
         (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
-        setShowError({ label: label ?? '', status: true });
+        console.log('masuk676');
+        setShowError({
+          label: label ?? '',
+          status: true,
+          message: `${label} ${REQUIRED_FIELD}`
+        });
       } else {
-        // Jika ada nilai, set error menjadi false
-        setShowError({ label: label ?? '', status: false });
+        setShowError({ label: label ?? '', status: false, message: '' });
       }
     }
     dispatch(setSubmitClicked(false));
@@ -1253,7 +1269,7 @@ export default function LookUpModal({
       (lookupNama !== undefined && String(label) === String(showError.label)) ||
       inputValue !== ''
     ) {
-      setShowError({ label: label ?? '', status: false });
+      setShowError({ label: label ?? '', status: false, message: '' });
     }
   }, [lookupNama, inputValue, label, showError.label]);
   useEffect(() => {
@@ -1331,7 +1347,7 @@ export default function LookUpModal({
             </div>
             <p className="text-[0.8rem] text-destructive">
               {showError.status === true && label === showError.label
-                ? `${label} ${REQUIRED_FIELD}`
+                ? showError.message
                 : null}
             </p>
           </>

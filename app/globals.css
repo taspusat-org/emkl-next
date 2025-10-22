@@ -252,6 +252,9 @@ Button {
 table {
   font-family: 'DejaVu', sans-serif;
 }
+.tooltip-content{
+  font-family: 'DejaVu', sans-serif !important;
+}
 .rdg-cell {
   padding-left: 5px;
   padding-right: 4px;
