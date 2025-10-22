@@ -66,7 +66,7 @@ const GridPenerimaanEmklDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterPengeluaranEmklDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',
@@ -176,7 +176,7 @@ const GridPenerimaanEmklDetail = ({
       ...prev,
       filters: {
         ...filterPenerimaanEmklDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -199,7 +199,7 @@ const GridPenerimaanEmklDetail = ({
       ...prev,
       filters: {
         ...prev.filters,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -247,7 +247,7 @@ const GridPenerimaanEmklDetail = ({
                   search: '',
                   filters: {
                     ...filterPenerimaanEmklDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -426,12 +426,12 @@ const GridPenerimaanEmklDetail = ({
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
-          const cellValue = props.row.nominal || '';
+          const cellValue = formatCurrency(props.row.nominal) || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
@@ -1022,9 +1022,9 @@ const GridPenerimaanEmklDetail = ({
   useEffect(() => {
     setFilters((prev) => ({
       ...prev,
-      filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
     }));
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -1075,12 +1075,12 @@ const GridPenerimaanEmklDetail = ({
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
         filters: {
           ...filterPenerimaanEmklDetail, // <--- semua filter dikosongkan dulu
-          nobukti: nobukti ?? headerData.nobukti // <--- kecuali nobukti tetap diisi
+          nobukti: nobukti ?? headerData?.nobukti // <--- kecuali nobukti tetap diisi
         }
       }));
     } else {
@@ -1092,7 +1092,7 @@ const GridPenerimaanEmklDetail = ({
         }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
