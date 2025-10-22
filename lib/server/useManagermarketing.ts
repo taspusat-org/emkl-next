@@ -31,7 +31,8 @@ export const useGetManagerMarketingHeader = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   const dispatch = useDispatch();
   const { toast } = useToast();
@@ -46,7 +47,7 @@ export const useGetManagerMarketingHeader = (
       }
 
       try {
-        const data = await getManagerMarketingHeaderFn(filters);
+        const data = await getManagerMarketingHeaderFn(filters, signal);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -63,7 +64,7 @@ export const useGetManagerMarketingHeader = (
       }
     },
     {
-      // Optionally, you can use the `onSettled` callback if you want to reset the processing state after query success or failure
+      enabled: !signal?.aborted,
       onSettled: () => {
         if (filters.page === 1) {
           dispatch(setProcessed());

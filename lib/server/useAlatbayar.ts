@@ -27,11 +27,15 @@ export const useGetAlatbayar = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['alatbayar', filters],
-    async () => await getAlatbayarFn(filters)
+    async () => await getAlatbayarFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

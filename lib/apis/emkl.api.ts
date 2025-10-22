@@ -12,14 +12,25 @@ interface validationFields {
   aksi: string;
   value: number | string;
 }
-export const getEmklFn = async (filters: GetParams = {}): Promise<IAllEmkl> => {
+export const getEmklFn = async (
+  filters: GetParams = {},
+  signal?: AbortSignal
+): Promise<IAllEmkl> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/emkl', { params: queryParams });
+
+    const response = await api2.get('/emkl', {
+      params: queryParams,
+      signal
+    });
+
     return response.data;
   } catch (error) {
-    console.error('Error fetching emkl:', error);
-    throw new Error('failed to fetch emkl');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching emkl', error);
+    throw new Error('Failed to fetch emkl');
   }
 };
 

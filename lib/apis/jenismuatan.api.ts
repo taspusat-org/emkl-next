@@ -10,15 +10,24 @@ interface UpdateJenisMuatanParams {
 }
 
 export const getJenisMuatanFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllJenisMuatan> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/jenismuatan', { params: queryParams });
+
+    const response = await api2.get('/jenismuatan', {
+      params: queryParams,
+      signal
+    });
+
     return response.data;
   } catch (error) {
-    console.error('Error fetching jenismuatan:', error);
-    throw new Error('failed to fetch jenis muatan');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 

@@ -264,7 +264,7 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('nobukti')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOBUKTI</p>
+              <p className="text-sm font-normal">NO BUKTI</p>
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&
                 filters.sortDirection === 'asc' ? (

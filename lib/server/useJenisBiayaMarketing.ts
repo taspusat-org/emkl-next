@@ -21,11 +21,15 @@ export const useGetJenisBiayaMarketing = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['jenisbiayamarketings', filters],
-    async () => await getJenisBiayaMarketingFn(filters)
+    async () => await getJenisBiayaMarketingFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

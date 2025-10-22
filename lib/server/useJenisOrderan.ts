@@ -21,11 +21,15 @@ export const useGetJenisOrderan = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['jenisorderans', filters],
-    async () => await getJenisOrderanFn(filters)
+    async () => await getJenisOrderanFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

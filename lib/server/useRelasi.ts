@@ -26,7 +26,14 @@ export const useGetRelasi = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
-  return useQuery(['relasis', filters], async () => await getRelasiFn(filters));
+  return useQuery(
+    ['relasis', filters],
+    async () => await getRelasiFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
+  );
 };

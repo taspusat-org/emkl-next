@@ -80,6 +80,13 @@ import {
 } from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -242,13 +249,15 @@ const GridMasterbiaya = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { data: allBiaya, isLoading: isLoadingMasterbiaya } = useGetMasterBiaya(
     {
       ...filters,
       page: currentPage
-    }
+    },
+    abortControllerRef.current?.signal
   );
-  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -263,20 +272,25 @@ const GridMasterbiaya = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
     debouncedFilterUpdate.cancel(); // Cancel pending updates
-
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
       page: 1
     }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
     setRows([]);
+    setCurrentPage(1);
   }, []);
+
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
@@ -369,6 +383,7 @@ const GridMasterbiaya = () => {
     );
   }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -596,7 +611,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('tujuankapal_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -669,7 +686,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('sandarkapal_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -742,7 +761,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('pelayaran_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -815,7 +836,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('container_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -887,7 +910,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('biayaemkl_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -959,7 +984,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('jenisorder_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1032,7 +1059,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tglberlaku')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1103,7 +1132,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nominal')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1176,7 +1207,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1261,7 +1294,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1332,7 +1367,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1405,7 +1442,9 @@ const GridMasterbiaya = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1985,61 +2024,6 @@ const GridMasterbiaya = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridMasterbiaya',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -2061,56 +2045,6 @@ const GridMasterbiaya = () => {
     };
   }, [forms]);
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -2137,9 +2071,15 @@ const GridMasterbiaya = () => {
       width: columnsWidth[col.key] ?? col.width
     }));
   }, [orderedColumns, columnsWidth]);
-
   useEffect(() => {
-    loadGridConfig(user.id, 'GridMasterbiaya');
+    // loadGridConfig(user.id, 'GridAkunPusat');
+    loadGridConfig(
+      user.id,
+      'GridMasterbiaya',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -2422,7 +2362,22 @@ const GridMasterbiaya = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                // onClick={resetGridConfig}
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridMasterbiaya',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>

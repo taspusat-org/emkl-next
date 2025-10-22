@@ -1,5 +1,11 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback
+} from 'react';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -12,19 +18,19 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormSandarKapal from './FormSandarKapal';
+import FormAsalKapal from './FormAsalKapal';
 import { useQueryClient } from 'react-query';
 import {
-  SandarKapalInput,
-  sandarkapalSchema
-} from '@/lib/validations/sandarkapal.validation';
+  AsalKapalInput,
+  asalkapalSchema
+} from '@/lib/validations/asalkapal.validation';
 
 import {
-  useCreateSandarKapal,
-  useDeleteSandarKapal,
-  useGetSandarKapal,
-  useUpdateSandarKapal
-} from '@/lib/server/useSandarKapal';
+  useCreateAsalKapal,
+  useDeleteAsalKapal,
+  useGetAsalKapal,
+  useUpdateAsalKapal
+} from '@/lib/server/useAsalKapal';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -64,7 +70,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { ISandarKapal } from '@/lib/types/sandarkapal.type';
+import { IAsalKapal } from '@/lib/types/asalkapal.type';
 import { number } from 'zod';
 import {
   clearOpenName,
@@ -76,21 +82,39 @@ import {
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { getSandarKapalFn } from '@/lib/apis/sandarkapal.api';
+import { getAsalKapalFn } from '@/lib/apis/asalkapal.api';
 import { setReportFilter } from '@/lib/store/printSlice/printSlice';
 import Alert from '@/components/custom-ui/AlertCustom';
+import { formatCurrency } from '@/lib/utils';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import FilterInput from '@/components/custom-ui/FilterInput';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
+import { debounce } from 'lodash';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
   filters: {
-    nama: string;
     keterangan: string;
     text: string;
+    nominal: string;
     created_at: string;
     updated_at: string;
     statusaktif: string;
+    cabang: string;
+    container: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -100,23 +124,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridSandarKapal = () => {
+const GridAsalKapal = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createSandarKapal, isLoading: isLoadingCreate } =
-    useCreateSandarKapal();
-  const { mutateAsync: updateSandarKapal, isLoading: isLoadingUpdate } =
-    useUpdateSandarKapal();
+  const { mutateAsync: createAsalKapal, isLoading: isLoadingCreate } =
+    useCreateAsalKapal();
+  const { mutateAsync: updateAsalKapal, isLoading: isLoadingUpdate } =
+    useUpdateAsalKapal();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteSandarKapal, isLoading: isLoadingDelete } =
-    useDeleteSandarKapal();
+  const { mutateAsync: deleteAsalKapal, isLoading: isLoadingDelete } =
+    useDeleteAsalKapal();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -133,7 +157,7 @@ const GridSandarKapal = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<ISandarKapal[]>([]);
+  const [rows, setRows] = useState<IAsalKapal[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -142,13 +166,15 @@ const GridSandarKapal = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<SandarKapalInput>({
-    resolver: zodResolver(sandarkapalSchema),
+  const forms = useForm<AsalKapalInput>({
+    resolver: zodResolver(asalkapalSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nama: '',
+      nominal: undefined,
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 1,
+      cabang_id: 0,
+      container_id: 0
     }
   });
   const router = useRouter();
@@ -156,25 +182,31 @@ const GridSandarKapal = () => {
     page: 1,
     limit: 30,
     filters: {
-      nama: '',
+      nominal: '',
       keterangan: '',
       created_at: '',
       updated_at: '',
       text: '',
-      statusaktif: ''
+      statusaktif: '',
+      cabang: '',
+      container: ''
     },
     search: '',
-    sortBy: 'nama',
+    sortBy: 'cabang',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const { data: allSandarKapal, isLoading: isLoadingSandarKapal } =
-    useGetSandarKapal({
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const { data: allAsalKapal, isLoading: isLoadingAsalKapal } = useGetAsalKapal(
+    {
       ...filters,
       page: currentPage
-    });
-  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+    },
+    abortControllerRef.current?.signal
+  );
+
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
@@ -251,20 +283,57 @@ const GridSandarKapal = () => {
       />
     );
   }
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
       filters: {
-        nama: '',
+        nominal: '',
         keterangan: '',
         icon: '',
         created_at: '',
         updated_at: '',
         text: '',
-        statusaktif: ''
+        statusaktif: '',
+        cabang: '',
+        container: ''
       },
       search: searchValue,
       page: 1
@@ -286,6 +355,14 @@ const GridSandarKapal = () => {
     setRows([]);
   };
   const handleSort = (column: string) => {
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -298,7 +375,7 @@ const GridSandarKapal = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -359,7 +436,7 @@ const GridSandarKapal = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<ISandarKapal>[] => {
+  const columns = useMemo((): Column<IAsalKapal>[] => {
     return [
       {
         key: 'nomor',
@@ -381,12 +458,14 @@ const GridSandarKapal = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    nama: '',
+                    nominal: '',
                     keterangan: '',
                     text: '',
                     created_at: '',
                     updated_at: '',
-                    statusaktif: ''
+                    statusaktif: '',
+                    cabang: '',
+                    container: ''
                   }
                 }),
                   setInputValue('');
@@ -426,7 +505,7 @@ const GridSandarKapal = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: ISandarKapal }) => (
+        renderCell: ({ row }: { row: IAsalKapal }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -438,75 +517,73 @@ const GridSandarKapal = () => {
       },
 
       {
-        key: 'nama',
-        name: 'Nama',
+        key: 'cabang',
+        name: 'cabang',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('cabang')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'cabang' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nama
+                Cabang
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'nama' &&
+                {filters.sortBy === 'cabang' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'nama' &&
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'cabang' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
               </div>
             </div>
+
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['nama'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none text-sm"
-                value={
-                  filters.filters.nama ? filters.filters.nama.toUpperCase() : ''
-                }
-                type="text"
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase(); // Menjadikan input menjadi uppercase
-                  handleColumnFilterChange('nama', value);
+              <FilterInput
+                colKey="cabang"
+                value={filters.filters.cabang || ''}
+                onChange={(value) => handleFilterInputChange('cabang', value)}
+                onClear={() => handleClearFilter('cabang')}
+                inputRef={(el) => {
+                  inputColRefs.current['cabang'] = el;
                 }}
               />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.nama || '';
+          const columnFilter = filters.filters.cabang || '';
+          const cellValue = props.row.cabang || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -522,13 +599,13 @@ const GridSandarKapal = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'keterangan'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Keterangan
@@ -536,10 +613,10 @@ const GridSandarKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -547,42 +624,183 @@ const GridSandarKapal = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
                   inputColRefs.current['keterangan'] = el;
                 }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.keterangan.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('keterangan', value);
-                }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan !== null &&
-                  props.row.keterangan !== undefined
-                  ? props.row.keterangan
-                  : '',
-                filters.search,
-                columnFilter
-              )}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'container',
+        name: 'container',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('container')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'container' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Container
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'container' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'container' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="container"
+                value={filters.filters.container || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('container', value)
+                }
+                onClear={() => handleClearFilter('container')}
+                inputRef={(el) => {
+                  inputColRefs.current['container'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.container || '';
+          const cellValue = props.row.container || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        name: 'Nominal',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-header',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('nominal')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nominal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Nominal
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nominal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nominal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="nominal"
+                value={filters.filters.nominal || ''}
+                onChange={(value) => handleFilterInputChange('nominal', value)}
+                onClear={() => handleClearFilter('nominal')}
+                inputRef={(el) => {
+                  inputColRefs.current['nominal'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nominal || '';
+          const cellValue = props.row.nominal || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -598,13 +816,13 @@ const GridSandarKapal = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'statusaktif'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Status Aktif
@@ -612,10 +830,10 @@ const GridSandarKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'statusaktif' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'statusaktif' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -636,31 +854,41 @@ const GridSandarKapal = () => {
         ),
         renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-
           if (memoData) {
             return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             );
           }
 
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-
       {
         key: 'created_at',
         name: 'Created At',
@@ -673,13 +901,13 @@ const GridSandarKapal = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'created_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Created At
@@ -687,10 +915,10 @@ const GridSandarKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'created_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -748,13 +976,13 @@ const GridSandarKapal = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'updated_at'
-                    ? 'text-red-500'
-                    : 'font-normal'
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 Updated At
@@ -762,10 +990,10 @@ const GridSandarKapal = () => {
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
+                  <FaSortUp className="font-bold" />
                 ) : filters.sortBy === 'updated_at' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -828,12 +1056,7 @@ const GridSandarKapal = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridSandarKapal',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridAsalKapal', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -848,7 +1071,7 @@ const GridSandarKapal = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridSandarKapal', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridAsalKapal', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -865,7 +1088,7 @@ const GridSandarKapal = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingSandarKapal || !hasMore || rows.length === 0) return;
+    if (isLoadingAsalKapal || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -892,7 +1115,7 @@ const GridSandarKapal = () => {
     }
   }
 
-  function handleCellClick(args: { row: ISandarKapal }) {
+  function handleCellClick(args: { row: IAsalKapal }) {
     const clickedRow = args.row;
     // console.log('Clicked row:', rows);
 
@@ -903,7 +1126,7 @@ const GridSandarKapal = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<ISandarKapal>,
+    args: CellKeyDownArgs<IAsalKapal>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -969,7 +1192,7 @@ const GridSandarKapal = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/sandarkapal-allItems`);
+          const response = await api2.get(`/redis/get/asalkapal-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -995,13 +1218,13 @@ const GridSandarKapal = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: SandarKapalInput, keepOpenModal = false) => {
+  const onSubmit = async (values: AsalKapalInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteSandarKapal(selectedRowId as unknown as string, {
+          await deleteAsalKapal(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1023,7 +1246,7 @@ const GridSandarKapal = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createSandarKapal(
+        const newOrder = await createAsalKapal(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1039,14 +1262,14 @@ const GridSandarKapal = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateSandarKapal(
+        await updateAsalKapal(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('sandarkapal');
+        queryClient.invalidateQueries('asalkapal');
       }
     } catch (error) {
       console.error(error);
@@ -1136,10 +1359,10 @@ const GridSandarKapal = () => {
   const handleReport = async () => {
     const { page, limit, ...filtersWithoutLimit } = filters;
 
-    const response = await getSandarKapalFn(filtersWithoutLimit);
+    const response = await getAsalKapalFn(filtersWithoutLimit);
     const reportRows = response.data.map((row) => ({
       ...row,
-      judullaporan: 'Laporan Sandar Kapal',
+      judullaporan: 'Laporan Asal Kapal',
       usercetak: user.username,
       tglcetak: new Date().toLocaleDateString(),
       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1154,7 +1377,7 @@ const GridSandarKapal = () => {
         const { Stimulsoft } = module;
         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
           '/fonts/tahoma.ttf',
-          'tahoma'
+          'Arial'
         );
         Stimulsoft.Base.StiLicense.Key =
           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
@@ -1169,7 +1392,7 @@ const GridSandarKapal = () => {
         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
         // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanSandarKapal.mrt');
+        report.loadFile('/reports/LaporanAsalKapal.mrt');
         report.dictionary.dataSources.clear();
         dataSet.readJson({ data: reportRows });
         report.regData(dataSet.dataSetName, '', dataSet);
@@ -1188,7 +1411,7 @@ const GridSandarKapal = () => {
             sessionStorage.setItem('pdfUrl', pdfUrl);
 
             // Navigate to the report page
-            window.open('/reports/laporansandarkapal', '_blank');
+            window.open('/reports/laporanasalkapal', '_blank');
           }, Stimulsoft.Report.StiExportFormat.Pdf);
         });
       })
@@ -1232,12 +1455,12 @@ const GridSandarKapal = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: ISandarKapal) {
+  function getRowClass(row: IAsalKapal) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: ISandarKapal) {
+  function rowKeyGetter(row: IAsalKapal) {
     return row.id;
   }
 
@@ -1284,112 +1507,7 @@ const GridSandarKapal = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridSandarKapal',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -1418,7 +1536,13 @@ const GridSandarKapal = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridSandarKapal');
+    loadGridConfig(
+      user.id,
+      'GridAsalKapal',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   useEffect(() => {
     setIsFirstLoad(true);
@@ -1432,9 +1556,9 @@ const GridSandarKapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allSandarKapal || isFetchingManually || isDataUpdated) return;
+    if (!allAsalKapal || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allSandarKapal.data || [];
+    const newRows = allAsalKapal.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1452,14 +1576,14 @@ const GridSandarKapal = () => {
       return prevRows;
     });
 
-    if (allSandarKapal.pagination.totalPages) {
-      setTotalPages(allSandarKapal.pagination.totalPages);
+    if (allAsalKapal.pagination.totalPages) {
+      setTotalPages(allAsalKapal.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allSandarKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allAsalKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1512,10 +1636,17 @@ const GridSandarKapal = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
+      forms.setValue(
+        'nominal',
+        rowData?.nominal ? formatCurrency(rowData.nominal) : ''
+      );
       forms.setValue('keterangan', rowData.keterangan);
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('cabang_id', Number(rowData.cabang_id) || 1);
+      forms.setValue('cabang', rowData.cabang || '');
+      forms.setValue('container_id', Number(rowData.container_id) || 1);
+      forms.setValue('container', rowData.container || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');
@@ -1528,6 +1659,11 @@ const GridSandarKapal = () => {
         inputColRefs.current[col.key] = null;
       }
     });
+  }, []);
+  useEffect(() => {
+    return () => {
+      debouncedFilterUpdate.cancel();
+    };
   }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
@@ -1591,9 +1727,9 @@ const GridSandarKapal = () => {
           }}
         >
           <ActionButton
-            module="sandarkapal"
-            onAdd={handleAdd}
+            module="asalkapal"
             checkedRows={checkedRows}
+            onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
@@ -1636,7 +1772,7 @@ const GridSandarKapal = () => {
             //   // }
             // ]}
           />
-          {isLoadingSandarKapal ? <LoadRowsRenderer /> : null}
+          {isLoadingAsalKapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1651,14 +1787,29 @@ const GridSandarKapal = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                // onClick={resetGridConfig}
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridAsalKapal',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>
           )}
         </div>
       </div>
-      <FormSandarKapal
+      <FormAsalKapal
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1673,4 +1824,4 @@ const GridSandarKapal = () => {
   );
 };
 
-export default GridSandarKapal;
+export default GridAsalKapal;

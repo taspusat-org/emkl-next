@@ -25,11 +25,15 @@ export const useGetAsalKapal = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['asalkapal', filters],
-    async () => await getAsalKapalFn(filters)
+    async () => await getAsalKapalFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

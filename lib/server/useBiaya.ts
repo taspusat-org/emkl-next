@@ -28,9 +28,16 @@ export const useGetBiaya = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
-  return useQuery(['biaya', filters], async () => await getBiayaFn(filters));
+  return useQuery(
+    ['biaya', filters],
+    async () => await getBiayaFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
+  );
 };
 
 export const useCreateBiaya = () => {

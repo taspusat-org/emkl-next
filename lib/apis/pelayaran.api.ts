@@ -13,15 +13,24 @@ interface validationFields {
   value: number | string;
 }
 export const getPelayaranFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllPelayaran> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/pelayaran', { params: queryParams });
+
+    const response = await api2.get('/pelayaran', {
+      params: queryParams,
+      signal
+    });
+
     return response.data;
   } catch (error) {
-    console.error('Error fetching pelayaran:', error);
-    throw new Error('failed to fetch pelayaran');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 

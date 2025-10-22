@@ -23,11 +23,15 @@ export const useGetDivisi = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['divisi', filters],
-    async () => await getDivisiFn(filters)
+    async () => await getDivisiFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

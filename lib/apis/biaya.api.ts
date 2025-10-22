@@ -10,17 +10,24 @@ interface UpdateBiayaParams {
 }
 
 export const getBiayaFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllBiaya> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/biaya', { params: queryParams });
+    const response = await api2.get('/biaya', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Biaya:', error);
-    throw new Error('Failed to fetch Biaya');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteBiayaFn = async (id: string) => {

@@ -10,17 +10,24 @@ interface UpdateBiayaParams {
 }
 
 export const getMasterBiayaFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllMasterBiaya> => {
   try {
     const queryParams = buildQueryParams(filters);
 
-    const response = await api2.get('/masterbiaya', { params: queryParams });
+    const response = await api2.get('/masterbiaya', {
+      params: queryParams,
+      signal
+    });
 
     return response.data;
   } catch (error) {
-    console.error('Error fetching Master Biaya:', error);
-    throw new Error('Failed to fetch Master Biaya');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching Akun Pusat:', error);
+    throw new Error('Failed to fetch Akun Pusat');
   }
 };
 export const deleteMasterBiayaFn = async (id: string) => {

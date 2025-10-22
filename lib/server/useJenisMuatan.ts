@@ -21,11 +21,15 @@ export const useGetJenisMuatan = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['jenismuatans', filters],
-    async () => await getJenisMuatanFn(filters)
+    async () => await getJenisMuatanFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

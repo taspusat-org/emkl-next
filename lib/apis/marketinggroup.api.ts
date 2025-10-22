@@ -14,17 +14,24 @@ interface validationFields {
 }
 
 export const getMarketingGroupFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllMarketingGroup> => {
   try {
     const queryParams = buildQueryParams(filters);
+
     const response = await api2.get('/marketinggroup', {
-      params: queryParams
+      params: queryParams,
+      signal
     });
+
     return response.data;
   } catch (error) {
-    console.error('Error fetching marketing group:', error);
-    throw new Error('failed to fetch marketing group');
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
+    console.error('Error fetching data', error);
+    throw new Error('Failed to fetch data');
   }
 };
 

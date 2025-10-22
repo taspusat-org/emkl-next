@@ -28,11 +28,15 @@ export const useGetBiayaemkl = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['biayaemkl', filters],
-    async () => await getBiayaemklFn(filters)
+    async () => await getBiayaemklFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

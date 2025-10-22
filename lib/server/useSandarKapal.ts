@@ -23,11 +23,15 @@ export const useGetSandarKapal = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['sandarkapal', filters],
-    async () => await getSandarKapalFn(filters)
+    async () => await getSandarKapalFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

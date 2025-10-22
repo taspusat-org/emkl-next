@@ -21,11 +21,15 @@ export const useGetDaftarBank = (
     sortDirection?: string;
     limit?: number;
     search?: string;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['daftarbank', filters],
-    async () => await getDaftarBankFn(filters)
+    async () => await getDaftarBankFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

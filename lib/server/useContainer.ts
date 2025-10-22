@@ -23,11 +23,15 @@ export const useGetContainer = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['container', filters],
-    async () => await getContainerFn(filters)
+    async () => await getContainerFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 

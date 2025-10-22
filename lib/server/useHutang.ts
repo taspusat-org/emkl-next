@@ -35,7 +35,8 @@ export const useGetHutangHeader = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   const dispatch = useDispatch();
   const { toast } = useToast();
@@ -50,7 +51,7 @@ export const useGetHutangHeader = (
       }
 
       try {
-        const data = await getHutangHeaderFn(filters);
+        const data = await getHutangHeaderFn(filters, signal);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -72,7 +73,8 @@ export const useGetHutangHeader = (
         if (filters.page === 1) {
           dispatch(setProcessed());
         }
-      }
+      },
+      enabled: !signal?.aborted
     }
   );
 };
