@@ -1,14 +1,24 @@
-import { useSelector } from 'react-redux';
 import { IoMdClose } from 'react-icons/io';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { FaRegSquarePlus } from 'react-icons/fa6';
+import LookUp from '@/components/custom-ui/LookUp';
+import { useAlert } from '@/lib/store/client/useAlert';
+import { useSelector, useDispatch } from 'react-redux';
 import { FaSave, FaTimes, FaTrashAlt } from 'react-icons/fa';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import LookUpModal from '@/components/custom-ui/LookUpModal';
 import DataGrid, { Column, DataGridHandle } from 'react-data-grid';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { JENISORDERMUATAN, statusJobMasukGudang } from '@/constants/statusjob';
+import { useGetAllStatusJobMasukGudangByTglStatus } from '@/lib/server/useStatusJob';
+import {
+  filterStatusJobMasukGudang,
+  StatusJobMasukGudang
+} from '@/lib/types/statusJob.type';
 import FormLabel, {
   Form,
   FormControl,
@@ -16,17 +26,9 @@ import FormLabel, {
   FormItem,
   FormMessage
 } from '@/components/ui/form';
-import LookUpModal from '@/components/custom-ui/LookUpModal';
-import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
-import { useDispatch } from 'react-redux';
-import InputDateTimePicker from '@/components/custom-ui/InputDateTimePicker';
-import {
-  filterStatusJobMasukGudang,
-  StatusJobMasukGudang
-} from '@/lib/types/statusJob.type';
-import { useGetAllStatusJobMasukGudangByTglStatus } from '@/lib/server/useStatusJob';
-import { JENISORDERMUATAN, statusJobMasukGudang } from '@/constants/statusjob';
-import LookUp from '@/components/custom-ui/LookUp';
+import FilterInput from '@/components/custom-ui/FilterInput';
+import { getAllOrderanMuatanFn } from '@/lib/apis/orderanHeader.api';
+import { cancelPreviousRequest } from '@/lib/utils';
 
 interface Filter {
   page: number;
@@ -35,6 +37,10 @@ interface Filter {
   filters: typeof filterStatusJobMasukGudang;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
+}
+interface ApiResponse {
+  type: string;
+  data: any; // Define a more specific type for data if possible
 }
 
 const FormStatusJobMasukGudang = ({
@@ -48,7 +54,11 @@ const FormStatusJobMasukGudang = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const { alert } = useAlert();
   const [dataGridKey, setDataGridKey] = useState(0);
+  const [endpointLookup, setEndpointLookup] = useState('');
+  const [enabledNoSeal, setEnabledNoSeal] = useState(false);
+  const [noContainerValue, setNoContainerValue] = useState('');
   const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
@@ -109,9 +119,34 @@ const FormStatusJobMasukGudang = ({
         { key: 'lokasistuffing_nama', name: 'LOKASI STUFFING' },
         { key: 'gandengan', name: 'GANDENGAN' }
       ],
-      labelLookup: 'ORDERAN LOOKUP LOOKUP',
+      labelLookup: 'ORDERAN LOOKUP',
       required: true,
       selectedRequired: false,
+      disabled: mode === 'view' || mode === 'delete' ? true : false,
+      endpoint: `orderanheader?jenisOrderan=${selectedJenisOrderan}`,
+      singleColumn: false,
+      pageSize: 20,
+      postData: 'nobukti',
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookupOrderanNoContainer = [
+    {
+      columns: [
+        // { key: 'nobukti', name: 'NO BUKTI' },
+        // { key: 'tglbukti', name: 'TANGGAL JOB' },
+        // { key: 'shipper_nama', name: 'SHIPPER' },
+        { key: 'nocontainer', name: 'NO CONTAINER' }
+        // { key: 'noseal', name: 'NO SEAL' },
+        // { key: 'lokasistuffing_nama', name: 'LOKASI STUFFING' },
+        // { key: 'gandengan', name: 'GANDENGAN' }
+      ],
+      // labelLookup: 'ORDERAN LOOKUP',
+      required: true,
+      selectedRequired: false,
+      showOnButton: false,
+      clearDisabled: true,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
       endpoint: `orderanheader?jenisOrderan=${selectedJenisOrderan}`,
       singleColumn: false,
@@ -182,6 +217,13 @@ const FormStatusJobMasukGudang = ({
 
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
+  };
+
+  const handleInputNoContainer = (e: any) => {
+    setNoContainerValue('');
+    if (e.key === 'Enter') {
+      setNoContainerValue(e.target.value);
+    }
   };
 
   const handleInputChange = (
@@ -509,9 +551,7 @@ const FormStatusJobMasukGudang = ({
                       );
                     }}
                     lookupNama={
-                      props.row.job_nama
-                        ? String(props.row.job_nama)
-                        : undefined
+                      props.row.job_nama ? String(props.row.job_nama) : ''
                     }
                     inputLookupValue={Number(props.row.job_id)}
                   />
@@ -581,12 +621,52 @@ const FormStatusJobMasukGudang = ({
                 <Input
                   type="text"
                   value={props.row.nocontainer}
-                  onKeyDown={inputStopPropagation}
+                  onKeyDown={(e) => {
+                    inputStopPropagation;
+                    handleInputNoContainer(e);
+                  }}
                   onClick={(e) => e.stopPropagation()}
-                  readOnly
+                  onChange={(e) => {
+                    handleInputChange(
+                      props.rowIdx,
+                      'nocontainer',
+                      e.target.value
+                    );
+                    setEditingRowId(props.rowIdx);
+                  }}
+                  readOnly={mode === 'delete' && mode === 'view'}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
+
+              {/* {props.row.isAddRow
+                ? '' : 
+                lookupOrderanNoContainer.map((lookupProps, index) => (
+                  <LookUp
+                    key={index}
+                    {...lookupProps}
+                    filterby={{
+                      nocontainer: noContainerValue
+                    }}
+                    showLookup={false}
+                    label={`ORDERAN_CONTAINER_${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
+                    lookupValue={(id) => {
+                      handleInputChange(props.rowIdx, 'job', Number(id)); // Use props.rowIdx to get the correct index
+                    }}
+                    onSelectRow={(val) => {
+                      handleInputChange(props.rowIdx, 'job_nama', val?.nobukti)
+                      handleInputChange(props.rowIdx, 'tglorder', val?.tglbukti);
+                      handleInputChange(props.rowIdx, 'nocontainer', val?.nocontainer);
+                      handleInputChange(props.rowIdx, 'noseal', val?.noseal);
+                      handleInputChange(props.rowIdx, 'shipper_id', Number(val?.shipper_id));
+                      handleInputChange(props.rowIdx, 'shipper_nama', val?.shipper_nama);
+                      handleInputChange(props.rowIdx, 'lokasistuffing',Number(val?.lokasistuffing));
+                      handleInputChange(props.rowIdx, 'lokasistuffing_nama', val?.lokasistuffing_nama);
+                    }}
+                    lookupNama={props.row.noseal ? String(props.row.noseal) : ''}
+                  />
+                ))
+              } */}
             </div>
           );
         }
@@ -610,7 +690,7 @@ const FormStatusJobMasukGudang = ({
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
+              {/* {props.row.isAddRow ? (
                 ''
               ) : (
                 <Input
@@ -621,7 +701,81 @@ const FormStatusJobMasukGudang = ({
                   readOnly
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
-              )}
+              )} */}
+              {props.row.isAddRow
+                ? ''
+                : lookupOrderan.map((lookupProps, index) => (
+                    <LookUp
+                      key={index}
+                      {...lookupProps}
+                      disabled={!enabledNoSeal}
+                      endpoint={endpointLookup}
+                      dataSortBy="nobukti"
+                      filterby={{
+                        nocontainer: noContainerValue
+                      }}
+                      dataSortDirection="desc"
+                      label={`ORDERAN ${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
+                      lookupValue={(id) => {
+                        handleInputChange(props.rowIdx, 'job', Number(id)); // Use props.rowIdx to get the correct index
+                      }}
+                      onSelectRow={(val) => {
+                        handleInputChange(
+                          props.rowIdx,
+                          'job_nama',
+                          val?.nobukti
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'tglorder',
+                          val?.tglbukti
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'nocontainer',
+                          val?.nocontainer
+                        );
+                        handleInputChange(props.rowIdx, 'noseal', val?.noseal);
+                        handleInputChange(
+                          props.rowIdx,
+                          'shipper_id',
+                          Number(val?.shipper_id)
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'shipper_nama',
+                          val?.shipper_nama
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'lokasistuffing',
+                          Number(val?.lokasistuffing)
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'lokasistuffing_nama',
+                          val?.lokasistuffing_nama
+                        );
+                      }}
+                      onClear={() => {
+                        handleInputChange(props.rowIdx, 'job_nama', '');
+                        handleInputChange(props.rowIdx, 'tglorder', '');
+                        handleInputChange(props.rowIdx, 'nocontainer', '');
+                        handleInputChange(props.rowIdx, 'noseal', '');
+                        handleInputChange(props.rowIdx, 'shipper_id', 0);
+                        handleInputChange(props.rowIdx, 'shipper_nama', '');
+                        handleInputChange(props.rowIdx, 'lokasistuffing', 0);
+                        handleInputChange(
+                          props.rowIdx,
+                          'lokasistuffing_nama',
+                          ''
+                        );
+                      }}
+                      lookupNama={
+                        props.row.noseal ? String(props.row.noseal) : ''
+                      }
+                    />
+                  ))}
             </div>
           );
         }
@@ -869,6 +1023,132 @@ const FormStatusJobMasukGudang = ({
   }, [selectedJenisOrderan, selectedJenisStatusJob]);
 
   useEffect(() => {
+    // cancelPreviousRequest(abortControllerRef);
+    if (noContainerValue && noContainerValue !== '') {
+      const nobukti = [
+        // Data dari rows yang sedang di-input (exclude row saat ini)
+        ...rows
+          .filter((row, idx) => {
+            return (
+              row?.job_nama &&
+              row?.job_nama !== '' &&
+              idx !== editingRowId && // Exclude row saat ini
+              !row.isAddRow // Exclude tombol "Add Row"
+            );
+          })
+          .map((row) => row?.job_nama),
+
+        // Data dari addedRow yang sudah pernah disimpan
+        ...addedRow
+          .filter((row) => row?.job_nama && row?.job_nama !== '')
+          .map((row) => row?.job_nama)
+      ];
+      const jsonString = JSON.stringify({ nobukti });
+
+      const fetchData = async () => {
+        try {
+          const [jenisOrderLookup] = await Promise.all<ApiResponse>([
+            getAllOrderanMuatanFn({
+              filters: {
+                jenisOrderan: selectedJenisOrderan
+                  ? String(selectedJenisOrderan)
+                  : String(JENISORDERMUATAN),
+                nocontainer: noContainerValue,
+                notIn: jsonString
+              }
+              // notIn: { nobukti }
+            })
+          ]);
+
+          if (jenisOrderLookup.data && jenisOrderLookup.data.length == 1) {
+            setEnabledNoSeal(false);
+            setEndpointLookup('');
+            handleInputChange(
+              Number(editingRowId),
+              'job',
+              Number(jenisOrderLookup.data[0].id)
+            );
+            handleInputChange(
+              Number(editingRowId),
+              'job_nama',
+              jenisOrderLookup.data[0].nobukti
+            );
+            handleInputChange(
+              Number(editingRowId),
+              'tglorder',
+              jenisOrderLookup.data[0].tglbukti
+            );
+            // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
+            handleInputChange(
+              Number(editingRowId),
+              'noseal',
+              jenisOrderLookup.data[0].noseal
+            );
+            handleInputChange(
+              Number(editingRowId),
+              'shipper_id',
+              Number(jenisOrderLookup.data[0].shipper_id)
+            );
+            handleInputChange(
+              Number(editingRowId),
+              'shipper_nama',
+              jenisOrderLookup.data[0].shipper_nama
+            );
+            handleInputChange(
+              Number(editingRowId),
+              'lokasistuffing',
+              Number(jenisOrderLookup.data[0].lokasistuffing)
+            );
+            handleInputChange(
+              Number(editingRowId),
+              'lokasistuffing_nama',
+              jenisOrderLookup.data[0].lokasistuffing_nama
+            );
+          } else if (
+            jenisOrderLookup.data &&
+            jenisOrderLookup.data.length > 1
+          ) {
+            setEnabledNoSeal(true);
+            setEndpointLookup(
+              `orderanheader?jenisOrderan=${selectedJenisOrderan}&notIn=${jsonString}`
+            );
+            handleInputChange(Number(editingRowId), 'job', 0);
+            handleInputChange(Number(editingRowId), 'job_nama', '');
+            handleInputChange(Number(editingRowId), 'tglorder', '');
+            // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
+            handleInputChange(Number(editingRowId), 'noseal', '');
+            handleInputChange(Number(editingRowId), 'shipper_id', 0);
+            handleInputChange(Number(editingRowId), 'shipper_nama', '');
+            handleInputChange(Number(editingRowId), 'lokasistuffing', 0);
+            handleInputChange(Number(editingRowId), 'lokasistuffing_nama', '');
+          } else {
+            setEnabledNoSeal(false);
+            setEndpointLookup('');
+            handleInputChange(Number(editingRowId), 'job', 0);
+            handleInputChange(Number(editingRowId), 'job_nama', '');
+            handleInputChange(Number(editingRowId), 'tglorder', '');
+            // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
+            handleInputChange(Number(editingRowId), 'noseal', '');
+            handleInputChange(Number(editingRowId), 'shipper_id', 0);
+            handleInputChange(Number(editingRowId), 'shipper_nama', '');
+            handleInputChange(Number(editingRowId), 'lokasistuffing', 0);
+            handleInputChange(Number(editingRowId), 'lokasistuffing_nama', '');
+            alert({
+              title: `DATA ORDERAN DENGAN NO CONTAINER ${noContainerValue} TIDAK DITEMUKAN`,
+              variant: 'danger',
+              submitText: 'OK'
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching data:', err);
+        }
+      };
+
+      fetchData();
+    }
+  }, [noContainerValue]);
+
+  useEffect(() => {
     if (allDataDetail && popOver) {
       if (allDataDetail?.data?.length > 0 && mode !== 'add') {
         // If there is data, add the data rows and the "Add Row" button row at the end
@@ -933,6 +1213,8 @@ const FormStatusJobMasukGudang = ({
   }, [rows]);
 
   useEffect(() => {
+    setEnabledNoSeal(false);
+    setNoContainerValue('');
     if (popOver) {
       refetch();
     }
