@@ -360,13 +360,20 @@ const FormPengeluaran = ({
           </div>
         ),
         renderCell: (props: any) => {
+          const justifyClass = props.row.isAddRow
+            ? 'justify-center'
+            : 'justify-end';
+
           return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm font-normal">
+            <div
+              className={`flex h-full w-full cursor-pointer items-center ${justifyClass} text-sm font-normal`}
+            >
               {props.row.isAddRow ? 'TOTAL :' : props.rowIdx + 1}
             </div>
           );
         }
       },
+
       {
         key: 'coadebet',
         resizable: true,
@@ -381,7 +388,6 @@ const FormPengeluaran = ({
         name: 'coadebet',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          console.log('rowIdx', rowIdx);
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {lookUpPropsCoaDebet.map((props, index) => (
@@ -1487,7 +1493,7 @@ const FormPengeluaran = ({
                     </div>
                   </div>
 
-                  <div className="h-[500px] min-h-[500px]">
+                  <div className="h-[600px] min-h-[600px]">
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <div
                         className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"

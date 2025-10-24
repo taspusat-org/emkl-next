@@ -94,12 +94,10 @@ interface Filter {
     nama: string;
     kode: string;
     keterangan: string;
-    text: string;
     created_at: string;
     updated_at: string;
     statusaktif: string;
     namacabang: string;
-    cabang_id: string;
     modifiedby: string;
   };
   sortBy: string;
@@ -188,8 +186,6 @@ const GridTujuankapal = () => {
       created_at: '',
       updated_at: '',
       namacabang: '',
-      cabang_id: '',
-      text: '',
       statusaktif: '',
       modifiedby: ''
     },
@@ -331,12 +327,9 @@ const GridTujuankapal = () => {
         nama: '',
         kode: '',
         keterangan: '',
-        icon: '',
         created_at: '',
         updated_at: '',
         namacabang: '',
-        cabang_id: '',
-        text: '',
         statusaktif: '',
         modifiedby: ''
       },
@@ -453,12 +446,10 @@ const GridTujuankapal = () => {
                     nama: '',
                     kode: '',
                     keterangan: '',
-                    text: '',
+                    namacabang: '',
                     created_at: '',
                     updated_at: '',
                     statusaktif: '',
-                    namacabang: '',
-                    cabang_id: '',
                     modifiedby: ''
                   }
                 }),

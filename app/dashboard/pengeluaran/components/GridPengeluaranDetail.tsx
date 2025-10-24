@@ -10,6 +10,7 @@ import React, {
 import 'react-data-grid/lib/styles.scss';
 
 import DataGrid, {
+  CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
@@ -39,6 +40,7 @@ import {
 } from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   search: string;
@@ -256,7 +258,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 300,
+        name: 'NO BUKTI',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -264,7 +267,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('nobukti')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NO BUKTI</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NO BUKTI
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&
                 filters.sortDirection === 'asc' ? (
@@ -279,23 +288,30 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'nobukti',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
-          const cellValue = props.row.nobukti || '';
+          const value = props.row.nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search);
+          };
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {`${cellValue} ${filters.search || ''} ${columnFilter}`}
+                  <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                    <JsxParser
+                      components={{ HighlightWrapper }}
+                      jsx={props.row.link}
+                      renderInWrapper={false}
+                    />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{cellValue}</p>
+                  <p>{value}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -307,20 +323,29 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 250,
+        name: 'COA DEBET',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coadebet')}
+              onClick={() => handleSort('coadebet_text')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">COA DEBET</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'coadebet_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                COA DEBET
+              </p>
               <div className="ml-2">
-                {filters.sortBy === 'coadebet' &&
+                {filters.sortBy === 'coadebet_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'coadebet' &&
+                ) : filters.sortBy === 'coadebet_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -344,7 +369,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'coadebet',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.coadebet_text || '';
           const cellValue = props.row.coadebet_text || '';
@@ -372,7 +396,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 200,
+        name: 'keterangan',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -380,7 +405,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('keterangan')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">KETERANGAN</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                TANGGAL BUKTI
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
@@ -409,7 +440,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'keterangan',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
           const cellValue = props.row.keterangan || '';
@@ -437,7 +467,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
+        name: 'nominal',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -445,7 +476,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('nominal')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOMINAL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nominal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NOMINAL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'nominal' &&
                 filters.sortDirection === 'asc' ? (
@@ -472,7 +509,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'nominal',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
           const cellValue = props.row.nominal || '';
@@ -481,18 +517,14 @@ const GridPengeluaranDetail = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -504,7 +536,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
+        name: 'dpp',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -512,7 +545,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('dpp')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">DPP</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'dpp' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                DPP
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'dpp' && filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
@@ -538,7 +577,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'dpp',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.dpp || '';
           const cellValue = props.row.dpp || '';
@@ -547,18 +585,14 @@ const GridPengeluaranDetail = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -570,7 +604,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 200,
+        name: 'NO INVOICE EMKL',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -578,7 +613,15 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('noinvoiceemkl')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOMOR INVOICE EMKL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'noinvoiceemkl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NO INVOICE EMKL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'noinvoiceemkl' &&
                 filters.sortDirection === 'asc' ? (
@@ -607,7 +650,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'noinvoiceemkl',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.noinvoiceemkl || '';
           const cellValue = props.row.noinvoiceemkl || '';
@@ -635,7 +677,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 200,
+        name: 'TGL INVOICE EMKL',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -643,7 +686,15 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('tglinvoiceemkl')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">TANGGAL INVOICE EMKL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'tglinvoiceemkl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                TGL INVOICE EMKL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'tglinvoiceemkl' &&
                 filters.sortDirection === 'asc' ? (
@@ -672,7 +723,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'tglinvoiceemkl',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglinvoiceemkl || '';
           const cellValue = props.row.tglinvoiceemkl || '';
@@ -700,7 +750,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 200,
+        name: 'NO FAKTUR PAJAK EMKL',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -708,7 +759,15 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('nofakturpajakemkl')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOMOR FAKTUR PAJAK EMKL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nofakturpajakemkl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NO FAKTUR PAJAK EMKL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'nofakturpajakemkl' &&
                 filters.sortDirection === 'asc' ? (
@@ -737,7 +796,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'nofakturpajakemkl',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nofakturpajakemkl || '';
           const cellValue = props.row.nofakturpajakemkl || '';
@@ -765,7 +823,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
+        name: 'PERIODE REFUND',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -773,7 +832,15 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('perioderefund')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">PERIODE REFUND</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'perioderefund'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                PERIODE REFUND
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'perioderefund' &&
                 filters.sortDirection === 'asc' ? (
@@ -802,7 +869,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'perioderefund',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.perioderefund || '';
           const cellValue = props.row.perioderefund || '';
@@ -830,7 +896,8 @@ const GridPengeluaranDetail = ({
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 150,
+        name: 'modified by',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -838,7 +905,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('modifiedby')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">MODIFIED BY</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Modified By
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
                 filters.sortDirection === 'asc' ? (
@@ -867,7 +940,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'Modified By',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
           const cellValue = props.row.modifiedby || '';
@@ -896,6 +968,7 @@ const GridPengeluaranDetail = ({
         resizable: true,
         draggable: true,
         width: 200,
+        name: 'Created At',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -903,7 +976,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('created_at')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Created At</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Created At
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
@@ -932,7 +1011,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'Created At',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
           const cellValue = props.row.created_at || '';
@@ -961,6 +1039,7 @@ const GridPengeluaranDetail = ({
         resizable: true,
         draggable: true,
         width: 200,
+        name: 'Updated At',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -968,7 +1047,13 @@ const GridPengeluaranDetail = ({
               onClick={() => handleSort('updated_at')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Updated At</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Updated At
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
@@ -997,7 +1082,6 @@ const GridPengeluaranDetail = ({
             </div>
           </div>
         ),
-        name: 'Updated At',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
           const cellValue = props.row.updated_at || '';
@@ -1022,6 +1106,21 @@ const GridPengeluaranDetail = ({
       }
     ];
   }, [rows, filters]);
+  function getRowClass(row: PengeluaranDetail) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+  function rowKeyGetter(row: PengeluaranDetail) {
+    return row.id;
+  }
+
+  function handleCellClick(args: { row: PengeluaranDetail }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
@@ -1329,7 +1428,8 @@ const GridPengeluaranDetail = ({
         info: item.info, // Updated to match the field name
         modifiedby: item.modifiedby, // Updated to match the field name
         created_at: item.created_at, // Updated to match the field name
-        updated_at: item.updated_at // Updated to match the field name
+        updated_at: item.updated_at, // Updated to match the field name
+        link: item.link
       }));
 
       setRows(formattedRows);
@@ -1410,6 +1510,11 @@ const GridPengeluaranDetail = ({
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           rows={rows ?? []}
+          rowClass={getRowClass}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
+          rowKeyGetter={rowKeyGetter}
           headerRowHeight={70}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}

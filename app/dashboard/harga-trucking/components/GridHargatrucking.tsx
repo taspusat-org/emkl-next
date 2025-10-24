@@ -103,9 +103,6 @@ interface Filter {
     tujuankapal_id: string;
     tujuankapal_text: string;
 
-    tarifdetail_id: string;
-    tarifdetail_text: string;
-
     emkl_id: string;
     emkl_text: string;
 
@@ -120,7 +117,6 @@ interface Filter {
     nominal: string;
 
     statusaktif: string;
-    text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -194,7 +190,6 @@ const GridHargatrucking = () => {
       jenisorderan_text: '',
       nominal: undefined,
       statusaktif: 1,
-      text: '',
       created_at: '',
       updated_at: ''
     }
@@ -212,8 +207,6 @@ const GridHargatrucking = () => {
     filters: {
       tujuankapal_id: '',
       tujuankapal_text: '',
-      tarifdetail_id: '',
-      tarifdetail_text: '',
       emkl_id: '',
       emkl_text: '',
       keterangan: '',
@@ -223,7 +216,6 @@ const GridHargatrucking = () => {
       jenisorderan_text: '',
       nominal: '',
       statusaktif: '',
-      text: '',
       modifiedby: '',
       created_at: '',
       updated_at: ''
@@ -365,8 +357,6 @@ const GridHargatrucking = () => {
       filters: {
         tujuankapal_id: '',
         tujuankapal_text: '',
-        tarifdetail_id: '',
-        tarifdetail_text: '',
         emkl_id: '',
         emkl_text: '',
         keterangan: '',
@@ -376,7 +366,6 @@ const GridHargatrucking = () => {
         jenisorderan_text: '',
         nominal: '',
         statusaktif: '',
-        text: '',
         modifiedby: '',
         created_at: '',
         updated_at: ''
@@ -514,8 +503,6 @@ const GridHargatrucking = () => {
                   filters: {
                     tujuankapal_id: '',
                     tujuankapal_text: '',
-                    tarifdetail_id: '',
-                    tarifdetail_text: '',
                     emkl_id: '',
                     emkl_text: '',
                     keterangan: '',
@@ -525,7 +512,6 @@ const GridHargatrucking = () => {
                     jenisorderan_text: '',
                     nominal: '',
                     statusaktif: '',
-                    text: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: ''
@@ -1967,24 +1953,24 @@ const GridHargatrucking = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('tujuankapal_id', Number(rowData.tujuankapal_id) || 1);
-      forms.setValue('tujuankapal_text', rowData.tujuankapal_text || '');
+      forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id) || 1);
+      forms.setValue('tujuankapal_text', rowData?.tujuankapal_text || '');
 
-      forms.setValue('emkl_id', Number(rowData.emkl_id) || 1);
-      forms.setValue('emkl_text', rowData.emkl_text || '');
+      forms.setValue('emkl_id', Number(rowData?.emkl_id) || 1);
+      forms.setValue('emkl_text', rowData?.emkl_text || '');
 
-      forms.setValue('keterangan', rowData.keterangan || '');
+      forms.setValue('keterangan', rowData?.keterangan || '');
 
-      forms.setValue('container_id', Number(rowData.container_id) || 1);
-      forms.setValue('container_text', rowData.container_text || '');
+      forms.setValue('container_id', Number(rowData?.container_id) || 1);
+      forms.setValue('container_text', rowData?.container_text || '');
 
-      forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id) || 1);
-      forms.setValue('jenisorderan_text', rowData.jenisorderan_text || '');
+      forms.setValue('jenisorderan_id', Number(rowData?.jenisorderan_id) || 1);
+      forms.setValue('jenisorderan_text', rowData?.jenisorderan_text || '');
 
-      forms.setValue('nominal', formatCurrency(rowData.nominal));
+      forms.setValue('nominal', formatCurrency(rowData?.nominal));
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('text', rowData.text || '');
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('text', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('text', rowData?.text || '');
@@ -2145,7 +2131,7 @@ const GridHargatrucking = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridHargatucking',
+                    'GridHargatrucking',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth

@@ -1087,6 +1087,7 @@ export default function LookUp({
   //     setIsFirstLoad(false);
   //   }
   // }, [rows, isFirstLoad]);
+
   const applyFilters = useCallback(
     (rows: Row[]) => {
       let filtered = rows;
@@ -1587,12 +1588,17 @@ export default function LookUp({
       <PopoverContent
         // ref={contentRef}
         id="popover-content"
-        className="h-fit border border-blue-500 p-0 shadow-none backdrop-blur-none"
+        className="z-[99999999999] h-fit border border-blue-500 p-0 shadow-none backdrop-blur-none"
         side="bottom"
         align="start"
         sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
         avoidCollisions={true}
-        style={{ width: popoverWidth }}
+        collisionPadding={8}
+        style={{
+          width: popoverWidth,
+          position: 'fixed',
+          zIndex: 999999999
+        }}
         onEscapeKeyDown={() => setOpen(false)}
       >
         {open && (

@@ -45,11 +45,8 @@ export const filterManagerMarketing = {
   keterangan: '',
   minimalprofit: '',
   statusmentor: null,
-  statusmentor_text: '',
   statusleader: null,
-  statusleader_text: '',
   statusaktif: null,
-  text: '',
   modifiedby: '',
   created_at: '',
   updated_at: ''

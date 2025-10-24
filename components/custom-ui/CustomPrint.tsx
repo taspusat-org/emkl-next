@@ -329,7 +329,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="mb-1 mt-2 flex w-full flex-row items-center justify-end">
+          <div className="mb-1 mr-3 flex w-full flex-row items-center justify-end">
             <div
               ref={closeButtonRef}
               className="w-fit rounded-sm bg-red-500 p-1"
@@ -417,20 +417,10 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
             )}
           </div>
 
-          <div className="flex flex-col-reverse items-center justify-center gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] py-2 md:flex-row">
+          <div className="flex items-start gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] py-2 md:flex-row">
             <Button
-              variant="secondary"
-              className="z-[9999999] w-fit rounded-sm border border-blue-500 bg-white px-3 py-2 font-bold capitalize text-blue-500 hover:bg-blue-500 hover:text-white md:w-fit"
-              onClick={!isLoading ? onClose : undefined}
-              disabled={isLoading}
-            >
-              Batal
-            </Button>
-            <Button
-              className={cn(
-                'w-fit rounded-sm border border-blue-500 bg-white px-3 py-2 font-bold capitalize text-blue-500 hover:bg-blue-500 hover:text-white md:w-fit',
-                isLoading && 'cursor-not-allowed opacity-50'
-              )}
+              type="submit"
+              className="ml-4 flex w-fit items-center gap-1 text-sm"
               onClick={handleAction}
               ref={printButtonRef}
               tabIndex={0}
@@ -438,7 +428,17 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
               onPointerDown={(e) => e.stopPropagation()}
               aria-label="Print"
             >
-              {isLoading ? 'Mencetak...' : 'Cetak'}
+              <FaPrint />
+              {isLoading ? 'Printing...' : 'Print'}
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="flex w-fit items-center gap-1 bg-zinc-500 text-center text-sm text-white text-white hover:bg-zinc-400"
+              onClick={!isLoading ? onClose : undefined}
+              disabled={isLoading}
+            >
+              <IoMdClose /> Cancel
             </Button>
           </div>
         </div>

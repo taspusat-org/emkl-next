@@ -99,7 +99,6 @@ interface Filter {
     jenisorderan_text: string;
 
     statusaktif: string;
-    text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -199,7 +198,6 @@ const GridBiaya = () => {
       jenisorderan_id: '',
       jenisorderan_text: '',
       statusaktif: '',
-      text: '',
       modifiedby: '',
       created_at: '',
       updated_at: ''
@@ -361,7 +359,6 @@ const GridBiaya = () => {
         jenisorderan_id: '',
         jenisorderan_text: '',
         statusaktif: '',
-        text: '',
         modifiedby: '',
         created_at: '',
         updated_at: ''
@@ -482,7 +479,6 @@ const GridBiaya = () => {
                     jenisorderan_id: '',
                     jenisorderan_text: '',
                     statusaktif: '',
-                    text: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: ''

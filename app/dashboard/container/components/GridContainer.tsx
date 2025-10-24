@@ -112,7 +112,6 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    text: string;
     created_at: string;
     updated_at: string;
     statusaktif: string;
@@ -195,7 +194,6 @@ const GridContainer = () => {
       keterangan: '',
       created_at: '',
       updated_at: '',
-      text: '',
       statusaktif: '',
       modifiedby: ''
     },
@@ -260,10 +258,8 @@ const GridContainer = () => {
       filters: {
         nama: '',
         keterangan: '',
-        icon: '',
         created_at: '',
         updated_at: '',
-        text: '',
         statusaktif: '',
         modifiedby: ''
       },
@@ -476,7 +472,6 @@ const GridContainer = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    text: '',
                     created_at: '',
                     updated_at: '',
                     statusaktif: '',

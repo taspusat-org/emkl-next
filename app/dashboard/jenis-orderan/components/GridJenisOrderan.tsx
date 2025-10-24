@@ -97,11 +97,10 @@ interface Filter {
     nama: string;
     keterangan: string;
     statusaktif: string;
+    format_nama: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
-    text: string;
-    format_text: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -176,12 +175,11 @@ const GridJenisOrderan = () => {
     filters: {
       nama: '',
       keterangan: '',
+      format_nama: '',
       statusaktif: '',
       modifiedby: '',
       created_at: '',
-      updated_at: '',
-      text: '',
-      format_text: ''
+      updated_at: ''
     },
     search: '',
     sortBy: 'nama',
@@ -313,12 +311,11 @@ const GridJenisOrderan = () => {
       filters: {
         nama: '',
         keterangan: '',
+        format_nama: '',
         statusaktif: '',
         modifiedby: '',
         created_at: '',
-        updated_at: '',
-        text: '',
-        format_text: ''
+        updated_at: ''
       },
       search: searchValue,
       page: 1
@@ -433,12 +430,11 @@ const GridJenisOrderan = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
+                    format_nama: '',
                     statusaktif: '',
                     modifiedby: '',
                     created_at: '',
-                    updated_at: '',
-                    text: '',
-                    format_text: ''
+                    updated_at: ''
                   }
                 }),
                   setInputValue('');
@@ -643,11 +639,29 @@ const GridJenisOrderan = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusaktif')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
-              <p className="text-sm font-normal">Status Aktif</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -710,25 +724,25 @@ const GridJenisOrderan = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('format_text')}
+              onClick={() => handleSort('format_nama')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'format' ? 'text-red-500' : 'font-normal'
+                  filters.sortBy === 'format' ? 'font-bold' : 'font-normal'
                 }`}
               >
                 FORMAT
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'format_text' &&
+                {filters.sortBy === 'format_nama' &&
                 filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="text-red-500" />
-                ) : filters.sortBy === 'format_text' &&
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'format_nama' &&
                   filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="text-red-500" />
+                  <FaSortDown className="font-bold" />
                 ) : (
                   <FaSort className="text-zinc-400" />
                 )}
@@ -736,42 +750,39 @@ const GridJenisOrderan = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={(el) => {
-                  inputColRefs.current['format'] = el;
-                }}
-                className="filter-input z-[999999] h-8 rounded-none"
-                value={filters.filters.format_text.toUpperCase() || ''}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase();
-                  handleColumnFilterChange('format_text', value);
+              <FilterInput
+                colKey="format_nama"
+                value={filters.filters.format_nama || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('format_nama', value)
+                }
+                onClear={() => handleClearFilter('format_nama')}
+                inputRef={(el) => {
+                  inputColRefs.current['format_nama'] = el;
                 }}
               />
-              {filters.filters.format_text && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('format_text', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.format_text || '';
+          const columnFilter = filters.filters.format_nama || '';
+          const cellValue = props.row.format_nama || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.format_nama !== null &&
-                  props.row.format_nama !== undefined
-                  ? props.row.format_nama
-                  : '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },

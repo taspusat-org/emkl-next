@@ -395,7 +395,9 @@ const GridShipper = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterShipper
+      filters: filterShipper,
+      search: searchValue,
+      page: 1
     }));
 
     setCheckedRows(new Set());
