@@ -250,7 +250,7 @@ const GridJurnalUmumDetail = ({
                   filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                NOMOR BUKTI
+                NO BUKTI
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&

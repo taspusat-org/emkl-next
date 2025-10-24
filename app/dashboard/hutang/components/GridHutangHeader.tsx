@@ -35,7 +35,7 @@ import {
 } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Select,
   SelectContent,
@@ -158,6 +158,7 @@ const GridHutangHeader = () => {
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
   const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
@@ -1706,7 +1707,6 @@ const GridHutangHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    // loadGridConfig(user.id, 'GridAkunPusat');
     loadGridConfig(
       user.id,
       'GridHutangHeader',
@@ -1714,6 +1714,21 @@ const GridHutangHeader = () => {
       setColumnsOrder,
       setColumnsWidth
     );
+    const rawNobukti = searchParams.get('nobukti');
+
+    setFilters((prevFilters: Filter) => ({
+      ...prevFilters,
+      filters: {
+        ...prevFilters.filters,
+        nobukti: rawNobukti ?? ''
+      }
+    }));
+
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
   }, []);
 
   useEffect(() => {
