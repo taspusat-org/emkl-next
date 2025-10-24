@@ -360,9 +360,7 @@ const FormPengeluaran = ({
           </div>
         ),
         renderCell: (props: any) => {
-          const justifyClass = props.row.isAddRow
-            ? 'justify-center'
-            : 'justify-end';
+          const justifyClass = 'justify-end';
 
           return (
             <div
