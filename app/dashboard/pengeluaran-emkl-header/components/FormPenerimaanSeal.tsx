@@ -868,7 +868,9 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   <Input
                     id="kode"
                     autoFocus
-                    ref={(el) => (entryModalRefs.current['kode'] = el)}
+                    ref={(el) => {
+                      entryModalRefs.current['kode'] = el;
+                    }}
                     onKeyDown={(e) => handleEntryModalTab(e, 'kode')}
                     value={entryData.kode}
                     onChange={(e) =>
@@ -882,13 +884,16 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   <label htmlFor="nominal" className="text-left text-sm ">
                     Nominal
                   </label>
-                  <div className="col-span-3" id="nominal-wrapper">
+                  <div
+                    className="col-span-3"
+                    id="nominal-wrapper"
+                    onKeyDown={(e) => handleEntryModalTab(e, 'nominal')}
+                  >
                     <InputCurrency
                       value={entryData.nominal}
                       onValueChange={(value) =>
                         setEntryData({ ...entryData, nominal: value })
                       }
-                      onKeyDown={(e: any) => handleEntryModalTab(e, 'nominal')}
                     />
                   </div>
                 </div>
@@ -900,7 +905,9 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   <Input
                     id="dari"
                     type="number"
-                    ref={(el) => (entryModalRefs.current['dari'] = el)}
+                    ref={(el) => {
+                      entryModalRefs.current['dari'] = el;
+                    }}
                     onKeyDown={(e) => handleEntryModalTab(e, 'dari')}
                     value={entryData.dari}
                     onChange={(e) =>
@@ -917,7 +924,9 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   <Input
                     id="sampai"
                     type="number"
-                    ref={(el) => (entryModalRefs.current['sampai'] = el)}
+                    ref={(el) => {
+                      entryModalRefs.current['sampai'] = el;
+                    }}
                     onKeyDown={(e) => handleEntryModalTab(e, 'sampai')}
                     value={entryData.sampai}
                     onChange={(e) =>
@@ -933,7 +942,9 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   </label>
                   <Input
                     id="keterangan"
-                    ref={(el) => (entryModalRefs.current['keterangan'] = el)}
+                    ref={(el) => {
+                      entryModalRefs.current['keterangan'] = el;
+                    }}
                     onKeyDown={(e) => handleEntryModalTab(e, 'keterangan')}
                     value={entryData.keterangan}
                     onChange={(e) =>
