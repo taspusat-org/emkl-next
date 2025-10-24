@@ -918,6 +918,20 @@ const GridHutangDetail = ({
       }
     ];
   }, [rows, filters]);
+  function getRowClass(row: PengeluaranDetail) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+  function rowKeyGetter(row: PengeluaranDetail) {
+    return row.id;
+  }
+  function handleCellClick(args: { row: HutangDetail }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
@@ -1280,6 +1294,11 @@ const GridHutangDetail = ({
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           rows={rows ?? []}
+          rowClass={getRowClass}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
+          rowKeyGetter={rowKeyGetter}
           headerRowHeight={70}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}

@@ -100,7 +100,6 @@ interface Filter {
     modifiedby: string;
     created_at: string;
     updated_at: string;
-    text: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -179,8 +178,7 @@ const GridDaftarBank = () => {
       statusaktif: '',
       modifiedby: '',
       created_at: '',
-      updated_at: '',
-      text: ''
+      updated_at: ''
     },
     search: '',
     sortBy: 'nama',
@@ -315,8 +313,7 @@ const GridDaftarBank = () => {
         statusaktif: '',
         modifiedby: '',
         created_at: '',
-        updated_at: '',
-        text: ''
+        updated_at: ''
       },
       search: searchValue,
       page: 1
@@ -427,8 +424,7 @@ const GridDaftarBank = () => {
                     statusaktif: '',
                     modifiedby: '',
                     created_at: '',
-                    updated_at: '',
-                    text: ''
+                    updated_at: ''
                   }
                 }),
                   setInputValue('');

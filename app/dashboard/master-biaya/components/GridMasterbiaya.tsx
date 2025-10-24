@@ -116,7 +116,6 @@ interface Filter {
     nominal: string;
 
     statusaktif: string;
-    text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -201,8 +200,7 @@ const GridMasterbiaya = () => {
       tglberlaku: '',
       nominal: '',
 
-      statusaktif: 1,
-      text: ''
+      statusaktif: 1
     }
   });
   const {
@@ -238,7 +236,6 @@ const GridMasterbiaya = () => {
       nominal: '',
 
       statusaktif: '',
-      text: '',
 
       modifiedby: '',
       created_at: '',
@@ -412,7 +409,6 @@ const GridMasterbiaya = () => {
         nominal: '',
 
         statusaktif: '',
-        text: '',
 
         modifiedby: '',
         created_at: '',
@@ -544,7 +540,6 @@ const GridMasterbiaya = () => {
                     nominal: '',
 
                     statusaktif: '',
-                    text: '',
 
                     modifiedby: '',
                     created_at: '',

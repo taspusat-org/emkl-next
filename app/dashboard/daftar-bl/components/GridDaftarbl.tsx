@@ -106,7 +106,6 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -190,7 +189,6 @@ const GridDaftarbl = () => {
       modifiedby: '',
       created_at: '',
       updated_at: '',
-      text: '',
       statusaktif: ''
     },
     search: '',
@@ -329,11 +327,9 @@ const GridDaftarbl = () => {
       filters: {
         nama: '',
         keterangan: '',
-        icon: '',
         modifiedby: '',
         created_at: '',
         updated_at: '',
-        text: '',
         statusaktif: ''
       },
       search: searchValue,
@@ -467,7 +463,6 @@ const GridDaftarbl = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    text: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: '',

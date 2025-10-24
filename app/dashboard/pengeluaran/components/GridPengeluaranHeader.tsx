@@ -72,6 +72,8 @@ import {
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import FormPengeluaran from './FormPengeluaran';
 import {
+  IAllPengeluaranHeader,
+  PengeluaranDetail,
   PengeluaranHeader,
   filterPengeluaran
 } from '@/lib/types/pengeluaran.type';
@@ -428,6 +430,7 @@ const GridPengeluaranHeader = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -1707,13 +1710,11 @@ const GridPengeluaranHeader = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<PengeluaranHeader>) {
+  function handleCellClick(args: { row: PengeluaranHeader }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    const foundRow = rows.find((r) => r.id === clickedRow?.id);
-    if (rowIndex !== -1 && foundRow) {
+    if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
-      dispatch(setHeaderData(foundRow));
     }
   }
   async function handleKeyDown(
@@ -2255,6 +2256,26 @@ const GridPengeluaranHeader = () => {
     isFirstLoad
   ]);
   useEffect(() => {
+    // Ambil parameter nobukti dari URL
+    const rawNobukti = searchParams.get('nobukti');
+
+    // Set filters
+    setFilters((prevFilters: Filter) => ({
+      ...prevFilters,
+      filters: {
+        ...prevFilters.filters,
+        nobukti: rawNobukti ?? ''
+      }
+    }));
+
+    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
+  }, []);
+  useEffect(() => {
     if (!allData || isFetchingManually || isDataUpdated) return;
 
     const newRows = allData.data || [];
@@ -2446,9 +2467,12 @@ const GridPengeluaranHeader = () => {
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
-          rowKeyGetter={rowKeyGetter}
           rowClass={getRowClass}
+          rowKeyGetter={rowKeyGetter}
           onCellClick={handleCellClick}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           headerRowHeight={70}
           rowHeight={30}
           className="rdg-light fill-grid"

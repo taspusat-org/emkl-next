@@ -48,6 +48,92 @@ const ReportMenuPage: React.FC = () => {
   const { ZoomPopover } = zoomPluginInstance;
   const printPluginInstance = printPlugin();
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F12') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setIsPrintModalOpen(true);
+        return false;
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const beforePrint = (e: Event) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if (window.matchMedia) {
+        window
+          .matchMedia('print')
+          .removeEventListener('change', beforePrint as any);
+      }
+
+      setTimeout(() => {
+        setIsPrintModalOpen(true);
+      }, 0);
+
+      return false;
+    };
+
+    const afterPrint = (e: Event) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    window.addEventListener('beforeprint', beforePrint, true);
+    window.addEventListener('afterprint', afterPrint, true);
+
+    if (window.matchMedia) {
+      const printMediaQuery = window.matchMedia('print');
+      printMediaQuery.addEventListener('change', (e) => {
+        if (e.matches) {
+          setIsPrintModalOpen(true);
+        }
+      });
+    }
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('beforeprint', beforePrint, true);
+      window.removeEventListener('afterprint', afterPrint, true);
+    };
+  }, []);
+
   // ===== FETCH DATA PDF DAN FILTER =====
   useEffect(() => {
     const storedPdf = sessionStorage.getItem('pdfUrl');
@@ -180,37 +266,143 @@ const ReportMenuPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen flex-col">
-      <main className="flex-1 overflow-hidden">
-        {pdfUrl && (
-          <CustomPrintModal
-            isOpen={isPrintModalOpen}
-            onClose={() => setIsPrintModalOpen(false)}
-            docUrl={pdfUrl ?? ''}
-            reportName="LaporanPengeluaran"
-          />
-        )}
+    <>
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          body::before {
+            content: '' !important;
+            visibility: visible !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: white !important;
+            z-index: 9998 !important;
+          }
+          @page {
+            margin: 0;
+            size: auto;
+          }
+        }
 
-        {pdfUrl ? (
-          <Worker workerUrl="/pdf.worker.min.js">
-            <Viewer
-              fileUrl={pdfUrl}
-              defaultScale={1}
-              plugins={[
-                printPluginInstance,
-                layoutPluginInstance,
-                zoomPluginInstance
-              ]}
-              theme="light"
-            />
-          </Worker>
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-500">
-            Loading PDF…
+        @media print {
+          .print-warning-box {
+            visibility: visible !important;
+            display: block !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: auto !important;
+            max-width: 500px !important;
+            padding: 0 !important;
+            background: white !important;
+            text-align: center !important;
+            z-index: 10000 !important;
+          }
+
+          .print-warning-title {
+            color: #dc2626 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            margin-bottom: 12px !important;
+            visibility: visible !important;
+            display: block !important;
+            line-height: 1.3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .print-warning-text {
+            color: #000000 !important;
+            font-size: 16px !important;
+            font-weight: normal !important;
+            margin-bottom: 15px !important;
+            visibility: visible !important;
+            display: block !important;
+            line-height: 1.3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .print-warning-instruction-box {
+            border: 2px solid #000000 !important;
+            padding: 12px 16px !important;
+            margin-top: 15px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            visibility: visible !important;
+            display: inline-block !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .print-warning-instruction {
+            color: #2563eb !important;
+            font-size: 16px !important;
+            font-weight: normal !important;
+            visibility: visible !important;
+            display: block !important;
+            margin: 0 !important;
+            line-height: 1.3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+        }
+      `}</style>
+
+      <div className="print-warning-box" style={{ display: 'none' }}>
+        <div className="print-warning-title">WARNING ( PERHATIAN )</div>
+        <div className="print-warning-text">
+          DILARANG MENCETAK LAPORAN MELALUI INI
+        </div>
+        <div className="print-warning-instruction-box">
+          <div className="print-warning-instruction">
+            GUNAKAN TOMBOL PRINT ATAU CTRL + P
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      </div>
+      <div className="flex h-screen w-screen flex-col">
+        <main className="flex-1 overflow-hidden">
+          {pdfUrl && (
+            <CustomPrintModal
+              isOpen={isPrintModalOpen}
+              onClose={() => setIsPrintModalOpen(false)}
+              docUrl={pdfUrl ?? ''}
+              reportName="LaporanPengeluaran"
+              showPages={false}
+            />
+          )}
+
+          {pdfUrl ? (
+            <Worker workerUrl="/pdf.worker.min.js">
+              <Viewer
+                fileUrl={pdfUrl}
+                defaultScale={1}
+                plugins={[
+                  printPluginInstance,
+                  layoutPluginInstance,
+                  zoomPluginInstance
+                ]}
+                theme="light"
+              />
+            </Worker>
+          ) : (
+            <div className="flex h-full items-center justify-center text-gray-500">
+              Loading PDF…
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 };
 
