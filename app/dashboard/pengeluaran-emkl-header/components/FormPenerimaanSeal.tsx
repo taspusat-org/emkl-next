@@ -57,6 +57,9 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
     keterangan: ''
   });
 
+  // Refs untuk Tab navigation di modal Entry Banyak
+  const entryModalRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
   const {
     data: allData,
     isLoading: isLoadingData,
@@ -68,6 +71,38 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
   const gridRef = useRef<DataGridHandle>(null);
   const stopWheelPropagation = (e: React.WheelEvent) => {
     e.stopPropagation();
+  };
+
+  const handleEntryModalTab = (
+    e: React.KeyboardEvent,
+    currentField: string
+  ) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+
+      const fieldOrder = ['kode', 'nominal', 'dari', 'sampai', 'keterangan'];
+      const currentIdx = fieldOrder.indexOf(currentField);
+      const nextIdx = e.shiftKey ? currentIdx - 1 : currentIdx + 1;
+
+      if (e.shiftKey && e.key === 'Tab' && currentField === 'kode') {
+        return;
+      }
+
+      if (nextIdx >= 0 && nextIdx < fieldOrder.length) {
+        const nextField = fieldOrder[nextIdx];
+
+        if (nextField === 'nominal') {
+          const nominalWrapper = document.querySelector(
+            '#nominal-wrapper input'
+          );
+          if (nominalWrapper instanceof HTMLInputElement) {
+            nominalWrapper.focus();
+          }
+        } else {
+          entryModalRefs.current[nextField]?.focus();
+        }
+      }
+    }
   };
 
   const addRow = () => {
@@ -136,8 +171,6 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         isNew: true
       });
     }
-    setRows([]);
-    // Insert new rows before the "Add Row" button row
     setRows((prevRows) => {
       const dataRows = prevRows.filter((row) => !row.isAddRow);
       const addRowButton = prevRows.find((row) => row.isAddRow);
@@ -812,19 +845,6 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
-            {/* <div className="mb-1 mt-2 flex w-full flex-row items-center justify-end">
-              <div
-                className="w-fit rounded-sm bg-red-500 p-1"
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                <FaTimes
-                  className="cursor-pointer text-white"
-                  onClick={() => setShowEntryModal(false)}
-                />
-              </div>
-            </div> */}
-
             <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
               <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                 ENTRY BANYAK
@@ -840,16 +860,16 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
 
             {/* Dialog Content */}
             <div className="flex flex-col border border-blue-500 border-b-[#dddddd] bg-white px-2 py-4">
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-4 ">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label
-                    htmlFor="kode"
-                    className="text-left text-sm font-semibold"
-                  >
+                  <label htmlFor="kode" className="text-left text-sm ">
                     Kode
                   </label>
                   <Input
                     id="kode"
+                    autoFocus
+                    ref={(el) => (entryModalRefs.current['kode'] = el)}
+                    onKeyDown={(e) => handleEntryModalTab(e, 'kode')}
                     value={entryData.kode}
                     onChange={(e) =>
                       setEntryData({ ...entryData, kode: e.target.value })
@@ -859,32 +879,29 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                 </div>
 
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label
-                    htmlFor="nominal"
-                    className="text-left text-sm font-semibold"
-                  >
+                  <label htmlFor="nominal" className="text-left text-sm ">
                     Nominal
                   </label>
-                  <div className="col-span-3">
+                  <div className="col-span-3" id="nominal-wrapper">
                     <InputCurrency
                       value={entryData.nominal}
                       onValueChange={(value) =>
                         setEntryData({ ...entryData, nominal: value })
                       }
+                      onKeyDown={(e: any) => handleEntryModalTab(e, 'nominal')}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label
-                    htmlFor="dari"
-                    className="text-left text-sm font-semibold"
-                  >
+                  <label htmlFor="dari" className="text-left text-sm ">
                     Dari
                   </label>
                   <Input
                     id="dari"
                     type="number"
+                    ref={(el) => (entryModalRefs.current['dari'] = el)}
+                    onKeyDown={(e) => handleEntryModalTab(e, 'dari')}
                     value={entryData.dari}
                     onChange={(e) =>
                       setEntryData({ ...entryData, dari: e.target.value })
@@ -894,15 +911,14 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                 </div>
 
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label
-                    htmlFor="sampai"
-                    className="text-left text-sm font-semibold"
-                  >
+                  <label htmlFor="sampai" className="text-left text-sm ">
                     Sampai
                   </label>
                   <Input
                     id="sampai"
                     type="number"
+                    ref={(el) => (entryModalRefs.current['sampai'] = el)}
+                    onKeyDown={(e) => handleEntryModalTab(e, 'sampai')}
                     value={entryData.sampai}
                     onChange={(e) =>
                       setEntryData({ ...entryData, sampai: e.target.value })
@@ -912,14 +928,13 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                 </div>
 
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <label
-                    htmlFor="keterangan"
-                    className="text-left text-sm font-semibold"
-                  >
+                  <label htmlFor="keterangan" className="text-left text-sm ">
                     Keterangan
                   </label>
                   <Input
                     id="keterangan"
+                    ref={(el) => (entryModalRefs.current['keterangan'] = el)}
+                    onKeyDown={(e) => handleEntryModalTab(e, 'keterangan')}
                     value={entryData.keterangan}
                     onChange={(e) =>
                       setEntryData({ ...entryData, keterangan: e.target.value })
