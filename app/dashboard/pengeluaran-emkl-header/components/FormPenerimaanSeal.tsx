@@ -370,7 +370,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nomor Seal</p>
+              <p className={`text-sm font-normal`}>No Seal</p>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
@@ -783,7 +783,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
               <Button
                 type="button"
                 onClick={() => setShowEntryModal(true)}
-                className="ml-auto flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                className="mr-auto flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
                 size="sm"
               >
                 <MdAddBox className="text-lg" />

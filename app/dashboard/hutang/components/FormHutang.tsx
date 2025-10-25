@@ -345,12 +345,11 @@ const FormHutang = ({
     return [
       {
         key: 'aksi',
-        headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
-            <p className="text-sm font-normal">aksi</p>
+          <div className="flex h-full w-full flex-col justify-center px-1">
+            <p className="text-center text-sm font-normal">aksi</p>
           </div>
         ),
         name: 'aksi',
@@ -405,21 +404,18 @@ const FormHutang = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center font-normal">
-              <p className="text-sm">No.</p>
-            </div>
-
-            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
         ),
         renderCell: (props: any) => {
+          const justifyClass = 'justify-end';
+
           return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-normal">
+            <div
+              className={`flex h-full w-full cursor-pointer items-center ${justifyClass} text-sm font-normal`}
+            >
               {props.row.isAddRow ? 'TOTAL :' : props.rowIdx + 1}
             </div>
           );
@@ -427,17 +423,13 @@ const FormHutang = ({
       },
       {
         key: 'coa',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 350,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Coa</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Coa</p>
           </div>
         ),
         name: 'coa',
@@ -472,17 +464,13 @@ const FormHutang = ({
       },
       {
         key: 'keterangan',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className="text-sm font-normal">Keterangan</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Keterangan</p>
           </div>
         ),
         name: 'keterangan',
@@ -531,17 +519,13 @@ const FormHutang = ({
       },
       {
         key: 'nominal',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>nominal</p>
           </div>
         ),
         name: 'nominal',
@@ -596,17 +580,13 @@ const FormHutang = ({
       },
       {
         key: 'dpp',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>DPP</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>dpp</p>
           </div>
         ),
         name: 'dpp',
@@ -661,7 +641,6 @@ const FormHutang = ({
       },
       {
         key: 'noinvoiceemkl',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
@@ -674,11 +653,8 @@ const FormHutang = ({
           return undefined; // For other rows, no column spanning
         },
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>nomor invoice emkl</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>no invoice emkl</p>
           </div>
         ),
         name: 'noinvoiceemkl',
@@ -710,17 +686,13 @@ const FormHutang = ({
       },
       {
         key: 'tglinvoiceemkl',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 170,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>TANGGAL INVOICE EMKL</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>tgl invoice emkl</p>
           </div>
         ),
         name: 'tglinvoiceemkl',
@@ -764,17 +736,15 @@ const FormHutang = ({
       },
       {
         key: 'nofakturpajakemkl',
-        headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>nomor faktur pajak emkl</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>
+              no faktur pajak emkl
+            </p>
           </div>
         ),
         name: 'nofakturpajakemkl',
@@ -1217,7 +1187,7 @@ const FormHutang = ({
                         ref={gridRef}
                         columns={columns as any[]}
                         rows={rows}
-                        headerRowHeight={70}
+                        headerRowHeight={30}
                         rowHeight={60}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"
