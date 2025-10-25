@@ -111,8 +111,6 @@ interface Filter {
     textbank: string;
 
     statusaktif: string;
-    text: string;
-
     statusdefault: string;
     textdefault: string;
 
@@ -212,7 +210,6 @@ const GridBank = () => {
       textbank: '',
 
       statusaktif: 1,
-      text: '',
 
       statusdefault: 1,
       textdefault: '',
@@ -260,7 +257,6 @@ const GridBank = () => {
       statusbank: '',
       textbank: '',
       statusaktif: '',
-      text: '',
       statusdefault: '',
       textdefault: '',
       formatpenerimaan: '',
@@ -437,7 +433,6 @@ const GridBank = () => {
         statusbank: '',
         textbank: '',
         statusaktif: '',
-        text: '',
         statusdefault: '',
         textdefault: '',
         formatpenerimaan: '',
@@ -575,7 +570,6 @@ const GridBank = () => {
                     statusbank: '',
                     textbank: '',
                     statusaktif: '',
-                    text: '',
                     statusdefault: '',
                     textdefault: '',
                     formatpenerimaan: '',

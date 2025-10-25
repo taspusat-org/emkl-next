@@ -109,16 +109,9 @@ interface Filter {
     updated_at: string;
 
     statuslangsungcair?: string;
-    statuslangsungcair_text?: string;
-
     statusdefault?: string;
-    statusdefault_text?: string;
-
     statusbank?: string;
-    statusbank_text?: string;
-
     statusaktif?: string;
-    text?: string;
     modifiedby?: string;
   };
   sortBy: string;
@@ -211,14 +204,10 @@ const GridAlatbayar = () => {
       created_at: '',
       updated_at: '',
       statuslangsungcair: '',
-      statuslangsungcair_text: '',
       statusdefault: '',
-      statusdefault_text: '',
       statusbank: '',
-      statusbank_text: '',
       statusaktif: '',
-      modifiedby: '',
-      text: ''
+      modifiedby: ''
     },
     sortBy: 'nama',
     sortDirection: 'asc'
@@ -374,14 +363,10 @@ const GridAlatbayar = () => {
         created_at: '',
         updated_at: '',
         statuslangsungcair: '',
-        statuslangsungcair_text: '',
         statusdefault: '',
-        statusdefault_text: '',
         statusbank: '',
-        statusbank_text: '',
         statusaktif: '',
-        modifiedby: '',
-        text: ''
+        modifiedby: ''
       },
       search: searchValue,
       page: 1
@@ -497,14 +482,10 @@ const GridAlatbayar = () => {
                     created_at: '',
                     updated_at: '',
                     statuslangsungcair: '',
-                    statuslangsungcair_text: '',
                     statusdefault: '',
-                    statusdefault_text: '',
                     statusbank: '',
-                    statusbank_text: '',
                     statusaktif: '',
-                    modifiedby: '',
-                    text: ''
+                    modifiedby: ''
                   }
                 }),
                   setInputValue('');

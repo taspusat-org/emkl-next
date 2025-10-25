@@ -1,5 +1,5 @@
 'use client';
-import React, { ReactElement, useEffect, useState } from 'react';
+import React, { ReactElement, useEffect, useState, useRef } from 'react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import { pdfjs } from 'react-pdf';
@@ -19,16 +19,104 @@ import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportDaftarblFn } from '@/lib/apis/daftarbl.api';
+import CustomPrintModal from '@/components/custom-ui/CustomPrint';
+
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
-  // Print plugin
-  const printPluginInstance = printPlugin();
-  const { Print } = printPluginInstance;
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  // Zoom plugin
+  const printPluginInstance = printPlugin();
+
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'F12') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if (e.ctrlKey && e.key === 'u') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setIsPrintModalOpen(true);
+        return false;
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      return false;
+    };
+
+    const beforePrint = (e: Event) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      if (window.matchMedia) {
+        window
+          .matchMedia('print')
+          .removeEventListener('change', beforePrint as any);
+      }
+
+      setTimeout(() => {
+        setIsPrintModalOpen(true);
+      }, 0);
+
+      return false;
+    };
+
+    const afterPrint = (e: Event) => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    window.addEventListener('beforeprint', beforePrint, true);
+    window.addEventListener('afterprint', afterPrint, true);
+
+    if (window.matchMedia) {
+      const printMediaQuery = window.matchMedia('print');
+      printMediaQuery.addEventListener('change', (e) => {
+        if (e.matches) {
+          setIsPrintModalOpen(true);
+        }
+      });
+    }
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('beforeprint', beforePrint, true);
+      window.removeEventListener('afterprint', afterPrint, true);
+    };
+  }, []);
+
   useEffect(() => {
     const storedPdf = sessionStorage.getItem('pdfUrl');
     if (storedPdf) setPdfUrl(storedPdf);
@@ -48,19 +136,17 @@ const ReportMenuPage: React.FC = () => {
       const exportPayload = { ...savedFilters };
       const response = await exportDaftarblFn(exportPayload);
 
-      // Buat link download dari Blob
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_daftar bl_${Date.now()}.xlsx`;
+      link.download = `laporan_daftarbl_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
-      // Bersihkan URL object
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting daftar bl data:', error);
+      console.error('Error exporting daftarbl data:', error);
     }
   };
 
@@ -84,7 +170,6 @@ const ReportMenuPage: React.FC = () => {
           } = slots;
           return (
             <div className="relative grid w-full grid-cols-3 items-center gap-4 overflow-visible bg-white px-4 py-2 shadow dark:bg-red-500">
-              {/* Column 1: page navigation */}
               <div className="flex items-center justify-start gap-2">
                 <GoToFirstPage />
                 <GoToPreviousPage />
@@ -93,15 +178,12 @@ const ReportMenuPage: React.FC = () => {
                 <GoToLastPage />
               </div>
 
-              {/* Column 2: zoom controls */}
               <div className="relative flex items-center justify-center gap-2 text-black">
                 <DefaultZoomOut />
                 <ZoomPopover />
                 <DefaultZoomIn />
-                {/* Zoom popover from zoom plugin */}
               </div>
 
-              {/* Column 3: download, print, theme, fullscreen */}
               <div className="flex items-center justify-end gap-2">
                 <Download>
                   {(props) => (
@@ -114,16 +196,13 @@ const ReportMenuPage: React.FC = () => {
                   )}
                 </Download>
 
-                <Print>
-                  {(props: RenderPrintProps) => (
-                    <button
-                      onClick={props.onClick}
-                      className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
-                    >
-                      <FaPrint /> Print
-                    </button>
-                  )}
-                </Print>
+                <button
+                  onClick={() => setIsPrintModalOpen(true)}
+                  className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
+                >
+                  <FaPrint /> Print
+                </button>
+
                 <button
                   onClick={() => handleExport()}
                   className="flex flex-row items-center gap-2 rounded bg-orange-500 px-3 py-1 text-white hover:bg-cyan-700"
@@ -152,122 +231,144 @@ const ReportMenuPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen flex-col">
-      <main className="flex-1 overflow-hidden">
-        {pdfUrl ? (
-          <Worker workerUrl="/pdf.worker.min.js">
-            <Viewer
-              fileUrl={pdfUrl}
-              defaultScale={1}
-              plugins={[
-                printPluginInstance,
-                layoutPluginInstance,
-                zoomPluginInstance
-              ]}
-              theme="light"
-            />
-          </Worker>
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-500">
-            Loading PDF…
+    <>
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          body::before {
+            content: '' !important;
+            visibility: visible !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: white !important;
+            z-index: 9998 !important;
+          }
+          @page {
+            margin: 0;
+            size: auto;
+          }
+        }
+
+        @media print {
+          .print-warning-box {
+            visibility: visible !important;
+            display: block !important;
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: auto !important;
+            max-width: 500px !important;
+            padding: 0 !important;
+            background: white !important;
+            text-align: center !important;
+            z-index: 10000 !important;
+          }
+
+          .print-warning-title {
+            color: #dc2626 !important;
+            font-size: 16px !important;
+            font-weight: bold !important;
+            margin-bottom: 12px !important;
+            visibility: visible !important;
+            display: block !important;
+            line-height: 1.3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .print-warning-text {
+            color: #000000 !important;
+            font-size: 16px !important;
+            font-weight: normal !important;
+            margin-bottom: 15px !important;
+            visibility: visible !important;
+            display: block !important;
+            line-height: 1.3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .print-warning-instruction-box {
+            border: 2px solid #000000 !important;
+            padding: 12px 16px !important;
+            margin-top: 15px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            visibility: visible !important;
+            display: inline-block !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+
+          .print-warning-instruction {
+            color: #2563eb !important;
+            font-size: 16px !important;
+            font-weight: normal !important;
+            visibility: visible !important;
+            display: block !important;
+            margin: 0 !important;
+            line-height: 1.3 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+        }
+      `}</style>
+
+      <div className="print-warning-box" style={{ display: 'none' }}>
+        <div className="print-warning-title">WARNING ( PERHATIAN )</div>
+        <div className="print-warning-text">
+          DILARANG MENCETAK LAPORAN MELALUI INI
+        </div>
+        <div className="print-warning-instruction-box">
+          <div className="print-warning-instruction">
+            GUNAKAN TOMBOL PRINT ATAU CTRL + P
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      </div>
+      <div className="flex h-screen w-screen flex-col">
+        <main className="flex-1 overflow-hidden">
+          {pdfUrl && (
+            <CustomPrintModal
+              isOpen={isPrintModalOpen}
+              onClose={() => setIsPrintModalOpen(false)}
+              docUrl={pdfUrl ?? ''}
+              reportName="LaporanDaftarbl"
+              showPages={true}
+            />
+          )}
+
+          {pdfUrl ? (
+            <Worker workerUrl="/pdf.worker.min.js">
+              <Viewer
+                fileUrl={pdfUrl}
+                defaultScale={1}
+                plugins={[
+                  printPluginInstance,
+                  layoutPluginInstance,
+                  zoomPluginInstance
+                ]}
+                theme="light"
+              />
+            </Worker>
+          ) : (
+            <div className="flex h-full items-center justify-center text-gray-500">
+              Loading PDF…
+            </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 };
 
 export default ReportMenuPage;
-
-// 'use client';
-// import 'stimulsoft-reports-js/Css/stimulsoft.designer.office2013.whiteblue.css';
-// import 'stimulsoft-reports-js/Css/stimulsoft.viewer.office2013.whiteblue.css';
-// import React, { useEffect, useState } from 'react';
-// import { useSelector } from 'react-redux';
-// import { RootState } from '@/lib/store/store';
-// import { getTujuankapalFn } from '@/lib/apis/tujuankapal.api';
-
-// const ReportDesigner = () => {
-//   const { token } = useSelector((state: RootState) => state.auth);
-//   const [reportData, setReportData] = useState<any>(null);
-
-//   useEffect(() => {
-//     // Ambil data dari API
-//     const fetchData = async () => {
-//       try {
-//         const res = await getTujuankapalFn({ page: 1, limit: 50 }); // sesuaikan filter
-//         setReportData(res.data); // simpan ke state
-//       } catch (err) {
-//         console.error('Gagal ambil data container:', err);
-//       }
-//     };
-//     fetchData();
-//   }, []);
-
-//   useEffect(() => {
-//     if (!reportData) return;
-
-//     // Render report jika data sudah ada
-//     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-//       .then((module) => {
-//         const { Stimulsoft } = module;
-
-//         // Set license
-//         Stimulsoft.Base.StiLicense.Key =
-//           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-//           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-//           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-//           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-//           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-//           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-//           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-//         // Viewer
-//         const viewerOptions = new Stimulsoft.Viewer.StiViewerOptions();
-//         const viewer = new Stimulsoft.Viewer.StiViewer(
-//           viewerOptions,
-//           'StiViewer',
-//           false
-//         );
-
-//         // Report
-//         const report = new Stimulsoft.Report.StiReport();
-//         report.loadFile('/reports/LaporanBank.mrt');
-
-//         // Designer
-//         const options = new Stimulsoft.Designer.StiDesignerOptions();
-//         options.appearance.fullScreenMode = true;
-//         const designer = new Stimulsoft.Designer.StiDesigner(
-//           options,
-//           'Designer',
-//           false
-//         );
-
-//         // Dataset
-//         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-//         dataSet.readJson({ data: reportData });
-//         report.dictionary.dataSources.clear();
-//         report.regData(dataSet.dataSetName, '', dataSet);
-//         report.dictionary.synchronize();
-
-//         // Render
-//         viewer.renderHtml('content');
-//         designer.report = report;
-//         designer.renderHtml('content');
-//         viewer.report = report;
-//       })
-//       .catch((error) => {
-//         console.error('Failed to load Stimulsoft:', error);
-//       });
-//   }, [reportData, token]);
-
-//   return (
-//     <div
-//       id="content"
-//       className="report"
-//       style={{ textTransform: 'none', fontSize: 'unset' }}
-//     />
-//   );
-// };
-
-// export default ReportDesigner;

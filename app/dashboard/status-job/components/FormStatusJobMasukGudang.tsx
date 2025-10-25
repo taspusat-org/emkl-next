@@ -147,11 +147,12 @@ const FormStatusJobMasukGudang = ({
       selectedRequired: false,
       showOnButton: false,
       clearDisabled: true,
+      autoSearch: false,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
       endpoint: `orderanheader?jenisOrderan=${selectedJenisOrderan}`,
       singleColumn: false,
       pageSize: 20,
-      postData: 'nobukti',
+      postData: 'nocontainer',
       dataToPost: 'id'
     }
   ];
@@ -615,7 +616,7 @@ const FormStatusJobMasukGudang = ({
         renderCell: (props: any) => {
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
+              {/* {props.row.isAddRow ? (
                 ''
               ) : (
                 <Input
@@ -637,36 +638,68 @@ const FormStatusJobMasukGudang = ({
                   readOnly={mode === 'delete' && mode === 'view'}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
-              )}
+              )} */}
 
-              {/* {props.row.isAddRow
-                ? '' : 
-                lookupOrderanNoContainer.map((lookupProps, index) => (
-                  <LookUp
-                    key={index}
-                    {...lookupProps}
-                    filterby={{
-                      nocontainer: noContainerValue
-                    }}
-                    showLookup={false}
-                    label={`ORDERAN_CONTAINER_${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
-                    lookupValue={(id) => {
-                      handleInputChange(props.rowIdx, 'job', Number(id)); // Use props.rowIdx to get the correct index
-                    }}
-                    onSelectRow={(val) => {
-                      handleInputChange(props.rowIdx, 'job_nama', val?.nobukti)
-                      handleInputChange(props.rowIdx, 'tglorder', val?.tglbukti);
-                      handleInputChange(props.rowIdx, 'nocontainer', val?.nocontainer);
-                      handleInputChange(props.rowIdx, 'noseal', val?.noseal);
-                      handleInputChange(props.rowIdx, 'shipper_id', Number(val?.shipper_id));
-                      handleInputChange(props.rowIdx, 'shipper_nama', val?.shipper_nama);
-                      handleInputChange(props.rowIdx, 'lokasistuffing',Number(val?.lokasistuffing));
-                      handleInputChange(props.rowIdx, 'lokasistuffing_nama', val?.lokasistuffing_nama);
-                    }}
-                    lookupNama={props.row.noseal ? String(props.row.noseal) : ''}
-                  />
-                ))
-              } */}
+              {props.row.isAddRow
+                ? ''
+                : lookupOrderanNoContainer.map((lookupProps, index) => (
+                    <LookUp
+                      key={index}
+                      {...lookupProps}
+                      filterby={{
+                        nocontainer: noContainerValue
+                      }}
+                      isExactMatch={false}
+                      showClearButton={false}
+                      label={`ORDERAN_CONTAINER_${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
+                      lookupValue={(id) => {
+                        handleInputChange(props.rowIdx, 'job', Number(id)); // Use props.rowIdx to get the correct index
+                      }}
+                      onSelectRow={(val) => {
+                        handleInputChange(
+                          props.rowIdx,
+                          'job_nama',
+                          val?.nobukti
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'tglorder',
+                          val?.tglbukti
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'nocontainer',
+                          val?.nocontainer
+                        );
+                        handleInputChange(props.rowIdx, 'noseal', val?.noseal);
+                        handleInputChange(
+                          props.rowIdx,
+                          'shipper_id',
+                          Number(val?.shipper_id)
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'shipper_nama',
+                          val?.shipper_nama
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'lokasistuffing',
+                          Number(val?.lokasistuffing)
+                        );
+                        handleInputChange(
+                          props.rowIdx,
+                          'lokasistuffing_nama',
+                          val?.lokasistuffing_nama
+                        );
+                      }}
+                      lookupNama={
+                        props.row.nocontainer
+                          ? String(props.row.nocontainer)
+                          : ''
+                      }
+                    />
+                  ))}
             </div>
           );
         }
@@ -1241,7 +1274,6 @@ const FormStatusJobMasukGudang = ({
       ]);
     }
   }, [forms, forms.getValues().details]);
-
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>

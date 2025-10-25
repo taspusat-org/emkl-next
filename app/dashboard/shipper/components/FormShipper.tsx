@@ -262,7 +262,7 @@ const FormShipper = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
+      <DialogContent className="flex h-full min-w-full flex-col border bg-white">
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
@@ -285,7 +285,7 @@ const FormShipper = ({
         </div>
 
         <div className="h-full flex-1 overflow-y-auto bg-white pl-1 pr-2">
-          <div className="min-h-full bg-white  ">
+          <div className="flex min-h-full flex-col bg-white">
             <Form {...forms}>
               <form
                 ref={formRef}

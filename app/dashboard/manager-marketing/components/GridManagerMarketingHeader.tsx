@@ -199,6 +199,7 @@ const GridManagerMarketingHeader = () => {
     formState: { isSubmitSuccessful }
   } = forms;
   const gridRef = useRef<DataGridHandle>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: RootState) => state.filter
@@ -215,8 +216,14 @@ const GridManagerMarketingHeader = () => {
   });
 
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
+  const cancelPreviousRequest = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Buat AbortController baru untuk request berikutnya
+    abortControllerRef.current = new AbortController();
+  };
 
   const {
     data: allData,
@@ -229,7 +236,7 @@ const GridManagerMarketingHeader = () => {
     },
     abortControllerRef.current?.signal
   );
-
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setFilters((prev) => ({
@@ -246,14 +253,15 @@ const GridManagerMarketingHeader = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
-      cancelPreviousRequest(abortControllerRef);
+      cancelPreviousRequest();
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
-    cancelPreviousRequest(abortControllerRef);
+    cancelPreviousRequest();
     debouncedFilterUpdate.cancel(); // Cancel pending updates
+
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
@@ -341,31 +349,39 @@ const GridManagerMarketingHeader = () => {
     );
   }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
+    // Langsung update input value tanpa debounce
     setInputValue(searchValue);
-    setCurrentPage(1);
-    setFilters((prev) => ({
-      ...prev,
-      filters: filterManagerMarketing,
-      search: searchValue,
-      page: 1
-    }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 100);
 
-    setTimeout(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-      }
-    }, 200);
+    // Menunggu beberapa waktu sebelum update filter
+    cancelPreviousRequest();
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
-    setSelectedRow(0);
-    setCurrentPage(1);
-    setRows([]);
+    debounceTimerRef.current = setTimeout(() => {
+      // Mengupdate filter setelah debounce
+      setCurrentPage(1);
+      setFilters((prev) => ({
+        ...prev,
+        filters: filterManagerMarketing, // Gunakan filter yang relevan
+        search: searchValue,
+        page: 1
+      }));
+
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setTimeout(() => {
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 100);
+
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 200);
+      setSelectedRow(0);
+      setCurrentPage(1);
+      setRows([]);
+    }, 300); // Mengatur debounce hanya untuk update filter
   };
   const handleSort = (column: string) => {
     const originalIndex = columns.findIndex((col) => col.key === column);

@@ -88,6 +88,9 @@ interface LookUpProps {
   required?: boolean;
   onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
   onClear?: () => void;
+  autoSearch?: boolean; // Tambahkan ini
+  isExactMatch?: boolean; // Tambahkan ini
+  showClearButton?: boolean; // Tambahkan ini
 }
 interface Filter {
   page: number;
@@ -126,7 +129,10 @@ export default function LookUp({
   clearDisabled = false, // Default to false if not provided
   filterby,
   onSelectRow,
-  onClear
+  onClear,
+  autoSearch = true,
+  isExactMatch = false,
+  showClearButton = true
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
@@ -145,6 +151,8 @@ export default function LookUp({
   const [filtering, setFiltering] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [deleteClicked, setDeleteClicked] = useState(false);
+  const isUserTypingRef = useRef(false); // Track apakah user yang mengetik
+  const prevLookupNamaRef = useRef(lookupNama);
   const [showError, setShowError] = useState({
     label: label,
     status: false,
@@ -208,37 +216,51 @@ export default function LookUp({
   }, [rawColumns]);
 
   // Gabung params dari state & props
-  const buildParams = useCallback(() => {
-    const params: Record<string, any> = {
-      page: currentPage,
-      limit: filters.limit,
-      search: filters.search || '',
-      sortBy: filters.sortBy,
-      sortDirection: filters.sortDirection
-    };
+  const buildParams = useCallback(
+    (overrideSearch?: string) => {
+      const searchValue =
+        overrideSearch !== undefined ? overrideSearch : filters.search;
 
-    // Selalu kirim semua column filters (termasuk yang kosong)
-    if (filters.filters) {
-      // Pastikan semua column ada dalam filters
-      rawColumns.forEach((col) => {
-        params[col.key] = filters.filters[col.key] || '';
-      });
-    } else {
-      // Jika filters.filters belum ada, inisialisasi dengan nilai kosong
-      rawColumns.forEach((col) => {
-        params[col.key] = '';
-      });
-    }
+      const params: Record<string, any> = {
+        page: currentPage,
+        limit: filters.limit,
+        search: searchValue, // ← Gunakan override atau filters.search
+        sortBy: filters.sortBy,
+        sortDirection: filters.sortDirection
+      };
 
-    // Tambahkan filterby jika ada
-    if (filterby && !Array.isArray(filterby)) {
-      for (const [k, v] of Object.entries(filterby)) {
-        params[k] = v;
+      if (open) {
+        params['search'] = searchValue; // like search saat modal terbuka
+      } else {
+        if (!autoSearch && isExactMatch) {
+          params['exactMatch'] = searchValue; // exact search
+        } else {
+          params['search'] = searchValue; // like search
+        }
       }
-    }
 
-    return params;
-  }, [currentPage, filters, filterby, rawColumns]);
+      // Selalu kirim semua column filters (termasuk yang kosong)
+      if (filters.filters) {
+        rawColumns.forEach((col) => {
+          params[col.key] = filters.filters[col.key] || '';
+        });
+      } else {
+        rawColumns.forEach((col) => {
+          params[col.key] = '';
+        });
+      }
+
+      // Tambahkan filterby jika ada
+      if (filterby && !Array.isArray(filterby)) {
+        for (const [k, v] of Object.entries(filterby)) {
+          params[k] = v;
+        }
+      }
+
+      return params;
+    },
+    [currentPage, filters, filterby, rawColumns, autoSearch, open, isExactMatch]
+  );
   // Mapping API → Row[]
   const mapApiToRows = useCallback(
     (payload: any[]): Row[] => {
@@ -274,7 +296,7 @@ export default function LookUp({
     if (disabled || onPaste) return;
     setOnPaste(false);
     const searchValue = e.target.value;
-
+    isUserTypingRef.current = true;
     // Update input value immediately untuk UX yang responsive
     setInputValue(searchValue);
 
@@ -722,7 +744,6 @@ export default function LookUp({
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
   }
-  console.log('inputValue', inputValue);
   function onSelectedCellChange(args: { row: Row }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -805,18 +826,19 @@ export default function LookUp({
     });
   }
 
-  async function fetchRows(signal?: AbortSignal): Promise<Row[]> {
+  async function fetchRows(
+    signal?: AbortSignal,
+    overrideSearch?: string
+  ): Promise<Row[]> {
     try {
       const response = await api2.get(`/${endpoint}`, {
-        params: buildParams(),
+        params: buildParams(overrideSearch), // ← Pass override ke buildParams
         signal
       });
-
       const { data, pagination } = response.data.data
         ? response.data
         : response || {};
       if (pagination?.totalPages) setTotalPages(pagination.totalPages);
-
       return Array.isArray(data) ? mapApiToRows(data) : [];
     } catch (error: any) {
       if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
@@ -851,8 +873,41 @@ export default function LookUp({
       </div>
     );
   }
+
+  const selectFirstRow = async () => {
+    const newRows = await fetchRows(undefined, inputValue); // ← Pass inputValue sebagai override!
+
+    if (newRows.length > 0) {
+      const firstRow = newRows[0];
+      const classValue = firstRow[postData as string];
+      setInputValue(classValue);
+      setClicked(true);
+      dispatch(setSelectLookup({ key: label ?? '', data: firstRow }));
+      const value = firstRow[dataToPost as any];
+      lookupValue?.(value);
+      onSelectRow?.(firstRow);
+
+      // Update filters.search juga agar sync
+      setFilters((prev) => ({
+        ...prev,
+        search: inputValue
+      }));
+
+      setTimeout(() => setClicked(false), 1000);
+    } else {
+      setShowError({
+        label: label ?? '',
+        status: true,
+        message: 'DATA TIDAK DITEMUKAN'
+      });
+    }
+  };
   const handleInputKeydown = (event: any) => {
-    event.stopPropagation();
+    if (!autoSearch && !open && event.key === 'Enter') {
+      event.preventDefault();
+      selectFirstRow();
+      return;
+    }
 
     if ((!open && !filters.filters) || !openName) {
       return;
@@ -1032,6 +1087,7 @@ export default function LookUp({
   //     setIsFirstLoad(false);
   //   }
   // }, [rows, isFirstLoad]);
+
   const applyFilters = useCallback(
     (rows: Row[]) => {
       let filtered = rows;
@@ -1107,30 +1163,34 @@ export default function LookUp({
 
     (async () => {
       try {
-        const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
+        const shouldFetch = autoSearch || open;
+        if (shouldFetch) {
+          const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
 
-        if (myRequestId !== requestIdRef.current) return;
-        setRows((prev) => {
-          if (currentPage === 1) return newRows;
+          if (myRequestId !== requestIdRef.current) return;
+          setRows((prev) => {
+            if (currentPage === 1) return newRows;
 
-          // append + dedup by id
-          const seen = new Set<number | string>();
-          const merged = [...prev, ...newRows].filter((r) => {
-            const k = r.id;
-            if (seen.has(k)) return false;
-            seen.add(k);
-            return true;
+            // append + dedup by id
+            const seen = new Set<number | string>();
+            const merged = [...prev, ...newRows].filter((r) => {
+              const k = r.id;
+              if (seen.has(k)) return false;
+              seen.add(k);
+              return true;
+            });
+            return merged;
           });
-          return merged;
-        });
 
-        // tandai halaman ini sudah diambil
-        setFetchedPages((prev) => {
-          const s = new Set(prev);
-          s.add(currentPage);
-          return s;
-        });
-
+          // tandai halaman ini sudah diambil
+          setFetchedPages((prev) => {
+            const s = new Set(prev);
+            s.add(currentPage);
+            return s;
+          });
+        } else {
+          return;
+        }
         // update hasMore berdasar totalPages
         setHasMore(currentPage < totalPages);
       } catch (err) {
@@ -1154,7 +1214,8 @@ export default function LookUp({
     totalPages,
     deleteClicked,
     clicked,
-    lookupNama
+    lookupNama,
+    autoSearch
   ]);
 
   useEffect(() => {
@@ -1195,7 +1256,8 @@ export default function LookUp({
         if (
           (filters.search.trim() !== '' ||
             Object.keys(filters.filters).length > 0) &&
-          rows.length > 0
+          rows.length > 0 &&
+          !lookupNama
         ) {
           setFilters({
             ...filters,
@@ -1222,34 +1284,36 @@ export default function LookUp({
     };
   }, [filters.search, filters.filters, rows, postData, selectedRequired]); // Tambahka
   useEffect(() => {
-    // Check if search is not empty and if we're not clicking outside
-    if (
-      filters.search.trim() !== '' &&
-      !clickedOutside &&
-      filtering &&
-      !onPaste
-    ) {
-      setOpen(true); // Open the lookup grid if there's search value and not clicking outside
-      setSelectedRow(0); // Select the first row
-    } else if (
-      filters.search.trim() === '' &&
-      !clickedOutside &&
-      filtering &&
-      filters.filters &&
-      !onPaste
-    ) {
-      // Keep the lookup open if search is empty but we're still filtering
-      setOpen(true);
-      setSelectedRow(0); // Select the first row
-    } else {
-      setOpen(false); // Close the lookup grid when no search and no filtering
+    // PERUBAHAN: Tambahkan kondisi autoSearch
+    if (autoSearch) {
+      // Behavior lama: buka modal otomatis saat ada search
+      if (
+        filters.search.trim() !== '' &&
+        !clickedOutside &&
+        filtering &&
+        !deleteClicked
+      ) {
+        setOpen(true);
+        setSelectedRow(0);
+      } else if (
+        filters.search.trim() === '' &&
+        !clickedOutside &&
+        filtering &&
+        filters.filters &&
+        !deleteClicked
+      ) {
+        setOpen(true);
+        setSelectedRow(0);
+      } else {
+        setOpen(false);
+      }
     }
+    // Jika autoSearch false, modal hanya dibuka manual via button
 
-    // Reset clickedOutside after handling
     if (clickedOutside) {
       setClickedOutside(false);
     }
-  }, [filters.search, clickedOutside, filtering, onPaste]);
+  }, [filters.search, clickedOutside, filtering, autoSearch]);
 
   useEffect(() => {
     let newWidth = inputRef.current?.offsetWidth || 'auto';
@@ -1262,18 +1326,29 @@ export default function LookUp({
     setPopoverWidth(newWidth);
   }, [extendSize]);
   useEffect(() => {
-    if (lookupNama && !deleteClicked && !clicked) {
-      setInputValue(lookupNama);
-      const foundRow = rows.find(
-        (row) => String(row[postData as string]) === String(lookupNama)
-      );
-      if (foundRow && onSelectRow) {
-        onSelectRow(foundRow);
+    // Cek apakah lookupNama berubah dari luar (bukan dari user action)
+    if (prevLookupNamaRef.current !== lookupNama && !isUserTypingRef.current) {
+      if (lookupNama && !deleteClicked && !clicked) {
+        setInputValue(lookupNama);
+        const foundRow = rows.find(
+          (row) => String(row[postData as string]) === String(lookupNama)
+        );
+        if (foundRow && onSelectRow && lookupValue) {
+          onSelectRow(foundRow);
+          lookupValue?.(
+            dataToPost ? foundRow[dataToPost as string] : foundRow?.id
+          );
+        }
+      } else if (!lookupNama && !deleteClicked && !clicked) {
+        setInputValue('');
+        setFilters({ ...filters, search: '', filters: {} });
       }
-    } else if (!lookupNama && !deleteClicked && !clicked) {
-      setInputValue('');
     }
-  }, [lookupNama, rows, deleteClicked]);
+
+    // Update prev value dan reset flag
+    prevLookupNamaRef.current = lookupNama;
+    isUserTypingRef.current = false;
+  }, [lookupNama, rows, deleteClicked, clicked]);
   useEffect(() => {
     if (clearLookup) {
       setInputValue(''); // Assuming "text" is the display column
@@ -1373,11 +1448,6 @@ export default function LookUp({
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
         <div className="flex w-full flex-col">
-          {/* 
-            Penjelasan:
-            Untuk menghindari error "TypeError: Cannot read properties of null (reading 'control')",
-            kita perlu memastikan bahwa props 'forms' dan 'forms.control' tidak null/undefined sebelum menggunakan FormField.
-          */}
           {forms ? (
             <FormField
               name={String(name) ?? ''}
@@ -1405,13 +1475,11 @@ export default function LookUp({
                         onKeyDown={handleInputKeydown}
                         onChange={(e) => {
                           handleInputChange(e);
-                          // if (e.target.value.trim() !== '') {
-                          //   setOpen(true);
-                          // }
                         }}
                       />
 
-                      {(filters.search !== '' || inputValue !== '') && (
+                      {(filters.search !== '' || inputValue !== '') &&
+                      showClearButton ? (
                         <Button
                           type="button"
                           disabled={disabled && !clearDisabled ? true : false}
@@ -1426,7 +1494,7 @@ export default function LookUp({
                             alt="close"
                           />
                         </Button>
-                      )}
+                      ) : null}
 
                       {showOnButton && (
                         <Button
@@ -1483,7 +1551,8 @@ export default function LookUp({
                   name={String(name) ?? ''}
                 />
 
-                {(filters.search !== '' || inputValue !== '') && (
+                {(filters.search !== '' || inputValue !== '') &&
+                showClearButton ? (
                   <Button
                     type="button"
                     disabled={disabled && !clearDisabled ? true : false}
@@ -1493,7 +1562,7 @@ export default function LookUp({
                   >
                     <Image src={IcClose} width={15} height={15} alt="close" />
                   </Button>
-                )}
+                ) : null}
 
                 {showOnButton && (
                   <Button
@@ -1519,12 +1588,17 @@ export default function LookUp({
       <PopoverContent
         // ref={contentRef}
         id="popover-content"
-        className="h-fit border border-blue-500 p-0 shadow-none backdrop-blur-none"
+        className="z-[99999999999] h-fit border border-blue-500 p-0 shadow-none backdrop-blur-none"
         side="bottom"
         align="start"
         sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
         avoidCollisions={true}
-        style={{ width: popoverWidth }}
+        collisionPadding={8}
+        style={{
+          width: popoverWidth,
+          position: 'fixed',
+          zIndex: 999999999
+        }}
         onEscapeKeyDown={() => setOpen(false)}
       >
         {open && (

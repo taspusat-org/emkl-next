@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   search: string;
@@ -241,7 +242,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('nobukti')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NO BUKTI</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NO BUKTI
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'nobukti' &&
                 filters.sortDirection === 'asc' ? (
@@ -259,10 +266,31 @@ const GridHutangDetail = ({
         name: 'nobukti',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
+          const value = props.row.nobukti; // atau dari props.row
+          // Buat component wrapper untuk highlightText
+          const HighlightWrapper = () => {
+            return highlightText(value, filters.search);
+          };
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.nobukti || ''}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                    <JsxParser
+                      components={{ HighlightWrapper }}
+                      jsx={props.row.link}
+                      renderInWrapper={false}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{value}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -279,7 +307,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('coa')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">COA</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'coa' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                COA
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'coa' && filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
@@ -341,7 +375,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('keterangan')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">KETERANGAN</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                KETERANGAN
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
@@ -406,7 +446,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('nominal')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOMINAL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nominal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NOMINAL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'nominal' &&
                 filters.sortDirection === 'asc' ? (
@@ -473,7 +519,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('dpp')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">DPP</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'dpp' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                DPP
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'dpp' && filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
@@ -539,7 +591,15 @@ const GridHutangDetail = ({
               onClick={() => handleSort('noinvoiceemkl')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOMOR INVOICE EMKL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'noinvoiceemkl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NOMOR INVOICE EMKL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'noinvoiceemkl' &&
                 filters.sortDirection === 'asc' ? (
@@ -604,7 +664,15 @@ const GridHutangDetail = ({
               onClick={() => handleSort('tglinvoiceemkl')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">TANGGAL INVOICE EMKL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'tglinvoiceemkl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                TANGGAL INVOICE EMKL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'tglinvoiceemkl' &&
                 filters.sortDirection === 'asc' ? (
@@ -669,7 +737,15 @@ const GridHutangDetail = ({
               onClick={() => handleSort('nofakturpajakemkl')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">NOMOR FAKTUR PAJAK EMKL</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nofakturpajakemkl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NOMOR FAKTUR PAJAK EMKL
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'nofakturpajakemkl' &&
                 filters.sortDirection === 'asc' ? (
@@ -734,7 +810,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('modifiedby')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">MODIFIED BY</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                MODIFIED BY
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
                 filters.sortDirection === 'asc' ? (
@@ -799,7 +881,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('created_at')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Created At</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'created_at' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Created At
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'created_at' &&
                 filters.sortDirection === 'asc' ? (
@@ -864,7 +952,13 @@ const GridHutangDetail = ({
               onClick={() => handleSort('updated_at')}
               onContextMenu={handleContextMenu}
             >
-              <p className="text-sm font-normal">Updated At</p>
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'updated_at' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Updated At
+              </p>
               <div className="ml-2">
                 {filters.sortBy === 'updated_at' &&
                 filters.sortDirection === 'asc' ? (
@@ -918,6 +1012,20 @@ const GridHutangDetail = ({
       }
     ];
   }, [rows, filters]);
+  function getRowClass(row: HutangDetail) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+  function rowKeyGetter(row: HutangDetail) {
+    return row.id;
+  }
+  function handleCellClick(args: { row: HutangDetail }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
@@ -1202,7 +1310,8 @@ const GridHutangDetail = ({
         info: item.info, // Updated to match the field name
         modifiedby: item.modifiedby, // Updated to match the field name
         created_at: item.created_at, // Updated to match the field name
-        updated_at: item.updated_at // Updated to match the field name
+        updated_at: item.updated_at, // Updated to match the field name
+        link: item.link // Updated to match the field name
       }));
 
       setRows(formattedRows);
@@ -1280,6 +1389,11 @@ const GridHutangDetail = ({
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           rows={rows ?? []}
+          rowClass={getRowClass}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
+          rowKeyGetter={rowKeyGetter}
           headerRowHeight={70}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}

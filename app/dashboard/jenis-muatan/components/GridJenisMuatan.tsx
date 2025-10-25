@@ -100,8 +100,6 @@ interface Filter {
     created_at: string;
     updated_at: string;
     statusaktif: string;
-
-    text: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -181,8 +179,7 @@ const GridJenisMuatan = () => {
       statusaktif: '',
       modifiedby: '',
       created_at: '',
-      updated_at: '',
-      text: ''
+      updated_at: ''
     },
     search: '',
     sortBy: 'nama',
@@ -317,8 +314,7 @@ const GridJenisMuatan = () => {
         statusaktif: '',
         modifiedby: '',
         created_at: '',
-        updated_at: '',
-        text: ''
+        updated_at: ''
       },
       search: searchValue,
       page: 1
@@ -435,8 +431,7 @@ const GridJenisMuatan = () => {
                     statusaktif: '',
                     modifiedby: '',
                     created_at: '',
-                    updated_at: '',
-                    text: ''
+                    updated_at: ''
                   }
                 }),
                   setInputValue('');
