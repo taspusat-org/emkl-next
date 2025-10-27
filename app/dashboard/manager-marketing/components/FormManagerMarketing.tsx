@@ -54,7 +54,7 @@ const FormManagerMarketing = ({
   forms,
   onSubmit,
   mode,
-  isSubmitSuccessful,
+  submitSuccessful,
   handleClose,
   isLoadingCreate,
   isLoadingUpdate,
@@ -775,10 +775,10 @@ const FormManagerMarketing = ({
     }
   }, [rows]);
   useEffect(() => {
-    if (isSubmitSuccessful) {
+    if (submitSuccessful) {
       resetDetailAndAddNewRow();
     }
-  }, [isSubmitSuccessful]);
+  }, [submitSuccessful]);
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>

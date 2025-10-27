@@ -165,6 +165,7 @@ const GridManagerMarketingHeader = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
+  const [submitSuccessful, setSubmitSuccessful] = useState(false);
   const [rows, setRows] = useState<ManagerMarketingHeader[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
@@ -1407,6 +1408,7 @@ const GridManagerMarketingHeader = () => {
               });
             }, 200);
           }
+          setSubmitSuccessful(true);
         }
 
         setIsFetchingManually(false);
@@ -1416,6 +1418,7 @@ const GridManagerMarketingHeader = () => {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
       setIsDataUpdated(false);
+      setSubmitSuccessful(false);
     }
   };
   const onSubmit = async (
@@ -1488,6 +1491,7 @@ const GridManagerMarketingHeader = () => {
       console.error(error);
     } finally {
       dispatch(setProcessed());
+      setSubmitSuccessful(false);
     }
   };
 
@@ -2091,6 +2095,7 @@ const GridManagerMarketingHeader = () => {
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
+        submitSuccessful={submitSuccessful}
         isSubmitSuccessful={isSubmitSuccessful}
         isLoadingUpdate={isLoadingUpdate}
         isLoadingDelete={isLoadingDelete}

@@ -355,7 +355,7 @@ const FormPengeluaran = ({
           return undefined; // For other rows, no column spanning
         },
         renderHeaderCell: () => (
-          <div className="flex h-[100%] w-full flex-col justify-center">
+          <div className="flex-cnpm rol flex h-[100%] w-full justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
         ),

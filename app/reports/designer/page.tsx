@@ -54,7 +54,7 @@ const ReportDesigner = () => {
         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
         viewer.renderHtml('content');
-        report.loadFile('/reports/LaporanShipper.mrt');
+        report.loadFile('/reports/ReportLaporanKasBankBesarPusatSaldo.mrt');
 
         report.dictionary.dataSources.clear();
         dataSet.readJson({
