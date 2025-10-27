@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import useDisableBodyScroll from '@/lib/hooks/useDisableBodyScroll';
+import { useAlert } from '@/lib/store/client/useAlert';
 
 interface CustomPrintModalProps {
   isOpen: boolean;
@@ -17,6 +18,29 @@ interface CustomPrintModalProps {
   defaultColorMode?: 'color' | 'bw';
   showPages?: true | false;
 }
+
+const isMobileDevice = (): boolean => {
+  const userAgent =
+    navigator.userAgent || navigator.vendor || (window as any).opera;
+
+  const mobileRegex =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+
+  const isMobilePlatform = /Android|iOS|iPhone|iPad|iPod/.test(
+    navigator.platform
+  );
+
+  const isTouchDevice =
+    'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  const hasOrientation = typeof window.orientation !== 'undefined';
+
+  return (
+    mobileRegex.test(userAgent) ||
+    isMobilePlatform ||
+    (isTouchDevice && hasOrientation)
+  );
+};
 
 const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   isOpen,
@@ -47,6 +71,21 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const dragging = useRef(false);
   const start = useRef({ x: 0, y: 0 });
   const pos = useRef({ x: 0, y: 0 });
+
+  const { alert } = useAlert();
+
+  useEffect(() => {
+    if (isOpen && isMobileDevice()) {
+      alert({
+        title:
+          'TIDAK BOLEH MENGAKSES PRINT DARI HANDPHONE, SILAHKAN AKSES MENGGUNAKAN PC',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      onClose();
+      return;
+    }
+  }, [isOpen, alert, onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -164,7 +203,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           setLayout('portrait');
         }
       } catch (err) {
-        console.error('❌ Gagal membaca ukuran kertas dari PDF:', err);
+        console.error('⚠ Gagal membaca ukuran kertas dari PDF:', err);
         setPaperSize('CUSTOM_A4');
         setLayout('portrait');
       }
@@ -276,7 +315,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
   useDisableBodyScroll(isOpen);
 
-  if (!isOpen) return null;
+  if (!isOpen || isMobileDevice()) return null;
 
   const modalContent = (
     <>
