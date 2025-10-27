@@ -342,7 +342,6 @@ const ReportMenuPage: React.FC = () => {
               isOpen={isPrintModalOpen}
               onClose={() => setIsPrintModalOpen(false)}
               docUrl={pdfUrl ?? ''}
-              reportName="LaporanHargatrucking"
               showPages={true}
             />
           )}

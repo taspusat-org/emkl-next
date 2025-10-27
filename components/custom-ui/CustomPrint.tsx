@@ -13,7 +13,6 @@ interface CustomPrintModalProps {
   isOpen: boolean;
   onClose: () => void;
   docUrl: string;
-  reportName: string;
   defaultScale?: 'fit' | 'noscale';
   defaultColorMode?: 'color' | 'bw';
   showPages?: true | false;
@@ -23,7 +22,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   isOpen,
   onClose,
   docUrl,
-  reportName,
   defaultScale = 'noscale',
   defaultColorMode = 'color',
   showPages = true
@@ -106,7 +104,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeydown, true);
   }, [isOpen, onClose, isLoading]);
 
-  // Focus management
   useEffect(() => {
     if (isOpen && !isLoading) {
       const timer = setTimeout(() => {
@@ -123,60 +120,60 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   }, [isOpen, isLoading]);
 
   useEffect(() => {
-    const loadFromMRT = async () => {
+    const readPaperSizeFromPDF = async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_MRT_BASE_URL || '/reports';
-        const mrtUrl = `${base}/${reportName}.mrt`;
+        const response = await fetch(docUrl);
+        const blob = await response.blob();
+        const arrayBuffer = await blob.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const text = new TextDecoder('latin1').decode(uint8Array);
 
-        const res = await fetch(mrtUrl, { cache: 'no-store' });
+        const mediaBoxMatch = text.match(
+          /\/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]/
+        );
 
-        if (!res.ok) {
-          console.warn(`⚠️ Gagal fetch file MRT (${res.status})`);
-          return;
-        }
+        if (mediaBoxMatch) {
+          const width =
+            parseFloat(mediaBoxMatch[3]) - parseFloat(mediaBoxMatch[1]);
+          const height =
+            parseFloat(mediaBoxMatch[4]) - parseFloat(mediaBoxMatch[2]);
 
-        const text = await res.text();
-        let pageHeight = 0;
-        let pageWidth = 0;
+          let pageWidth = Math.round(width * 0.352778 * 10) / 10;
+          let pageHeight = Math.round(height * 0.352778 * 10) / 10;
 
-        try {
-          const json = JSON.parse(text);
-          const pages = json.Pages;
-          const firstPage = pages?.['0'] || pages?.[0];
-          pageHeight = firstPage?.PageHeight ?? json.PageHeight ?? 0;
-          pageWidth = firstPage?.PageWidth ?? json.PageWidth ?? 0;
-        } catch {
-          const matchH = text.match(/"PageHeight"\s*:\s*([\d.]+)/);
-          const matchW = text.match(/"PageWidth"\s*:\s*([\d.]+)/);
-          if (matchH) pageHeight = parseFloat(matchH[1]);
-          if (matchW) pageWidth = parseFloat(matchW[1]);
-        }
+          let selectedPaper = 'CUSTOM_A4';
+          let selectedLayout: 'portrait' | 'landscape' = 'portrait';
 
-        let selectedPaper = 'CUSTOM_A4';
-        let selectedLayout: 'portrait' | 'landscape' = 'portrait';
+          if (pageHeight == 210.1 || pageHeight == 296.9) {
+            selectedPaper = 'CUSTOM_A4';
+          } else if (pageHeight == 279.4) {
+            selectedPaper = 'CUSTOM_LETTER';
+          } else if (pageHeight == 139.7) {
+            selectedPaper = 'CUSTOM_FAKTUR';
+            selectedLayout = 'landscape';
+          } else if (pageHeight >= 350 && pageHeight <= 360) {
+            selectedPaper = 'CUSTOM_LEGAL';
+          } else {
+            selectedLayout = pageWidth > pageHeight ? 'landscape' : 'portrait';
+          }
 
-        if (pageHeight === 210.1 || pageHeight === 296.9) {
-          selectedPaper = 'CUSTOM_A4';
-        } else if (pageHeight === 279.4) {
-          selectedPaper = 'CUSTOM_LETTER';
-        } else if (pageHeight === 139.7) {
-          selectedPaper = 'CUSTOM_FAKTUR';
-          selectedLayout = 'landscape';
-        } else if (pageHeight >= 350 && pageHeight <= 360) {
-          selectedPaper = 'CUSTOM_LEGAL';
+          setPaperSize(selectedPaper);
+          setLayout(selectedLayout);
         } else {
-          selectedLayout = pageWidth > pageHeight ? 'landscape' : 'portrait';
+          setPaperSize('CUSTOM_A4');
+          setLayout('portrait');
         }
-
-        setPaperSize(selectedPaper);
-        setLayout(selectedLayout);
       } catch (err) {
-        console.error('❌ Gagal membaca MRT:', err);
+        console.error('❌ Gagal membaca ukuran kertas dari PDF:', err);
+        setPaperSize('CUSTOM_A4');
+        setLayout('portrait');
       }
     };
 
-    if (isOpen && reportName) loadFromMRT();
-  }, [isOpen, reportName]);
+    if (isOpen && docUrl) {
+      readPaperSizeFromPDF();
+    }
+  }, [isOpen, docUrl]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -201,14 +198,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   }, [isOpen]);
 
   const onPointerDown = (e: React.PointerEvent) => {
-    // if (
-    //   e.target === printButtonRef.current ||
-    //   e.target === closeButtonRef.current ||
-    //   isLoading
-    // ) {
-    //   e.stopPropagation();
-    //   return;
-    // }
     const target = e.target as HTMLElement;
 
     if (target.tagName === 'BUTTON' || isLoading) {
