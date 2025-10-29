@@ -298,8 +298,8 @@ const FormPengeluaran = ({
         cellClass: 'form-input',
         width: 65,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full flex-col justify-center px-1">
-            <p className="text-center text-sm font-normal">aksi</p>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Aksi</p>
           </div>
         ),
         name: 'aksi',
@@ -355,7 +355,7 @@ const FormPengeluaran = ({
           return undefined; // For other rows, no column spanning
         },
         renderHeaderCell: () => (
-          <div className="flex-cnpm rol flex h-[100%] w-full justify-center">
+          <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
         ),
@@ -407,6 +407,7 @@ const FormPengeluaran = ({
                     );
                   }}
                   disabled={mode === 'view' || mode === 'delete'}
+                  overflow={false}
                 />
               ))}
             </div>

@@ -118,7 +118,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
         if (onlinePrinters.length === 0) {
           alert({
-            title: 'Agent Printer Belum ada, silahkan install terlebih dahulu',
+            title: 'Printer Belum ada, silahkan install terlebih dahulu',
             variant: 'danger',
             submitText: 'OK',
             link: true
@@ -129,7 +129,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         }
       } catch (err) {
         alert({
-          title: 'Agent Printer Belum ada, silahkan install terlebih dahulu',
+          title: 'Printer Belum ada, silahkan install terlebih dahulu',
           variant: 'danger',
           submitText: 'OK',
           link: true

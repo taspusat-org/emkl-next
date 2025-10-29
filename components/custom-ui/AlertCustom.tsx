@@ -214,7 +214,7 @@ export default function Alert({
                   href="https://web.transporindo.com/tutorial-agent-printer/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="cursor-pointer text-[9px] text-blue-500 underline hover:text-blue-700"
+                  className="cursor-pointer text-sm text-blue-500 underline hover:text-blue-700"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -226,7 +226,7 @@ export default function Alert({
                   }}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
-                  https://web.transporindo.com/tutorial-agent-printer/
+                  INSTALL PRINTER
                 </a>
               </div>
             )}
