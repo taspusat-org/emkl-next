@@ -517,7 +517,11 @@ const GridPengeluaranDetail = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
+                    {highlightText(
+                      cellValue != null ? formatCurrency(cellValue) : '',
+                      filters.search,
+                      columnFilter
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
@@ -585,7 +589,11 @@ const GridPengeluaranDetail = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
+                    {highlightText(
+                      cellValue != null ? formatCurrency(cellValue) : '',
+                      filters.search,
+                      columnFilter
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent

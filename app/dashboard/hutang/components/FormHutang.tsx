@@ -292,53 +292,53 @@ const FormHutang = ({
   const PERSENTASE = 2 / 100;
 
   const handleNominalChange = (rowIdx: number, value: string) => {
-    if (Number(value) > 0) {
-      setRows((prev) => {
-        const updated = [...prev];
-        const current = updated[rowIdx];
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
 
-        const parsedValue = parseCurrency(value);
-
-        current.nominal = value;
-        current.dpp = '0';
-
-        if (parsedValue === 0 && parseCurrency(current.dpp) === 0) {
-          current.disableNominal = false;
-          current.disableDpp = false;
-        } else {
-          current.disableNominal = false;
-          current.disableDpp = true;
-        }
-
+      if (!value || value.trim() === '') {
+        current.nominal = '';
+        current.dpp = '';
+        current.disableNominal = false;
+        current.disableDpp = false;
         return updated;
-      });
-    }
+      }
+
+      const parsedValue = parseCurrency(value);
+      current.nominal = value;
+      current.dpp = '0';
+
+      current.disableNominal = false;
+      current.disableDpp = true;
+
+      return updated;
+    });
   };
 
   const handleDppChange = (rowIdx: number, value: string) => {
-    if (Number(value) > 0) {
-      setRows((prev) => {
-        const updated = [...prev];
-        const current = updated[rowIdx];
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
 
-        const parsedDpp = parseCurrency(value);
-
-        current.dpp = value;
-
-        const nominalValue = parsedDpp * PERSENTASE;
-        current.nominal = formatCurrency(nominalValue);
-
-        if (parsedDpp === 0 && parseCurrency(current.nominal) === 0) {
-          current.disableNominal = false;
-          current.disableDpp = false;
-        } else {
-          current.disableNominal = true;
-          current.disableDpp = false;
-        }
-
+      if (!value || value.trim() === '') {
+        current.dpp = '';
+        current.nominal = '';
+        current.disableNominal = false;
+        current.disableDpp = false;
         return updated;
-      });
-    }
+      }
+
+      const parsedDpp = parseCurrency(value);
+      current.dpp = value;
+
+      const nominalValue = parsedDpp * PERSENTASE;
+      current.nominal = formatCurrency(nominalValue);
+
+      current.disableNominal = true;
+      current.disableDpp = false;
+
+      return updated;
+    });
   };
 
   const columns = useMemo((): Column<HutangDetail>[] => {
@@ -560,7 +560,11 @@ const FormHutang = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
-                            disabled={props.row.disableNominal}
+                            disabled={
+                              props.row.disableNominal ||
+                              (Number(parseCurrency(props.row.dpp)) > 0 &&
+                                mode === 'edit')
+                            }
                             value={String(props.row.nominal ?? '')}
                             onValueChange={(value) => {
                               field.onChange(value);
@@ -621,7 +625,12 @@ const FormHutang = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
-                            disabled={props.row.disableDpp}
+                            disabled={
+                              props.row.disableDpp ||
+                              (Number(parseCurrency(props.row.nominal)) > 0 &&
+                                mode === 'edit' &&
+                                props.row.dpp <= 0)
+                            }
                             value={String(props.row.dpp ?? '')}
                             onValueChange={(value) => {
                               field.onChange(value);
