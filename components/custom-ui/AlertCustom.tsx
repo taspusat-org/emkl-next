@@ -1,4 +1,3 @@
-// components/custom-ui/AlertCustom.tsx
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
@@ -15,6 +14,7 @@ export interface AlertOptions {
   catchOnCancel?: boolean;
   isLoading?: boolean;
   cancelText?: string;
+  link?: boolean;
 }
 
 interface BaseAlertProps extends AlertOptions {
@@ -37,25 +37,21 @@ export default function Alert({
   const submitButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = React.useRef<HTMLDivElement | null>(null);
 
-  // refs for drag state
   const dragging = React.useRef(false);
   const start = React.useRef({ x: 0, y: 0 });
   const pos = React.useRef({ x: 0, y: 0 });
 
-  const { title, variant, submitText, isLoading } = rest;
+  const { title, variant, submitText, isLoading, link } = rest;
 
-  // Mount state untuk portal
   React.useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
-  // Handle Escape and Enter key press
   React.useEffect(() => {
     if (!open) return;
 
     const handleKeydown = (e: KeyboardEvent) => {
-      // Prevent if loading
       if (isLoading) return;
 
       if (e.key === 'Escape') {
@@ -69,24 +65,19 @@ export default function Alert({
       }
     };
 
-    // Add event listener when alert is open
-    window.addEventListener('keydown', handleKeydown, true); // Use capture phase
+    window.addEventListener('keydown', handleKeydown, true);
 
-    // Cleanup event listener
     return () => {
       window.removeEventListener('keydown', handleKeydown, true);
     };
   }, [open, onClose, onSubmit, isLoading]);
 
-  // Focus management
   React.useEffect(() => {
     if (open && !isLoading) {
-      // Use setTimeout to ensure DOM is ready
       const timer = setTimeout(() => {
         submitButtonRef.current?.focus();
       }, 100);
 
-      // Reset position
       pos.current = { x: 0, y: 0 };
       if (innerRef.current) {
         innerRef.current.style.transform = 'translate3d(0,0,0)';
@@ -96,7 +87,6 @@ export default function Alert({
     }
   }, [open, isLoading]);
 
-  // Drag handlers
   const onPointerDown = (e: React.PointerEvent) => {
     if (
       e.target === submitButtonRef.current ||
@@ -107,7 +97,7 @@ export default function Alert({
       return;
     }
 
-    if (e.button !== 0) return; // only left mouse button
+    if (e.button !== 0) return;
 
     dragging.current = true;
     start.current = {
@@ -135,7 +125,6 @@ export default function Alert({
     innerRef.current?.releasePointerCapture(e.pointerId);
   };
 
-  // Handle backdrop click
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !isLoading) {
       onClose();
@@ -146,7 +135,6 @@ export default function Alert({
 
   const alertContent = (
     <>
-      {/* Backdrop with semi-transparent overlay */}
       <div
         ref={outerRef}
         className={cn(
@@ -183,17 +171,15 @@ export default function Alert({
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 10%)',
             pointerEvents: 'auto',
-            // Ensure it's above everything
             isolation: 'isolate'
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Close button */}
           <div className="mb-1 mt-2 flex w-full flex-row items-center justify-end">
             <div
               ref={closeButtonRef}
               className="w-fit rounded-sm bg-red-500"
-              onPointerDown={(e) => e.stopPropagation()} // Stop propagation on close button click
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <FaTimes
                 className="cursor-pointer text-white"
@@ -222,7 +208,29 @@ export default function Alert({
               </h3>
             </div>
 
-            {/* Loading indicator */}
+            {link && (
+              <div className="mt-2">
+                <a
+                  href="https://web.transporindo.com/tutorial-agent-printer/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer text-sm text-blue-500 underline hover:text-blue-700"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.open(
+                      'https://web.transporindo.com/tutorial-agent-printer/',
+                      '_blank',
+                      'noopener,noreferrer'
+                    );
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  INSTALL PRINTER
+                </a>
+              </div>
+            )}
+
             {isLoading && (
               <div className="mt-2">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500" />
@@ -230,7 +238,6 @@ export default function Alert({
             )}
           </div>
 
-          {/* Action Buttons */}
           {(variant === 'danger' || variant === 'success') && (
             <div className="flex flex-col-reverse items-center justify-center gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] py-2 md:flex-row">
               {rest.cancelText && (
@@ -264,10 +271,8 @@ export default function Alert({
     </>
   );
 
-  // Only render portal after component is mounted on client side
   if (!mounted || typeof window === 'undefined') return null;
 
-  // Create portal container if it doesn't exist
   let portalRoot = document.getElementById('alert-portal-root');
   if (!portalRoot) {
     portalRoot = document.createElement('div');
@@ -278,7 +283,7 @@ export default function Alert({
     portalRoot.style.right = '0';
     portalRoot.style.bottom = '0';
     portalRoot.style.pointerEvents = 'none';
-    portalRoot.style.zIndex = '2147483647'; // Maximum z-index
+    portalRoot.style.zIndex = '2147483647';
     document.body.appendChild(portalRoot);
   }
 

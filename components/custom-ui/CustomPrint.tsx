@@ -8,6 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import useDisableBodyScroll from '@/lib/hooks/useDisableBodyScroll';
+import { useAlert } from '@/lib/store/client/useAlert';
+import {
+  setProcessing,
+  setProcessed
+} from '@/lib/store/loadingSlice/loadingSlice';
+import { useDispatch } from 'react-redux';
 
 interface CustomPrintModalProps {
   isOpen: boolean;
@@ -17,6 +23,29 @@ interface CustomPrintModalProps {
   defaultColorMode?: 'color' | 'bw';
   showPages?: true | false;
 }
+
+const isMobileDevice = (): boolean => {
+  const userAgent =
+    navigator.userAgent || navigator.vendor || (window as any).opera;
+
+  const mobileRegex =
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
+
+  const isMobilePlatform = /Android|iOS|iPhone|iPad|iPod/.test(
+    navigator.platform
+  );
+
+  const isTouchDevice =
+    'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  const hasOrientation = typeof window.orientation !== 'undefined';
+
+  return (
+    mobileRegex.test(userAgent) ||
+    isMobilePlatform ||
+    (isTouchDevice && hasOrientation)
+  );
+};
 
 const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   isOpen,
@@ -38,6 +67,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   >('all');
   const [customPages, setCustomPages] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isPrinterCheckComplete, setIsPrinterCheckComplete] = useState(false);
 
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -47,6 +77,72 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const dragging = useRef(false);
   const start = useRef({ x: 0, y: 0 });
   const pos = useRef({ x: 0, y: 0 });
+
+  const { alert } = useAlert();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const isMobile = isMobileDevice();
+
+    if (isMobile) {
+      alert({
+        title: 'Silahkan gunakan perangkat Laptop / PC untuk mencetak dokumen',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+      onClose();
+      return;
+    }
+
+    const checkPrinters = async () => {
+      try {
+        dispatch(setProcessing());
+        setLoadingPrinters(true);
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timeout')), 10000)
+        );
+
+        const printersPromise = getPrintersFn();
+
+        const data = (await Promise.race([
+          printersPromise,
+          timeoutPromise
+        ])) as PrinterInfo[];
+
+        setPrinters(data);
+
+        const onlinePrinters = data.filter((p) => p.status === 'Online');
+
+        if (onlinePrinters.length === 0) {
+          alert({
+            title: 'Printer Belum ada, silahkan install terlebih dahulu',
+            variant: 'danger',
+            submitText: 'OK',
+            link: true
+          });
+          onClose();
+        } else {
+          setIsPrinterCheckComplete(true);
+        }
+      } catch (err) {
+        alert({
+          title: 'Printer Belum ada, silahkan install terlebih dahulu',
+          variant: 'danger',
+          submitText: 'OK',
+          link: true
+        });
+        onClose();
+      } finally {
+        setLoadingPrinters(false);
+        dispatch(setProcessed());
+      }
+    };
+
+    checkPrinters();
+  }, [isOpen, alert, onClose, dispatch]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -105,7 +201,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   }, [isOpen, onClose, isLoading]);
 
   useEffect(() => {
-    if (isOpen && !isLoading) {
+    if (isOpen && !isLoading && isPrinterCheckComplete) {
       const timer = setTimeout(() => {
         printButtonRef.current?.focus();
       }, 100);
@@ -117,7 +213,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen, isLoading]);
+  }, [isOpen, isLoading, isPrinterCheckComplete]);
 
   useEffect(() => {
     const readPaperSizeFromPDF = async () => {
@@ -164,38 +260,22 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           setLayout('portrait');
         }
       } catch (err) {
-        console.error('❌ Gagal membaca ukuran kertas dari PDF:', err);
+        console.error('⚠ Gagal membaca ukuran kertas dari PDF:', err);
         setPaperSize('CUSTOM_A4');
         setLayout('portrait');
       }
     };
 
-    if (isOpen && docUrl) {
+    if (isOpen && docUrl && isPrinterCheckComplete) {
       readPaperSizeFromPDF();
     }
-  }, [isOpen, docUrl]);
+  }, [isOpen, docUrl, isPrinterCheckComplete]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    const fetchPrinters = async () => {
-      try {
-        setLoadingPrinters(true);
-        const data = await getPrintersFn();
-        setPrinters(data);
-      } catch (err) {
-        console.error('Gagal mengambil daftar printer:', err);
-      } finally {
-        setLoadingPrinters(false);
-      }
-    };
-    fetchPrinters();
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !isPrinterCheckComplete) return;
     const lastPrinter = localStorage.getItem('lastPrinter');
     if (lastPrinter) setDestination(lastPrinter);
-  }, [isOpen]);
+  }, [isOpen, isPrinterCheckComplete]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
@@ -276,7 +356,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
   useDisableBodyScroll(isOpen);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isPrinterCheckComplete) return null;
 
   const modalContent = (
     <>

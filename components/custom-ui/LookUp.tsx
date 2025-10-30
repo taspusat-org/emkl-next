@@ -91,6 +91,7 @@ interface LookUpProps {
   autoSearch?: boolean; // Tambahkan ini
   isExactMatch?: boolean; // Tambahkan ini
   showClearButton?: boolean; // Tambahkan ini
+  overflow?: boolean;
 }
 interface Filter {
   page: number;
@@ -132,7 +133,8 @@ export default function LookUp({
   onClear,
   autoSearch = true,
   isExactMatch = false,
-  showClearButton = true
+  showClearButton = true,
+  overflow = true
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
@@ -1594,11 +1596,15 @@ export default function LookUp({
         sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
         avoidCollisions={true}
         collisionPadding={8}
-        style={{
-          width: popoverWidth,
-          position: 'fixed',
-          zIndex: 999999999
-        }}
+        style={
+          overflow
+            ? { width: popoverWidth }
+            : {
+                width: popoverWidth,
+                position: 'fixed',
+                zIndex: 999999999
+              }
+        }
         onEscapeKeyDown={() => setOpen(false)}
       >
         {open && (

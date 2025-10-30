@@ -242,53 +242,53 @@ const FormPengeluaran = ({
   const PERSENTASE = 2 / 100;
 
   const handleNominalChange = (rowIdx: number, value: string) => {
-    if (Number(value) > 0) {
-      setRows((prev) => {
-        const updated = [...prev];
-        const current = updated[rowIdx];
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
 
-        const parsedValue = parseCurrency(value);
-
-        current.nominal = value;
-        current.dpp = '0';
-
-        if (parsedValue === 0 && parseCurrency(current.dpp) === 0) {
-          current.disableNominal = false;
-          current.disableDpp = false;
-        } else {
-          current.disableNominal = false;
-          current.disableDpp = true;
-        }
-
+      if (!value || value.trim() === '') {
+        current.nominal = '';
+        current.dpp = '';
+        current.disableNominal = false;
+        current.disableDpp = false;
         return updated;
-      });
-    }
+      }
+
+      const parsedValue = parseCurrency(value);
+      current.nominal = value;
+      current.dpp = '0';
+
+      current.disableNominal = false;
+      current.disableDpp = true;
+
+      return updated;
+    });
   };
 
   const handleDppChange = (rowIdx: number, value: string) => {
-    if (Number(value) > 0) {
-      setRows((prev) => {
-        const updated = [...prev];
-        const current = updated[rowIdx];
+    setRows((prev) => {
+      const updated = [...prev];
+      const current = updated[rowIdx];
 
-        const parsedDpp = parseCurrency(value);
-
-        current.dpp = value;
-
-        const nominalValue = parsedDpp * PERSENTASE;
-        current.nominal = formatCurrency(nominalValue);
-
-        if (parsedDpp === 0 && parseCurrency(current.nominal) === 0) {
-          current.disableNominal = false;
-          current.disableDpp = false;
-        } else {
-          current.disableNominal = true;
-          current.disableDpp = false;
-        }
-
+      if (!value || value.trim() === '') {
+        current.dpp = '';
+        current.nominal = '';
+        current.disableNominal = false;
+        current.disableDpp = false;
         return updated;
-      });
-    }
+      }
+
+      const parsedDpp = parseCurrency(value);
+      current.dpp = value;
+
+      const nominalValue = parsedDpp * PERSENTASE;
+      current.nominal = formatCurrency(nominalValue);
+
+      current.disableNominal = true;
+      current.disableDpp = false;
+
+      return updated;
+    });
   };
 
   const columns = useMemo((): Column<PengeluaranDetail>[] => {
@@ -298,8 +298,8 @@ const FormPengeluaran = ({
         cellClass: 'form-input',
         width: 65,
         renderHeaderCell: () => (
-          <div className="flex h-full w-full flex-col justify-center px-1">
-            <p className="text-center text-sm font-normal">aksi</p>
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Aksi</p>
           </div>
         ),
         name: 'aksi',
@@ -355,7 +355,7 @@ const FormPengeluaran = ({
           return undefined; // For other rows, no column spanning
         },
         renderHeaderCell: () => (
-          <div className="flex-cnpm rol flex h-[100%] w-full justify-center">
+          <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
         ),
@@ -407,6 +407,7 @@ const FormPengeluaran = ({
                     );
                   }}
                   disabled={mode === 'view' || mode === 'delete'}
+                  overflow={false}
                 />
               ))}
             </div>
@@ -445,6 +446,71 @@ const FormPengeluaran = ({
                     )
                   }
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-[100%] w-full flex-col justify-center">
+            <p className={`text-left text-sm font-normal`}>Nominal</p>
+          </div>
+        ),
+        name: 'nominal',
+        renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          let raw = props.row.nominal ?? ''; // Nilai nominal awal
+
+          // Cek jika raw belum diformat dengan tanda koma, kemudian format
+          if (typeof raw === 'number') {
+            raw = raw.toString(); // Mengonversi nominal menjadi string
+          }
+
+          // Jika raw tidak mengandung tanda koma, format sebagai currency
+          if (!raw.includes(',')) {
+            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+          }
+
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+              {props.row.isAddRow ? (
+                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+                  {formatCurrency(totalNominal)}
+                </div>
+              ) : (
+                <FormField
+                  name={`details.${rowIdx}.nominal`}
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                      <div className="flex w-full flex-col">
+                        <FormControl>
+                          <InputCurrency
+                            {...field}
+                            readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={
+                              props.row.disableNominal ||
+                              (Number(parseCurrency(props.row.dpp)) > 0 &&
+                                mode === 'edit')
+                            }
+                            value={String(props.row.nominal ?? '')}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              handleNominalChange(rowIdx, value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
                 />
               )}
             </div>
@@ -494,73 +560,15 @@ const FormPengeluaran = ({
                           <InputCurrency
                             {...field}
                             readOnly={mode === 'view' || mode === 'delete'}
-                            disabled={props.row.disableDpp}
+                            disabled={
+                              props.row.disableDpp ||
+                              (Number(parseCurrency(props.row.nominal)) > 0 &&
+                                mode === 'edit' &&
+                                props.row.dpp <= 0)
+                            }
                             value={String(props.row.dpp ?? '')}
                             onValueChange={(value) => {
-                              field.onChange(value);
                               handleDppChange(rowIdx, value);
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </div>
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-          );
-        }
-      },
-
-      {
-        key: 'nominal',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-[100%] w-full flex-col justify-center">
-            <p className={`text-left text-sm font-normal`}>Nominal</p>
-          </div>
-        ),
-        name: 'nominal',
-        renderCell: (props: any) => {
-          const rowIdx = props.rowIdx;
-          let raw = props.row.nominal ?? ''; // Nilai nominal awal
-
-          // Cek jika raw belum diformat dengan tanda koma, kemudian format
-          if (typeof raw === 'number') {
-            raw = raw.toString(); // Mengonversi nominal menjadi string
-          }
-
-          // Jika raw tidak mengandung tanda koma, format sebagai currency
-          if (!raw.includes(',')) {
-            raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          }
-
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
-                  {formatCurrency(totalNominal)}
-                </div>
-              ) : (
-                <FormField
-                  name={`details.${rowIdx}.nominal`}
-                  control={forms.control}
-                  render={({ field }) => (
-                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-                      <div className="flex w-full flex-col">
-                        <FormControl>
-                          <InputCurrency
-                            {...field}
-                            readOnly={mode === 'view' || mode === 'delete'}
-                            disabled={props.row.disableNominal}
-                            value={String(props.row.nominal ?? '')}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              handleNominalChange(rowIdx, value);
                             }}
                           />
                         </FormControl>
