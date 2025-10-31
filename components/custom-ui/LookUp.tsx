@@ -153,8 +153,9 @@ export default function LookUp({
   const [filtering, setFiltering] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [deleteClicked, setDeleteClicked] = useState(false);
-  const isUserTypingRef = useRef(false); // Track apakah user yang mengetik
-  const prevLookupNamaRef = useRef(lookupNama);
+  const isUserTypingRef = useRef(false);
+  const prevLookupNamaRef = useRef<string | undefined>(undefined);
+  const hasInitializedRef = useRef(false);
   const [showError, setShowError] = useState({
     label: label,
     status: false,
@@ -297,9 +298,13 @@ export default function LookUp({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (disabled || onPaste) return;
     setOnPaste(false);
+
     const searchValue = e.target.value;
+
+    // Set flag bahwa user sedang mengetik
     isUserTypingRef.current = true;
-    // Update input value immediately untuk UX yang responsive
+
+    // Update input value immediately
     setInputValue(searchValue);
 
     // Clear previous debounce timer
@@ -309,25 +314,21 @@ export default function LookUp({
 
     // Set new debounce timer
     debounceTimerRef.current = setTimeout(() => {
-      // Update filters setelah delay
       setFilters((prev) => ({
         ...prev,
-        filters: initializeColumnFilters(), // Reset column filters
+        filters: initializeColumnFilters(),
         search: searchValue,
         page: 1
       }));
       setFiltering(true);
       setRows([]);
       setCurrentPage(1);
-      setFetchedPages(new Set([1])); // Reset fetched pages
+      setFetchedPages(new Set([1]));
 
-      // Focus back to input after filter applied
       setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
+        inputRef.current?.focus();
       }, 100);
-    }, 500); // Debounce 500ms - bisa disesuaikan
+    }, 500);
   };
   // Modifikasi handleColumnFilterChange untuk mempertahankan search global
   const handleColumnFilterChange = (
@@ -453,9 +454,7 @@ export default function LookUp({
       setTimeout(() => {
         setOnPaste(false);
       }, 100);
-    } catch (error) {
-      console.log('error', error);
-    }
+    } catch (error) {}
   };
   const handleButtonClick = () => {
     setOnPaste(false);
@@ -1328,29 +1327,70 @@ export default function LookUp({
     setPopoverWidth(newWidth);
   }, [extendSize]);
   useEffect(() => {
-    // Cek apakah lookupNama berubah dari luar (bukan dari user action)
-    if (prevLookupNamaRef.current !== lookupNama && !isUserTypingRef.current) {
-      if (lookupNama && !deleteClicked && !clicked) {
-        setInputValue(lookupNama);
-        const foundRow = rows.find(
-          (row) => String(row[postData as string]) === String(lookupNama)
+    // Hanya jalankan sekali saat mount dan lookupNama ada
+    if (!hasInitializedRef.current && lookupNama) {
+      setInputValue(lookupNama);
+
+      // Cari row yang sesuai (jika rows sudah ada)
+      const foundRow = rows.find(
+        (row) => String(row[postData as string]) === String(lookupNama)
+      );
+
+      if (foundRow) {
+        onSelectRow?.(foundRow);
+        lookupValue?.(
+          dataToPost ? foundRow[dataToPost as string] : foundRow?.id
         );
-        if (foundRow && onSelectRow && lookupValue) {
-          onSelectRow(foundRow);
-          lookupValue?.(
-            dataToPost ? foundRow[dataToPost as string] : foundRow?.id
-          );
-        }
-      } else if (!lookupNama && !deleteClicked && !clicked) {
-        setInputValue('');
-        setFilters({ ...filters, search: '', filters: {} });
       }
+
+      hasInitializedRef.current = true;
+      prevLookupNamaRef.current = lookupNama;
+    }
+  }, [lookupNama, rows]); // rows added untuk handle case dimana lookupNama ada tapi rows belum loaded
+
+  // Effect 2: Handle perubahan lookupNama setelah initialized
+  useEffect(() => {
+    // Skip jika belum initialized atau user sedang mengetik
+    if (!hasInitializedRef.current || isUserTypingRef.current) {
+      return;
     }
 
-    // Update prev value dan reset flag
+    // Deteksi perubahan nilai
+    const hasValueChanged = prevLookupNamaRef.current !== lookupNama;
+
+    if (!hasValueChanged) {
+      return;
+    }
+
+    // Update value
+    if (lookupNama && !deleteClicked && !clicked) {
+      setInputValue(lookupNama);
+
+      const foundRow = rows.find(
+        (row) => String(row[postData as string]) === String(lookupNama)
+      );
+
+      if (foundRow) {
+        onSelectRow?.(foundRow);
+        lookupValue?.(
+          dataToPost ? foundRow[dataToPost as string] : foundRow?.id
+        );
+      }
+    } else if (!lookupNama && !deleteClicked && !clicked) {
+      // Clear input jika lookupNama di-clear dari luar
+      setInputValue('');
+      setFilters((prev) => ({ ...prev, search: '', filters: {} }));
+    }
+
+    // Update ref
     prevLookupNamaRef.current = lookupNama;
-    isUserTypingRef.current = false;
   }, [lookupNama, rows, deleteClicked, clicked]);
+
+  // Effect 3: Reset typing flag
+  useEffect(() => {
+    // Reset flag setelah lookupNama berubah
+    isUserTypingRef.current = false;
+  }, [lookupNama]);
   useEffect(() => {
     if (clearLookup) {
       setInputValue(''); // Assuming "text" is the display column
