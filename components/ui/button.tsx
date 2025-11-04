@@ -4,6 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { ImSpinner2 } from 'react-icons/im';
 import { cn } from '@/lib/utils';
 import { FaSave } from 'react-icons/fa';
+import { IoMdClose } from 'react-icons/io';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center whitespace-nowrap rounded-sm text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
@@ -15,7 +16,9 @@ const buttonVariants = cva(
         success: 'bg-green-500 text-white shadow hover:bg-green-600',
         warning: 'bg-yellow-500 text-black hover:bg-yellow-600',
         outline:
-          'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
+          'border border-primary bg-white shadow-sm hover:bg-accent hover:text-accent-foreground',
+        cancel:
+          'border border-primary bg-white shadow-sm hover:bg-gray-100 hover:text-primary text-primary hover:font-bold',
         secondary:
           'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
@@ -83,6 +86,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         <>
           {variant === 'save' && <FaSave className="mr-1" />}
+          {variant === 'cancel' && <IoMdClose className="mr-1" />}
           {children}
         </>
       </Comp>

@@ -393,16 +393,15 @@ const FormAkunPusat = ({
           <Button
             type="submit"
             // onClick={onSubmit}
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);
               dispatch(setSubmitClicked(true));
             }}
             disabled={mode === 'view'}
-            className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -431,13 +430,8 @@ const FormAkunPusat = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <IoMdClose /> <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>
