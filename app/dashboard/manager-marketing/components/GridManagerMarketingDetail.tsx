@@ -106,7 +106,10 @@ const GridManagerMarketingDetail = () => {
         ),
         name: 'nominalakhir',
         renderCell: (props: any) => {
-          const cellValue = props.row.nominalakhir || '';
+          const cellValue =
+            props.row.nominalakhir != null
+              ? formatCurrency(props.row.nominalakhir)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -119,7 +122,7 @@ const GridManagerMarketingDetail = () => {
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -142,7 +145,11 @@ const GridManagerMarketingDetail = () => {
         ),
         name: 'persentase',
         renderCell: (props: any) => {
-          const cellValue = props.row.persentase || '';
+          const cellValue =
+            props.row.persentase != null
+              ? formatCurrency(props.row.persentase)
+              : '';
+
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -155,7 +162,7 @@ const GridManagerMarketingDetail = () => {
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

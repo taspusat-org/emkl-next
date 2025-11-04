@@ -1504,7 +1504,7 @@ export default function LookUp({
                       <Input
                         {...field}
                         ref={inputRef}
-                        autoFocus
+                        autoFocus={false}
                         onPaste={(e) =>
                           handlePaste(e.clipboardData.getData('text'))
                         }

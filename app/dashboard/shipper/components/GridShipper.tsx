@@ -72,7 +72,6 @@ import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-import { exportBankFn, getBankFn } from '@/lib/apis/bank.api';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import {
@@ -128,7 +127,7 @@ const GridShipper = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteBank, isLoading: isLoadingDelete } =
+  const { mutateAsync: deleteShipper, isLoading: isLoadingDelete } =
     useDeleteShipper();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
@@ -1605,24 +1604,23 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.creditlimit || '';
-          const cellValue = props.row.creditlimit || '';
+          const cellValue =
+            props.row.creditlimit != null
+              ? formatCurrency(props.row.creditlimit)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1681,24 +1679,23 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.creditterm || '';
-          const cellValue = props.row.creditterm || '';
+          const cellValue =
+            props.row.creditterm != null
+              ? formatCurrency(props.row.creditterm)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1759,24 +1756,23 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.credittermplus || '';
-          const cellValue = props.row.credittermplus || '';
+          const cellValue =
+            props.row.credittermplus != null
+              ? formatCurrency(props.row.credittermplus)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1974,24 +1970,21 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.ppn || '';
-          const cellValue = props.row.ppn || '';
+          const cellValue =
+            props.row.ppn != null ? formatCurrency(props.row.ppn) : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-                    {highlightText(
-                      formatCurrency(cellValue),
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -2122,17 +2115,16 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.ppnbatalmuat || '';
-          const cellValue = props.row.ppnbatalmuat || '';
+          const cellValue =
+            props.row.ppnbatalmuat != null
+              ? formatCurrency(props.row.ppnbatalmuat)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-                    {highlightText(
-                      formatCurrency(cellValue),
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
@@ -3201,24 +3193,23 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.isdpp10psn || '';
-          const cellValue = props.row.isdpp10psn || '';
+          const cellValue =
+            props.row.isdpp10psn != null
+              ? formatCurrency(props.row.isdpp10psn)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -3858,24 +3849,23 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.saldopiutang || '';
-          const cellValue = props.row.saldopiutang || '';
+          const cellValue =
+            props.row.saldopiutang != null
+              ? formatCurrency(props.row.saldopiutang)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -10173,7 +10163,6 @@ const GridShipper = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    console.log('sdadsakjhdjkhsa');
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -10186,7 +10175,7 @@ const GridShipper = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/bank-allItems`);
+          const response = await api2.get(`/redis/get/shipper-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -10219,7 +10208,7 @@ const GridShipper = () => {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteBank(selectedRowId as unknown as string, {
+          await deleteShipper(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -10266,7 +10255,7 @@ const GridShipper = () => {
             onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
           }
         );
-        queryClient.invalidateQueries('bank');
+        queryClient.invalidateQueries('shipper');
       }
     } catch (error) {
       console.error(error);
@@ -10292,26 +10281,6 @@ const GridShipper = () => {
     if (selectedRow !== null) {
       setMode('view');
       setPopOver(true);
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      const { page, limit, ...filtersWithoutLimit } = filters;
-
-      const response = await exportBankFn(filtersWithoutLimit); // Kirim data tanpa pagination
-
-      // Buat link untuk mendownload file
-      const link = document.createElement('a');
-      const url = window.URL.createObjectURL(response);
-      link.href = url;
-      link.download = `laporan_bank${Date.now()}.xlsx`; // Nama file yang diunduh
-      link.click(); // Trigger download
-
-      // Revoke URL setelah download
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error exporting bank data:', error);
     }
   };
 

@@ -167,7 +167,7 @@ const FormJenisMuatan = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -193,7 +193,7 @@ const FormJenisMuatan = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -230,6 +230,7 @@ const FormJenisMuatan = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
+            variant="save"
             // onClick={onSubmit}
             onClick={(e) => {
               e.preventDefault();
@@ -240,7 +241,6 @@ const FormJenisMuatan = ({
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -269,13 +269,8 @@ const FormJenisMuatan = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

@@ -492,7 +492,7 @@ const FormHutang = ({
                           <Input
                             {...field}
                             type="text"
-                            readOnly={mode === 'view' || mode === 'delete'}
+                            disabled={mode === 'view' || mode === 'delete'}
                             value={field.value ?? ''}
                             onKeyDown={inputStopPropagation}
                             onClick={(e) => e.stopPropagation()}
@@ -559,8 +559,9 @@ const FormHutang = ({
                         <FormControl>
                           <InputCurrency
                             {...field}
-                            readOnly={mode === 'view' || mode === 'delete'}
                             disabled={
+                              mode === 'view' ||
+                              mode === 'delete' ||
                               props.row.disableNominal ||
                               (Number(parseCurrency(props.row.dpp)) > 0 &&
                                 mode === 'edit')
@@ -624,8 +625,9 @@ const FormHutang = ({
                         <FormControl>
                           <InputCurrency
                             {...field}
-                            readOnly={mode === 'view' || mode === 'delete'}
                             disabled={
+                              mode === 'view' ||
+                              mode === 'delete' ||
                               props.row.disableDpp ||
                               (Number(parseCurrency(props.row.nominal)) > 0 &&
                                 mode === 'edit' &&
@@ -841,8 +843,8 @@ const FormHutang = ({
         (element) =>
           element.id !== 'image-dropzone' &&
           element.tagName !== 'BUTTON' &&
-          !element.hasAttribute('readonly') // Pengecualian jika input readonly
-      ) as HTMLElement[]; // Ambil semua input dalam form kecuali button dan readonly inputs
+          !element.hasAttribute('readonly')
+      ) as HTMLElement[];
 
       const focusedElement = document.activeElement as HTMLElement;
 
@@ -1044,10 +1046,9 @@ const FormHutang = ({
                             <FormControl>
                               <Input
                                 {...field}
-                                disabled
                                 value={field.value ?? ''}
                                 type="text"
-                                readOnly={mode === 'view' || mode === 'delete'}
+                                disabled={mode === 'view' || mode === 'delete'}
                               />
                             </FormControl>
                             <FormMessage />
@@ -1146,7 +1147,7 @@ const FormHutang = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1235,6 +1236,7 @@ const FormHutang = ({
           <Button
             type="submit"
             // onClick={onSubmit}
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);
@@ -1244,7 +1246,6 @@ const FormHutang = ({
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -1272,13 +1273,8 @@ const FormHutang = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

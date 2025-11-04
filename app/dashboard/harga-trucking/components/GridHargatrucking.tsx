@@ -993,17 +993,14 @@ const GridHargatrucking = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
-          const cellValue = props.row.nominal || '';
+          const cellValue =
+            props.row.nominal != null ? formatCurrency(props.row.nominal) : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
