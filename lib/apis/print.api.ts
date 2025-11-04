@@ -24,6 +24,10 @@ export interface PrintFileBody {
   options: PrintOptions;
 }
 
+export interface PrinterDefault {
+  name: string;
+}
+
 const BASE = 'http://localhost:3004/api/printer';
 
 export async function getPrintersFn(): Promise<PrinterInfo[]> {

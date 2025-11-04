@@ -1,7 +1,12 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getPrintersFn, printFileFn, PrinterInfo } from '@/lib/apis/print.api';
+import {
+  getPrintersFn,
+  printFileFn,
+  PrinterInfo,
+  PrinterDefault
+} from '@/lib/apis/print.api';
 import { IoMdClose } from 'react-icons/io';
 import { FaPrint, FaTimes } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
@@ -260,7 +265,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           setLayout('portrait');
         }
       } catch (err) {
-        console.error('⚠ Gagal membaca ukuran kertas dari PDF:', err);
+        console.error('âš  Gagal membaca ukuran kertas dari PDF:', err);
         setPaperSize('CUSTOM_A4');
         setLayout('portrait');
       }
@@ -273,9 +278,33 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
   useEffect(() => {
     if (!isOpen || !isPrinterCheckComplete) return;
+
     const lastPrinter = localStorage.getItem('lastPrinter');
-    if (lastPrinter) setDestination(lastPrinter);
-  }, [isOpen, isPrinterCheckComplete]);
+
+    if (lastPrinter) {
+      const isLastPrinterOnline = printers.some(
+        (p) => p.name === lastPrinter && p.status === 'Online'
+      );
+
+      if (isLastPrinterOnline) {
+        setDestination(lastPrinter);
+        return;
+      } else {
+        localStorage.removeItem('lastPrinter');
+      }
+    }
+
+    const defaultPrinter = printers.find(
+      (p) => p.isDefault === true && p.status === 'Online'
+    );
+
+    if (defaultPrinter) {
+      setDestination(defaultPrinter.name.replace(/\\/g, '\\\\'));
+      return;
+    }
+
+    setDestination('');
+  }, [isOpen, isPrinterCheckComplete, printers]);
 
   const onPointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
@@ -398,7 +427,10 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="mb-1 mr-3 flex w-full flex-row items-center justify-end">
+          <div className="mb-1 mr-3 flex w-full flex-row items-center justify-between">
+            <h2 className="ml-4 text-sm font-semibold uppercase tracking-wider text-gray-800">
+              Print Dialog
+            </h2>
             <div
               ref={closeButtonRef}
               className="w-fit rounded-sm bg-red-500 p-1"
@@ -430,7 +462,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
                   -- Pilih Printer --
                 </option>
                 {loadingPrinters ? (
-                  <option disabled>Loading printers…</option>
+                  <option disabled>Loading printersâ€¦</option>
                 ) : printers.filter((p) => p.status === 'Online').length ===
                   0 ? (
                   <option disabled>Tidak ada printer online</option>
@@ -502,12 +534,11 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
             </Button>
             <Button
               type="button"
-              variant="secondary"
-              className="flex w-fit items-center gap-1 bg-zinc-500 text-center text-sm text-white text-white hover:bg-zinc-400"
+              variant="cancel"
               onClick={!isLoading ? onClose : undefined}
               disabled={isLoading}
             >
-              <IoMdClose /> Cancel
+              Cancel
             </Button>
           </div>
         </div>

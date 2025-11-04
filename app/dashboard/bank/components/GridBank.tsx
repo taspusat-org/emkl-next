@@ -516,6 +516,7 @@ const GridBank = () => {
       return updated;
     });
   };
+  console.log(getCoa, 'inidia');
   const handleSelectAll = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
@@ -2560,12 +2561,7 @@ const GridBank = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' &&
-      mode !== ''
-    ) {
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       console.log(rowData);
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);

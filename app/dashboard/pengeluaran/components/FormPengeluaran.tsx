@@ -598,9 +598,7 @@ const FormPengeluaran = ({
         },
         renderHeaderCell: () => (
           <div className="flex h-[100%] w-full flex-col justify-center">
-            <p className={`text-left text-sm font-normal`}>
-              nomor invoice emkl
-            </p>
+            <p className={`text-left text-sm font-normal`}>no invoice emkl</p>
           </div>
         ),
         name: 'noinvoiceemkl',
@@ -646,7 +644,7 @@ const FormPengeluaran = ({
         renderHeaderCell: () => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>
-              nomor transaksi biaya
+              no transaksi biaya
             </p>
           </div>
         ),
@@ -685,9 +683,7 @@ const FormPengeluaran = ({
         },
         renderHeaderCell: () => (
           <div className="flex h-[100%] w-full flex-col justify-center">
-            <p className={`text-left text-sm font-normal`}>
-              nomor transaksi lain
-            </p>
+            <p className={`text-left text-sm font-normal`}>no transaksi lain</p>
           </div>
         ),
         name: 'transaksilain_nobukti',
@@ -771,7 +767,7 @@ const FormPengeluaran = ({
         renderHeaderCell: () => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>
-              nomor faktur pajak emkl
+              no faktur pajak emkl
             </p>
           </div>
         ),
@@ -1318,7 +1314,7 @@ const FormPengeluaran = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1391,7 +1387,7 @@ const FormPengeluaran = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1431,7 +1427,7 @@ const FormPengeluaran = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          NOMOR WARKAT
+                          no WARKAT
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -1439,7 +1435,7 @@ const FormPengeluaran = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1613,6 +1609,7 @@ const FormPengeluaran = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
+            variant="save"
             // onClick={onSubmit}
             onClick={(e) => {
               e.preventDefault();
@@ -1623,7 +1620,6 @@ const FormPengeluaran = ({
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -1651,13 +1647,8 @@ const FormPengeluaran = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

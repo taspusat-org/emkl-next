@@ -313,7 +313,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -336,7 +336,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -359,7 +359,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -381,7 +381,7 @@ const FormShipper = ({
                         <Textarea
                           {...field}
                           value={field.value ?? ''}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -482,7 +482,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -505,7 +505,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -536,7 +536,7 @@ const FormShipper = ({
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         ></InputMask>
                       </FormControl>
                       <FormMessage />
@@ -564,7 +564,7 @@ const FormShipper = ({
                               ? 'text-zinc-400'
                               : 'text-zinc-900'
                           } focus:outline-none focus:ring-0`}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -587,7 +587,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -610,7 +610,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -637,7 +637,7 @@ const FormShipper = ({
                           onValueChange={(val) => {
                             field.onChange(val);
                           }}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -664,7 +664,7 @@ const FormShipper = ({
                           onValueChange={(value: any) =>
                             forms.setValue('creditterm', Number(value))
                           }
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -691,7 +691,7 @@ const FormShipper = ({
                           onValueChange={(value: any) =>
                             forms.setValue('credittermplus', Number(value))
                           }
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -725,7 +725,7 @@ const FormShipper = ({
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         ></InputMask>
                       </FormControl>
                       <FormMessage />
@@ -775,7 +775,7 @@ const FormShipper = ({
                           onValueChange={(val) => {
                             field.onChange(val);
                           }}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -798,7 +798,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -822,7 +822,7 @@ const FormShipper = ({
                           onValueChange={(val) => {
                             field.onChange(val);
                           }}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -845,7 +845,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -872,7 +872,7 @@ const FormShipper = ({
                               Number(value)
                             )
                           }
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -895,7 +895,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -918,7 +918,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -942,7 +942,7 @@ const FormShipper = ({
                           onValueChange={(value: any) =>
                             forms.setValue('formatcetak', Number(value))
                           }
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -989,7 +989,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1012,7 +1012,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1035,7 +1035,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1058,7 +1058,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1081,7 +1081,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1104,7 +1104,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1127,7 +1127,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1150,7 +1150,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1174,7 +1174,7 @@ const FormShipper = ({
                           onValueChange={(val) => {
                             field.onChange(val);
                           }}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1197,7 +1197,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1220,7 +1220,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1246,7 +1246,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1272,7 +1272,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1295,7 +1295,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="email"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1318,7 +1318,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1349,7 +1349,7 @@ const FormShipper = ({
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         ></InputMask>
                       </FormControl>
                       <FormMessage />
@@ -1372,7 +1372,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1396,7 +1396,7 @@ const FormShipper = ({
                           onValueChange={(val) => {
                             field.onChange(val);
                           }}
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1419,7 +1419,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1516,7 +1516,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1539,7 +1539,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1563,7 +1563,7 @@ const FormShipper = ({
                           onValueChange={(value: any) =>
                             forms.setValue('idtipe', Number(value))
                           }
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1587,7 +1587,7 @@ const FormShipper = ({
                           onValueChange={(value: any) =>
                             forms.setValue('idinitial', Number(value))
                           }
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1610,7 +1610,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1667,7 +1667,7 @@ const FormShipper = ({
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         ></InputMask>
                       </FormControl>
                       <FormMessage />
@@ -1690,7 +1690,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1713,7 +1713,7 @@ const FormShipper = ({
                           {...field}
                           value={field.value ?? ''}
                           type="text"
-                          readOnly={mode === 'view' || mode === 'delete'}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       </FormControl>
                       <FormMessage />
@@ -1753,6 +1753,7 @@ gap-2 border-t border-zinc-300 bg-zinc-200 px-3 py-2"
             >
               <Button
                 type="submit"
+                variant="save"
                 onClick={(e) => {
                   e.preventDefault();
                   onSubmit(false);
@@ -1762,7 +1763,6 @@ gap-2 border-t border-zinc-300 bg-zinc-200 px-3 py-2"
                 className="flex w-fit items-center gap-1 text-sm"
                 loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
               >
-                <FaSave />
                 <p className="text-center">
                   {mode === 'delete' ? 'DELETE' : 'SAVE'}
                 </p>
@@ -1792,14 +1792,8 @@ gap-2 border-t border-zinc-300 bg-zinc-200 px-3 py-2"
                 </div>
               )}
 
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-                onClick={handleClose}
-              >
-                <IoMdClose />
-                <p className="text-center text-white">Cancel</p>
+              <Button type="button" variant="cancel" onClick={handleClose}>
+                <p>Cancel</p>
               </Button>
             </div>
           </form>

@@ -482,24 +482,21 @@ const GridHutangDetail = ({
         name: 'nominal',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nominal || '';
-          const cellValue = props.row.nominal || '';
+          const cellValue =
+            props.row.nominal != null ? formatCurrency(props.row.nominal) : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -554,24 +551,21 @@ const GridHutangDetail = ({
         name: 'dpp',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.dpp || '';
-          const cellValue = props.row.dpp || '';
+          const cellValue =
+            props.row.dpp != null ? formatCurrency(props.row.dpp) : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue != null ? formatCurrency(cellValue) : '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
-                  <p>{formatCurrency(cellValue)}</p>
+                  <p>{cellValue}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1286,7 +1280,7 @@ const GridHutangDetail = ({
         filters: { ...prev.filters, nobukti: '' }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {

@@ -431,7 +431,7 @@ const FormAkunPusat = ({
           )}
 
           <Button type="button" variant="cancel" onClick={handleClose}>
-            <IoMdClose /> <p>Cancel</p>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

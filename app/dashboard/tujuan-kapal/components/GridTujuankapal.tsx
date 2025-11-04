@@ -167,7 +167,7 @@ const GridTujuankapal = () => {
       nama: '',
       keterangan: '',
       statusaktif: 0,
-      cabang_id: 1
+      cabang_id: null
     }
   });
   const {
@@ -264,7 +264,6 @@ const GridTujuankapal = () => {
     setInputValue('');
     setCheckedRows(new Set());
     setIsAllSelected(false);
-
     // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
@@ -1731,7 +1730,10 @@ const GridTujuankapal = () => {
       forms.setValue('nama', rowData.nama);
       forms.setValue('kode', rowData.kode);
       forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('cabang_id', Number(rowData.cabang_id));
+      forms.setValue(
+        'cabang_id',
+        rowData.cabang_id > 0 ? Number(rowData.cabang_id) : null
+      );
       forms.setValue('namacabang', rowData.namacabang);
       forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData.text || '');

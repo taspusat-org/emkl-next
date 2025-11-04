@@ -188,12 +188,12 @@ const FormBiayaemkl = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Add Biaya '
+              ? 'Add Biaya emkl'
               : mode === 'edit'
-              ? 'Edit Biaya '
+              ? 'Edit Biaya emkl'
               : mode === 'delete'
-              ? 'Delete Biaya '
-              : 'View Biaya '}
+              ? 'Delete Biaya emkl'
+              : 'View Biaya emkl'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -235,7 +235,7 @@ const FormBiayaemkl = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -261,7 +261,7 @@ const FormBiayaemkl = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              readOnly={mode === 'view' || mode === 'delete'}
+                              disabled={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -373,6 +373,7 @@ const FormBiayaemkl = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
+            variant="save"
             // onClick={onSubmit}
             onClick={(e) => {
               e.preventDefault();
@@ -383,7 +384,6 @@ const FormBiayaemkl = ({
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -412,13 +412,8 @@ const FormBiayaemkl = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>
