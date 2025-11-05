@@ -1872,7 +1872,7 @@ const GridPenerimaanHeader = () => {
 
   //   const response = await getPenerimaanHeaderByIdFn(rowId);
   //   const responseDetail = await getPenerimaanDetailFn(rowId);
-  //   console.log('responseDetail', responseDetail.data);
+  //
   //   const totalNominal = responseDetail.data.reduce(
   //     (sum: number, i: any) => sum + Number(i.nominal || 0),
   //     0
@@ -2118,7 +2118,6 @@ const GridPenerimaanHeader = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk1');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -2134,7 +2133,6 @@ const GridPenerimaanHeader = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk2');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {

@@ -385,7 +385,7 @@ const GridCabang = () => {
       console.error('Error fetching parameter data:', error);
     }
   };
-  // console.log(forms.getValues());
+  // );
 
   useEffect(() => {
     // Menjalankan parameterData dengan params yang sesuai

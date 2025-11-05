@@ -53,7 +53,7 @@ export const useCreateDaftarBank = () => {
         if (errorResponse.statusCode === 400) {
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {
@@ -88,7 +88,7 @@ export const useDeleteDaftarBank = () => {
         if (errorResponse.statusCode === 400) {
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {
@@ -122,7 +122,7 @@ export const useUpdateDaftarBank = () => {
         if (errorResponse.statusCode === 400) {
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {

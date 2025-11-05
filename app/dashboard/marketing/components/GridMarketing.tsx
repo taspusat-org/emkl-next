@@ -153,7 +153,7 @@ const GridMarketing = () => {
       marketingprosesfee: []
     }
   });
-  // console.log(forms.getValues());
+  // );
 
   const {
     setFocus,
@@ -2485,7 +2485,7 @@ const GridMarketing = () => {
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
-      // console.log('row', row);
+      //
 
       forms.setValue('nama', row?.nama);
       forms.setValue('kode', row?.kode ?? '');

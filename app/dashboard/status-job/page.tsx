@@ -37,7 +37,7 @@ const Page = () => {
     selectedJenisStatusJob,
     selectedJenisStatusJobNama
   } = useSelector((state: RootState) => state.filter);
-  // console.log('selectedJenisOrderan di page',selectedJenisOrderan, 'selectedJenisOrderanNama di page', selectedJenisOrderanNama, 'selectedJenisStatusJob do page',selectedJenisStatusJob, 'selectedJenisStatusJobNama di page', selectedJenisStatusJobNama);
+  //
 
   useEffect(() => {
     const fetchData = async () => {

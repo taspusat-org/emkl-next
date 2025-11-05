@@ -142,7 +142,7 @@ const GridJenisProsesFee = () => {
       statusaktif_nama: ''
     }
   });
-  console.log(forms.getValues());
+  );
 
   const {
     setFocus,
@@ -937,7 +937,7 @@ const GridJenisProsesFee = () => {
           const cannotDeleteIds = cannotDeleteItems
             .map((item) => item.id)
             .join(', ');
-          console.log(cannotDeleteIds);
+          
 
           alert({
             title: 'Beberapa data tidak dapat dihapus!',
@@ -1120,7 +1120,7 @@ const GridJenisProsesFee = () => {
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
-      console.log('reportRows', reportRows);
+      
 
       sessionStorage.setItem(
         'filtersWithoutLimit',

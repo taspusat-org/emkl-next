@@ -1118,7 +1118,7 @@ const GridJabatan = () => {
 
   function handleCellClick(args: { row: IJabatan }) {
     const clickedRow = args.row;
-    // console.log('Clicked row:', rows);
+    //
 
     if (!clickedRow) return;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);

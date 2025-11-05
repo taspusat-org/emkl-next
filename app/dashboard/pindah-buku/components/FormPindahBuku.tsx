@@ -182,7 +182,6 @@ const FormPindahBuku = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
-  console.log('mode', mode);
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>

@@ -246,7 +246,6 @@ const FormHutang = ({
   );
 
   const handleCurrencyBlur = (formattedStr: string, rowIdx: number) => {
-    console.log(formattedStr);
     if (!String(formattedStr).includes(',')) {
       return;
     }
@@ -271,7 +270,7 @@ const FormHutang = ({
       return prevRows.map((row, idx) => {
         if (idx === rowIdx) {
           // Pengecekan apakah nominal berformat dengan desimal '.00'
-          console.log(raw); // Menampilkan raw value yang dikirim
+          // Menampilkan raw value yang dikirim
 
           const updatedNominal =
             raw && String(raw).includes('.00')

@@ -86,7 +86,7 @@ const ReportMenuPage: React.FC = () => {
             EnterFullScreen
           } = slots;
           return (
-            <div className="relative grid w-full grid-cols-3 items-center gap-4 overflow-visible bg-white px-4 py-2 shadow dark:bg-red-500">
+            <div className="relative grid w-full grid-cols-3 items-center gap-4 overflow-visible bg-white px-4 shadow dark:bg-red-500">
               {/* Column 1: page navigation */}
               <div className="flex items-center justify-start gap-2">
                 <GoToFirstPage />

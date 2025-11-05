@@ -81,7 +81,6 @@ const ActionButton = ({
   disableExport = false,
   disableReport = false
 }: BaseActionProps) => {
-  console.log('module', module);
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const { hasPermission, loading } = usePermissions();
   const [dataParameter, setDataParameter] = useState<any>([]);

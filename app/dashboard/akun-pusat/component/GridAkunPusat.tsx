@@ -141,7 +141,7 @@ const GridAkunPusat = () => {
     { ...filters, page: currentPage },
     abortControllerRef.current?.signal
   );
-  // console.log(allAkunpusat, 'INI DATANYAA');
+  //
 
   const { mutateAsync: createAkunpusat, isLoading: isLoadingCreate } =
     useCreateAkunpusat();
@@ -1266,7 +1266,6 @@ const GridAkunPusat = () => {
           const cannotDeleteIds = cannotDeleteItems
             .map((item) => item.id)
             .join(', ');
-          console.log(cannotDeleteIds);
 
           alert({
             title: 'Beberapa data tidak dapat dihapus!',

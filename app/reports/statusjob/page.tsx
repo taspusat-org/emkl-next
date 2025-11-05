@@ -40,13 +40,10 @@ const ReportMenuPage: React.FC = () => {
 
   // Function to handle print action
   const handlePrintAction = () => {
-    console.log('user sedang print');
-
     // Add a small delay to ensure the print dialog opens first
     setTimeout(() => {
       // Close the page/tab after print dialog
       // window.close();
-      console.log('ditutp');
     }, 1000);
   };
 

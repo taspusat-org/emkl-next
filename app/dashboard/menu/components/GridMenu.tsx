@@ -1418,7 +1418,7 @@ const GridMenu = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  console.log('isDataUpdated', isDataUpdated);
+
   useEffect(() => {
     if (!allMenu || isDataUpdated) return;
 

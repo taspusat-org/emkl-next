@@ -51,7 +51,7 @@ export const useCreateJenisseal = () => {
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
-      console.log('errorResponse', errorResponse);
+
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
         const errorFields = errorResponse.message || [];
@@ -60,7 +60,7 @@ export const useCreateJenisseal = () => {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {
@@ -95,7 +95,7 @@ export const useDeleteJenisseal = () => {
         if (errorResponse.statusCode === 400) {
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {
@@ -130,7 +130,7 @@ export const useUpdateJenisseal = () => {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {

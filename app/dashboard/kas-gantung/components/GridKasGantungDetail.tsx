@@ -10,6 +10,7 @@ import React, {
 import 'react-data-grid/lib/styles.scss';
 
 import DataGrid, {
+  CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
@@ -826,7 +827,13 @@ const GridKasGantungDetail = ({
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
-
+  function handleCellClick(args: { row: KasGantungDetail }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
   const handleClearInput = () => {
     cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
@@ -1003,6 +1010,9 @@ const GridKasGantungDetail = ({
           rows={rows}
           rowClass={getRowClass}
           headerRowHeight={70}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}

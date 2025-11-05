@@ -584,7 +584,6 @@ export default function LookUpModalPengeluaran({
     if (isAtBottom(event)) {
       const nextPage = findUnfetchedPage(1);
       if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
-        console.log('masuk', nextPage);
         setCurrentPage(nextPage);
       }
     }
@@ -695,7 +694,7 @@ export default function LookUpModalPengeluaran({
         params: buildParams(),
         signal
       });
-      console.log('response', response);
+
       const { data, pagination } = response || {};
       if (pagination?.totalPages) setTotalPages(pagination.totalPages);
 
@@ -841,9 +840,7 @@ export default function LookUpModalPengeluaran({
     setTglDari(fmt(firstOfMonth));
     setTglSampai(fmt(lastOfMonth));
   }, [dispatch]);
-  console.log('label', label);
-  console.log('openNameModal', openNameModal);
-  console.log('open', open);
+
   useEffect(() => {
     if (open) {
       setIsFirstLoad(true);
@@ -908,7 +905,7 @@ export default function LookUpModalPengeluaran({
           const defaultRow = filteredRows.find(
             (row: any) => row.default === 'YA'
           );
-          console.log('defaultRow222', defaultRow);
+
           if (defaultRow && !clicked) {
             setInputValue(defaultRow?.text);
             if (lookupValue) {
@@ -983,10 +980,8 @@ export default function LookUpModalPengeluaran({
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (selectedRequired) {
-        console.log('handleClickOutside222');
         return;
       }
-      console.log('handleClickOutside333');
 
       if (
         popoverRef.current &&

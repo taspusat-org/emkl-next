@@ -396,7 +396,7 @@ export default ReportMenuPage;
 //   }, []);
 
 //   useEffect(() => {
-//     console.log('reportMarketingBProsesFeeData', reportMarketingBProsesFeeData);
+//
 
 //     if (!reportMarketingOrderanData && !reportMarketingBiayaData && !reportMarketingManagerData && !reportMarketingBProsesFeeData) return;
 

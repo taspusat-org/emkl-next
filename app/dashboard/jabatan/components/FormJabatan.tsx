@@ -145,7 +145,7 @@ const FormJabatan = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
-  console.log(forms.getValues());
+  );
   
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>

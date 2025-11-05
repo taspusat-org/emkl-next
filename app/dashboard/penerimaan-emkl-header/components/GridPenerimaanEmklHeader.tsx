@@ -1886,7 +1886,7 @@ const GridPenerimaanEmklHeader = () => {
   //   const responseDetail = await getPengeluaranEmklDetailFn({
   //     filters: { nobukti: selectedRowNobukti }
   //   });
-  //   console.log('responseDetail', responseDetail.data);
+  //
   //   const totalNominal = responseDetail.data.reduce(
   //     (sum: number, i: any) => sum + Number(i.nominal || 0),
   //     0

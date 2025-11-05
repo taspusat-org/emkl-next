@@ -383,3 +383,150 @@ const ReportMenuPage: React.FC = () => {
 };
 
 export default ReportMenuPage;
+
+// 'use client';
+
+// import 'stimulsoft-reports-js/Css/stimulsoft.designer.office2013.whiteblue.css';
+// import 'stimulsoft-reports-js/Css/stimulsoft.viewer.office2013.whiteblue.css';
+// import React, { useEffect, useState } from 'react';
+// import { useSelector } from 'react-redux';
+// import { RootState } from '@/lib/store/store';
+// import { getTujuankapalFn } from '@/lib/apis/tujuankapal.api';
+// import { getContainerFn } from '@/lib/apis/container.api';
+// import { getMenuFn } from '@/lib/apis/menu.api';
+// import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
+// import { getHargatruckingFn } from '@/lib/apis/hargatrucking.api';
+// import { getShipperFn } from '@/lib/apis/shipper.api';
+// import {
+//   getManagerMarketingDetailFn,
+//   getManagerMarketingHeaderFn
+// } from '@/lib/apis/managermarketingheader.api';
+// export interface MasterManagerMarketing {
+//   nama: string;
+//   keterangan: string;
+//   minimalprofit: string;
+//   statusmentor_text: string;
+//   statusleader_text: string;
+//   text: string;
+// }
+
+// export interface DetailManagerMarketing {
+//   nominalawal: string;
+//   nominalakhir: string;
+//   persentase: string;
+//   text: string;
+// }
+
+// export interface ReportItem {
+//   master: MasterManagerMarketing;
+//   detail: DetailManagerMarketing[];
+// }
+// const ReportDesigner = () => {
+//   const { token } = useSelector((state: RootState) => state.auth);
+//   const [reportData, setReportData] = useState<any>(null);
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         const response = await getManagerMarketingHeaderFn({
+//           page: 1,
+//           limit: 50
+//         });
+
+//         const formatted = await Promise.all(
+//           response.data.map(async (data: any) => {
+//             const detailItems = await getManagerMarketingDetailFn(data.id);
+
+//             return {
+//               detail: detailItems.data.map((d: any) => ({
+//                 nama: data.nama,
+//                 keterangan: data.keterangan,
+//                 minimalprofit: data.minimalprofit,
+//                 statusmentor_text: data.statusmentor_text,
+//                 statusleader_text: data.statusleader_text,
+//                 text_master: data.text,
+//                 nominalawal: d.nominalawal,
+//                 nominalakhir: d.nominalakhir,
+//                 persentase: d.persentase,
+//                 text: d.text
+//               }))
+//             };
+//           })
+//         );
+
+//         setReportData(formatted);
+//       } catch (err) {
+//         console.error('Gagal ambil data:', err);
+//       }
+//     };
+
+//     fetchData();
+//   }, []);
+//
+//   useEffect(() => {
+//     if (!reportData) return;
+
+//     // Render report jika data sudah ada
+//     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+//       .then((module) => {
+//         const { Stimulsoft } = module;
+
+//         // Set license
+//         Stimulsoft.Base.StiLicense.Key =
+//           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+//           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+//           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+//           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+//           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+//           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+//           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+//         // Viewer
+//         const viewerOptions = new Stimulsoft.Viewer.StiViewerOptions();
+//         const viewer = new Stimulsoft.Viewer.StiViewer(
+//           viewerOptions,
+//           'StiViewer',
+//           false
+//         );
+
+//         // Report
+//         const report = new Stimulsoft.Report.StiReport();
+//         report.loadFile('/reports/LaporanManagermarketing.mrt');
+
+//         // Designer
+//         const options = new Stimulsoft.Designer.StiDesignerOptions();
+//         options.appearance.fullScreenMode = true;
+//         const designer = new Stimulsoft.Designer.StiDesigner(
+//           options,
+//           'Designer',
+//           false
+//         );
+
+//         // Dataset
+//         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+//         dataSet.readJson({ data: reportData });
+//         report.dictionary.dataSources.clear();
+//         report.regData(dataSet.dataSetName, '', dataSet);
+//         report.dictionary.synchronize();
+
+//         // Render
+//         viewer.renderHtml('content');
+//         designer.report = report;
+//         designer.renderHtml('content');
+//         viewer.report = report;
+//       })
+//       .catch((error) => {
+//         console.error('Failed to load Stimulsoft:', error);
+//       });
+//   }, [reportData, token]);
+
+//   return (
+//     <div
+//       id="content"
+//       className="report"
+//       style={{ textTransform: 'none', fontSize: 'unset' }}
+//     />
+//   );
+// };
+
+// export default ReportDesigner;

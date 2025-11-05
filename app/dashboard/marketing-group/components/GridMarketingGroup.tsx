@@ -167,7 +167,7 @@ const GridMarketingGroup = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  console.log(forms.getValues());
+  );
 
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
@@ -1058,7 +1058,7 @@ const GridMarketingGroup = () => {
 
     try {
       dispatch(setProcessing());
-      console.log('dasdads');
+      
       if (mode === 'delete') {
         if (selectedRowId) {
           await deleteMarketingGroup(selectedRowId as unknown as string, {
@@ -1524,7 +1524,7 @@ const GridMarketingGroup = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      console.log('rowData', rowData);
+      
       forms.setValue('id', Number(rowData?.id));
       forms.setValue('marketing_id', Number(rowData?.marketing_id) || 1);
       forms.setValue('marketing_nama', rowData?.marketing_nama || '');
