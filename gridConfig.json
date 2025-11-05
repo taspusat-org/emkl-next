@@ -721,5 +721,18 @@
       "created_at": 250,
       "updated_at": 250
     }
+  },
+  "GridComodity-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "keterangan": 250,
+      "rate": 300,
+      "statusaktif": 150,
+      "modifiedby": 150,
+      "created_at": 250,
+      "updated_at": 250
+    }
   }
 }

@@ -19,19 +19,19 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormMenu from './FormContainer';
+import FormMenu from './FormComodity';
 import { useQueryClient } from 'react-query';
 import {
-  ContainerInput,
-  containerSchema
-} from '@/lib/validations/container.validation';
+  ComodityInput,
+  ComoditySchema
+} from '@/lib/validations/comodity.validation';
 
 import {
-  useCreateContainer,
-  useDeleteContainer,
-  useGetContainer,
-  useUpdateContainer
-} from '@/lib/server/useContainer';
+  useCreateComodity,
+  useDeleteComodity,
+  useGetComodity,
+  useUpdateComodity
+} from '@/lib/server/useComodity';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -71,7 +71,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { IContainer } from '@/lib/types/container.type';
+import { IComodity } from '@/lib/types/comodity.type';
 import { number } from 'zod';
 import {
   clearOpenName,
@@ -84,9 +84,9 @@ import {
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import {
-  checkValidationContainerFn,
-  getContainerFn
-} from '@/lib/apis/container.api';
+  checkValidationComodityFn,
+  getComodityFn
+} from '@/lib/apis/comodity.api';
 import { setReportFilter } from '@/lib/store/printSlice/printSlice';
 import Alert from '@/components/custom-ui/AlertCustom';
 import {
@@ -98,6 +98,7 @@ import {
 import FilterInput from '@/components/custom-ui/FilterInput';
 import {
   cancelPreviousRequest,
+  formatCurrency,
   handleContextMenu,
   loadGridConfig,
   resetGridConfig,
@@ -110,8 +111,8 @@ interface Filter {
   limit: number;
   search: string;
   filters: {
-    nama: string;
     keterangan: string;
+    rate: string;
     created_at: string;
     updated_at: string;
     statusaktif: string;
@@ -125,23 +126,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridContainer = () => {
+const GridComodity = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createContainer, isLoading: isLoadingCreate } =
-    useCreateContainer();
-  const { mutateAsync: updateContainer, isLoading: isLoadingUpdate } =
-    useUpdateContainer();
+  const { mutateAsync: createComodity, isLoading: isLoadingCreate } =
+    useCreateComodity();
+  const { mutateAsync: updateComodity, isLoading: isLoadingUpdate } =
+    useUpdateComodity();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteContainer, isLoading: isLoadingDelete } =
-    useDeleteContainer();
+  const { mutateAsync: deleteComodity, isLoading: isLoadingDelete } =
+    useDeleteComodity();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -158,7 +159,7 @@ const GridContainer = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IContainer[]>([]);
+  const [rows, setRows] = useState<IComodity[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -167,17 +168,17 @@ const GridContainer = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<ContainerInput>({
+  const forms = useForm<ComodityInput>({
     resolver:
       mode === 'delete'
         ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(containerSchema),
+        : zodResolver(ComoditySchema),
     mode: 'onSubmit',
     defaultValues: {
-      nama: '',
       keterangan: '',
+      rate: undefined,
       statusaktif: 1,
-      statusaktif_nama: ''
+      text: ''
     }
   });
   const {
@@ -190,22 +191,22 @@ const GridContainer = () => {
     page: 1,
     limit: 30,
     filters: {
-      nama: '',
       keterangan: '',
+      rate: '',
       created_at: '',
       updated_at: '',
       statusaktif: '',
       modifiedby: ''
     },
     search: '',
-    sortBy: 'nama',
+    sortBy: 'keterangan',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { data: allContainer, isLoading: isLoadingContainer } = useGetContainer(
+  const { data: allComodity, isLoading: isLoadingComodity } = useGetComodity(
     {
       ...filters,
       page: currentPage
@@ -256,8 +257,8 @@ const GridContainer = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        nama: '',
         keterangan: '',
+        rate: '',
         created_at: '',
         updated_at: '',
         statusaktif: '',
@@ -411,7 +412,7 @@ const GridContainer = () => {
     if (isSubmitSuccessful) {
       // reset();
       // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
+      requestAnimationFrame(() => setFocus('keterangan'));
     }
   }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
@@ -455,7 +456,7 @@ const GridContainer = () => {
 
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nama: ukuran },
+        filters: { ...prev.filters, keterangan: ukuran },
         page: 1
       }));
       setRows([]);
@@ -466,16 +467,16 @@ const GridContainer = () => {
       handleReport();
     };
 
-    window.addEventListener('AI_FILTER_CONTAINER', filterHandler);
+    window.addEventListener('AI_FILTER_Comodity', filterHandler);
     window.addEventListener('AI_PRINT', printHandler);
 
     return () => {
-      window.removeEventListener('AI_FILTER_CONTAINER', filterHandler);
+      window.removeEventListener('AI_FILTER_Comodity', filterHandler);
       window.removeEventListener('AI_PRINT', printHandler);
     };
   }, []);
 
-  const columns = useMemo((): Column<IContainer>[] => {
+  const columns = useMemo((): Column<IComodity>[] => {
     return [
       {
         key: 'nomor',
@@ -497,8 +498,8 @@ const GridContainer = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    nama: '',
                     keterangan: '',
+                    rate: '',
                     created_at: '',
                     updated_at: '',
                     statusaktif: '',
@@ -542,7 +543,7 @@ const GridContainer = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IContainer }) => (
+        renderCell: ({ row }: { row: IComodity }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -553,76 +554,6 @@ const GridContainer = () => {
         )
       },
 
-      {
-        key: 'nama',
-        name: 'Nama',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nama')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                Nama
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'nama' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'nama' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="nama"
-                value={filters.filters.nama || ''}
-                onChange={(value) => handleFilterInputChange('nama', value)}
-                onClear={() => handleClearFilter('nama')}
-                inputRef={(el) => {
-                  inputColRefs.current['nama'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.nama || '';
-          const cellValue = props.row.nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
       {
         key: 'keterangan',
         name: 'Keterangan',
@@ -690,6 +621,77 @@ const GridContainer = () => {
                   className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
                   <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'rate',
+        name: 'rate',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('rate')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'rate' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                rate
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'rate' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'rate' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="rate"
+                value={filters.filters.rate || ''}
+                onChange={(value) => handleFilterInputChange('rate', value)}
+                onClear={() => handleClearFilter('rate')}
+                inputRef={(el) => {
+                  inputColRefs.current['rate'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.rate || '';
+          const cellValue =
+            props.row.rate != null ? formatCurrency(props.row.rate) : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{formatCurrency(cellValue)}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -1024,7 +1026,7 @@ const GridContainer = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridContainer', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridComodity', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1039,7 +1041,7 @@ const GridContainer = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridContainer', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridComodity', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1056,7 +1058,7 @@ const GridContainer = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingContainer || !hasMore || rows.length === 0) return;
+    if (isLoadingComodity || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1083,7 +1085,7 @@ const GridContainer = () => {
     }
   }
 
-  function handleCellClick(args: { row: IContainer }) {
+  function handleCellClick(args: { row: IComodity }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1091,7 +1093,7 @@ const GridContainer = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IContainer>,
+    args: CellKeyDownArgs<IComodity>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1157,7 +1159,7 @@ const GridContainer = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/container-allItems`);
+          const response = await api2.get(`/redis/get/Comodity-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -1183,7 +1185,7 @@ const GridContainer = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: ContainerInput, keepOpenModal = false) => {
+  const onSubmit = async (values: ComodityInput, keepOpenModal = false) => {
     forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
@@ -1192,7 +1194,7 @@ const GridContainer = () => {
       if (mode === 'delete') {
         const selectedRowId = rows[selectedRow]?.id;
         if (selectedRowId) {
-          await deleteContainer(selectedRowId as unknown as string, {
+          await deleteComodity(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1215,7 +1217,7 @@ const GridContainer = () => {
       }
 
       if (mode === 'add') {
-        const newOrder = await createContainer(
+        const newOrder = await createComodity(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1231,14 +1233,14 @@ const GridContainer = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateContainer(
+        await updateComodity(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('container');
+        queryClient.invalidateQueries('Comodity');
       }
     } catch (error) {
       console.error(error);
@@ -1254,140 +1256,10 @@ const GridContainer = () => {
       setMode('edit');
     }
   };
-  const handleDelete = async () => {
-    try {
-      dispatch(setProcessing());
-
-      if (checkedRows.size === 0) {
-        if (selectedRow !== null) {
-          const selectedRowId = rows[selectedRow]?.id;
-
-          if (selectedRowId) {
-            const validationResponse = await checkValidationContainerFn({
-              aksi: 'DELETE',
-              value: selectedRowId
-            });
-
-            if (validationResponse.data.status !== 'success') {
-              alert({
-                title: 'Data tidak dapat dihapus!',
-                variant: 'danger',
-                submitText: 'OK'
-              });
-              return;
-            }
-
-            setMode('delete');
-            setPopOver(true);
-          }
-        }
-      } else {
-        const checkedRowsArray = Array.from(checkedRows);
-        const validationPromises = checkedRowsArray.map(async (id) => {
-          try {
-            const response = await checkValidationContainerFn({
-              aksi: 'DELETE',
-              value: id
-            });
-            return {
-              id,
-              canDelete: response.data.status === 'success',
-              message: response.data?.message
-            };
-          } catch (error) {
-            return { id, canDelete: false, message: 'Error validating data' };
-          }
-        });
-
-        const validationResults = await Promise.all(validationPromises);
-
-        const cannotDeleteItems = validationResults.filter(
-          (result) => !result.canDelete
-        );
-
-        if (cannotDeleteItems.length > 0) {
-          const cannotDeleteIds = cannotDeleteItems
-            .map((item) => item.id)
-            .join(', ');
-          alert({
-            title: 'Beberapa data tidak dapat dihapus!',
-            variant: 'danger',
-            submitText: 'OK'
-          });
-          return;
-        }
-
-        try {
-          await alert({
-            title: 'Apakah anda yakin ingin menghapus data ini ?',
-            variant: 'danger',
-            submitText: 'YA',
-            cancelText: 'TIDAK',
-            catchOnCancel: true
-          });
-
-          await handleMultipleDelete(checkedRowsArray);
-
-          dispatch(setProcessed());
-        } catch (alertError) {
-          dispatch(setProcessed());
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleDelete:', error);
-      alert({
-        title: 'Error!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
-
-  // Fungsi baru untuk menangani multiple delete
-  const handleMultipleDelete = async (idsToDelete: number[]) => {
-    try {
-      // Hapus data satu per satu
-      for (const id of idsToDelete) {
-        await deleteContainer(id as unknown as string);
-      }
-
-      // Update state setelah semua data berhasil dihapus
-      setRows((prevRows) =>
-        prevRows.filter((row) => !idsToDelete.includes(row.id))
-      );
-
-      // Reset checked rows
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-
-      // Update selected row
-      if (selectedRow >= rows.length - idsToDelete.length) {
-        setSelectedRow(Math.max(0, rows.length - idsToDelete.length - 1));
-      }
-
-      // Focus grid
-      setTimeout(() => {
-        gridRef?.current?.selectCell({
-          rowIdx: Math.max(0, selectedRow - 1),
-          idx: 1
-        });
-      }, 100);
-
-      alert({
-        title: 'Berhasil!',
-        variant: 'success',
-        submitText: 'OK'
-      });
-    } catch (error) {
-      console.error('Error in handleMultipleDelete:', error);
-      alert({
-        title: 'Error!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
+  const handleDelete = () => {
+    if (selectedRow !== null) {
+      setMode('delete');
+      setPopOver(true);
     }
   };
 
@@ -1410,10 +1282,10 @@ const GridContainer = () => {
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await getContainerFn(filtersWithoutLimit);
+      const response = await getComodityFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Container',
+        judullaporan: 'Laporan Comodity',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1447,7 +1319,7 @@ const GridContainer = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanContainer.mrt');
+          report.loadFile('/reports/LaporanComodity.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1466,7 +1338,7 @@ const GridContainer = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/container', '_blank');
+              window.open('/reports/Comodity', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1498,10 +1370,10 @@ const GridContainer = () => {
   //     //   filtersWithoutLimit
   //     // );
 
-  //     const response = await getContainerFn(filtersWithoutLimit);
+  //     const response = await getComodityFn(filtersWithoutLimit);
   //     const reportRows = response.data.map((row) => ({
   //       ...row,
-  //       judullaporan: 'Laporan Container',
+  //       judullaporan: 'Laporan Comodity',
   //       usercetak: user.username,
   //       tglcetak: tglcetak,
   //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1579,12 +1451,12 @@ const GridContainer = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IContainer) {
+  function getRowClass(row: IComodity) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IContainer) {
+  function rowKeyGetter(row: IComodity) {
     return row.id;
   }
 
@@ -1649,7 +1521,7 @@ const GridContainer = () => {
   useEffect(() => {
     loadGridConfig(
       user.id,
-      'GridContainer',
+      'GridComodity',
       columns,
       setColumnsOrder,
       setColumnsWidth
@@ -1668,9 +1540,9 @@ const GridContainer = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allContainer || isFetchingManually || isDataUpdated) return;
+    if (!allComodity || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allContainer.data || [];
+    const newRows = allComodity.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1688,14 +1560,14 @@ const GridContainer = () => {
       return prevRows;
     });
 
-    if (allContainer.pagination.totalPages) {
-      setTotalPages(allContainer.pagination.totalPages);
+    if (allComodity.pagination.totalPages) {
+      setTotalPages(allComodity.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allContainer, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allComodity, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1758,13 +1630,13 @@ const GridContainer = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('rate', formatCurrency(rowData?.rate));
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('text', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_nama', rowData?.text || '');
+      forms.setValue('text', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1842,7 +1714,7 @@ const GridContainer = () => {
           }}
         >
           <ActionButton
-            module="Container"
+            module="Comodity"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
@@ -1887,7 +1759,7 @@ const GridContainer = () => {
             //   // }
             // ]}
           />
-          {isLoadingContainer ? <LoadRowsRenderer /> : null}
+          {isLoadingComodity ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1908,7 +1780,7 @@ const GridContainer = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridContainer',
+                    'GridComodity',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -1939,4 +1811,4 @@ const GridContainer = () => {
   );
 };
 
-export default GridContainer;
+export default GridComodity;
