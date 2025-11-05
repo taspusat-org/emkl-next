@@ -175,6 +175,7 @@ const GridJurnalUmumHeader = () => {
     sortBy: 'nobukti',
     sortDirection: 'asc'
   });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
@@ -182,12 +183,14 @@ const GridJurnalUmumHeader = () => {
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetJurnalUmumHeader({
-    ...filters,
-    page: currentPage
-  });
+  } = useGetJurnalUmumHeader(
+    {
+      ...filters,
+      page: currentPage
+    },
+    abortControllerRef.current?.signal
+  );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const abortControllerRef = useRef<AbortController | null>(null);
   const cancelPreviousRequest = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -1264,7 +1267,7 @@ const GridJurnalUmumHeader = () => {
       setPopOver(false);
       setIsFetchingManually(true);
       setRows([]);
-      console.log('pageNumber', pageNumber);
+
       if (mode !== 'delete') {
         const response = await api2.get(`/redis/get/jurnalumumheader-allItems`);
         // Set the rows only if the data has changed

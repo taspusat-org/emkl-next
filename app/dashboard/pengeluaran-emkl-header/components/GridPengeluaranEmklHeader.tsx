@@ -1642,8 +1642,6 @@ const GridPengeluaranEmklHeader = () => {
   }
   const onSuccess = async (indexOnPage: any, pageNumber: any) => {
     try {
-      console.log('indexOnPage', indexOnPage);
-      console.log('pageNumber', pageNumber);
       forms.reset();
       setPopOver(false);
       setIsFetchingManually(true);
@@ -1940,7 +1938,7 @@ const GridPengeluaranEmklHeader = () => {
   //   const responseDetail = await getPengeluaranEmklDetailFn({
   //     filters: { nobukti: selectedRowNobukti }
   //   });
-  //   console.log('responseDetail', responseDetail.data);
+  //
   //   const totalNominal = responseDetail.data.reduce(
   //     (sum: number, i: any) => sum + Number(i.nominal || 0),
   //     0
@@ -2364,8 +2362,7 @@ const GridPengeluaranEmklHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [onReload, refetch]); // Dependency array termasuk filters dan refetch
-  console.log('filters', filters);
-  console.log('currentPage', currentPage);
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

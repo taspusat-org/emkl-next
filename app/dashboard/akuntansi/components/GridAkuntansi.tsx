@@ -1041,7 +1041,7 @@ const GridAkuntansi = () => {
 
   function handleCellClick(args: { row: IAkuntansi }) {
     const clickedRow = args.row;
-    // console.log('Clicked row:', rows);
+    //
 
     if (!clickedRow) return;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);

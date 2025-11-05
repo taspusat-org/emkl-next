@@ -163,7 +163,7 @@ const FormAsalKapal = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
-  console.log(forms.getValues());
+  );
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>

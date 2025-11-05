@@ -345,7 +345,7 @@ const Page = () => {
   }, [dispatch]);
 
   // useEffect(() => {
-  //   console.log('selectedJenisOrderan di page', selectedJenisOrderan);
+  //
 
   // if (onReload) {
   // setGrid(selectedJenisOrderan);

@@ -34,11 +34,29 @@ class SessionTokenCache {
     return SessionTokenCache.instance;
   }
 
+  /**
+   * ✅ Helper: Check if current route is public
+   */
+  private isPublicRoute(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    const publicPaths = [
+      '/auth/signin',
+      '/auth/signup',
+      '/auth/reset-password',
+      '/auth/forgot-password',
+      '/auth/error'
+    ];
+
+    return publicPaths.some((path) =>
+      window.location.pathname.startsWith(path)
+    );
+  }
+
   private async initializeToken(): Promise<void> {
     try {
       const session = await getSession();
 
-      // ✅ PERBAIKAN: Check error di session
       if (session?.error) {
         console.error('⛔ Session has error, logging out...');
         await this.handleLogout();
@@ -85,10 +103,13 @@ class SessionTokenCache {
     try {
       const session = await getSession();
 
-      // ✅ PERBAIKAN: Check error field
       if (session?.error) {
         console.error('⛔ Session contains error:', session.error);
-        await this.handleLogout();
+
+        // ✅ PERBAIKAN: Jangan logout jika di public route
+        if (!this.isPublicRoute()) {
+          await this.handleLogout();
+        }
         return null;
       }
 
@@ -103,9 +124,13 @@ class SessionTokenCache {
         return session.token;
       }
 
-      // ✅ No session, logout
+      // ✅ No session
       console.warn('⚠️ No valid session found');
-      await this.handleLogout();
+
+      // ✅ PERBAIKAN: Jangan logout jika di public route
+      if (!this.isPublicRoute()) {
+        await this.handleLogout();
+      }
       return null;
     } catch (error) {
       console.error('❌ Failed to fetch session token:', error);
@@ -124,7 +149,6 @@ class SessionTokenCache {
   }
 
   async handleTokenRefresh(): Promise<string | null> {
-    // Queue mechanism
     if (this.isRefreshing) {
       return new Promise((resolve) => {
         this.refreshSubscribers.push((token: string) => {
@@ -138,7 +162,6 @@ class SessionTokenCache {
     try {
       const session = await getSession();
 
-      // ✅ PERBAIKAN: Check error field sebelum check token
       if (session?.error) {
         console.error('⛔ Session has error during refresh:', session.error);
         throw new Error('Session contains error: ' + session.error);
@@ -149,7 +172,6 @@ class SessionTokenCache {
         throw new Error('No valid session');
       }
 
-      // Update cache
       this.updateCache({
         accessToken: session.token,
         refreshToken: session.refreshToken || null,
@@ -158,7 +180,6 @@ class SessionTokenCache {
           : 0
       });
 
-      // Notify subscribers
       this.refreshSubscribers.forEach((callback) =>
         callback(session.token as string)
       );
@@ -168,11 +189,13 @@ class SessionTokenCache {
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
 
-      // Clear subscribers with null
       this.refreshSubscribers.forEach((callback) => callback(''));
       this.refreshSubscribers = [];
 
-      await this.handleLogout();
+      // ✅ PERBAIKAN: Jangan logout jika di public route
+      if (!this.isPublicRoute()) {
+        await this.handleLogout();
+      }
       return null;
     } finally {
       this.isRefreshing = false;
@@ -180,7 +203,7 @@ class SessionTokenCache {
   }
 
   /**
-   * ✅ BARU: Centralized logout handler
+   * ✅ Centralized logout handler
    */
   private async handleLogout(): Promise<void> {
     this.clearCache();
@@ -238,9 +261,13 @@ const configureAxios = (baseURL: string): AxiosInstance => {
     async (
       config: InternalAxiosRequestConfig
     ): Promise<InternalAxiosRequestConfig> => {
+      // ✅ Skip authentication untuk auth endpoints
       if (
         config.url?.includes('/auth/login') ||
-        config.url?.includes('/auth/refresh-token')
+        config.url?.includes('/auth/refresh-token') ||
+        config.url?.includes('/auth/reset-password') ||
+        config.url?.includes('/auth/forgot-password') ||
+        config.url?.includes('/auth/check-token')
       ) {
         return config;
       }
@@ -283,9 +310,6 @@ const configureAxios = (baseURL: string): AxiosInstance => {
         if (newToken) {
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return apiInstance(originalRequest);
-        } else {
-          console.log('❌ Token refresh failed, user logged out');
-          // handleTokenRefresh sudah handle logout
         }
       }
 

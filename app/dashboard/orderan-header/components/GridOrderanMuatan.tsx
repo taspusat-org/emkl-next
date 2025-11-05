@@ -3313,7 +3313,7 @@ const GridOrderanMuatan = () => {
   //   // const responseDetail = await getPengeluaranEmklDetailFn({
   //   //   filters: { nobukti: selectedRowNobukti }
   //   // });
-  //   // console.log('responseDetail', responseDetail.data);
+  //   //
   //   // const totalNominal = responseDetail.data.reduce(
   //   //   (sum: number, i: any) => sum + Number(i.nominal || 0),
   //   //   0
@@ -3375,7 +3375,7 @@ const GridOrderanMuatan = () => {
   //       // filtersWithoutLimit
   //     );
 
-  //     console.log('response', response);
+  //
 
   //     // const responseDetail = await getPengeluaranDetailFn(rowId);
   //     const totalNominal = response.data.reduce(
@@ -3397,7 +3397,7 @@ const GridOrderanMuatan = () => {
   //         // terbilang: numberToTerbilang(totalNominal),
   //         judul: `LAPORAN BOOKING ORDERAN MUATAN`
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       // dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');

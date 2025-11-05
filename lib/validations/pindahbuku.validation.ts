@@ -48,7 +48,7 @@ export const pindahBukuSchema = z.object({
     .nonempty({ message: dynamicRequiredMessage('KETERANGAN') })
 });
 // .refine((data) => {
-//   console.log('data', data, 'data.alatbayar_nama', data.alatbayar_nama);
+//
 
 //   if (data.alatbayar_nama === "Other" && !data.alatbayar_nama) {
 //     return false; // Validation fails if "Other" is selected but otherReason is empty
@@ -60,6 +60,6 @@ export const pindahBukuSchema = z.object({
 // });
 
 // const result = pindahBukuSchema.safeParse({ alatbayar_nama: "GIRO" });
-// console.log("cek manual:", result);
+//
 
 export type pindahBukuInput = z.infer<typeof pindahBukuSchema>;

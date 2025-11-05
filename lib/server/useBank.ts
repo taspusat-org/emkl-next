@@ -66,7 +66,7 @@ export const useCreateBank = () => {
       if (errorResponse !== undefined) {
         if (errorResponse.statusCode === 400) {
           // Normalisasi pesan error agar konsisten array
-          console.log(errorResponse);
+
           const messages = Array.isArray(errorResponse.message)
             ? errorResponse.message
             : [{ path: ['form'], message: errorResponse.message }];
@@ -107,7 +107,7 @@ export const useDeleteBank = () => {
         if (errorResponse.statusCode === 400) {
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {

@@ -64,7 +64,7 @@ export const useCreateJenisProsesFee = () => {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
-            console.log('path', path);
+
             setError(path, err.message); // Update error di context
           });
         } else {

@@ -539,7 +539,7 @@ const GridStatusJob = () => {
 
   // const handleMultipleDelete = async (idsToDelete: number[]) => {
   //   try {
-  //     console.log('idsToDelete', idsToDelete);
+  //
 
   //     for (const id of idsToDelete) {
   //       // Hapus data satu per satu
@@ -865,7 +865,7 @@ const GridStatusJob = () => {
   //         tglcetak,
   //         judul: `Laporan Status Job`
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       window.open('/reports/designer', '_blank');
   //     }
@@ -1272,7 +1272,7 @@ const GridStatusJob = () => {
                 Number(p.id) === Number(item.role_ya)
             )
         );
-        console.log('filteredPermission', filteredPermission);
+
         if (filteredPermission && filteredPermission.length > 0) {
           setModuleValue('STATUS-JOB');
         } else {

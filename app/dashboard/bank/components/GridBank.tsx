@@ -537,7 +537,6 @@ const GridBank = () => {
     }));
     setInputValue('');
   };
-  console.log(forms.getValues());
 
   const columns = useMemo((): Column<IBank>[] => {
     return [
@@ -2074,7 +2073,6 @@ const GridBank = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    console.log('sdadsakjhdjkhsa');
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -2630,7 +2628,6 @@ const GridBank = () => {
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
-  console.log(forms.getValues());
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

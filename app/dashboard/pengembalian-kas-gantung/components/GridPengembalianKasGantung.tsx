@@ -1285,7 +1285,6 @@ const GridPengembalianKasGantung = () => {
     }
 
     if (selectedRowId && mode === 'edit') {
-      console.log('values', values);
       const cleanedDetails = (values.details as any[]).map(
         ({ coadetail, kasgantungheader_id, ...rest }) => rest
       );
@@ -1454,7 +1453,7 @@ const GridPengembalianKasGantung = () => {
   //         tglcetak: new Date().toLocaleDateString(),
   //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');

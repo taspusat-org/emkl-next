@@ -23,14 +23,10 @@ const Page = () => {
         const result = await fieldLength('kapal');
         dispatch(setFieldLength(result.data));
 
-        const [
-          getPelayaranLookup,
-          getStatusAktifLookup
-        ] = await Promise.all([
+        const [getPelayaranLookup, getStatusAktifLookup] = await Promise.all([
           getPelayaranFn({ isLookUp: 'true' }),
           getParameterFn({ isLookUp: 'true' })
         ]);
-
 
         // PELAYARAN
         if (getPelayaranLookup.type === 'local') {
@@ -44,9 +40,7 @@ const Page = () => {
 
           dispatch(setDefault({ key: 'PELAYARAN', isdefault: defaultValue }));
         }
-        dispatch(
-          setType({ key: 'PELAYARAN', type: getPelayaranLookup.type })
-        );
+        dispatch(setType({ key: 'PELAYARAN', type: getPelayaranLookup.type }));
 
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];
@@ -55,7 +49,7 @@ const Page = () => {
             const filteredData = getStatusAktifLookup.data.filter(
               (item: any) => item.grp === grp
             );
-            // console.log('ini hasil filterdData',filteredData, grp);
+            //
 
             dispatch(setData({ key: grp, data: filteredData }));
             dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));

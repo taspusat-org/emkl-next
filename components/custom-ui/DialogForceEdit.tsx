@@ -51,7 +51,7 @@ const DialogForceEdit: React.FC<LoginDialogProps> = ({
       password: ''
     }
   });
-  console.log('forceedit', forceedit);
+
   const onSubmit = async (values: LoginInput) => {
     dispatch(setProcessing());
 

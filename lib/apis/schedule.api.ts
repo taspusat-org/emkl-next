@@ -26,7 +26,7 @@ export const getScheduleHeaderFn = async (
     const response = await api2.get('/schedule-header', {
       params: queryParams
     });
-    // console.log('response di api fe', response.data);
+    //
 
     return response.data;
   } catch (error) {

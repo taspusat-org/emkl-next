@@ -584,7 +584,7 @@ const FormKasGantung = ({
       forms.setValue('details', filteredRows);
     }
   }, [rows]);
-  console.log(forms.getValues());
+
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -722,22 +722,6 @@ const FormKasGantung = ({
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
                         className="rdg-light fill-grid text-sm"
                       />
-                      {/* <div
-                        className="flex flex-row border border-b-0 border-l-0 border-blue-500 p-2"
-                        style={{ gridColumn: '1/-1' }}
-                      >
-                        <div className="flex w-full flex-row items-center justify-between">
-                          <p className="text-sm font-semibold">Total</p>
-                          <div className="flex flex-row gap-3">
-                            <p className="text-sm font-semibold">
-                              {formatCurrency(totalSisa)}
-                            </p>
-                            <p className="text-sm font-semibold">
-                              {formatCurrency(totalNominal)}
-                            </p>
-                          </div>
-                        </div>
-                      </div> */}
                       <div
                         className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
                         style={{

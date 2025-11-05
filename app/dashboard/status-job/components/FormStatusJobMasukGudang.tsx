@@ -250,7 +250,6 @@ const FormStatusJobMasukGudang = ({
   const handleMultipleInputChange = (
     updates: Array<{ index: number; field: string; value: string | number }>
   ) => {
-    console.log('updates', updates);
     setRows((prevRows) => {
       // Buat copy dari prevRows
       let updatedData = [...prevRows];
@@ -306,7 +305,7 @@ const FormStatusJobMasukGudang = ({
       return updatedData;
     });
   };
-  console.log('rows', rows);
+
   const columns = useMemo((): Column<StatusJobMasukGudang>[] => {
     return [
       {

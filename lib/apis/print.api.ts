@@ -56,7 +56,6 @@ export async function getPrintersFn(): Promise<PrinterInfo[]> {
       status: printer.status || 'Unknown'
     }));
 
-    console.log('Printers fetched successfully:', formattedData);
     return formattedData;
   } catch (error: any) {
     console.error('Error fetching printers:', error.message || error);

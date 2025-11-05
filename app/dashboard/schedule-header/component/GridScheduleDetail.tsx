@@ -70,7 +70,7 @@ const GridScheduleDetail = () => {
     isLoading,
     refetch
   } = useGetScheduleDetail(headerData?.id ?? 0, { ...filters, page: 1 });
-  // console.log('allDataDetail', allDataDetail);
+  //
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;

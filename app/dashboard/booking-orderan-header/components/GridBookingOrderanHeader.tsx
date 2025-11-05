@@ -3592,7 +3592,7 @@ const GridBookingMuatan = () => {
   //   // const responseDetail = await getPengeluaranEmklDetailFn({
   //   //   filters: { nobukti: selectedRowNobukti }
   //   // });
-  //   // console.log('responseDetail', responseDetail.data);
+  //   //
   //   // const totalNominal = responseDetail.data.reduce(
   //   //   (sum: number, i: any) => sum + Number(i.nominal || 0),
   //   //   0
@@ -3654,7 +3654,7 @@ const GridBookingMuatan = () => {
   //       // filtersWithoutLimit
   //     );
 
-  //     console.log('response', response);
+  //
 
   //     // const responseDetail = await getPengeluaranDetailFn(rowId);
   //     const totalNominal = response.data.reduce(
@@ -3676,7 +3676,7 @@ const GridBookingMuatan = () => {
   //         // terbilang: numberToTerbilang(totalNominal),
   //         judul: `LAPORAN BOOKING ORDERAN MUATAN`
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       // dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');
@@ -4115,7 +4115,7 @@ const GridBookingMuatan = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        // console.log('masuk1');
+        //
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -4132,7 +4132,7 @@ const GridBookingMuatan = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        // console.log('masuk2');
+        //
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {

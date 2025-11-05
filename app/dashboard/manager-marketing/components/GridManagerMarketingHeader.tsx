@@ -1615,7 +1615,6 @@ const GridManagerMarketingHeader = () => {
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
-      console.log(reportRows, 'datanyaa1');
 
       sessionStorage.setItem(
         'filtersWithoutLimit',
@@ -1701,7 +1700,7 @@ const GridManagerMarketingHeader = () => {
   //         tglcetak: new Date().toLocaleDateString(),
   //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       window.open('/reports/pengembaliankasgantung2', '_blank');
   //     }
@@ -1832,7 +1831,7 @@ const GridManagerMarketingHeader = () => {
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
-      console.log('masuk2');
+
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
       dispatch(setHeaderData(rows[0]));
       setIsFirstLoad(false);

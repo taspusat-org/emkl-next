@@ -296,8 +296,10 @@ export default function LookUp({
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled || onPaste) return;
-    setOnPaste(false);
+    if (onPaste) {
+      setOnPaste(false);
+    }
+    if (disabled) return;
 
     const searchValue = e.target.value;
 
@@ -440,7 +442,7 @@ export default function LookUp({
         lookupValue?.(dataToPost ? match[dataToPost as string] : match.id);
         onSelectRow?.(match);
         setShowError({ label: label ?? '', status: false, message: '' });
-
+        dispatch(clearOpenName());
         setOpen(false);
       } else {
         setShowError({
@@ -449,6 +451,8 @@ export default function LookUp({
           message: 'DATA TIDAK DITEMUKAN'
         });
 
+        setOpen(false);
+        dispatch(clearOpenName());
         // Bisa juga tampilkan pesan custom pada UI
       }
       setTimeout(() => {
@@ -470,10 +474,13 @@ export default function LookUp({
         dispatch(clearOpenName()); // Clear openName dari Redux
       } else {
         setOpen(true); // Buka lookup jika belum terbuka
+        dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+        setShowError({ label: label ?? '', status: false, message: '' });
       }
     } else {
       setOpen(true); // Buka lookup jika label berbeda dengan openName
       dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+      setShowError({ label: label ?? '', status: false, message: '' });
     }
 
     setTimeout(
@@ -632,7 +639,7 @@ export default function LookUp({
               colKey={col.name}
               value={filters.filters[col.name] || ''}
               onChange={(value) => handleFilterInputChange(col.name, value)}
-              autoFocus={false}
+              autoFocus
               tabIndex={-1}
               onClick={(e: React.MouseEvent<HTMLInputElement>) =>
                 e.stopPropagation()
@@ -1088,7 +1095,38 @@ export default function LookUp({
   //     setIsFirstLoad(false);
   //   }
   // }, [rows, isFirstLoad]);
+  const handleClickInput = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (selectedRequired) {
+      return;
+    }
 
+    if (!open) {
+      setOpen(true);
+      dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+      // Focus kembali ke input setelah popover terbuka
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    } else if (open && filters.search.trim() !== '' && rows.length > 0) {
+      setFilters({
+        ...filters,
+        search: rows[0][postData as string] || ''
+      });
+      setInputValue(rows[0][postData as string] || '');
+      const value = dataToPost ? rows[0][dataToPost as string] : rows[0].id;
+      lookupValue?.(value);
+      onSelectRow?.(value); // cukup satu kali, tanpa else
+      setFiltering(false); // Set filtering ke false untuk mencegah popover terbuka kembali
+      setOpen(false);
+      dispatch(clearOpenName());
+    } else {
+      setFiltering(false); // Set filtering ke false untuk mencegah popover terbuka kembali
+      setOpen(false);
+      dispatch(clearOpenName());
+    }
+  };
+  console.log('open', open);
   const applyFilters = useCallback(
     (rows: Row[]) => {
       let filtered = rows;
@@ -1254,12 +1292,7 @@ export default function LookUp({
         setFiltering(false);
         setOpen(false);
         dispatch(clearOpenName());
-        if (
-          (filters.search.trim() !== '' ||
-            Object.keys(filters.filters).length > 0) &&
-          rows.length > 0 &&
-          !lookupNama
-        ) {
+        if (filters.search.trim() !== '' && rows.length > 0 && !lookupNama) {
           setFilters({
             ...filters,
             search: rows[0][postData as string] || ''
@@ -1292,7 +1325,8 @@ export default function LookUp({
         filters.search.trim() !== '' &&
         !clickedOutside &&
         filtering &&
-        !deleteClicked
+        !deleteClicked &&
+        !onPaste // TAMBAHAN: Tambahkan kondisi onPaste
       ) {
         setOpen(true);
         setSelectedRow(0);
@@ -1301,12 +1335,11 @@ export default function LookUp({
         !clickedOutside &&
         filtering &&
         filters.filters &&
-        !deleteClicked
+        !deleteClicked &&
+        !onPaste // TAMBAHAN: Tambahkan kondisi onPaste
       ) {
         setOpen(true);
         setSelectedRow(0);
-      } else {
-        setOpen(false);
       }
     }
     // Jika autoSearch false, modal hanya dibuka manual via button
@@ -1314,7 +1347,7 @@ export default function LookUp({
     if (clickedOutside) {
       setClickedOutside(false);
     }
-  }, [filters.search, clickedOutside, filtering, autoSearch]);
+  }, [filters.search, clickedOutside, filtering, autoSearch, onPaste]); // TAMBAHAN: onPaste di dependency
 
   useEffect(() => {
     let newWidth = inputRef.current?.offsetWidth || 'auto';
@@ -1419,10 +1452,6 @@ export default function LookUp({
     // Update status open jika openName sama dengan label
     if (label === openName && !onPaste) {
       setOpen(true); // Jika label sama dengan openName, buka lookup
-    } else {
-      setOpen(false); // Jika tidak sama, tutup lookup
-      setCurrentPage(1);
-      setFetchedPages(new Set());
     }
   }, [openName, label, onPaste]); // Efek dijalankan setiap kali openName atau label berubah
 
@@ -1486,6 +1515,15 @@ export default function LookUp({
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     };
   }, []);
+  useEffect(() => {
+    if (forms?.formState.errors) {
+      setShowError({
+        label: label ?? '',
+        status: true,
+        message: ''
+      });
+    }
+  }, [forms?.formState.errors, label, name]);
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
@@ -1513,7 +1551,7 @@ export default function LookUp({
                         } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                         disabled={disabled}
                         value={inputValue}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => handleClickInput(e as any)}
                         onKeyDown={handleInputKeydown}
                         onChange={(e) => {
                           handleInputChange(e);
@@ -1551,7 +1589,13 @@ export default function LookUp({
                       )}
                     </div>
                   </FormControl>
-                  {name && forms && !inputValue ? <FormMessage /> : null}
+                  {name && forms && !inputValue ? (
+                    <FormMessage />
+                  ) : showError.status === true && label === showError.label ? (
+                    <p className="text-[0.8rem] text-destructive">
+                      {showError.message}
+                    </p>
+                  ) : null}
                 </FormItem>
               )}
             />
@@ -1571,7 +1615,7 @@ export default function LookUp({
                   } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
                   disabled={disabled}
                   value={inputValue}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => handleClickInput(e as any)}
                   onKeyDownCapture={(e) => {
                     // Tangkap event di capture phase (sebelum bubbling)
                     if (

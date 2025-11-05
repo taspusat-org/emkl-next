@@ -336,7 +336,6 @@ export default function LookUpModal({
       lookupValue?.(value);
       onSelectRow?.(firstRow);
     } else {
-      console.log('masuk322');
       setShowError({
         label: label ?? '',
         status: true,
@@ -1253,7 +1252,6 @@ export default function LookUpModal({
         showError.label?.toLowerCase() === label?.toLowerCase() &&
         (inputValue === '' || inputValue == null || inputValue === undefined)
       ) {
-        console.log('masuk676');
         setShowError({
           label: label ?? '',
           status: true,

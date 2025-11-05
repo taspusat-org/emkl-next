@@ -455,7 +455,7 @@ const GridBiayaEmkl = () => {
     }));
     setInputValue('');
   };
-  console.log(forms.getValues());
+  );
 
   const columns = useMemo((): Column<IBiayaemkl>[] => {
     return [
@@ -1333,7 +1333,7 @@ const GridBiayaEmkl = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    console.log('sdadsakjhdjkhsa');
+    
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -1824,7 +1824,7 @@ const GridBiayaEmkl = () => {
       mode !== 'add' &&
       mode !== ''
     ) {
-      console.log(rowData);
+      
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
@@ -1844,7 +1844,7 @@ const GridBiayaEmkl = () => {
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
-  console.log(forms.getValues());
+  );
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

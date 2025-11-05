@@ -33,7 +33,7 @@ const Page = () => {
             const filteredData = getStatusAktifLookup.data.filter(
               (item: any) => item.grp === grp
             );
-            // console.log('ini hasil filterdData',filteredData, grp);
+            //
 
             dispatch(setData({ key: grp, data: filteredData }));
             dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));
