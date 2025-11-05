@@ -283,7 +283,8 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
     if (lastPrinter) {
       const isLastPrinterOnline = printers.some(
-        (p) => p.name === lastPrinter && p.status === 'Online'
+        (p) =>
+          p.name.replace(/\\/g, '\\\\') === lastPrinter && p.status === 'Online'
       );
 
       if (isLastPrinterOnline) {
