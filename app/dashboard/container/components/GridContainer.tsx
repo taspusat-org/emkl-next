@@ -1157,8 +1157,12 @@ const GridContainer = () => {
         setIsFetchingManually(true);
         setRows([]);
         if (mode !== 'delete') {
+          console.log('pageNumber', pageNumber);
+          console.log('indexOnPage', indexOnPage);
+          console.log('rows', rows);
           const response = await api2.get(`/redis/get/container-allItems`);
           // Set the rows only if the data has changed
+          console.log('response', response);
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
             setIsDataUpdated(true);
@@ -1246,7 +1250,7 @@ const GridContainer = () => {
       dispatch(setProcessed());
     }
   };
-  console.log(forms.getValues());
+
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -1527,7 +1531,7 @@ const GridContainer = () => {
   //         // terbilang: numberToTerbilang(totalNominal),
   //         judul: `Bukti Pengeluaran KAS EMKL`
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       // dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');

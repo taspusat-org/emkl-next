@@ -23,20 +23,14 @@ const Page = () => {
         const result = await fieldLength('jabatan');
         dispatch(setFieldLength(result.data));
 
-        const [
-          getDivisiLookup,
-          getStatusAktifLookup
-        ] = await Promise.all([
+        const [getDivisiLookup, getStatusAktifLookup] = await Promise.all([
           getDivisiFn({ isLookUp: 'true' }),
           getParameterFn({ isLookUp: 'true' })
         ]);
 
-
         // DIVISI
         if (getDivisiLookup.type === 'local') {
-          dispatch(
-            setData({ key: 'DIVISI', data: getDivisiLookup.data })
-          );
+          dispatch(setData({ key: 'DIVISI', data: getDivisiLookup.data }));
           const defaultValue =
             getDivisiLookup.data
               .map((item: any) => item.default)
@@ -44,9 +38,7 @@ const Page = () => {
 
           dispatch(setDefault({ key: 'DIVISI', isdefault: defaultValue }));
         }
-        dispatch(
-          setType({ key: 'DIVISI', type: getDivisiLookup.type })
-        );
+        dispatch(setType({ key: 'DIVISI', type: getDivisiLookup.type }));
 
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];
@@ -55,7 +47,7 @@ const Page = () => {
             const filteredData = getStatusAktifLookup.data.filter(
               (item: any) => item.grp === grp
             );
-            // console.log('ini hasil filterdData',filteredData, grp);
+            //
 
             dispatch(setData({ key: grp, data: filteredData }));
             dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));

@@ -627,3 +627,26 @@ input[value='-YYYY'] {
   z-index: 10000 !important;
   position: fixed !important;
 }
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+.rpv-core__inner-page{
+  background-color: #d4d4d7 !important;
+}
+.rpv-core__canvas-layer{
+  background-color: #d4d4d7 !important;
+}
+.rpv-core__text-layer{
+  background-color: #d4d4d7 !important;
+}
+.rpv-core__page-layer{
+ display: none;
+ height: 0px;
+
+}
+.rpv-core__inner-page {
+    margin-top: 0.5rem;
+}
+.rpv-core__inner-pages{
+  background-color: #d4d4d7 !important;
+}

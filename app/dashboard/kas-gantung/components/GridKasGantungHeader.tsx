@@ -1899,9 +1899,9 @@ const GridKasGantungHeader = () => {
   //     rowId,
   //     filtersWithoutLimit
   //   );
-  //   console.log('response', response);
+  //
   //   const responseDetail = await getKasGantungDetailFn(rowId);
-  //   console.log('responseDetail', responseDetail);
+  //
   //   if (response.data === null || response.data.length === 0) {
   //     alert({
   //       title: 'DATA TIDAK TERSEDIA!',
@@ -1944,7 +1944,7 @@ const GridKasGantungHeader = () => {
   //         tglcetak: new Date().toLocaleDateString(),
   //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       window.open('/reports/pengembaliankasgantung2', '_blank');
   //     }
@@ -2218,7 +2218,6 @@ const GridKasGantungHeader = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk1');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -2234,7 +2233,6 @@ const GridKasGantungHeader = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk2');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {

@@ -1721,7 +1721,7 @@ const GridTujuankapal = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    console.log(rowData);
+
     if (
       selectedRow !== null &&
       rows.length > 0 &&

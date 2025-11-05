@@ -142,7 +142,7 @@ const GridTypeAkuntansi = () => {
       { ...filters, page: currentPage },
       abortControllerRef.current?.signal
     );
-  // console.log(allTypeAkuntansi, 'INI DATANYAA');
+  // 
 
   const { mutateAsync: createTypeAkuntansi, isLoading: isLoadingCreate } =
     useCreateTypeAkuntansi();
@@ -170,7 +170,7 @@ const GridTypeAkuntansi = () => {
     formState: { isSubmitSuccessful }
   } = forms;
 
-  // console.log(forms.getValues());
+  // );
 
   // Fungsi untuk cancel request yang sedang berjalan
   const cancelPreviousRequest = () => {
@@ -1618,7 +1618,7 @@ const GridTypeAkuntansi = () => {
 
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
-      console.log('reportRows', reportRows);
+      
 
       sessionStorage.setItem(
         'filtersWithoutLimit',
@@ -1826,7 +1826,7 @@ const GridTypeAkuntansi = () => {
       requestAnimationFrame(() => setFocus('nama'));
     }
   }, [isSubmitSuccessful, setFocus]);
-  console.log('forms.getValues()', forms.getValues());
+  ', forms.getValues());
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

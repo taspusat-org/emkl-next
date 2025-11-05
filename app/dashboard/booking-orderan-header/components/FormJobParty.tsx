@@ -39,8 +39,8 @@ const FormJobParty = ({
   // popOver,
   onSubmit,
   isLoadingCreate // mode,
-  // isLoadingUpdate,
-} // isLoadingDelete
+  // isLoadingDelete
+} // isLoadingUpdate,
 : any) => {
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);
@@ -355,8 +355,6 @@ const FormJobParty = ({
                       );
                     }}
                     onSelectRow={(val) => {
-                      console.log('onselect', val);
-
                       handleInputChange(
                         props.rowIdx,
                         'schedule_nama',
@@ -639,7 +637,6 @@ const FormJobParty = ({
                     );
                   }}
                   onSelectRow={(val) => {
-                    console.log('onselect schedule', val);
                     handleInputChange(
                       props.rowIdx,
                       'hargatrucking_nama',
@@ -787,7 +784,6 @@ const FormJobParty = ({
         tanggal &&
         asalMuat
       ) {
-        console.log('MASUK SINIII');
         setReloadForm(true);
 
         const rowsBaru = Array.from({ length: partyCount }, (_, idx) => ({
@@ -816,7 +812,6 @@ const FormJobParty = ({
         setReloadForm(false);
       }
     } catch (error) {
-      console.log(error);
       setReloadForm(false);
     }
   };

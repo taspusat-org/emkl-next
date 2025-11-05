@@ -347,8 +347,7 @@ const InputDateTimePicker = forwardRef<
         } catch {}
       });
     };
-    console.log('parsed', parsed);
-    console.log('inputText', inputText);
+
     return (
       <div
         className={`relative flex items-center rounded-sm border border-zinc-300 focus-within:border-blue-500 ${

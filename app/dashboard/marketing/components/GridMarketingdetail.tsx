@@ -68,7 +68,7 @@ const GridMarketingDetail = () => {
     x: number;
     y: number;
   } | null>(null);
-  // console.log('detaildata', detailData, detailData.id);
+  //
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,

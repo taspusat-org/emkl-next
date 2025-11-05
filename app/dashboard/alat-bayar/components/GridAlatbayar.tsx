@@ -452,8 +452,8 @@ const GridAlatbayar = () => {
     }));
     setInputValue('');
   };
-  console.log(forms.getValues());
-  // console.log(getLookup);
+  );
+  // 
 
   const columns = useMemo((): Column<IAlatBayar>[] => {
     return [
@@ -1891,8 +1891,8 @@ const GridAlatbayar = () => {
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
-  console.log(forms.getValues());
-  console.log(getLookup);
+  );
+  
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

@@ -18,6 +18,7 @@ import FilterGrid from './components/FilterGrid';
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 import GridPackingList from './components/GridPackingList';
 import GridPackingListDetail from './components/GridPackingListDetail';
+import GridPackingListDetailRincian from './components/GridPackingListDetailRincian';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -98,7 +99,10 @@ const Page = () => {
           <GridPackingList />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridPackingListDetail activeTab="jurnalumumdetail" />
+          <GridPackingListDetail />
+        </div>
+        <div className="col-span-10 h-[500px]">
+          <GridPackingListDetailRincian />
         </div>
       </div>
     </PageContainer>

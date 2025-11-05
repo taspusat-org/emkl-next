@@ -410,7 +410,7 @@ const GridShipper = () => {
     }));
     setInputValue('');
   };
-  console.log(forms.getValues());
+  );
 
   // const [pvtFields, setPvtFields] = useState<string[]>([]);
 
@@ -5242,7 +5242,7 @@ const GridShipper = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    console.log('sdadsakjhdjkhsa');
+    
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -5943,7 +5943,7 @@ const GridShipper = () => {
       forms.setValue('text', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
-  console.log(forms.getValues());
+  );
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

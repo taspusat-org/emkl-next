@@ -157,7 +157,7 @@ const GridPindahBuku = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  // console.log('setFocus', setFocus, forms.getValues());
+  // );
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -1758,7 +1758,7 @@ const GridPindahBuku = () => {
   //         terbilang: numberToTerbilang(totalNominal),
   //         judul: `BUKTI PINDAH BUKU`
   //       }));
-  //       console.log('reportRows', reportRows);
+  //
   //       dispatch(setReportData(reportRows));
   //       // dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');
@@ -2133,7 +2133,6 @@ const GridPindahBuku = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk1');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -2149,7 +2148,6 @@ const GridPindahBuku = () => {
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai
       ) {
-        console.log('masuk2');
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
@@ -2248,8 +2246,6 @@ const GridPindahBuku = () => {
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      console.log('ke trigger');
-
       // forms.setValue('id', Number(rowData?.id));
       forms.setValue('nobukti', rowData?.nobukti);
       forms.setValue('tglbukti', rowData?.tglbukti);

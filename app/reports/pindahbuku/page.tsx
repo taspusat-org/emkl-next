@@ -33,13 +33,10 @@ const ReportMenuPage: React.FC = () => {
 
   // Function to handle print action
   const handlePrintAction = () => {
-    console.log('user sedang print');
-
     // Add a small delay to ensure the print dialog opens first
     setTimeout(() => {
       // Close the page/tab after print dialog
       // window.close();
-      console.log('ditutp');
     }, 1000);
   };
 
@@ -84,7 +81,6 @@ const ReportMenuPage: React.FC = () => {
       }
     }
   }, []);
-  console.log('savedId', savedId);
 
   const handleExport = async () => {
     try {
@@ -261,13 +257,13 @@ export default ReportMenuPage;
 
 //   // Function to handle print action
 //   const handlePrintAction = () => {
-//     console.log('user sedang print');
+//
 
 //     let printStartTime = Date.now();
 
 //     const handleBeforePrint = () => {
 //       printStartTime = Date.now();
-//       console.log('Print dialog opened');
+//
 //     };
 
 //     const handleAfterPrint = () => {
@@ -277,12 +273,12 @@ export default ReportMenuPage;
 //       setTimeout(() => {
 //         if (document.hasFocus()) {
 //           if (duration < 800) {
-//             console.log('❌ tidak jadi (Cancel)');
+//             ');
 //           } else {
-//             console.log('✅ jadi (Print/Save)');
+//             ');
 //           }
 //         } else {
-//           console.log('✅ jadi (Print/Save, focus hilang)');
+//           ');
 //         }
 //       }, 500);
 
@@ -334,7 +330,7 @@ export default ReportMenuPage;
 //         setSaveNobukti(null);
 //       }
 //     }
-//     console.log(storedId, 'storeid');
+//
 //   }, []);
 
 //   const handleExport = async () => {

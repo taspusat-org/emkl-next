@@ -126,16 +126,14 @@ const FilterGrid = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    // console.log('hete', 'dataJenisOrderParameter', 'jenisOrderanNama', jenisOrderanNama, 'dataJenisOrderParameter', dataJenisOrderParameter);
+    //
 
     if (jenisOrderanNama || jenisOrderanNama != '') {
       const formatData = dataJenisOrderParameter.filter(
         (item: any) => item.subgrp == jenisOrderanNama
       );
-      console.log('jenisOrderanNama', jenisOrderanNama);
 
       dispatch(setSelectedJenisOrderan(formatData[0]?.id));
-      console.log('formatData', formatData, formatData[0]?.id);
     }
   }, [jenisOrderanNama]);
 

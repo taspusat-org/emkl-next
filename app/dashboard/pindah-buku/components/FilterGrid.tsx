@@ -48,7 +48,7 @@ const FilterGrid = () => {
     // if (!newValue) {
     //   forms.setValue('tglDari', e.target.value)
     // }
-    // console.log('newValue',newValue);
+    //
 
     dispatch(setSelectedDate(newValue)); // Dispatch to Redux
   };
@@ -97,7 +97,7 @@ const FilterGrid = () => {
   const onSubmit = async (values: filterInput) => {
     // dispatch(setProcessing());
     // const result = validateTanggal(selectedDate, selectedDate2)
-    // console.log('result', result);
+    //
     // if (result) {
 
     // } else {

@@ -156,8 +156,6 @@ const DialogApproval: React.FC = ({}) => {
   };
   const handleTanggalSubmit = () => {
     if (!tanggal.trim()) {
-      console.log('headerData', headerData);
-
       setShowErrorKeterangan(true);
       return;
     }

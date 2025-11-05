@@ -1038,8 +1038,6 @@ const FormPengeluaran = ({
     );
   }
   function handleSetRowsLookup(val: any) {
-    console.log('val', val);
-
     setRows((prevRows) => {
       // Find the index of the "Add Row" button row
       const addRowIndex = prevRows.findIndex((row) => row.isAddRow);

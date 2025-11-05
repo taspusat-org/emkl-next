@@ -22,12 +22,9 @@ const Page = () => {
         const result = await fieldLength('divisi');
         dispatch(setFieldLength(result.data));
 
-        const [
-          getStatusAktifLookup
-        ] = await Promise.all([
+        const [getStatusAktifLookup] = await Promise.all([
           getParameterFn({ isLookUp: 'true' })
         ]);
-
 
         if (getStatusAktifLookup.type === 'local') {
           const grpsToFilter = ['STATUS AKTIF'];
@@ -36,7 +33,7 @@ const Page = () => {
             const filteredData = getStatusAktifLookup.data.filter(
               (item: any) => item.grp === grp
             );
-            // console.log('ini hasil filterdData',filteredData, grp);
+            //
 
             dispatch(setData({ key: grp, data: filteredData }));
             dispatch(setType({ key: grp, type: getStatusAktifLookup.type }));

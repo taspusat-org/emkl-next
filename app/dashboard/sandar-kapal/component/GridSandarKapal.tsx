@@ -1041,7 +1041,7 @@ const GridSandarKapal = () => {
 
   function handleCellClick(args: { row: ISandarKapal }) {
     const clickedRow = args.row;
-    // console.log('Clicked row:', rows);
+    //
 
     if (!clickedRow) return;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);

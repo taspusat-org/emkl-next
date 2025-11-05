@@ -1208,7 +1208,7 @@ const GridDaftarbl = () => {
       dispatch(setProcessed());
     }
   };
-  console.log(forms.getValues());
+  );
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];

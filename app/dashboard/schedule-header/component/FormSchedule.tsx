@@ -721,8 +721,6 @@ const FormSchedule = ({
                       value={props.row.closing} // '' saat kosong
                       // onChange={field.onChange} // string keluar (mis. "16-08-2025 09:25 AM")
                       onChange={(value: any) => {
-                        console.log('e', value);
-
                         handleInputChange(props.rowIdx, 'closing', value);
                       }}
                       showCalendar

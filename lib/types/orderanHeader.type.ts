@@ -114,5 +114,6 @@ export const filterOrderanMuatan = {
   updated_at: '',
   tglDari: '',
   tglSampai: '',
-  jenisOrderan: ''
+  jenisOrderan: '',
+  schedule_id: ''
 };

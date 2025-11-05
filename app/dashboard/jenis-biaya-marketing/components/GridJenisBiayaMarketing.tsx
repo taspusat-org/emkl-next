@@ -167,7 +167,7 @@ const GridJenisBiayaMarketing = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  console.log(forms.getValues());
+  );
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -1135,7 +1135,7 @@ const GridJenisBiayaMarketing = () => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
-      console.log('dasdads');
+      
       if (mode === 'delete') {
         if (selectedRowId) {
           await deleteJenisBiayaMarketing(selectedRowId as unknown as string, {
@@ -1602,7 +1602,7 @@ const GridJenisBiayaMarketing = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      console.log('rowData', rowData);
+      
       forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);

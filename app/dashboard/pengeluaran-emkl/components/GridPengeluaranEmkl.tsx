@@ -153,7 +153,7 @@ const GridPengeluaranEmkl = () => {
     formState: { isSubmitSuccessful }
   } = forms;
 
-  console.log(forms.getValues());
+  );
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {

@@ -876,7 +876,7 @@ const GridJurnalUmumDetail = ({
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
-  function handleCellClick(args: CellClickArgs<JurnalUmumDetail>) {
+  function handleCellClick(args: { row: JurnalUmumDetail }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1244,6 +1244,9 @@ const GridJurnalUmumDetail = ({
           rows={rows}
           rowClass={getRowClass}
           onCellClick={handleCellClick}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           headerRowHeight={70}
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
