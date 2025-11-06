@@ -31,6 +31,7 @@ import {
   PrintOptions
 } from '@/lib/apis/print.api';
 import { exportHutangFn } from '@/lib/apis/hutang.api';
+import { HeaderPdfViewer } from '@/components/custom-ui/HeaderPdfViewer';
 interface PaperSize {
   id: number;
   name: string;
@@ -46,92 +47,6 @@ const ReportMenuPage: React.FC = () => {
   const zoomPluginInstance = zoomPlugin();
   const { ZoomPopover } = zoomPluginInstance;
   const printPluginInstance = printPlugin();
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'F12') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
-      }
-
-      if (e.ctrlKey && e.shiftKey && e.key === 'I') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
-      }
-
-      if (e.ctrlKey && e.shiftKey && e.key === 'J') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
-      }
-
-      if (e.ctrlKey && e.key === 'u') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return false;
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        setIsPrintModalOpen(true);
-        return false;
-      }
-    };
-
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      return false;
-    };
-
-    const beforePrint = (e: Event) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      if (window.matchMedia) {
-        window
-          .matchMedia('print')
-          .removeEventListener('change', beforePrint as any);
-      }
-
-      setTimeout(() => {
-        setIsPrintModalOpen(true);
-      }, 0);
-
-      return false;
-    };
-
-    const afterPrint = (e: Event) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return false;
-    };
-
-    document.addEventListener('contextmenu', handleContextMenu);
-
-    window.addEventListener('keydown', handleKeyDown, true);
-
-    window.addEventListener('beforeprint', beforePrint, true);
-    window.addEventListener('afterprint', afterPrint, true);
-
-    if (window.matchMedia) {
-      const printMediaQuery = window.matchMedia('print');
-      printMediaQuery.addEventListener('change', (e) => {
-        if (e.matches) {
-          setIsPrintModalOpen(true);
-        }
-      });
-    }
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      window.removeEventListener('keydown', handleKeyDown, true);
-      window.removeEventListener('beforeprint', beforePrint, true);
-      window.removeEventListener('afterprint', afterPrint, true);
-    };
-  }, []);
 
   // ===== FETCH DATA PDF DAN FILTER =====
   useEffect(() => {
@@ -188,71 +103,15 @@ const ReportMenuPage: React.FC = () => {
 
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  const layoutPluginInstance = defaultLayoutPlugin({
-    sidebarTabs: (defaultTabs) => [defaultTabs[0]],
-    renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
-      <Toolbar>
-        {(slots: ToolbarSlot) => {
-          const {
-            GoToFirstPage,
-            GoToPreviousPage,
-            GoToNextPage,
-            GoToLastPage,
-            ZoomOut: DefaultZoomOut,
-            ZoomIn: DefaultZoomIn,
-            CurrentPageInput,
-            EnterFullScreen
-          } = slots;
-
-          return (
-            <div className="relative grid w-full grid-cols-3 items-center gap-4 bg-white px-4 py-2 shadow">
-              {/* Column 1: Navigation */}
-              <div className="flex items-center justify-start gap-2">
-                <GoToFirstPage />
-                <GoToPreviousPage />
-                <CurrentPageInput />
-                <GoToNextPage />
-                <GoToLastPage />
-              </div>
-
-              {/* Column 2: Zoom */}
-              <div className="relative flex items-center justify-center gap-2 text-black">
-                <DefaultZoomOut />
-                <ZoomPopover />
-                <DefaultZoomIn />
-              </div>
-
-              {/* Column 3: Actions */}
-              <div className="flex items-center justify-end gap-2">
-                <button
-                  onClick={() => setIsPrintModalOpen(true)}
-                  className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
-                >
-                  <FaPrint /> Print
-                </button>
-
-                <button
-                  onClick={handleDownload}
-                  className="flex flex-row items-center gap-2 rounded bg-green-600 px-3 py-1 text-white hover:bg-green-800"
-                >
-                  <FaDownload /> Download
-                </button>
-
-                <button
-                  onClick={handleExport}
-                  className="flex flex-row items-center gap-2 rounded bg-orange-500 px-3 py-1 text-white hover:bg-orange-700"
-                >
-                  <FaFileExport /> Export
-                </button>
-
-                <EnterFullScreen />
-              </div>
-            </div>
-          );
-        }}
-      </Toolbar>
-    )
-  });
+  const onPrint = () => {
+    setIsPrintModalOpen(true);
+  };
+  const layoutPluginInstance = HeaderPdfViewer(
+    handleExport, // Pass callback export dinamis
+    onPrint,
+    printPluginInstance, // Pass instance print
+    zoomPluginInstance // Pass instance zoom
+  );
 
   // ===== PDF WORKER =====
   useEffect(() => {

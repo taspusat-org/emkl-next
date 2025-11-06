@@ -18,7 +18,7 @@ import { zoomPlugin, RenderZoomOutProps } from '@react-pdf-viewer/zoom';
 import '@react-pdf-viewer/zoom/lib/styles/index.css';
 import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
-import { exportDaftarbankFn } from '@/lib/apis/daftarbank.api';
+import { exportComodityFn } from '@/lib/apis/comodity.api';
 import CustomPrintModal from '@/components/custom-ui/CustomPrint';
 import { HeaderPdfViewer } from '@/components/custom-ui/HeaderPdfViewer';
 
@@ -49,22 +49,21 @@ const ReportMenuPage: React.FC = () => {
   const handleExport = async () => {
     try {
       const exportPayload = { ...savedFilters };
-      const response = await exportDaftarbankFn(exportPayload);
+      const response = await exportComodityFn(exportPayload);
 
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `laporan_daftarbank_${Date.now()}.xlsx`;
+      link.download = `laporan_comodity_${Date.now()}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
       window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error exporting daftarbank data:', error);
+      console.error('Error exporting comodity data:', error);
     }
   };
-
   const onPrint = () => {
     setIsPrintModalOpen(true);
   };

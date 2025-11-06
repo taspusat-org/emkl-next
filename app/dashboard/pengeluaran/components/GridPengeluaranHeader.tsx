@@ -2080,7 +2080,7 @@ const GridPengeluaranHeader = () => {
   //         terbilang: numberToTerbilang(totalNominal),
   //         judul: `Bukti Pengeluaran KAS EMKL`
   //       }));
-  //       
+  //
   //       dispatch(setReportData(reportRows));
   //       dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');
@@ -2388,7 +2388,6 @@ const GridPengeluaranHeader = () => {
       forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
     }
   }, [forms, selectedRow, rows, mode]);
-  );
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
