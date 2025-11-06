@@ -1240,7 +1240,7 @@ const GridComodity = () => {
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('Comodity');
+        queryClient.invalidateQueries('comodity');
       }
     } catch (error) {
       console.error(error);
@@ -1288,7 +1288,8 @@ const GridComodity = () => {
         judullaporan: 'Laporan Comodity',
         usercetak: user.username,
         tglcetak: tglcetak,
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA',
+        rate: formatCurrency(row.rate)
       }));
       sessionStorage.setItem(
         'filtersWithoutLimit',
@@ -1338,7 +1339,7 @@ const GridComodity = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/Comodity', '_blank');
+              window.open('/reports/comodity', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })

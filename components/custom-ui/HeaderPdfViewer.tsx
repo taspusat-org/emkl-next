@@ -46,11 +46,11 @@ export const HeaderPdfViewer = (
 ) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // if (e.key === 'F12') {
-      //   e.preventDefault();
-      //   e.stopImmediatePropagation();
-      //   return false;
-      // }
+      if (e.key === 'F12') {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+      }
 
       if (e.ctrlKey && e.shiftKey && e.key === 'I') {
         e.preventDefault();
