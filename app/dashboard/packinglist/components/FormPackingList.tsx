@@ -71,9 +71,50 @@ const createKeteranganColumns = (
     field: string,
     value: string
   ) => void,
-  inputStopPropagation: (e: React.KeyboardEvent) => void
+  inputStopPropagation: (e: React.KeyboardEvent) => void,
+  addRowTab: (tabName: string) => void,
+  deleteRowTab: (tabName: string, index: number) => void
 ): Column<any>[] => {
   return [
+    {
+      key: 'aksi',
+      name: 'AKSI',
+      width: 65,
+      resizable: true,
+      cellClass: 'form-input',
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Aksi</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
+              <button
+                type="button"
+                className="items-center justify-center rounded bg-transparent text-[#076fde]"
+                onClick={() => addRowTab(activeTab)}
+              >
+                <FaRegSquarePlus className="text-2xl" />
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
+            <button
+              type="button"
+              className="rounded bg-transparent text-xs text-red-500"
+              onClick={() => deleteRowTab(activeTab, props.rowIdx)}
+            >
+              <FaTrashAlt className="text-xl" />
+            </button>
+          </div>
+        );
+      }
+    },
     {
       key: 'nomor',
       name: 'NO',
@@ -88,7 +129,7 @@ const createKeteranganColumns = (
       renderCell: (props: any) => {
         return (
           <div className="flex h-full w-full items-center justify-center text-sm font-normal">
-            {props.rowIdx + 1}
+            {props.row.isAddRow ? '' : props.rowIdx + 1}
           </div>
         );
       }
@@ -105,25 +146,29 @@ const createKeteranganColumns = (
         </div>
       ),
       renderCell: (props: any) => {
-        return (
-          <div className="m-0 flex h-full w-full items-center p-0">
-            <Input
-              value={props.row.jobmuatan}
-              disabled
-              onKeyDown={inputStopPropagation}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                handleInputChangeTab(
-                  activeTab,
-                  props.rowIdx,
-                  'jobmuatan',
-                  e.target.value
-                )
-              }
-              className="min-h-9 w-full rounded border border-gray-300"
-            />
-          </div>
-        );
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                value={props.row.jobmuatan}
+                disabled
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  handleInputChangeTab(
+                    activeTab,
+                    props.rowIdx,
+                    'jobmuatan',
+                    e.target.value
+                  )
+                }
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
       }
     },
     {
@@ -138,25 +183,29 @@ const createKeteranganColumns = (
         </div>
       ),
       renderCell: (props: any) => {
-        return (
-          <div className="m-0 flex h-full w-full items-center p-0">
-            <Input
-              value={props.row.bongkarke}
-              disabled
-              onKeyDown={inputStopPropagation}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                handleInputChangeTab(
-                  activeTab,
-                  props.rowIdx,
-                  'bongkarke',
-                  e.target.value
-                )
-              }
-              className="min-h-9 w-full rounded border border-gray-300"
-            />
-          </div>
-        );
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                value={props.row.bongkarke}
+                disabled
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  handleInputChangeTab(
+                    activeTab,
+                    props.rowIdx,
+                    'bongkarke',
+                    e.target.value
+                  )
+                }
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
       }
     },
     {
@@ -171,28 +220,275 @@ const createKeteranganColumns = (
         </div>
       ),
       renderCell: (props: any) => {
-        return (
-          <div className="m-0 flex h-full w-full items-center p-0">
-            <Input
-              value={props.row.keterangan}
-              onKeyDown={inputStopPropagation}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) =>
-                handleInputChangeTab(
-                  activeTab,
-                  props.rowIdx,
-                  'keterangan',
-                  e.target.value
-                )
-              }
-              className="min-h-9 w-full rounded border border-gray-300"
-            />
-          </div>
-        );
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                value={props.row.keterangan}
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  handleInputChangeTab(
+                    activeTab,
+                    props.rowIdx,
+                    'keterangan',
+                    e.target.value
+                  )
+                }
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
       }
     }
   ];
 };
+const createRincianColumns = (
+  rows: any[],
+  activeTab: string,
+  handleInputChangeTab: (
+    tab: string,
+    index: number,
+    field: string,
+    value: string
+  ) => void,
+  inputStopPropagation: (e: React.KeyboardEvent) => void,
+  addRowTab: (tabName: string) => void,
+  deleteRowTab: (tabName: string, index: number) => void
+): Column<any>[] => {
+  return [
+    {
+      key: 'aksi',
+      name: 'AKSI',
+      width: 65,
+      resizable: true,
+      cellClass: 'form-input',
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Aksi</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return (
+            <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
+              <button
+                type="button"
+                className="items-center justify-center rounded bg-transparent text-[#076fde]"
+                onClick={() => addRowTab(activeTab)}
+              >
+                <FaRegSquarePlus className="text-2xl" />
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="m-0 flex h-full w-full cursor-pointer items-center justify-center p-0 text-xs">
+            <button
+              type="button"
+              className="rounded bg-transparent text-xs text-red-500"
+              onClick={() => deleteRowTab(activeTab, props.rowIdx)}
+            >
+              <FaTrashAlt className="text-xl" />
+            </button>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'nomor',
+      name: 'NO',
+      width: 50,
+      resizable: true,
+      cellClass: 'form-input',
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">No.</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        return (
+          <div className="flex h-full w-full items-center justify-center text-sm font-normal">
+            {props.row.isAddRow ? '' : props.rowIdx + 1}
+          </div>
+        );
+      }
+    },
+    {
+      key: 'jobmuatan',
+      name: 'JOBMUATAN',
+      resizable: true,
+      cellClass: 'form-input',
+      width: 180,
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Jobmuatan</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                value={props.row.jobmuatan}
+                disabled
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
+      }
+    },
+    {
+      key: 'bongkarke',
+      name: 'BONGKARKE',
+      resizable: true,
+      cellClass: 'form-input',
+      width: 100,
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Bongkarke</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                value={props.row.bongkarke}
+                disabled
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
+      }
+    },
+    {
+      key: 'keterangan',
+      name: 'KETERANGAN',
+      resizable: true,
+      cellClass: 'form-input',
+      width: 250,
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Keterangan</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                value={props.row.keterangan || ''}
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  handleInputChangeTab(
+                    activeTab,
+                    props.rowIdx,
+                    'keterangan',
+                    e.target.value
+                  )
+                }
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
+      }
+    },
+    {
+      key: 'banyak',
+      name: 'BANYAK',
+      resizable: true,
+      cellClass: 'form-input',
+      width: 120,
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Banyak</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                type="text"
+                value={props.row.banyak || ''}
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  handleInputChangeTab(
+                    activeTab,
+                    props.rowIdx,
+                    'banyak',
+                    e.target.value
+                  )
+                }
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
+      }
+    },
+    {
+      key: 'berat',
+      name: 'BERAT',
+      resizable: true,
+      cellClass: 'form-input',
+      width: 120,
+      renderHeaderCell: () => (
+        <div className="flex h-full w-full flex-col justify-center">
+          <p className="text-sm font-normal">Berat</p>
+        </div>
+      ),
+      renderCell: (props: any) => {
+        if (props.row.isAddRow) {
+          return null;
+        } else {
+          return (
+            <div className="m-0 flex h-full w-full items-center p-0">
+              <Input
+                type="text"
+                value={props.row.berat || ''}
+                onKeyDown={inputStopPropagation}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) =>
+                  handleInputChangeTab(
+                    activeTab,
+                    props.rowIdx,
+                    'berat',
+                    e.target.value
+                  )
+                }
+                className="min-h-9 w-full rounded border border-gray-300"
+              />
+            </div>
+          );
+        }
+      }
+    }
+  ];
+};
+
 const FormPackingList = ({
   popOver,
   setPopOver,
@@ -322,13 +618,126 @@ const FormPackingList = ({
           allRincian.push({
             id: item.id || 0,
             statuspackinglist_id: statusPackingListMapping[tabName].toString(),
-            keterangan: item.keterangan || ''
+            keterangan: item.keterangan || '',
+            banyak: item.banyak || '',
+            berat: item.berat || ''
           });
         });
       }
     });
 
     return allRincian;
+  };
+  const addRowTab = (tabName: string) => {
+    if (!selectedData || !selectedJobData) return;
+
+    const tabKey = getTabKey(
+      selectedData.jobmuatan,
+      selectedJobData.bongkarke,
+      tabName
+    );
+
+    const setterMap: {
+      [key: string]: React.Dispatch<React.SetStateAction<any[]>>;
+    } = {
+      penerima: setRowsPenerima,
+      lampiran: setRowsLampiran,
+      keterangantambahan: setRowsKeteranganTambahan,
+      qtybarang: setRowsQtyBarang,
+      uangbongkar: setRowsUangBongkar,
+      rincian: setRowsRincian
+    };
+
+    const setter = setterMap[tabName];
+    if (setter) {
+      setter((prevRows) => {
+        const filteredRows = prevRows.filter((row) => !row.isAddRow);
+        const newRow = {
+          id: 0,
+          keterangan: '',
+          banyak: tabName === 'rincian' ? '' : undefined,
+          berat: tabName === 'rincian' ? '' : undefined,
+          jobmuatan: selectedData.jobmuatan,
+          bongkarke: selectedJobData.bongkarke,
+          isNew: true
+        };
+
+        const updatedRows = [
+          ...filteredRows,
+          newRow,
+          { isAddRow: true, id: 'add_row' }
+        ];
+
+        setTabDataMap((prevMap) => {
+          const newMap = new Map(prevMap);
+          newMap.set(
+            tabKey,
+            updatedRows.filter((row) => !row.isAddRow)
+          );
+          return newMap;
+        });
+
+        setModifiedTabs((prev) => new Set(prev).add(tabKey));
+
+        return updatedRows;
+      });
+    }
+  };
+
+  const deleteRowTab = (tabName: string, index: number) => {
+    if (!selectedData || !selectedJobData) return;
+
+    const tabKey = getTabKey(
+      selectedData.jobmuatan,
+      selectedJobData.bongkarke,
+      tabName
+    );
+
+    const setterMap: {
+      [key: string]: React.Dispatch<React.SetStateAction<any[]>>;
+    } = {
+      penerima: setRowsPenerima,
+      lampiran: setRowsLampiran,
+      keterangantambahan: setRowsKeteranganTambahan,
+      qtybarang: setRowsQtyBarang,
+      uangbongkar: setRowsUangBongkar,
+      rincian: setRowsRincian
+    };
+
+    const setter = setterMap[tabName];
+    if (setter) {
+      setter((prevRows) => {
+        const filteredRows = prevRows.filter((_, i) => i !== index);
+        const dataRows = filteredRows.filter((row) => !row.isAddRow);
+        const addRowButton = filteredRows.find((row) => row.isAddRow);
+
+        const updatedRows = addRowButton
+          ? [...dataRows, addRowButton]
+          : dataRows.length > 0
+          ? dataRows
+          : [
+              {
+                id: 0,
+                keterangan: '',
+                jobmuatan: selectedData.jobmuatan,
+                bongkarke: selectedJobData.bongkarke
+              }
+            ];
+
+        setTabDataMap((prevMap) => {
+          const newMap = new Map(prevMap);
+          newMap.set(
+            tabKey,
+            updatedRows.filter((row) => !row.isAddRow)
+          );
+          return newMap;
+        });
+
+        setModifiedTabs((prev) => new Set(prev).add(tabKey));
+
+        return updatedRows;
+      });
+    }
   };
 
   function handleCellClick(args: { row: any }) {
@@ -399,49 +808,45 @@ const FormPackingList = ({
       'rincian'
     ];
 
-    console.log('🔄 updateTabDataForBongkar called:', { jobmuatan, bongkarke });
-    console.log('📦 Current tabDataMap:', Object.fromEntries(tabDataMap));
-
     tabs.forEach((tabName) => {
       const tabKey = getTabKey(jobmuatan, bongkarke, tabName);
       const existingData = tabDataMap.get(tabKey);
 
       console.log(`📂 Tab ${tabName} (${tabKey}):`, existingData);
 
-      // Use existing data if available, otherwise create default
-      const defaultData = existingData || [
-        {
-          id: 0,
-          keterangan: '',
-          jobmuatan,
-          bongkarke
-        }
-      ];
+      // PERBAIKAN: Hanya 1 row data + 1 row button add
+      const defaultData =
+        existingData && existingData.length > 0
+          ? [...existingData, { isAddRow: true, id: 'add_row' }]
+          : [
+              {
+                id: 0,
+                keterangan: '',
+                banyak: tabName === 'rincian' ? '' : undefined,
+                berat: tabName === 'rincian' ? '' : undefined,
+                jobmuatan,
+                bongkarke
+              },
+              { isAddRow: true, id: 'add_row' }
+            ];
 
-      // ✅ Spread array untuk trigger re-render
       switch (tabName) {
         case 'penerima':
-          console.log(`✅ Setting rowsPenerima:`, defaultData);
           setRowsPenerima([...defaultData]);
           break;
         case 'lampiran':
-          console.log(`✅ Setting rowsLampiran:`, defaultData);
           setRowsLampiran([...defaultData]);
           break;
         case 'keterangantambahan':
-          console.log(`✅ Setting rowsKeteranganTambahan:`, defaultData);
           setRowsKeteranganTambahan([...defaultData]);
           break;
         case 'qtybarang':
-          console.log(`✅ Setting rowsQtyBarang:`, defaultData);
           setRowsQtyBarang([...defaultData]);
           break;
         case 'uangbongkar':
-          console.log(`✅ Setting rowsUangBongkar:`, defaultData);
           setRowsUangBongkar([...defaultData]);
           break;
         case 'rincian':
-          console.log(`✅ Setting rowsRincian:`, defaultData);
           setRowsRincian([...defaultData]);
           break;
       }
@@ -639,7 +1044,6 @@ const FormPackingList = ({
         });
         return newMap;
       });
-
       return updatedRows;
     });
   };
@@ -678,7 +1082,9 @@ const FormPackingList = ({
       rowsPenerima,
       'penerima',
       handleInputChangeTab,
-      inputStopPropagation
+      inputStopPropagation,
+      addRowTab, // ← TAMBAH
+      deleteRowTab // ← TAMBAH
     );
   }, [rowsPenerima]);
 
@@ -687,7 +1093,9 @@ const FormPackingList = ({
       rowsLampiran,
       'lampiran',
       handleInputChangeTab,
-      inputStopPropagation
+      inputStopPropagation,
+      addRowTab, // ← TAMBAH
+      deleteRowTab // ← TAMBAH
     );
   }, [rowsLampiran]);
 
@@ -696,7 +1104,9 @@ const FormPackingList = ({
       rowsKeteranganTambahan,
       'keterangantambahan',
       handleInputChangeTab,
-      inputStopPropagation
+      inputStopPropagation,
+      addRowTab, // ← TAMBAH
+      deleteRowTab // ← TAMBAH
     );
   }, [rowsKeteranganTambahan]);
 
@@ -705,7 +1115,9 @@ const FormPackingList = ({
       rowsQtyBarang,
       'qtybarang',
       handleInputChangeTab,
-      inputStopPropagation
+      inputStopPropagation,
+      addRowTab, // ← TAMBAH
+      deleteRowTab // ← TAMBAH
     );
   }, [rowsQtyBarang]);
 
@@ -714,16 +1126,20 @@ const FormPackingList = ({
       rowsUangBongkar,
       'uangbongkar',
       handleInputChangeTab,
-      inputStopPropagation
+      inputStopPropagation,
+      addRowTab, // ← TAMBAH
+      deleteRowTab // ← TAMBAH
     );
   }, [rowsUangBongkar]);
 
   const columnsRincian = useMemo((): Column<any>[] => {
-    return createKeteranganColumns(
+    return createRincianColumns(
       rowsRincian,
       'rincian',
       handleInputChangeTab,
-      inputStopPropagation
+      inputStopPropagation,
+      addRowTab,
+      deleteRowTab
     );
   }, [rowsRincian]);
   const columns = useMemo((): Column<JurnalUmumDetail>[] => {
@@ -1389,7 +1805,6 @@ const FormPackingList = ({
 
         setRows(formattedRows);
 
-        // Jika mode ADD, inisialisasi data default
         if (mode === 'add' && formattedRows.length > 0) {
           const firstJob = formattedRows[0];
           const jobKey = getJobKey(firstJob.jobmuatan);
@@ -1406,7 +1821,6 @@ const FormPackingList = ({
           setRowsJob(defaultJobData);
           setJobDataMap(new Map().set(jobKey, defaultJobData));
 
-          // Initialize empty tab data
           const tabs = [
             'penerima',
             'lampiran',
@@ -1419,10 +1833,13 @@ const FormPackingList = ({
 
           tabs.forEach((tabName) => {
             const tabKey = getTabKey(firstJob.jobmuatan, 1, tabName);
+            // PERBAIKAN: Hanya 1 row data default
             newTabDataMap.set(tabKey, [
               {
                 id: 0,
                 keterangan: '',
+                banyak: tabName === 'rincian' ? '' : undefined,
+                berat: tabName === 'rincian' ? '' : undefined,
                 jobmuatan: firstJob.jobmuatan,
                 bongkarke: 1
               }
@@ -1441,9 +1858,7 @@ const FormPackingList = ({
             gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
           }, 100);
         }
-        // Jika mode EDIT, data akan di-load oleh useEffect yang handle detailDetail
       } else {
-        // Reset semua data jika tidak ada schedule_id
         setRows([]);
         setRowsJob([]);
         setJobDataMap(new Map());
@@ -1467,12 +1882,15 @@ const FormPackingList = ({
       rows.forEach((row) => {
         const jobKey = getJobKey(row.jobmuatan);
         const jobData = jobDataMap.get(jobKey);
+        console.log('jobData', jobData);
+
         if (jobData && jobData.length > 0) {
           const validJobRows = jobData.filter(
             (item) => !item.isAddRow && item.jobmuatan === row.jobmuatan
           );
           if (validJobRows.length > 0) {
             validJobRows.forEach((jobRow) => {
+              console.log('jobRow', jobRow);
               const rincianData = collectAllRincianData(
                 row.jobmuatan,
                 jobRow.bongkarke
@@ -1489,6 +1907,8 @@ const FormPackingList = ({
               id: 0,
               orderanmuatan_nobukti: row.jobmuatan,
               bongkarke: '1',
+              banyak: '',
+              berat: '',
               rincian: []
             });
           }
@@ -1497,6 +1917,8 @@ const FormPackingList = ({
             id: 0,
             orderanmuatan_nobukti: row.jobmuatan,
             bongkarke: '1',
+            banyak: '',
+            berat: '',
             rincian: []
           });
         }

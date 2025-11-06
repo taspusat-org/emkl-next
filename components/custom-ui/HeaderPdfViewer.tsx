@@ -93,9 +93,9 @@ export const HeaderPdfViewer = (
           .removeEventListener('change', beforePrint as any);
       }
 
-      setTimeout(() => {
-        onPrint();
-      }, 0);
+      //   setTimeout(() => {
+      //     onPrint();
+      //   }, 0);
 
       return false;
     };
@@ -113,14 +113,14 @@ export const HeaderPdfViewer = (
     window.addEventListener('beforeprint', beforePrint, true);
     window.addEventListener('afterprint', afterPrint, true);
 
-    if (window.matchMedia) {
-      const printMediaQuery = window.matchMedia('print');
-      printMediaQuery.addEventListener('change', (e) => {
-        if (e.matches) {
-          onPrint();
-        }
-      });
-    }
+    // if (window.matchMedia) {
+    //   const printMediaQuery = window.matchMedia('print');
+    //   printMediaQuery.addEventListener('change', (e) => {
+    //     if (e.matches) {
+    //       onPrint();
+    //     }
+    //   });
+    // }
 
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);

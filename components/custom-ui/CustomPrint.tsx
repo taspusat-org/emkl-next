@@ -67,6 +67,8 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const [layout, setLayout] = useState<'portrait' | 'landscape'>('portrait');
   const [paperSize, setPaperSize] = useState('');
   const [colorMode, setColorMode] = useState<'color' | 'bw'>(defaultColorMode);
+  const [isCheckingPrinters, setIsCheckingPrinters] = useState(false);
+
   const [pageOption, setPageOption] = useState<
     'all' | 'odd' | 'even' | 'custom'
   >('all');
@@ -89,8 +91,10 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    const isMobile = isMobileDevice();
+    // Hanya ambil printer jika modal benar-benar dibuka & pengecekan belum selesai
+    if (isCheckingPrinters || isPrinterCheckComplete) return;
 
+    const isMobile = isMobileDevice();
     if (isMobile) {
       alert({
         title: 'Silahkan gunakan perangkat Laptop / PC untuk mencetak dokumen',
@@ -103,22 +107,20 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
     const checkPrinters = async () => {
       try {
+        setIsCheckingPrinters(true);
         dispatch(setProcessing());
         setLoadingPrinters(true);
 
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), 10000)
         );
-
         const printersPromise = getPrintersFn();
-
         const data = (await Promise.race([
           printersPromise,
           timeoutPromise
         ])) as PrinterInfo[];
 
         setPrinters(data);
-
         const onlinePrinters = data.filter((p) => p.status === 'Online');
 
         if (onlinePrinters.length === 0) {
@@ -129,6 +131,9 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
             link: true
           });
           onClose();
+          setIsPrinterCheckComplete(false);
+          // Reset printers agar modal tidak dirender
+          setPrinters([]);
         } else {
           setIsPrinterCheckComplete(true);
         }
@@ -140,14 +145,24 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           link: true
         });
         onClose();
+        setIsPrinterCheckComplete(false);
+        setPrinters([]);
       } finally {
         setLoadingPrinters(false);
+        setIsCheckingPrinters(false);
         dispatch(setProcessed());
       }
     };
 
     checkPrinters();
-  }, [isOpen, alert, onClose, dispatch]);
+  }, [
+    isOpen,
+    alert,
+    onClose,
+    dispatch,
+    isCheckingPrinters,
+    isPrinterCheckComplete
+  ]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -350,7 +365,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   };
 
   const handleAction = async () => {
-    if (isLoading) return;
+    if (isLoading || isCheckingPrinters) return;
 
     try {
       setIsLoading(true);
@@ -386,8 +401,17 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
   useDisableBodyScroll(isOpen);
 
-  if (!isOpen || !isPrinterCheckComplete) return null;
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset semua state printer-related ketika modal ditutup
+      setPrinters([]);
+      setIsPrinterCheckComplete(false);
+      setDestination('');
+    }
+  }, [isOpen]);
 
+  if (!isOpen) return null;
+  if (!isPrinterCheckComplete) return null; // atau true jika ingin spinner, tapi UI tidak diubah
   const modalContent = (
     <>
       <div

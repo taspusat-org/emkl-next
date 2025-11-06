@@ -3,6 +3,8 @@ import { z } from 'zod';
 export const packinglistDetailRincianSchema = z.object({
   id: z.coerce.number().optional(),
   statuspackinglist_id: z.string().nullable().optional(),
+  banyak: z.string().nullable().optional(),
+  berat: z.string().nullable().optional(),
   keterangan: z.string().nullable()
 });
 
