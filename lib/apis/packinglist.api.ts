@@ -53,6 +53,15 @@ export const updatePackingListFn = async ({ id, fields }: UpdateParams) => {
   const response = await api2.put(`/packinglistheader/${id}`, fields);
   return response.data;
 };
+export const deletePackingListFn = async (id: number) => {
+  try {
+    const response = await api2.delete(`/packinglistheader/${id}`);
+    return response.data; // Optionally return response data if needed
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error; // Re-throw the error if you want to handle it in the calling function
+  }
+};
 export const getPackingListReportFn = async (id: number): Promise<any> => {
   try {
     const response = await api2.get(`/packinglistheader/report/${id}`);

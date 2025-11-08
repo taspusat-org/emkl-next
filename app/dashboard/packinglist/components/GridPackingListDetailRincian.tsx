@@ -129,6 +129,8 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
       ),
       packinglistdetail_id: String(detailData?.id ?? ''),
       keterangan: filters.filters.keterangan ?? '',
+      banyak: filters.filters.banyak ?? '',
+      berat: filters.filters.berat ?? '',
       info: filters.filters.info ?? '',
       modifiedby: filters.filters.modifiedby ?? '',
       created_at: filters.filters.created_at ?? '',
@@ -404,6 +406,144 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
           const cellValue = props.row.keterangan || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'banyak',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        name: 'BANYAK',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('banyak')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'banyak' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                BANYAK
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'banyak' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'banyak' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="banyak"
+                value={filters.filters.banyak || ''}
+                onChange={(value) => handleFilterInputChange('banyak', value)}
+                onClear={() => handleClearFilter('banyak')}
+                inputRef={(el) => {
+                  inputColRefs.current['banyak'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.banyak || '';
+          const cellValue = props.row.banyak || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'berat',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        name: 'BERAT',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('berat')}
+              onContextMenu={handleContextMenu}
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'berat' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                BERAT
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'berat' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'berat' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="berat"
+                value={filters.filters.berat || ''}
+                onChange={(value) => handleFilterInputChange('berat', value)}
+                onClear={() => handleClearFilter('berat')}
+                inputRef={(el) => {
+                  inputColRefs.current['berat'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.berat || '';
+          const cellValue = props.row.berat || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -939,6 +1079,8 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
         packinglistdetail_id: item.packinglistdetail_id, // Updated to match the field name
         statuspackinglist_id: item.statuspackinglist_id, // Updated to match the field name
         keterangan: item.keterangan, // Updated to match the field name
+        banyak: item.banyak, // Updated to match the field name
+        berat: item.berat, // Updated to match the field name
         info: item.info, // Updated to match the field name
         modifiedby: item.modifiedby, // Updated to match the field name
         created_at: item.created_at, // Updated to match the field name

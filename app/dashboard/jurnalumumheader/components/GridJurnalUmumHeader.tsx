@@ -1295,60 +1295,71 @@ const GridJurnalUmumHeader = () => {
     }
   };
   const onSubmit = async (values: JurnalUmumHeaderInput) => {
+    dispatch(setProcessing());
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteJurnalUmum(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else if (selectedRow === rows.length - 1) {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+    try {
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteJurnalUmum(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else if (selectedRow === rows.length - 1) {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              } else {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createJurnalUmum(
-        {
-          ...values,
-          details: values.details.map((detail: any) => ({
-            ...detail,
-            id: 0 // Ubah id setiap detail menjadi 0
-          })),
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createJurnalUmum(
+          {
+            ...values,
+            details: values.details.map((detail: any) => ({
+              ...detail,
+              id: 0 // Ubah id setiap detail menjadi 0
+            })),
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updateJurnalUmum(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('jurnalumum');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+
+      if (selectedRowId && mode === 'edit') {
+        await updateJurnalUmum(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('jurnalumum');
+      }
+    } catch (error) {
+      console.error('Error during onSubmit:', error);
+      setIsFetchingManually(false);
+      setIsDataUpdated(false);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
