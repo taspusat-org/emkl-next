@@ -145,8 +145,6 @@ const FormKapal = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
-  );
-  
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -218,14 +216,14 @@ const FormKapal = ({
                     <div className="w-full lg:w-[85%]">
                       {lookUpPelayaran.map((props, index) => (
                         <LookUp
-                        key={index}
-                        {...props}
-                        lookupValue={(id) =>
-                          forms.setValue('pelayaran_id', Number(id))
-                        }
-                        inputLookupValue={forms.getValues('pelayaran_id')}
-                        lookupNama={forms.getValues('pelayaran')}
-                        disabled={mode === 'view' || mode === 'delete'}
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('pelayaran_id', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('pelayaran_id')}
+                          lookupNama={forms.getValues('pelayaran')}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>

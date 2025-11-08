@@ -1921,7 +1921,7 @@ const GridMasterbiaya = () => {
   //         tglcetak: new Date().toLocaleDateString(),
   //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
   //       }));
-  //       
+  //
   //       dispatch(setReportData(reportRows));
   //       window.open('/reports/designer', '_blank');
   //     }
@@ -2197,7 +2197,6 @@ const GridMasterbiaya = () => {
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
-  );
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

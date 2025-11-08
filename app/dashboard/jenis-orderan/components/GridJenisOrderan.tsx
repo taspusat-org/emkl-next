@@ -394,7 +394,6 @@ const GridJenisOrderan = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
-  );
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,

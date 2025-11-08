@@ -885,7 +885,7 @@ const GridOpenLocks = () => {
       setPopOver(false);
       if (mode !== 'delete') {
         // Set the rows only if the data has changed
-        
+
         setIsDataUpdated(true);
         setCurrentPage(pageNumber);
         setFetchedPages(new Set([pageNumber]));
@@ -1286,12 +1286,11 @@ const GridOpenLocks = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  
+
   useEffect(() => {
     if (!allData || isDataUpdated) return;
 
     const newRows = allData.data || [];
-    
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1316,7 +1315,7 @@ const GridOpenLocks = () => {
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
   }, [allData, currentPage, filters, isDataUpdated]);
-  
+
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
@@ -1403,7 +1402,6 @@ const GridOpenLocks = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
-  );
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

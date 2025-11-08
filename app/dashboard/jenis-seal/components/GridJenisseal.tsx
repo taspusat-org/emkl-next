@@ -1217,7 +1217,6 @@ const GridJenisseal = () => {
       dispatch(setProcessed());
     }
   };
-  );
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];

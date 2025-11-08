@@ -142,7 +142,7 @@ const GridTypeAkuntansi = () => {
       { ...filters, page: currentPage },
       abortControllerRef.current?.signal
     );
-  // 
+  //
 
   const { mutateAsync: createTypeAkuntansi, isLoading: isLoadingCreate } =
     useCreateTypeAkuntansi();
@@ -1618,7 +1618,6 @@ const GridTypeAkuntansi = () => {
 
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
-      
 
       sessionStorage.setItem(
         'filtersWithoutLimit',
@@ -1826,7 +1825,6 @@ const GridTypeAkuntansi = () => {
       requestAnimationFrame(() => setFocus('nama'));
     }
   }, [isSubmitSuccessful, setFocus]);
-  ', forms.getValues());
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

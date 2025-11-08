@@ -142,7 +142,6 @@ const GridJenisProsesFee = () => {
       statusaktif_nama: ''
     }
   });
-  );
 
   const {
     setFocus,
@@ -937,7 +936,6 @@ const GridJenisProsesFee = () => {
           const cannotDeleteIds = cannotDeleteItems
             .map((item) => item.id)
             .join(', ');
-          
 
           alert({
             title: 'Beberapa data tidak dapat dihapus!',
@@ -1120,7 +1118,6 @@ const GridJenisProsesFee = () => {
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
-      
 
       sessionStorage.setItem(
         'filtersWithoutLimit',

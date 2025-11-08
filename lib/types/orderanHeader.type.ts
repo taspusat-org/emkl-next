@@ -84,7 +84,7 @@ export const filterOrderanMuatan = {
   tujuankapal_text: '',
   marketing_text: '',
   keterangan: '',
-  schedule_id: 0,
+  schedule_id: '',
   schedule_text: '',
   pelayarancontainer_text: '',
   jenismuatan_text: '',

@@ -145,8 +145,6 @@ const FormJabatan = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
-  );
-  
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -218,14 +216,14 @@ const FormJabatan = ({
                     <div className="w-full lg:w-[85%]">
                       {lookUpDivisi.map((props, index) => (
                         <LookUp
-                        key={index}
-                        {...props}
-                        lookupValue={(id) =>
-                          forms.setValue('divisi_id', Number(id))
-                        }
-                        inputLookupValue={forms.getValues('divisi_id')}
-                        lookupNama={forms.getValues('divisi')}
-                        disabled={mode === 'view' || mode === 'delete'}
+                          key={index}
+                          {...props}
+                          lookupValue={(id) =>
+                            forms.setValue('divisi_id', Number(id))
+                          }
+                          inputLookupValue={forms.getValues('divisi_id')}
+                          lookupNama={forms.getValues('divisi')}
+                          disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
                     </div>

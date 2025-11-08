@@ -455,7 +455,6 @@ const GridBiayaEmkl = () => {
     }));
     setInputValue('');
   };
-  );
 
   const columns = useMemo((): Column<IBiayaemkl>[] => {
     return [
@@ -1333,7 +1332,6 @@ const GridBiayaEmkl = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    
     dispatch(setClearLookup(true));
     clearError();
     try {
@@ -1824,7 +1822,6 @@ const GridBiayaEmkl = () => {
       mode !== 'add' &&
       mode !== ''
     ) {
-      
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 
@@ -1844,7 +1841,6 @@ const GridBiayaEmkl = () => {
       forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
-  );
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {

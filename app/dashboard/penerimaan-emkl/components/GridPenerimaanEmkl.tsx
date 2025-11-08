@@ -153,8 +153,6 @@ const GridPenerimaanEmkl = () => {
     formState: { isSubmitSuccessful }
   } = forms;
 
-  );
-
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setFilters((prev) => ({
