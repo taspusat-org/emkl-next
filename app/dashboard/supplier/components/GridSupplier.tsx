@@ -149,7 +149,6 @@ const GridSupplier = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  );
 
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
@@ -2685,7 +2684,6 @@ const GridSupplier = () => {
           const cannotDeleteIds = cannotDeleteItems
             .map((item) => item.id)
             .join(', ');
-          
 
           alert({
             title: 'Beberapa data tidak dapat dihapus!',

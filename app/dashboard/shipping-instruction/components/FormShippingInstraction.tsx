@@ -67,7 +67,7 @@ const FormShippingInstruction = ({
 }: any) => {
   const [dataGridKey, setDataGridKey] = useState(0);
   const [daftarBlValue, setDaftarBlValue] = useState(0);
-  const [scheduleValue, setScheduleValue] = useState(0);
+  const [scheduleValue, setScheduleValue] = useState('');
   const [reloadForm, setReloadForm] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
@@ -256,7 +256,7 @@ const FormShippingInstruction = ({
           ...prevFilters,
           filters: {
             ...prevFilters.filters,
-            schedule_id: scheduleValue,
+            schedule_id: String(scheduleValue),
             daftarbl_id: daftarbl_id
           }
         }));
@@ -1317,7 +1317,7 @@ const FormShippingInstruction = ({
 
     if (mode === 'add') {
       setRows([]);
-      setScheduleValue(0);
+      setScheduleValue('');
       setDaftarBlValue(0);
       setRowsDetailRincian([]);
       setReloadForm(false);
@@ -1459,7 +1459,7 @@ const FormShippingInstruction = ({
                               }}
                               onClear={() => {
                                 setReloadForm(false);
-                                setScheduleValue(0);
+                                setScheduleValue('');
                                 // forms.setValue('schedule_id', 0);
                                 forms.setValue('tglberangkat', '');
                                 forms.setValue('voyberangkat', '');

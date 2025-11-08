@@ -189,7 +189,6 @@ const GridEmkl = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  );
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -2268,7 +2267,7 @@ const GridEmkl = () => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
-      
+
       if (mode === 'delete') {
         if (selectedRowId) {
           await deleteEmkl(selectedRowId as unknown as string, {
@@ -2729,7 +2728,6 @@ const GridEmkl = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      
       forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
       forms.setValue('contactperson', rowData?.contactperson);

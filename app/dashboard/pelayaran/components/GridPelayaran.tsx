@@ -168,7 +168,6 @@ const GridPelayaran = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  );
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -1114,7 +1113,7 @@ const GridPelayaran = () => {
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
-      
+
       if (mode === 'delete') {
         if (selectedRowId) {
           await deletePelayaran(selectedRowId as unknown as string, {

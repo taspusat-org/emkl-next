@@ -127,7 +127,7 @@ const GridScheduleHeader = () => {
     ...filters,
     page: currentPage
   });
-  // 
+  //
 
   const { mutateAsync: createSchedule, isLoading: isLoadingCreate } =
     useCreateSchedule();
@@ -146,8 +146,6 @@ const GridScheduleHeader = () => {
       details: []
     }
   });
-  );
-
   const {
     setFocus,
     reset,

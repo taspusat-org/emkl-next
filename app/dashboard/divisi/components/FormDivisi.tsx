@@ -129,8 +129,6 @@ const FormDivisi = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
-  );
-  
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
