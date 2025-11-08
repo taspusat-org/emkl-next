@@ -82,7 +82,7 @@ const Page = () => {
         const fieldLengthResult = await fieldLength('bookingorderanheader');
 
         const [
-          jenisOrderLookup,
+          jenisOrderParameterLookup,
           containerLookup,
           shipperLookup,
           tujuanKapalLookup,
@@ -98,7 +98,10 @@ const Page = () => {
           tradoLookup,
           gandenganLookup
         ] = await Promise.all<ApiResponse>([
-          getJenisOrderanFn({ isLookUp: 'true' }),
+          getParameterFn({
+            isLookUp: 'true',
+            filters: { grp: 'jenis orderan' }
+          }),
           getContainerFn({ isLookUp: 'true' }),
           getShipperFn({ isLookUp: 'true' }),
           getTujuankapalFn({ isLookUp: 'true' }),
@@ -115,19 +118,25 @@ const Page = () => {
           getAllGandenganFn({ isLookUp: 'true' })
         ]);
 
-        if (jenisOrderLookup.type === 'local') {
+        if (jenisOrderParameterLookup.type === 'local') {
           dispatch(
-            setData({ key: 'JENIS ORDER', data: jenisOrderLookup.data })
+            setData({
+              key: 'JENIS ORDER',
+              data: jenisOrderParameterLookup.data
+            })
           );
           const defaultValue =
-            jenisOrderLookup.data
+            jenisOrderParameterLookup.data
               .map((item: any) => item.default)
               .find((val: any) => val !== null) || '';
 
           // Dispatch the default data
           dispatch(setDefault({ key: 'JENIS ORDER', isdefault: defaultValue }));
           dispatch(
-            setType({ key: 'JENIS ORDER', type: jenisOrderLookup.type })
+            setType({
+              key: 'JENIS ORDER',
+              type: jenisOrderParameterLookup.type
+            })
           );
         }
 

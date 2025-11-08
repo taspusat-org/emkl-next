@@ -166,16 +166,6 @@ const GridBookingMuatan = () => {
     sortDirection: 'asc'
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  console.log(
-    'selectedJenisOrderan',
-    selectedJenisOrderan,
-    selectedDate,
-    selectedDate2,
-    'selectedJenisOrderanNama',
-    selectedJenisOrderanNama,
-    'filters',
-    filters
-  );
 
   const {
     data: allDataBookingMuatan,
@@ -204,6 +194,19 @@ const GridBookingMuatan = () => {
       nobukti: ''
     }
   });
+
+  console.log(
+    'selectedJenisOrderan',
+    selectedJenisOrderan,
+    selectedDate,
+    selectedDate2,
+    'selectedJenisOrderanNama',
+    selectedJenisOrderanNama,
+    'filters',
+    filters,
+    'forms.getValues()',
+    forms.getValues()
+  );
 
   const formsJobParty = useForm<jobPartyHeaderInput>({
     resolver: zodResolver(jobPartyHeaderSchema),

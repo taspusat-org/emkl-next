@@ -21,22 +21,16 @@ import { useSelector } from 'react-redux';
 import { IoReload } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
 import { IoMdRefresh } from 'react-icons/io';
-import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { getParameterFn } from '@/lib/apis/parameter.api';
-
-interface ApiResponse {
-  type: string;
-  data: any; // Define a more specific type for data if possible
-}
+import { JENISORDERMUATANNAMA } from '@/constants/bookingorderan';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
   const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
   const [jenisOrderanNama, setJenisOrderanNama] = useState<string>('');
-  const [dataJenisOrderParameter, setDataJenisOrderParameter] = useState<any[]>(
-    []
-  );
+  // const [dataJenisOrderParameter, setDataJenisOrderParameter] = useState<any[]>(
+  //   []
+  // );
   const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
   const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: any) => state.filter
@@ -44,15 +38,14 @@ const FilterGrid = () => {
 
   const lookUpJenisOrderan = [
     {
-      columns: [{ key: 'nama', name: 'JENIS ORDERAN' }],
+      columns: [{ key: 'subgrp', name: 'subgrp' }],
       labelLookup: 'JENIS ORDERAN LOOKUP',
-      // required: true,
       selectedRequired: false,
-      endpoint: 'JenisOrderan',
+      endpoint: 'parameter?grp=jenis+orderan',
       label: 'JENIS ORDER',
       singleColumn: true,
       pageSize: 20,
-      postData: 'nama',
+      postData: 'subgrp',
       dataToPost: 'id'
     }
   ];
@@ -102,40 +95,63 @@ const FilterGrid = () => {
     dispatch(setSelectedDate2(fmt(lastOfMonth)));
   }, [dispatch]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [getJenisOrderParameter] = await Promise.all<ApiResponse>([
-          getParameterFn({
-            isLookUp: 'true',
-            filters: {
-              grp: 'JENIS ORDERAN'
-            }
-          })
-        ]);
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const [getJenisOrderParameter] = await Promise.all<ApiResponse>([
+  //         getParameterFn({
+  //           isLookUp: 'true',
+  //           filters: {
+  //             grp: 'JENIS ORDERAN'
+  //           }
+  //         })
+  //       ]);
 
-        if (getJenisOrderParameter) {
-          setDataJenisOrderParameter(getJenisOrderParameter.data ?? []);
-        }
-      } catch (err) {
-        console.error('Error fetching data:', err);
-      }
-    };
+  //       if (getJenisOrderParameter) {
+  //         setDataJenisOrderParameter(getJenisOrderParameter.data ?? []);
+  //       }
+  //     } catch (err) {
+  //       console.error('Error fetching data:', err);
+  //     }
+  //   };
 
-    fetchData();
-  }, [dispatch]);
+  //   fetchData();
+  // }, [dispatch]);
 
-  useEffect(() => {
-    //
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const [getJenisOrderParameter] = await Promise.all<ApiResponse>([
+  //         getParameterFn({
+  //           isLookUp: 'true',
+  //           filters: {
+  //             grp: 'JENIS ORDERAN'
+  //           }
+  //         })
+  //       ]);
 
-    if (jenisOrderanNama || jenisOrderanNama != '') {
-      const formatData = dataJenisOrderParameter.filter(
-        (item: any) => item.subgrp == jenisOrderanNama
-      );
+  //       if (getJenisOrderParameter) {
+  //         setDataJenisOrderParameter(getJenisOrderParameter.data ?? []);
+  //       }
+  //     } catch (err) {
+  //       console.error('Error fetching data:', err);
+  //     }
+  //   };
 
-      dispatch(setSelectedJenisOrderan(formatData[0]?.id));
-    }
-  }, [jenisOrderanNama]);
+  //   fetchData();
+  // }, [dispatch]);
+
+  // useEffect(() => {
+  //   //
+
+  //   if (jenisOrderanNama || jenisOrderanNama != '') {
+  //     const formatData = dataJenisOrderParameter.filter(
+  //       (item: any) => item.subgrp == jenisOrderanNama
+  //     );
+
+  //     dispatch(setSelectedJenisOrderan(formatData[0]?.id));
+  //   }
+  // }, [jenisOrderanNama]);
 
   useEffect(() => {
     if (onReload) {
@@ -198,8 +214,8 @@ const FilterGrid = () => {
                   key={index}
                   {...props}
                   onSelectRow={(val) => {
-                    // dispatch(setSelectedJenisOrderan(Number(val.format)));
-                    dispatch(setSelectedJenisOrderanNama(val.nama));
+                    dispatch(setSelectedJenisOrderan(Number(val.id)));
+                    dispatch(setSelectedJenisOrderanNama(val.subgrp));
                     setJenisOrderanNama(val.nama);
                   }}
                   onClear={() => {
@@ -207,6 +223,7 @@ const FilterGrid = () => {
                     dispatch(setSelectedJenisOrderan(null));
                     dispatch(setSelectedJenisOrderanNama(''));
                   }}
+                  lookupNama={JENISORDERMUATANNAMA}
                 />
               ))}
             </div>

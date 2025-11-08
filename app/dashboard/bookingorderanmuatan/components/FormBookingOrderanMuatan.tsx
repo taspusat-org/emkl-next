@@ -19,7 +19,10 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { STATUSDATAPENDUKUNGTIDAK } from '@/constants/bookingorderan';
+import {
+  JENISORDERMUATANNAMA,
+  STATUSDATAPENDUKUNGTIDAK
+} from '@/constants/bookingorderan';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import InputDateTimePicker from '@/components/custom-ui/InputDateTimePicker';
 import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
@@ -40,6 +43,7 @@ const FormBookingMuatan = ({
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const [closing, setClosing] = useState<string>('');
   const [pelayaran, setPelayaran] = useState<string>('');
+  const [reloadInformation, setReloadInformation] = useState<boolean>(false);
   const [tglBerangkat, setTglBerangkat] = useState<string>('');
   const [kapal, setKapal] = useState<string>('');
   const [tujuanKapal, setTujuanKapal] = useState<string>('');
@@ -191,14 +195,14 @@ const FormBookingMuatan = ({
 
   const lookUpJenisOrderan = [
     {
-      columns: [{ key: 'nama', name: 'JENIS ORDERAN' }],
+      columns: [{ key: 'subgrp', name: 'subgrp' }],
       labelLookup: 'JENIS ORDERAN LOOKUP',
       selectedRequired: false,
-      endpoint: 'JenisOrderan',
+      endpoint: 'parameter?grp=jenis+orderan',
       label: 'JENISORDERANDIFORM',
       singleColumn: true,
       pageSize: 20,
-      postData: 'nama',
+      postData: 'subgrp',
       dataToPost: 'id'
     }
   ];
@@ -493,7 +497,11 @@ const FormBookingMuatan = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
 
-  // );
+  useEffect(() => {
+    if (mode === 'add') {
+      setReloadInformation(false);
+    }
+  }, [popOver, mode]);
 
   return (
     <Dialog open={popOver && !openForm} onOpenChange={setPopOver}>
@@ -604,7 +612,7 @@ const FormBookingMuatan = ({
                             lookupValue={(value: any) => {
                               forms.setValue('jenisorder_id', Number(value));
                             }}
-                            lookupNama={forms.getValues('jenisorder_nama')}
+                            lookupNama={JENISORDERMUATANNAMA}
                           />
                         ))}
                       </div>
@@ -775,6 +783,7 @@ const FormBookingMuatan = ({
                               forms.setValue('schedule_id', Number(value));
                             }}
                             onSelectRow={(val) => {
+                              setReloadInformation(true);
                               forms.setValue('schedule_nama', val?.kapal_nama);
                               setClosing(val?.tglclosing);
                               setPelayaran(val?.pelayaran_nama);
@@ -783,6 +792,7 @@ const FormBookingMuatan = ({
                               setTujuanKapal(val?.tujuankapal_nama);
                             }}
                             onClear={() => {
+                              setReloadInformation(false);
                               forms.setValue('schedule_nama', '');
                             }}
                             name="schedule_id"
@@ -793,8 +803,7 @@ const FormBookingMuatan = ({
                       </div>
                     </div>
 
-                    {forms.getValues('schedule_id') &&
-                    forms.getValues('schedule_id') != 0 ? (
+                    {reloadInformation && (
                       <div className="mr-6 w-[90%] border-2 border-gray-200 p-2 lg:flex-row lg:items-center">
                         <div className="w-full lg:w-[full]">
                           <FormLabel className="text-sm font-semibold text-gray-400">
@@ -842,8 +851,6 @@ const FormBookingMuatan = ({
                           </div>
                         </div>
                       </div>
-                    ) : (
-                      <></>
                     )}
 
                     <div className="w-full lg:flex-row lg:items-center">
@@ -1579,6 +1586,7 @@ const FormBookingMuatan = ({
                   e.preventDefault();
                   onSubmit(true);
                   dispatch(setSubmitClicked(true));
+                  setReloadInformation(false);
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"
