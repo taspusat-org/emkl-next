@@ -39,6 +39,7 @@ import {
   useGetShippingInstructionDetail,
   useGetShippingInstructionDetailRincian
 } from '@/lib/server/useShippingIntruction';
+import { getShippingInstructionDetailRincianFn } from '@/lib/apis/shippinginstruction.api';
 
 interface Filter {
   page: number;
@@ -196,9 +197,13 @@ const FormShippingInstruction = ({
 
   const processOnReload = async () => {
     try {
+      // forms.setValue(`details.detailsrincian`, []);
+      // setRowsDetailRincian([])
       const tglbukti = forms.getValues('tglbukti');
       if (!scheduleValue || !tglbukti) {
         setReloadForm(false);
+        setRows([]);
+        setRowsDetailRincian([]);
         return;
       }
 
@@ -1237,61 +1242,6 @@ const FormShippingInstruction = ({
   // }, [daftarBlValue]);
 
   useEffect(() => {
-    // if ((allDataDetail) && popOver) {
-    //   if (allDataDetail?.data?.length > 0 && mode !== 'add') {
-    //     // If there is data, add the data rows and the "Add Row" button row at the end
-    //     const formattedRows = allDataDetail.data.map((item: any) => ({
-    //       id: Number(item.id),
-
-    //       daftarbl_id: Number(item.daftarbl_id) ?? '',
-    //       containerpelayaran_id: Number(item.containerpelayaran_id) ?? '',
-    //       emkllain_id: Number(item.emkllain_id) ?? '',
-    //       tujuankapal_id: Number(item.tujuankapal_id) ?? '',
-
-    //       shippinginstructiondetail_nobukti: item.shippinginstructiondetail_nobukti ?? '',
-    //       asalpelabuhan: item.asalpelabuhan ?? '',
-    //       keterangan: item.keterangan ?? '',
-    //       consignee: item.consignee ?? '',
-    //       shipper: item.shipper ?? '',
-    //       comodity: item.comodity ?? '',
-    //       notifyparty: item.notifyparty ?? '',
-    //       totalgw: item.totalgw ?? '',
-    //       isNew: false
-    //     }));
-
-    //     setRows(formattedRows);
-    //   }
-
-    //   console.log('allDataDetail', allDataDetail);
-
-    //   // console.log('allDataRincian', allDataRincian);
-    //   // if (allDataRincian) {
-    //   //   if (allDataRincian?.data?.length > 0 && mode !== 'add') {
-    //   //     // If there is data, add the data rows and the "Add Row" button row at the end
-    //   //     const formattedRows = allDataRincian.data.map((item: any) => ({
-    //   //       id: Number(item.id),
-
-    //   //       daftarbl_id: Number(item.daftarbl_id) ?? '',
-    //   //       containerpelayaran_id: Number(item.containerpelayaran_id) ?? '',
-    //   //       emkllain_id: Number(item.emkllain_id) ?? '',
-    //   //       tujuankapal_id: Number(item.tujuankapal_id) ?? '',
-
-    //   //       shippinginstructiondetail_nobukti: item.shippinginstructiondetail_nobukti ?? '',
-    //   //       asalpelabuhan: item.asalpelabuhan ?? '',
-    //   //       keterangan: item.keterangan ?? '',
-    //   //       consignee: item.consignee ?? '',
-    //   //       shipper: item.shipper ?? '',
-    //   //       comodity: item.comodity ?? '',
-    //   //       notifyparty: item.notifyparty ?? '',
-    //   //       totalgw: item.totalgw ?? '',
-    //   //       isNew: false
-    //   //     }));
-    //   //     setRowsDetailRincian(formattedRows);
-    //   //   }
-    //   // }
-
-    // }
-
     const fetchRincianForDetails = async () => {
       if (!allDataDetail || !popOver || mode === 'add') return;
 
@@ -1321,9 +1271,13 @@ const FormShippingInstruction = ({
         // Lalu refetch rincian untuk setiap detail
         for (const [index, detail] of allDataDetail.data.entries()) {
           try {
+            setEditingRowId(0);
             // Tunggu refetch selesai
-            const ref = await refetchRincian();
-            const rowsData = ref?.data?.data ?? [];
+            const rincian = await getShippingInstructionDetailRincianFn(
+              Number(detail.id),
+              { search: '' }
+            );
+            const rowsData = rincian?.data ?? [];
 
             // Format data rincian
             const formattedRincian = rowsData.map((r: any) => ({
@@ -1344,6 +1298,13 @@ const FormShippingInstruction = ({
           } catch (err) {
             console.error(`Gagal ambil rincian untuk detail ${detail.id}`, err);
           }
+        }
+
+        const allDetails = forms.getValues('details');
+        let activeDetail = allDetails?.[0];
+
+        if (activeDetail?.detailsrincian) {
+          setRowsDetailRincian(activeDetail.detailsrincian);
         }
       }
     };
@@ -1621,6 +1582,7 @@ const FormShippingInstruction = ({
                       onSubmit();
                       setRows([]);
                       setRowsDetailRincian([]);
+                      setReloadForm(false);
                       processOnReload();
                     }}
                   >
