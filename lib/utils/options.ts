@@ -89,6 +89,8 @@ export const authOptions: AuthOptions = {
               accessToken: response.data.accessToken,
               refreshToken: response.data.refreshToken,
               cabang_id: response.data.cabang_id,
+              cabang: response.data.cabang,
+              pelabuhan: response.data.pelabuhan,
               accessTokenExpires: response.data.accessTokenExpires
             };
           } else {
@@ -125,6 +127,8 @@ export const authOptions: AuthOptions = {
           accessTokenExpires: user.accessTokenExpires,
           users: user.users,
           cabang_id: user.cabang_id,
+          cabang: user.cabang,
+          pelabuhan: user.pelabuhan,
           error: undefined
         };
 
@@ -195,6 +199,8 @@ export const authOptions: AuthOptions = {
         session.accessTokenExpires = token.accessTokenExpires as string;
         session.user = token.users as any;
         session.cabang_id = token.cabang_id as string;
+        session.cabang = token.cabang as string;
+        session.pelabuhan = token.pelabuhan as string;
         session.error = token.error as string | undefined;
       }
 
