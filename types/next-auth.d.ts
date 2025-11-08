@@ -9,6 +9,8 @@ declare module 'next-auth' {
     accessTokenExpires?: string | number;
     refreshTokenExpires?: string | number;
     cabang_id?: string;
+    cabang?: string;
+    pelabuhan?: string;
     expiresAt?: number;
     users: {};
   }
@@ -24,6 +26,8 @@ declare module 'next-auth' {
     accessTokenExpires?: string;
     refreshTokenExpires?: string;
     cabang_id?: string;
+    cabang?: string;
+    pelabuhan?: string;
     user: {
       id?: string;
       username?: string;

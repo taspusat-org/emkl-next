@@ -72,3 +72,16 @@ export const checkValidationOrderanHeaderFn = async (
 
   return response;
 };
+
+export const prosesShippingOrderanMuatanFn = async (schedule_id: number) => {
+  try {
+    const response = await api2.get(
+      `orderanheader/processshippingmuatan/${schedule_id}`
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching process shipping muatan data:', error);
+    throw new Error('Failed to fetch process shipping muatan data');
+  }
+};

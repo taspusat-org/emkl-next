@@ -7,7 +7,8 @@ export interface User {
   statusaktif: string;
   modifiedby: string;
   karyawan_id: string;
-  cabang_nama: string;
+  cabang: string;
+  pelabuhan: string;
   role_id: string[];
   created_at: string;
   updated_at: string;
@@ -34,7 +35,8 @@ const initialState: AuthState = {
     modifiedby: '',
     role_id: [''],
     karyawan_id: '',
-    cabang_nama: '',
+    cabang: '',
+    pelabuhan: '',
     created_at: '',
     updated_at: ''
   },
@@ -86,7 +88,8 @@ const authSlice = createSlice({
         modifiedby: '',
         role_id: [''],
         karyawan_id: '',
-        cabang_nama: '',
+        cabang: '',
+        pelabuhan: '',
         created_at: '',
         updated_at: ''
       };

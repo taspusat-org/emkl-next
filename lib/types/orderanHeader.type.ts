@@ -84,6 +84,7 @@ export const filterOrderanMuatan = {
   tujuankapal_text: '',
   marketing_text: '',
   keterangan: '',
+  schedule_id: 0,
   schedule_text: '',
   pelayarancontainer_text: '',
   jenismuatan_text: '',
@@ -96,6 +97,7 @@ export const filterOrderanMuatan = {
   nominalstuffing: '',
   emkllain_text: '',
   asalmuatan: '',
+  daftarbl_id: '',
   daftarbl_text: '',
   comodity: '',
   gandengan: '',
@@ -114,6 +116,5 @@ export const filterOrderanMuatan = {
   updated_at: '',
   tglDari: '',
   tglSampai: '',
-  jenisOrderan: '',
-  schedule_id: ''
+  jenisOrderan: ''
 };

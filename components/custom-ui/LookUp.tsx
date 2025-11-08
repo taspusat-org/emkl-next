@@ -892,9 +892,13 @@ export default function LookUp({
       setClicked(true);
       dispatch(setSelectLookup({ key: label ?? '', data: firstRow }));
       const value = firstRow[dataToPost as any];
-      lookupValue?.(value);
-      onSelectRow?.(firstRow);
-
+      if (newRows.length > 1) {
+        onClear?.();
+        lookupValue?.(value);
+      } else {
+        lookupValue?.(value);
+        onSelectRow?.(firstRow);
+      }
       // Update filters.search juga agar sync
       setFilters((prev) => ({
         ...prev,
@@ -1300,7 +1304,7 @@ export default function LookUp({
           setInputValue(rows[0][postData as string] || '');
           const value = dataToPost ? rows[0][dataToPost as string] : rows[0].id;
           lookupValue?.(value);
-          onSelectRow?.(value); // cukup satu kali, tanpa else
+          onSelectRow?.(rows[0]); // cukup satu kali, tanpa else
         }
         if (inputValue && rows.length === 0) {
           setShowError({

@@ -56,10 +56,10 @@ const FormStatusJobMasukGudang = ({
 }: any) => {
   const { alert } = useAlert();
   const [dataGridKey, setDataGridKey] = useState(0);
-  const [endpointLookup, setEndpointLookup] = useState('');
-  const [enabledNoSeal, setEnabledNoSeal] = useState(false);
-  const [noContainerValue, setNoContainerValue] = useState('');
-  const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
+  // const [endpointLookup, setEndpointLookup] = useState('');
+  // const [enabledNoSeal, setEnabledNoSeal] = useState(false);
+  // const [noContainerValue, setNoContainerValue] = useState('');
+  // const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
     new Map()
@@ -78,12 +78,9 @@ const FormStatusJobMasukGudang = ({
   const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const headerData = useSelector((state: RootState) => state.header.headerData);
-  const {
-    selectedJenisOrderan,
-    selectedJenisStatusJob,
-    selectedJenisOrderanNama,
-    selectedJenisStatusJobNama
-  } = useSelector((state: RootState) => state.filter);
+  const { selectedJenisOrderan, selectedJenisStatusJob } = useSelector(
+    (state: RootState) => state.filter
+  );
 
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -133,15 +130,7 @@ const FormStatusJobMasukGudang = ({
 
   const lookupOrderanNoContainer = [
     {
-      columns: [
-        // { key: 'nobukti', name: 'NO BUKTI' },
-        // { key: 'tglbukti', name: 'TANGGAL JOB' },
-        // { key: 'shipper_nama', name: 'SHIPPER' },
-        { key: 'nocontainer', name: 'NO CONTAINER' }
-        // { key: 'noseal', name: 'NO SEAL' },
-        // { key: 'lokasistuffing_nama', name: 'LOKASI STUFFING' },
-        // { key: 'gandengan', name: 'GANDENGAN' }
-      ],
+      columns: [{ key: 'nocontainer', name: 'NO CONTAINER' }],
       // labelLookup: 'ORDERAN LOOKUP',
       required: true,
       selectedRequired: false,
@@ -149,11 +138,11 @@ const FormStatusJobMasukGudang = ({
       clearDisabled: true,
       autoSearch: false,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
-      endpoint: `orderanheader?jenisOrderan=${selectedJenisOrderan}`,
+      // endpoint: `orderanheader?jenisOrderan=${selectedJenisOrderan}`,
       singleColumn: false,
       pageSize: 20,
       postData: 'nocontainer',
-      dataToPost: 'id'
+      dataToPost: 'nocontainer'
     }
   ];
 
@@ -220,12 +209,12 @@ const FormStatusJobMasukGudang = ({
     e.stopPropagation();
   };
 
-  const handleInputNoContainer = (e: any) => {
-    setNoContainerValue('');
-    if (e.key === 'Enter') {
-      setNoContainerValue(e.target.value);
-    }
-  };
+  // const handleInputNoContainer = (e: any) => {
+  //   setNoContainerValue('');
+  //   if (e.key === 'Enter') {
+  //     setNoContainerValue(e.target.value);
+  //   }
+  // };
 
   const handleInputChange = (
     index: number,
@@ -613,6 +602,27 @@ const FormStatusJobMasukGudang = ({
           </div>
         ),
         renderCell: (props: any) => {
+          const nobukti = [
+            // Data dari rows yang sedang di-input (exclude row saat ini)
+            ...rows
+              .filter((row, idx) => {
+                return (
+                  row?.job_nama &&
+                  row?.job_nama !== '' &&
+                  idx !== props.row.idx && // Exclude row saat ini
+                  !row.isAddRow // Exclude tombol "Add Row"
+                );
+              })
+              .map((row) => row?.job_nama),
+
+            // Data dari addedRow yang sudah pernah disimpan
+            ...addedRow
+              .filter((row) => row?.job_nama && row?.job_nama !== '')
+              .map((row) => row?.job_nama)
+          ];
+          const jsonString = JSON.stringify({ nobukti });
+          const endpoint = `orderanheader?jenisOrderan=${selectedJenisOrderan}&notIn=${jsonString}`;
+
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {/* {props.row.isAddRow ? (
@@ -645,14 +655,16 @@ const FormStatusJobMasukGudang = ({
                     <LookUp
                       key={index}
                       {...lookupProps}
-                      filterby={{
-                        nocontainer: noContainerValue
-                      }}
                       isExactMatch={false}
                       showClearButton={false}
+                      endpoint={endpoint}
                       label={`ORDERAN_CONTAINER_${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
                       lookupValue={(id) => {
-                        handleInputChange(props.rowIdx, 'job', Number(id)); // Use props.rowIdx to get the correct index
+                        handleInputChange(
+                          props.rowIdx,
+                          'nocontainer',
+                          String(id)
+                        ); // Use props.rowIdx to get the correct index
                       }}
                       onSelectRow={(val) => {
                         handleInputChange(
@@ -692,6 +704,20 @@ const FormStatusJobMasukGudang = ({
                           val?.lokasistuffing_nama
                         );
                       }}
+                      onClear={() => {
+                        handleInputChange(props.rowIdx, 'job_nama', '');
+                        handleInputChange(props.rowIdx, 'tglorder', '');
+                        // handleInputChange(props.rowIdx, 'nocontainer', '');
+                        handleInputChange(props.rowIdx, 'noseal', '');
+                        handleInputChange(props.rowIdx, 'shipper_id', 0);
+                        handleInputChange(props.rowIdx, 'shipper_nama', '');
+                        handleInputChange(props.rowIdx, 'lokasistuffing', 0);
+                        handleInputChange(
+                          props.rowIdx,
+                          'lokasistuffing_nama',
+                          ''
+                        );
+                      }}
                       lookupNama={
                         props.row.nocontainer
                           ? String(props.row.nocontainer)
@@ -720,6 +746,30 @@ const FormStatusJobMasukGudang = ({
           </div>
         ),
         renderCell: (props: any) => {
+          const isDisabledByCondition =
+            (props.row.job_nama === '' && props.row.nocontainer === '') ||
+            (props.row.nocontainer !== '' && props.row.job_nama !== '');
+          const nobukti = [
+            // Data dari rows yang sedang di-input (exclude row saat ini)
+            ...rows
+              .filter((row, idx) => {
+                return (
+                  row?.job_nama &&
+                  row?.job_nama !== '' &&
+                  idx !== props.row.idx && // Exclude row saat ini
+                  !row.isAddRow // Exclude tombol "Add Row"
+                );
+              })
+              .map((row) => row?.job_nama),
+
+            // Data dari addedRow yang sudah pernah disimpan
+            ...addedRow
+              .filter((row) => row?.job_nama && row?.job_nama !== '')
+              .map((row) => row?.job_nama)
+          ];
+          const jsonString = JSON.stringify({ nobukti });
+          const endpoint = `orderanheader?jenisOrderan=${selectedJenisOrderan}&notIn=${jsonString}`;
+
           return (
             <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
               {/* {props.row.isAddRow ? (
@@ -740,12 +790,14 @@ const FormStatusJobMasukGudang = ({
                     <LookUp
                       key={index}
                       {...lookupProps}
-                      disabled={!enabledNoSeal}
-                      endpoint={endpointLookup}
+                      // disabled={!enabledNoSeal}
+                      disabled={isDisabledByCondition}
+                      endpoint={endpoint}
                       dataSortBy="nobukti"
                       filterby={{
-                        nocontainer: noContainerValue
+                        nocontainer: props.row.nocontainer
                       }}
+                      postData="noseal"
                       dataSortDirection="desc"
                       label={`ORDERAN ${props.rowIdx}`} // Ensure you use row.id or rowIdx for unique labeling
                       lookupValue={(id) => {
@@ -952,7 +1004,7 @@ const FormStatusJobMasukGudang = ({
         }
       }
     ];
-  }, [rows, checkedRows, editingRowId, editableValues]);
+  }, [rows, checkedRows, editableValues]);
 
   function EmptyRowsRenderer() {
     return (
@@ -1054,131 +1106,131 @@ const FormStatusJobMasukGudang = ({
     }));
   }, [selectedJenisOrderan, selectedJenisStatusJob]);
 
-  useEffect(() => {
-    // cancelPreviousRequest(abortControllerRef);
-    if (noContainerValue && noContainerValue !== '') {
-      const nobukti = [
-        // Data dari rows yang sedang di-input (exclude row saat ini)
-        ...rows
-          .filter((row, idx) => {
-            return (
-              row?.job_nama &&
-              row?.job_nama !== '' &&
-              idx !== editingRowId && // Exclude row saat ini
-              !row.isAddRow // Exclude tombol "Add Row"
-            );
-          })
-          .map((row) => row?.job_nama),
+  // useEffect(() => {
+  //   // cancelPreviousRequest(abortControllerRef);
+  //   if (noContainerValue && noContainerValue !== '') {
+  //     const nobukti = [
+  //       // Data dari rows yang sedang di-input (exclude row saat ini)
+  //       ...rows
+  //         .filter((row, idx) => {
+  //           return (
+  //             row?.job_nama &&
+  //             row?.job_nama !== '' &&
+  //             idx !== editingRowId && // Exclude row saat ini
+  //             !row.isAddRow // Exclude tombol "Add Row"
+  //           );
+  //         })
+  //         .map((row) => row?.job_nama),
 
-        // Data dari addedRow yang sudah pernah disimpan
-        ...addedRow
-          .filter((row) => row?.job_nama && row?.job_nama !== '')
-          .map((row) => row?.job_nama)
-      ];
-      const jsonString = JSON.stringify({ nobukti });
+  //       // Data dari addedRow yang sudah pernah disimpan
+  //       ...addedRow
+  //         .filter((row) => row?.job_nama && row?.job_nama !== '')
+  //         .map((row) => row?.job_nama)
+  //     ];
+  //     const jsonString = JSON.stringify({ nobukti });
 
-      const fetchData = async () => {
-        try {
-          const [jenisOrderLookup] = await Promise.all<ApiResponse>([
-            getAllOrderanMuatanFn({
-              filters: {
-                jenisOrderan: selectedJenisOrderan
-                  ? String(selectedJenisOrderan)
-                  : String(JENISORDERMUATAN),
-                nocontainer: noContainerValue,
-                notIn: jsonString
-              }
-              // notIn: { nobukti }
-            })
-          ]);
+  //     const fetchData = async () => {
+  //       try {
+  //         const [jenisOrderLookup] = await Promise.all<ApiResponse>([
+  //           getAllOrderanMuatanFn({
+  //             filters: {
+  //               jenisOrderan: selectedJenisOrderan
+  //                 ? String(selectedJenisOrderan)
+  //                 : String(JENISORDERMUATAN),
+  //               nocontainer: noContainerValue,
+  //               notIn: jsonString
+  //             }
+  //             // notIn: { nobukti }
+  //           })
+  //         ]);
 
-          if (jenisOrderLookup.data && jenisOrderLookup.data.length == 1) {
-            setEnabledNoSeal(false);
-            setEndpointLookup('');
-            handleInputChange(
-              Number(editingRowId),
-              'job',
-              Number(jenisOrderLookup.data[0].id)
-            );
-            handleInputChange(
-              Number(editingRowId),
-              'job_nama',
-              jenisOrderLookup.data[0].nobukti
-            );
-            handleInputChange(
-              Number(editingRowId),
-              'tglorder',
-              jenisOrderLookup.data[0].tglbukti
-            );
-            // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
-            handleInputChange(
-              Number(editingRowId),
-              'noseal',
-              jenisOrderLookup.data[0].noseal
-            );
-            handleInputChange(
-              Number(editingRowId),
-              'shipper_id',
-              Number(jenisOrderLookup.data[0].shipper_id)
-            );
-            handleInputChange(
-              Number(editingRowId),
-              'shipper_nama',
-              jenisOrderLookup.data[0].shipper_nama
-            );
-            handleInputChange(
-              Number(editingRowId),
-              'lokasistuffing',
-              Number(jenisOrderLookup.data[0].lokasistuffing)
-            );
-            handleInputChange(
-              Number(editingRowId),
-              'lokasistuffing_nama',
-              jenisOrderLookup.data[0].lokasistuffing_nama
-            );
-          } else if (
-            jenisOrderLookup.data &&
-            jenisOrderLookup.data.length > 1
-          ) {
-            setEnabledNoSeal(true);
-            setEndpointLookup(
-              `orderanheader?jenisOrderan=${selectedJenisOrderan}&notIn=${jsonString}`
-            );
-            handleInputChange(Number(editingRowId), 'job', 0);
-            handleInputChange(Number(editingRowId), 'job_nama', '');
-            handleInputChange(Number(editingRowId), 'tglorder', '');
-            // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
-            handleInputChange(Number(editingRowId), 'noseal', '');
-            handleInputChange(Number(editingRowId), 'shipper_id', 0);
-            handleInputChange(Number(editingRowId), 'shipper_nama', '');
-            handleInputChange(Number(editingRowId), 'lokasistuffing', 0);
-            handleInputChange(Number(editingRowId), 'lokasistuffing_nama', '');
-          } else {
-            setEnabledNoSeal(false);
-            setEndpointLookup('');
-            handleInputChange(Number(editingRowId), 'job', 0);
-            handleInputChange(Number(editingRowId), 'job_nama', '');
-            handleInputChange(Number(editingRowId), 'tglorder', '');
-            // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
-            handleInputChange(Number(editingRowId), 'noseal', '');
-            handleInputChange(Number(editingRowId), 'shipper_id', 0);
-            handleInputChange(Number(editingRowId), 'shipper_nama', '');
-            handleInputChange(Number(editingRowId), 'lokasistuffing', 0);
-            handleInputChange(Number(editingRowId), 'lokasistuffing_nama', '');
-            alert({
-              title: `DATA ORDERAN DENGAN NO CONTAINER ${noContainerValue} TIDAK DITEMUKAN`,
-              variant: 'danger',
-              submitText: 'OK'
-            });
-          }
-        } catch (err) {
-          console.error('Error fetching data:', err);
-        }
-      };
+  //         if (jenisOrderLookup.data && jenisOrderLookup.data.length == 1) {
+  //           // setEnabledNoSeal(false);
+  //           // setEndpointLookup('');
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'job',
+  //             Number(jenisOrderLookup.data[0].id)
+  //           );
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'job_nama',
+  //             jenisOrderLookup.data[0].nobukti
+  //           );
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'tglorder',
+  //             jenisOrderLookup.data[0].tglbukti
+  //           );
+  //           // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'noseal',
+  //             jenisOrderLookup.data[0].noseal
+  //           );
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'shipper_id',
+  //             Number(jenisOrderLookup.data[0].shipper_id)
+  //           );
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'shipper_nama',
+  //             jenisOrderLookup.data[0].shipper_nama
+  //           );
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'lokasistuffing',
+  //             Number(jenisOrderLookup.data[0].lokasistuffing)
+  //           );
+  //           handleInputChange(
+  //             Number(editingRowId),
+  //             'lokasistuffing_nama',
+  //             jenisOrderLookup.data[0].lokasistuffing_nama
+  //           );
+  //         } else if (
+  //           jenisOrderLookup.data &&
+  //           jenisOrderLookup.data.length > 1
+  //         ) {
+  //           // setEnabledNoSeal(true);
+  //           // setEndpointLookup(
+  //           //   `orderanheader?jenisOrderan=${selectedJenisOrderan}&notIn=${jsonString}`
+  //           // );
+  //           handleInputChange(Number(editingRowId), 'job', 0);
+  //           handleInputChange(Number(editingRowId), 'job_nama', '');
+  //           handleInputChange(Number(editingRowId), 'tglorder', '');
+  //           // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
+  //           handleInputChange(Number(editingRowId), 'noseal', '');
+  //           handleInputChange(Number(editingRowId), 'shipper_id', 0);
+  //           handleInputChange(Number(editingRowId), 'shipper_nama', '');
+  //           handleInputChange(Number(editingRowId), 'lokasistuffing', 0);
+  //           handleInputChange(Number(editingRowId), 'lokasistuffing_nama', '');
+  //         } else {
+  //           // setEnabledNoSeal(false);
+  //           // setEndpointLookup('');
+  //           handleInputChange(Number(editingRowId), 'job', 0);
+  //           handleInputChange(Number(editingRowId), 'job_nama', '');
+  //           handleInputChange(Number(editingRowId), 'tglorder', '');
+  //           // handleInputChange(editingRowId, 'nocontainer', val?.nocontainer);
+  //           handleInputChange(Number(editingRowId), 'noseal', '');
+  //           handleInputChange(Number(editingRowId), 'shipper_id', 0);
+  //           handleInputChange(Number(editingRowId), 'shipper_nama', '');
+  //           handleInputChange(Number(editingRowId), 'lokasistuffing', 0);
+  //           handleInputChange(Number(editingRowId), 'lokasistuffing_nama', '');
+  //           alert({
+  //             title: `DATA ORDERAN DENGAN NO CONTAINER ${noContainerValue} TIDAK DITEMUKAN`,
+  //             variant: 'danger',
+  //             submitText: 'OK'
+  //           });
+  //         }
+  //       } catch (err) {
+  //         console.error('Error fetching data:', err);
+  //       }
+  //     };
 
-      fetchData();
-    }
-  }, [noContainerValue]);
+  //     fetchData();
+  //   }
+  // }, [noContainerValue]);
 
   useEffect(() => {
     if (allDataDetail && popOver) {
@@ -1245,8 +1297,8 @@ const FormStatusJobMasukGudang = ({
   }, [rows]);
 
   useEffect(() => {
-    setEnabledNoSeal(false);
-    setNoContainerValue('');
+    // setEnabledNoSeal(false);
+    // setNoContainerValue('');
     if (popOver) {
       refetch();
     }
