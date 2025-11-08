@@ -424,6 +424,7 @@ const createRincianColumns = (
         </div>
       ),
       renderCell: (props: any) => {
+        console.log('props', props);
         if (props.row.isAddRow) {
           return null;
         } else {
@@ -556,6 +557,8 @@ const FormPackingList = ({
         packinglistdetail_id: '',
         statuspackinglist_id: '', // Kosong = fetch semua status
         keterangan: '',
+        banyak: '',
+        berat: '',
         info: '',
         modifiedby: '',
         created_at: '',
@@ -568,6 +571,8 @@ const FormPackingList = ({
       packinglistdetail_id: '',
       statuspackinglist_id: '', // ✅ Fetch semua status sekaligus
       keterangan: '',
+      banyak: '',
+      berat: '',
       info: '',
       modifiedby: '',
       created_at: '',
@@ -1948,11 +1953,6 @@ const FormPackingList = ({
 
       if (details.length === 0) return;
 
-      console.log('📊 Processing all rincian data:', {
-        detailCount: details.length,
-        rincianCount: allRincian.length
-      });
-
       // ✅ STEP 1: Buat mapping packinglistdetail_id ke detail info
       const detailMap = new Map<string, any>();
       details.forEach((detail: any) => {
@@ -1963,8 +1963,6 @@ const FormPackingList = ({
         });
       });
 
-      console.log('🗺️ Detail Map:', Object.fromEntries(detailMap));
-
       // ✅ STEP 2: Group rincian by packinglistdetail_id
       const rincianByDetailId = allRincian.reduce((acc: any, rincian: any) => {
         const detailId = rincian.packinglistdetail_id;
@@ -1974,8 +1972,6 @@ const FormPackingList = ({
         acc[detailId].push(rincian);
         return acc;
       }, {});
-
-      console.log('📦 Grouped rincian:', rincianByDetailId);
 
       // ✅ STEP 3: Status mapping
       const statusToTabMap: { [key: number]: string } = {
@@ -2029,64 +2025,71 @@ const FormPackingList = ({
         // Get existing data atau init array baru
         const existingData = newTabDataMap.get(tabKey) || [];
 
-        // Add rincian ke array
-        existingData.push({
+        // ✅ PERBAIKAN: Tambahkan banyak dan berat untuk tab rincian
+        const rowData: any = {
           id: rincian.id,
           keterangan: rincian.keterangan || '',
           statuspackinglist_id: rincian.statuspackinglist_id,
           jobmuatan,
           bongkarke
-        });
+        };
+
+        // Tambahkan banyak dan berat hanya untuk tab rincian (status 220)
+        if (tabName === 'rincian') {
+          rowData.banyak = rincian.banyak || '';
+          rowData.berat = rincian.berat || '';
+        }
+
+        existingData.push(rowData);
 
         newTabDataMap.set(tabKey, existingData);
-
-        console.log(`✅ Added to ${tabName} (${tabKey}):`, {
-          id: rincian.id,
-          keterangan: rincian.keterangan,
-          jobmuatan,
-          bongkarke
-        });
       });
 
-      // ✅ STEP 5: Tambahkan default row untuk tab yang kosong
+      // ✅ STEP 5: Tambahkan default row untuk tab yang kosong DAN add row button
       newTabDataMap.forEach((data, tabKey) => {
-        if (data.length === 0) {
-          // Extract jobmuatan dan bongkarke dari tabKey
-          const parts = tabKey.split('_');
-          const tabName = parts.pop(); // Ambil nama tab dari belakang
-          const bongkarkeStr = parts.pop(); // Ambil bongkarke
-          const jobmuatan = parts.join('_'); // Sisa adalah jobmuatan
-          const bongkarke = parseInt(bongkarkeStr || '1');
+        const parts = tabKey.split('_');
+        const tabName = parts.pop();
+        const bongkarkeStr = parts.pop();
+        const jobmuatan = parts.join('_');
+        const bongkarke = parseInt(bongkarkeStr || '1');
 
+        if (data.length === 0) {
+          // Jika tidak ada data, tambahkan 1 row kosong
+          const defaultRow: any = {
+            id: 0,
+            keterangan: '',
+            jobmuatan,
+            bongkarke
+          };
+
+          if (tabName === 'rincian') {
+            defaultRow.banyak = '';
+            defaultRow.berat = '';
+          }
+
+          newTabDataMap.set(tabKey, [defaultRow]);
+        }
+
+        // ✅ TAMBAHKAN: Selalu tambahkan add row button di mode edit
+        if (mode === 'edit') {
+          const currentData = newTabDataMap.get(tabKey) || [];
           newTabDataMap.set(tabKey, [
-            {
-              id: 0,
-              keterangan: '',
-              jobmuatan,
-              bongkarke
-            }
+            ...currentData,
+            { isAddRow: true, id: 'add_row' }
           ]);
         }
       });
 
-      console.log('🎯 Final Tab Data Map:', Object.fromEntries(newTabDataMap));
-
       // ✅ STEP 6: Update tabDataMap state
       setTabDataMap(newTabDataMap);
 
-      // ✅ STEP 7: Update tampilan untuk selected row (PERBAIKAN DI SINI!)
-      // Ambil dari selectedData/selectedJobData yang sudah ada ATAU dari data pertama
+      // ✅ STEP 7: Update tampilan untuk selected row
       const targetJobmuatan =
         selectedData?.jobmuatan || details[0]?.orderanmuatan_nobukti;
       const targetBongkarke =
         selectedJobData?.bongkarke || Number(details[0]?.bongkarke) || 1;
 
       if (targetJobmuatan && targetBongkarke) {
-        console.log('🎯 Updating display for:', {
-          targetJobmuatan,
-          targetBongkarke
-        });
-
         const tabs = [
           'penerima',
           'lampiran',
@@ -2098,20 +2101,17 @@ const FormPackingList = ({
 
         tabs.forEach((tabName) => {
           const tabKey = getTabKey(targetJobmuatan, targetBongkarke, tabName);
-          const tabData = newTabDataMap.get(tabKey) || [
-            {
-              id: 0,
-              keterangan: '',
-              jobmuatan: targetJobmuatan,
-              bongkarke: targetBongkarke
-            }
-          ];
+          const tabDataRaw = newTabDataMap.get(tabKey) || [];
 
-          console.log(`🔄 Setting ${tabName} rows:`, tabData);
+          // ✅ PERBAIKAN: Pastikan add row button ada di data yang ditampilkan
+          const tabData =
+            mode === 'edit'
+              ? tabDataRaw // Sudah include add row dari STEP 5
+              : tabDataRaw.filter((row: any) => !row.isAddRow); // View/delete: hilangkan add row
 
           switch (tabName) {
             case 'penerima':
-              setRowsPenerima([...tabData]); // ✅ Spread untuk trigger re-render
+              setRowsPenerima([...tabData]);
               break;
             case 'lampiran':
               setRowsLampiran([...tabData]);
@@ -2134,20 +2134,13 @@ const FormPackingList = ({
 
       console.log('✨ All rincian data loaded and set to tabs!');
     }
-  }, [detailDetail, detailRincian, mode, popOver]); // ✅ Hapus selectedData dan selectedJobData dari dependency
+  }, [detailDetail, detailRincian, mode, popOver]);
   useEffect(() => {
     if (!popOver) {
       // Reset modified tabs saat dialog ditutup
       setModifiedTabs(new Set());
     }
   }, [popOver]);
-  console.log('tes form', forms.getValues());
-  console.log('rowsJob', rowsJob);
-  console.log('jobDataMap', jobDataMap);
-  console.log('tabDataMap', tabDataMap);
-  console.log('rowsLampiran', rowsLampiran);
-  console.log('rowsPenerima', rowsPenerima);
-  console.log('detailDetail', detailDetail);
   console.log('detailRincian', detailRincian);
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
@@ -2221,6 +2214,11 @@ const FormPackingList = ({
                             <FormControl>
                               <InputDatePicker
                                 value={field.value}
+                                disabled={
+                                  mode === 'view' ||
+                                  mode === 'delete' ||
+                                  mode === 'edit'
+                                }
                                 onChange={field.onChange}
                                 showCalendar
                                 onSelect={(date) =>

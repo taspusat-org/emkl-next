@@ -82,6 +82,8 @@ export const filterPackingListDetailRincian = {
   statuspackinglist_id: '',
   packinglistdetail_id: '',
   keterangan: '',
+  banyak: '',
+  berat: '',
   info: '',
   modifiedby: '',
   created_at: '',

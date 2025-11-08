@@ -6,6 +6,7 @@ import {
   setProcessing
 } from '../store/loadingSlice/loadingSlice';
 import {
+  deletePackingListFn,
   getPackingListDetailFn,
   getPackingListDetailRincianFn,
   getPackingListHeaderFn,
@@ -148,6 +149,26 @@ export const useUpdatePackingList = () => {
         title: 'Proses Berhasil.',
         description: 'Data Berhasil Diubah.'
       });
+    },
+    onError: (error: AxiosError) => {
+      const errorResponse = error.response?.data as IErrorResponse;
+      if (errorResponse !== undefined) {
+        toast({
+          variant: 'destructive',
+          title: errorResponse.message ?? 'Gagal',
+          description: 'Terjadi masalah dengan permintaan Anda.'
+        });
+      }
+    }
+  });
+};
+export const useDeletePackingList = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation(deletePackingListFn, {
+    onSuccess: () => {
+      void queryClient.invalidateQueries('packinglist');
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;

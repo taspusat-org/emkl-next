@@ -92,6 +92,7 @@ import {
 } from '@/lib/validations/packinglist.validation';
 import {
   useCreatePackingList,
+  useDeletePackingList,
   useGetPackingListHeader,
   useUpdatePackingList
 } from '@/lib/server/usePackingList';
@@ -134,8 +135,8 @@ const GridPackingList = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteJurnalUmum, isLoading: isLoadingDelete } =
-    useDeleteJurnalUmum();
+  const { mutateAsync: deletePackingList, isLoading: isLoadingDelete } =
+    useDeletePackingList();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -1285,60 +1286,71 @@ const GridPackingList = () => {
     }
   };
   const onSubmit = async (values: PackingListHeaderInput) => {
+    dispatch(setProcessing());
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteJurnalUmum(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else if (selectedRow === rows.length - 1) {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+    try {
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deletePackingList(selectedRowId as unknown as number, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else if (selectedRow === rows.length - 1) {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              } else {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createPackingList(
-        {
-          ...values,
-          details: values.details.map((detail: any) => ({
-            ...detail,
-            id: 0 // Ubah id setiap detail menjadi 0
-          })),
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createPackingList(
+          {
+            ...values,
+            details: values.details.map((detail: any) => ({
+              ...detail,
+              id: 0 // Ubah id setiap detail menjadi 0
+            })),
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updatePackingList(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('packinglist');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+
+      if (selectedRowId && mode === 'edit') {
+        await updatePackingList(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('packinglist');
+      }
+    } catch (error) {
+      console.error('Error during onSubmit:', error);
+      setIsFetchingManually(false);
+      setIsDataUpdated(false);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
