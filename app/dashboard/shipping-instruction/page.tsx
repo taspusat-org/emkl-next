@@ -33,46 +33,6 @@ const Page = () => {
       try {
         const result = await fieldLength('shippinginstruction');
         dispatch(setFieldLength(result.data));
-
-        // const [getBankLookup, getAlatBayarLookup] =
-        //   await Promise.all<ApiResponse>([
-        //     getBankFn({ isLookUp: 'true' }),
-        //     getAlatbayarFn({ isLookUp: 'true' })
-        //   ]);
-
-        // if (getBankLookup.type === 'local') {
-        //   const multipleKey = ['BANK DARI', 'BANK KE'];
-
-        //   multipleKey.forEach((labelKey) => {
-        //     dispatch(setData({ key: labelKey, data: getBankLookup.data }));
-        //     dispatch(setType({ key: labelKey, type: getBankLookup.type }));
-
-        //     const defaultValue = getBankLookup.data
-        //       .map((item: any) => item.default)
-        //       .find((val: any) => val !== null || '');
-
-        //     dispatch(
-        //       setDefault({ key: labelKey, isdefault: String(defaultValue) })
-        //     );
-        //   });
-        // }
-
-        // if (getAlatBayarLookup.type === 'local') {
-        //   dispatch(
-        //     setData({ key: 'ALAT BAYAR', data: getAlatBayarLookup.data })
-        //   );
-        //   dispatch(
-        //     setType({ key: 'ALAT BAYAR', type: getAlatBayarLookup.type })
-        //   );
-
-        //   const defaultValue = getAlatBayarLookup.data
-        //     .map((item: any) => item.default)
-        //     .find((val: any) => val !== null || '');
-
-        //   dispatch(
-        //     setDefault({ key: 'ALAT BAYAR', isdefault: String(defaultValue) })
-        //   );
-        // }
       } catch (err) {
         console.error('Error fetching data:', err);
       }

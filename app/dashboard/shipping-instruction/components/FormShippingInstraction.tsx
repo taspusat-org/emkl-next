@@ -67,7 +67,7 @@ const FormShippingInstruction = ({
 }: any) => {
   const [dataGridKey, setDataGridKey] = useState(0);
   const [daftarBlValue, setDaftarBlValue] = useState(0);
-  const [scheduleValue, setScheduleValue] = useState('');
+  const [scheduleValue, setScheduleValue] = useState(0);
   const [reloadForm, setReloadForm] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
@@ -208,7 +208,7 @@ const FormShippingInstruction = ({
       }
 
       dispatch(setProcessing());
-      const test = await prosesShippingOrderanMuatanFn(scheduleValue);
+      const test = await prosesShippingOrderanMuatanFn(Number(scheduleValue));
       setReloadForm(true);
 
       // await Promise.all(
@@ -262,7 +262,7 @@ const FormShippingInstruction = ({
         }));
 
         // kasih jeda supaya state filters sempat update
-        await new Promise((r) => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 5));
 
         // Tunggu hasil refetch berdasarkan daftarbl_id saat ini
         const ref = await refetch();
@@ -281,7 +281,7 @@ const FormShippingInstruction = ({
         }));
 
         // kasih jeda kecil biar React Hook Form sempat update internalnya
-        await new Promise((r) => setTimeout(r, 30));
+        await new Promise((r) => setTimeout(r, 5));
 
         forms.setValue(`details.${index}.detailsrincian`, formattedRows);
       }
@@ -1317,7 +1317,7 @@ const FormShippingInstruction = ({
 
     if (mode === 'add') {
       setRows([]);
-      setScheduleValue('');
+      setScheduleValue(0);
       setDaftarBlValue(0);
       setRowsDetailRincian([]);
       setReloadForm(false);
@@ -1459,7 +1459,7 @@ const FormShippingInstruction = ({
                               }}
                               onClear={() => {
                                 setReloadForm(false);
-                                setScheduleValue('');
+                                setScheduleValue(0);
                                 // forms.setValue('schedule_id', 0);
                                 forms.setValue('tglberangkat', '');
                                 forms.setValue('voyberangkat', '');

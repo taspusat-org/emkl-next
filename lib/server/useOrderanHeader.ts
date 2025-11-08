@@ -25,7 +25,7 @@ export const useGetAllOrderanMuatan = (
       updated_at?: string;
       tglDari?: string | null;
       tglSampai?: string | null;
-      schedule_id?: number | null;
+      schedule_id?: number | string;
     };
   } = {},
   signal?: AbortSignal
