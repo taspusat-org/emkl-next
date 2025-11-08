@@ -14,9 +14,7 @@ export const shippingInstructionDetailRincianSchema = z.object({
     .string({ message: dynamicRequiredMessage('COMODITY') })
     .nonempty({ message: dynamicRequiredMessage('COMODITY') }),
 
-  keterangan: z
-    .string({ message: dynamicRequiredMessage('KETERANGAN') })
-    .nonempty({ message: dynamicRequiredMessage('KETERANGAN') })
+  keterangan: z.string().nullable().optional()
 });
 export type shippingInstructionHeaderDetailRincianInput = z.infer<
   typeof shippingInstructionDetailRincianSchema
@@ -56,9 +54,11 @@ export const shippingInstructionDetailSchema = z.object({
     .string({ message: dynamicRequiredMessage('PELABUHAN ASAL') })
     .nonempty({ message: dynamicRequiredMessage('PELABUHAN ASAL') }),
 
-  keterangan: z
-    .string({ message: dynamicRequiredMessage('KETERANGAN') })
-    .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),
+  // keterangan: z
+  //   .string({ message: dynamicRequiredMessage('KETERANGAN') })
+  //   .nonempty({ message: dynamicRequiredMessage('KETERANGAN') }),
+
+  keterangan: z.string().nullable().optional(),
 
   consignee: z
     .string({ message: dynamicRequiredMessage('CONSIGNEE') })
