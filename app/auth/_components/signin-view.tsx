@@ -164,19 +164,19 @@ export default function SignInViewPage() {
   };
 
   const { View } = useLottie(options);
-  useEffect(() => {
-    if (session) {
-      dispatch(
-        setCredentials({
-          user: (session.user as User) ?? null,
-          id: session.user.id ?? null,
-          cabang_id: session.cabang_id ?? null
-        })
-      );
-      // Jika sesi sudah diupdate, arahkan ke dashboard
-      router.replace('/dashboard');
-    }
-  }, [session, dispatch, router]);
+  // useEffect(() => {
+  //   if (session) {
+  //     dispatch(
+  //       setCredentials({
+  //         user: (session.user as User) ?? null,
+  //         id: session.user.id ?? null,
+  //         cabang_id: session.cabang_id ?? null
+  //       })
+  //     );
+  //     // Jika sesi sudah diupdate, arahkan ke dashboard
+  //     router.replace('/dashboard');
+  //   }
+  // }, [session, dispatch, router]);
 
   useEffect(() => {
     const navigationEntries = performance.getEntriesByType('navigation');
