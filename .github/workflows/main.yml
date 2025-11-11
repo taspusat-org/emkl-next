@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'emkl-next/**'
+      - '**'
   workflow_dispatch:
 
 jobs:
@@ -22,23 +22,20 @@ jobs:
           node-version: '18'
       
       - name: 📦 Install dependencies
-        working-directory: emkl-next  # Hapus ./
         run: npm ci
       
       - name: 🔨 Build application
-        working-directory: emkl-next  # Hapus ./
         run: npm run build
       
       - name: 📋 Prepare artifacts
-        working-directory: emkl-next  # Hapus ./
         run: |
-          mkdir -p ../build-output
-          cp -r .next ../build-output/
-          cp package.json ../build-output/
-          cp package-lock.json ../build-output/
-          if [ -f next.config.js ]; then cp next.config.js ../build-output/; fi
-          if [ -f next.config.mjs ]; then cp next.config.mjs ../build-output/; fi
-          echo "Build completed at $(date)" > ../build-output/build-info.txt
+          mkdir -p build-output
+          cp -r .next build-output/
+          cp package.json build-output/
+          cp package-lock.json build-output/
+          if [ -f next.config.js ]; then cp next.config.js build-output/; fi
+          if [ -f next.config.mjs ]; then cp next.config.mjs build-output/; fi
+          echo "Build completed at $(date)" > build-output/build-info.txt
           
       - name: 📤 Upload build
         uses: actions/upload-artifact@v4
@@ -58,7 +55,7 @@ jobs:
         with:
           name: nextjs-build
           path: ${{ runner.temp }}/nextjs-build
-      
+          
       - name: 📋 Verify download
         shell: powershell
         run: |
@@ -67,15 +64,15 @@ jobs:
           Write-Host "$env:RUNNER_TEMP\nextjs-build"
           Write-Host "==================================="
           Get-ChildItem -Path "$env:RUNNER_TEMP\nextjs-build" -Recurse | Select-Object FullName
-      
+          
       - name: 🚀 Deploy
         shell: cmd
         run: C:\apps\scripts\deploy-nextjs.bat
-      
+          
       - name: 🧹 Cleanup
         shell: powershell
         run: |
           Remove-Item -Path "$env:RUNNER_TEMP\nextjs-build" -Recurse -Force -ErrorAction SilentlyContinue
-      
+          
       - name: ✅ Complete
         run: echo "Next.js deployed successfully!"
