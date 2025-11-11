@@ -9,35 +9,33 @@ on:
 
 jobs:
   build:
-    name: Build Next.js
+    name: 🏗️ Build Next.js
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      
+          node-version: '20' # disarankan 20 karena beberapa package butuh >=20
+
       - name: 📦 Install dependencies
         run: npm ci
-      
+
       - name: 🔨 Build application
         run: npm run build
-      
-      - name: 📋 Prepare artifacts
+
+      - name: 📋 Prepare build artifacts
         run: |
           mkdir -p build-output
           cp -r .next build-output/
           cp package.json build-output/
-          cp package-lock.json build-output/
-          if [ -f next.config.js ]; then cp next.config.js build-output/; fi
-          if [ -f next.config.mjs ]; then cp next.config.mjs build-output/; fi
+          cp next.config.* build-output/ 2>/dev/null || true
           echo "Build completed at $(date)" > build-output/build-info.txt
-          
-      - name: 📤 Upload build
+
+      - name: 📤 Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
@@ -45,34 +43,34 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy Next.js
+    name: 🚀 Deploy to Server
     needs: build
-    runs-on: [self-hosted, deploy]
-    
+    runs-on: [self-hosted, deploy]  # sesuai label runner kamu
+
     steps:
-      - name: 📥 Download build
+      - name: 📥 Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
           path: ${{ runner.temp }}/nextjs-build
-          
-      - name: 📋 Verify download
+
+      - name: 🧾 List downloaded files
         shell: powershell
         run: |
-          Write-Host "==================================="
-          Write-Host "Build artifacts downloaded to:"
-          Write-Host "$env:RUNNER_TEMP\nextjs-build"
-          Write-Host "==================================="
+          Write-Host "Downloaded build artifacts:"
           Get-ChildItem -Path "$env:RUNNER_TEMP\nextjs-build" -Recurse | Select-Object FullName
-          
-      - name: 🚀 Deploy
-        shell: cmd
-        run: C:\apps\scripts\deploy-nextjs.bat
-          
-      - name: 🧹 Cleanup
+
+      - name: 🚚 Copy build to app directory
         shell: powershell
         run: |
-          Remove-Item -Path "$env:RUNNER_TEMP\nextjs-build" -Recurse -Force -ErrorAction SilentlyContinue
-          
-      - name: ✅ Complete
-        run: echo "Next.js deployed successfully!"
+          $target = "C:\emkl-next"  # ubah sesuai path app kamu
+          Write-Host "Copying build files to $target ..."
+          Copy-Item -Path "$env:RUNNER_TEMP\nextjs-build\*" -Destination $target -Recurse -Force
+
+      - name: 🔁 Restart app with PM2
+        shell: powershell
+        run: |
+          pm2 restart emkl-next || pm2 start C:\emkl-next\server.js --name emkl-next
+
+      - name: ✅ Done
+        run: echo "Deployment finished successfully!"
