@@ -1,5 +1,4 @@
 name: Build & Deploy Next.js
-
 on:
   push:
     branches:
@@ -14,25 +13,26 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: ðŸ“¥ Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
       
-      - name: ðŸŸ¢ Setup Node.js
+      - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: emkl-next/package-lock.json
+          # Hapus cache jika bermasalah
+          # cache: 'npm'
+          # cache-dependency-path: emkl-next/package-lock.json
       
-      - name: ðŸ“¦ Install dependencies
+      - name: 📦 Install dependencies
         working-directory: ./emkl-next
         run: npm ci
       
-      - name: ðŸ”¨ Build application
+      - name: 🔨 Build application
         working-directory: ./emkl-next
         run: npm run build
       
-      - name: ðŸ“‹ Prepare artifacts
+      - name: 📋 Prepare artifacts
         working-directory: ./emkl-next
         run: |
           mkdir -p ../build-output
@@ -43,7 +43,7 @@ jobs:
           if [ -f next.config.mjs ]; then cp next.config.mjs ../build-output/; fi
           echo "Build completed at $(date)" > ../build-output/build-info.txt
           
-      - name: ðŸ“¤ Upload build
+      - name: 📤 Upload build
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
@@ -56,13 +56,13 @@ jobs:
     runs-on: [self-hosted, deploy]
     
     steps:
-      - name: ðŸ“¥ Download build
+      - name: 📥 Download build
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
           path: ${{ runner.temp }}/nextjs-build
       
-      - name: ðŸ“‹ Verify download
+      - name: 📋 Verify download
         shell: powershell
         run: |
           Write-Host "==================================="
@@ -71,14 +71,14 @@ jobs:
           Write-Host "==================================="
           Get-ChildItem -Path "$env:RUNNER_TEMP\nextjs-build" -Recurse | Select-Object FullName
       
-      - name: ðŸš€ Deploy
+      - name: 🚀 Deploy
         shell: cmd
         run: C:\apps\scripts\deploy-nextjs.bat
       
-      - name: ðŸ§¹ Cleanup
+      - name: 🧹 Cleanup
         shell: powershell
         run: |
           Remove-Item -Path "$env:RUNNER_TEMP\nextjs-build" -Recurse -Force -ErrorAction SilentlyContinue
       
-      - name: âœ… Complete
+      - name: ✅ Complete
         run: echo "Next.js deployed successfully!"
