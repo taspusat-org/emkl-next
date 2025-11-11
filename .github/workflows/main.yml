@@ -20,20 +20,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Hapus cache jika bermasalah
-          # cache: 'npm'
-          # cache-dependency-path: emkl-next/package-lock.json
       
       - name: 📦 Install dependencies
-        working-directory: ./emkl-next
+        working-directory: emkl-next  # Hapus ./
         run: npm ci
       
       - name: 🔨 Build application
-        working-directory: ./emkl-next
+        working-directory: emkl-next  # Hapus ./
         run: npm run build
       
       - name: 📋 Prepare artifacts
-        working-directory: ./emkl-next
+        working-directory: emkl-next  # Hapus ./
         run: |
           mkdir -p ../build-output
           cp -r .next ../build-output/
