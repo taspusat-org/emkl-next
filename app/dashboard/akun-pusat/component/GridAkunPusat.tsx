@@ -78,6 +78,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 
 interface Filter {
   page: number;
@@ -1580,25 +1582,6 @@ const GridAkunPusat = () => {
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
   }
 
   function getRowClass(row: IAkunpusat) {
