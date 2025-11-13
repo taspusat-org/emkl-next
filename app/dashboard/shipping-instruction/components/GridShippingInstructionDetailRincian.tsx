@@ -5,14 +5,16 @@ import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import { useSelector } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { RootState } from '@/lib/store/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGetShippingInstructionDetailRincian } from '@/lib/server/useShippingIntruction';
 import {
   Tooltip,
   TooltipContent,
@@ -35,10 +37,6 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import {
-  useGetShippingInstructionDetail,
-  useGetShippingInstructionDetailRincian
-} from '@/lib/server/useShippingIntruction';
 
 interface Filter {
   page: number;
@@ -149,6 +147,10 @@ const GridShippingInstructionDetailRincian = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -498,14 +500,14 @@ const GridShippingInstructionDetailRincian = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('detail_nobukti')}
+              onClick={() => handleSort('orderanmuatan_nobukti')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'detail_nobukti'
+                  filters.sortBy === 'orderanmuatan_nobukti'
                     ? 'font-bold'
                     : 'font-normal'
                 }`}
@@ -513,10 +515,10 @@ const GridShippingInstructionDetailRincian = () => {
                 JOB
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'detail_nobukti' &&
+                {filters.sortBy === 'orderanmuatan_nobukti' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'detail_nobukti' &&
+                ) : filters.sortBy === 'orderanmuatan_nobukti' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -528,11 +530,11 @@ const GridShippingInstructionDetailRincian = () => {
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="orderanmuatan_nobukti"
-                value={filters.filters.detail_nobukti || ''}
+                value={filters.filters.orderanmuatan_nobukti || ''}
                 onChange={(value) =>
-                  handleFilterInputChange('detail_nobukti', value)
+                  handleFilterInputChange('orderanmuatan_nobukti', value)
                 }
-                onClear={() => handleClearFilter('detail_nobukti')}
+                onClear={() => handleClearFilter('orderanmuatan_nobukti')}
                 inputRef={(el) => {
                   inputColRefs.current['orderanmuatan_nobukti'] = el;
                 }}
@@ -541,7 +543,7 @@ const GridShippingInstructionDetailRincian = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.detail_nobukti || '';
+          const columnFilter = filters.filters.orderanmuatan_nobukti || '';
           const cellValue = props.row.orderanmuatan_nobukti || '';
           return (
             <TooltipProvider delayDuration={0}>
@@ -783,25 +785,6 @@ const GridShippingInstructionDetailRincian = () => {
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
   }
 
   async function handleKeyDown(

@@ -7,7 +7,6 @@ import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
 import FormJobParty from './FormJobParty';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
@@ -17,6 +16,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { useSelector, useDispatch } from 'react-redux';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import FormBookingMuatan from './FormBookingOrderanMuatan';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
@@ -276,9 +277,14 @@ const GridBookingMuatan = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
@@ -3944,25 +3950,6 @@ const GridBookingMuatan = () => {
     }
   }
 
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-
   function getRowClass(row: BookingOrderanMuatan) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
@@ -4179,13 +4166,6 @@ const GridBookingMuatan = () => {
     setIsFirstLoad(false);
     setPrevFilters(filters);
   }, [allDataBookingMuatan, currentPage, filters, isDataUpdated]);
-
-  useEffect(() => {
-    if (rows.length > 0 && selectedRow !== null) {
-      const selectedRowData = rows[selectedRow];
-      dispatch(setHeaderData(selectedRowData)); // Pastikan data sudah benar
-    }
-  }, [rows, selectedRow, dispatch]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');

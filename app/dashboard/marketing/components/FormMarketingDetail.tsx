@@ -729,22 +729,19 @@ const FormMarketingDetail = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            // onClick={onSubmit}
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit();
               dispatch(setSubmitClicked(true));
             }}
-            className="flex w-fit items-center gap-1 text-sm"
           >
-            <FaSave />
             <p className="text-center">SAVE</p>
           </Button>
 
           <Button
             type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+            variant="cancel"
             // onClick={handleClose}
             onClick={(e) => {
               handleClose();
@@ -764,7 +761,7 @@ const FormMarketingDetail = ({
               }
             }}
           >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

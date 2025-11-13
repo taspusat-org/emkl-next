@@ -6,7 +6,6 @@ import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
 import { FaPencil } from 'react-icons/fa6';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSelector, useDispatch } from 'react-redux';
 import { useAlert } from '@/lib/store/client/useAlert';
 import FormMarketingDetail from './FormMarketingDetail';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
@@ -152,6 +153,10 @@ const GridMarketingProsesFee = ({ activeTab }: GridProps) => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -863,25 +868,6 @@ const GridMarketingProsesFee = ({ activeTab }: GridProps) => {
     }
   }
 
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
   useEffect(() => {
     loadGridConfig(
       user.id,
@@ -935,6 +921,8 @@ const GridMarketingProsesFee = ({ activeTab }: GridProps) => {
     if (rows.length > 0 && selectedRow !== null) {
       const selectedRowData = rows[selectedRow];
       dispatch(setDetailData(selectedRowData)); // Pastikan data sudah benar
+    } else {
+      dispatch(setDetailData({}));
     }
   }, [rows, selectedRow, dispatch]);
 

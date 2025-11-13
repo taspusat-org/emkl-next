@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import FormPindahBuku from './FormPindahBuku';
@@ -17,14 +16,29 @@ import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 import { numberToTerbilang } from '@/lib/utils/terbilang';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { filterPindahBuku, PindahBuku } from '@/lib/types/pindahbuku.type';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  pindahBukuInput,
+  pindahBukuSchema
+} from '@/lib/validations/pindahbuku.validation';
 import {
   Tooltip,
   TooltipContent,
@@ -39,24 +53,11 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
-import {
-  clearOpenName,
-  setClearLookup
-} from '@/lib/store/lookupSlice/lookupSlice';
 import DataGrid, {
   CellKeyDownArgs,
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-import { filterPindahBuku, PindahBuku } from '@/lib/types/pindahbuku.type';
-import {
-  pindahBukuInput,
-  pindahBukuSchema
-} from '@/lib/validations/pindahbuku.validation';
 import {
   checkValidationPindahBukuFn,
   getAllPindahBukuFn,
@@ -177,6 +178,10 @@ const GridPindahBuku = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -1982,25 +1987,6 @@ const GridPindahBuku = () => {
       setSelectedRow(rowIndex);
       dispatch(setHeaderData(foundRow));
     }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
   }
 
   function getRowClass(row: PindahBuku) {

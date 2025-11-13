@@ -5,7 +5,6 @@ import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
@@ -16,6 +15,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { getPermissionFn } from '@/lib/apis/menu.api';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { useSelector, useDispatch } from 'react-redux';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
@@ -202,6 +203,10 @@ const GridStatusJob = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -1103,25 +1108,6 @@ const GridStatusJob = () => {
       setSelectedRow(rowIndex);
       dispatch(setHeaderData(foundRow));
     }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
   }
 
   function getRowClass(row: statusJob) {

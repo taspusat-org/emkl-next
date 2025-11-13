@@ -4,12 +4,13 @@ import Image from 'next/image';
 import { debounce } from 'lodash';
 import { useSelector } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { CellKeyDownArgs } from 'react-data-grid';
 import { Checkbox } from '@/components/ui/checkbox';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import DataGrid, { Column, DataGridHandle } from 'react-data-grid';
@@ -137,6 +138,10 @@ const GridMarketingBiaya = ({ activeTab }: GridProps) => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -723,25 +728,6 @@ const GridMarketingBiaya = ({ activeTab }: GridProps) => {
     if (event.key === 'ArrowUp' && args.rowIdx === 0) {
       event.preventDefault();
     }
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
   }
 
   function getRowClass(row: MarketingBiaya) {

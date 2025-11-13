@@ -3,16 +3,20 @@
 import Image from 'next/image';
 import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
-import { useSelector } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { RootState } from '@/lib/store/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useSelector, useDispatch } from 'react-redux';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { setDetailData } from '@/lib/store/headerSlice/headerSlice';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGetShippingInstructionDetail } from '@/lib/server/useShippingIntruction';
 import {
   Tooltip,
   TooltipContent,
@@ -35,10 +39,6 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import { useGetShippingInstructionDetail } from '@/lib/server/useShippingIntruction';
-import { setDetailData } from '@/lib/store/headerSlice/headerSlice';
-import { useDispatch } from 'react-redux';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
@@ -70,7 +70,6 @@ const GridShippingInstructionDetail = () => {
   const [rows, setRows] = useState<ShippingInstructionDetail[]>([]);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
-  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
@@ -151,6 +150,10 @@ const GridShippingInstructionDetail = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -209,7 +212,6 @@ const GridShippingInstructionDetail = () => {
     }, 250);
     setSelectedRow(0);
     setCurrentPage(1);
-    setFetchedPages(new Set([1]));
     setRows([]);
   };
 
@@ -530,7 +532,7 @@ const GridShippingInstructionDetail = () => {
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="asalpelabuhan"
-                value={filters.filters.detail_nobukti || ''}
+                value={filters.filters.asalpelabuhan || ''}
                 onChange={(value) =>
                   handleFilterInputChange('asalpelabuhan', value)
                 }
@@ -1438,25 +1440,6 @@ const GridShippingInstructionDetail = () => {
       setContextMenu(null);
     }
   };
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
 
   function handleCellClick(args: { row: ShippingInstructionDetail }) {
     const clickedRow = args.row;

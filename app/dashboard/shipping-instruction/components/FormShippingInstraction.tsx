@@ -39,7 +39,10 @@ import {
   useGetShippingInstructionDetail,
   useGetShippingInstructionDetailRincian
 } from '@/lib/server/useShippingIntruction';
-import { getShippingInstructionDetailRincianFn } from '@/lib/apis/shippinginstruction.api';
+import {
+  getAllShippingInstructionHeaderFn,
+  getShippingInstructionDetailRincianFn
+} from '@/lib/apis/shippinginstruction.api';
 
 interface Filter {
   page: number;
@@ -48,10 +51,6 @@ interface Filter {
   filters: typeof filterOrderanMuatan;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
-}
-interface ApiResponse {
-  type: string;
-  data: any; // Define a more specific type for data if possible
 }
 
 const FormShippingInstruction = ({
@@ -68,6 +67,7 @@ const FormShippingInstruction = ({
   const [dataGridKey, setDataGridKey] = useState(0);
   const [daftarBlValue, setDaftarBlValue] = useState(0);
   const [scheduleValue, setScheduleValue] = useState(0);
+  const [notIn, setNotIn] = useState('');
   const [reloadForm, setReloadForm] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
@@ -86,8 +86,6 @@ const FormShippingInstruction = ({
       | (Partial<ShippingInstructionDetail> & { isNew: boolean })
     )[]
   >([]);
-
-  const [addedRow, setAddedRow] = useState<any[]>([]);
 
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);
@@ -123,12 +121,6 @@ const FormShippingInstruction = ({
     refetch: refetchDetail
   } = useGetShippingInstructionDetail(headerData?.id ?? 0);
 
-  const {
-    data: allDataRincian,
-    isLoading: isLoadingRincian,
-    refetch: refetchRincian
-  } = useGetShippingInstructionDetailRincian(detailData?.id ?? 0);
-
   const lookupPropsSchedule = [
     {
       columns: [
@@ -141,7 +133,7 @@ const FormShippingInstruction = ({
       labelLookup: 'SCHEDULE KAPAL LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: 'schedule-kapal?join=orderanmuatan',
+      endpoint: `schedule-kapal?join=orderanmuatan&${notIn}`,
       label: 'SCHEDULE KAPAL',
       singleColumn: false,
       pageSize: 20,
@@ -1228,19 +1220,6 @@ const FormShippingInstruction = ({
     }
   }, [rows]);
 
-  // useEffect(() => {
-  //   setFilters((prevFilters) => ({
-  //     ...prevFilters,
-  //     filters: {
-  //       ...prevFilters.filters,
-  //       schedule_id: String(scheduleValue),
-  //       daftarbl_id: String(daftarBlValue)
-  //     }
-  //   }));
-
-  //   refetch();
-  // }, [daftarBlValue]);
-
   useEffect(() => {
     const fetchRincianForDetails = async () => {
       if (!allDataDetail || !popOver || mode === 'add') return;
@@ -1313,7 +1292,38 @@ const FormShippingInstruction = ({
   }, [allDataDetail, headerData?.id, popOver, mode]);
 
   useEffect(() => {
+    const fetchAllShippingHeader = async () => {
+      try {
+        const allHeader = await getAllShippingInstructionHeaderFn({
+          filters: {
+            limit: 0,
+            filters: {}
+          }
+        });
+
+        const rowsData = allHeader?.data ?? [];
+        const id = [
+          ...rowsData
+            .filter((row, idx) => {
+              return (
+                String(row?.schedule_id) && String(row?.schedule_id) !== ''
+              );
+            })
+            .map((row) => row?.schedule_id)
+        ];
+
+        const jsonString = JSON.stringify({ id });
+        setNotIn(`notIn=${jsonString}`);
+      } catch (err) {
+        console.error(
+          `Gagal fetch all data shipping instruction header for get all schedule_id`,
+          err
+        );
+      }
+    };
+
     setEditingRowId(0);
+    fetchAllShippingHeader();
 
     if (mode === 'add') {
       setRows([]);
@@ -1671,17 +1681,15 @@ const FormShippingInstruction = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            // onClick={onSubmit}
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);
               dispatch(setSubmitClicked(true));
             }}
             disabled={mode === 'view'}
-            className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {' '}
               {mode === 'delete' ? 'DELETE' : 'SAVE'}{' '}
@@ -1692,7 +1700,6 @@ const FormShippingInstruction = ({
             <Button
               type="submit"
               variant="success"
-              // onClick={onSubmit}
               onClick={(e) => {
                 e.preventDefault();
                 onSubmit(true);
@@ -1712,13 +1719,8 @@ const FormShippingInstruction = ({
             </Button>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>
