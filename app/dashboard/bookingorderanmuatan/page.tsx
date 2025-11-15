@@ -40,33 +40,6 @@ interface ApiResponse {
   data: any; // Define a more specific type for data if possible
 }
 
-// interface JenisOrderanPararmeter {
-//   id: number;
-//   grp: string;
-//   subgrp: string;
-//   kelompok: string;
-//   text: string;
-//   memo: string; // JSON string, you can parse if needed
-//   type: string;
-//   default: string;
-//   modifiedby: string | null;
-//   info: string;
-//   created_at: string;
-//   updated_at: string;
-// }
-
-// interface JenisOrderanPararmeterResponse {
-//   data: JenisOrderanPararmeter[];
-//   type: string;
-//   total: number;
-//   pagination: {
-//     currentPage: number;
-//     totalPages: number | null;
-//     totalItems: number;
-//     itemsPerPage: number;
-//   };
-// }
-
 const Page = () => {
   const dispatch = useDispatch();
 

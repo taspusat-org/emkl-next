@@ -6,7 +6,6 @@ import 'react-data-grid/lib/styles.scss';
 import { useForm } from 'react-hook-form';
 import IcClose from '@/public/image/x.svg';
 import FormMarketing from './FormMarketing';
-import { ImSpinner2 } from 'react-icons/im';
 import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
@@ -16,6 +15,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { useAlert } from '@/lib/store/client/useAlert';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
@@ -87,9 +88,7 @@ const GridMarketing = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
-  const { user, cabang_id, token } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { user } = useSelector((state: RootState) => state.auth);
   const gridRef = useRef<DataGridHandle>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
@@ -153,7 +152,6 @@ const GridMarketing = () => {
       marketingprosesfee: []
     }
   });
-  // );
 
   const {
     setFocus,
@@ -290,6 +288,10 @@ const GridMarketing = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -2337,25 +2339,6 @@ const GridMarketing = () => {
         handleRowSelect(selectedRowId); // Toggling the selection of the row
       }
     }
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
   }
 
   function handleCellClick(args: CellClickArgs<MarketingHeader>) {

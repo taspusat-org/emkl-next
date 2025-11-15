@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,9 @@ import { api2 } from '@/lib/utils/AxiosInstance';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 import { QueryClient, useQueryClient } from 'react-query';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
@@ -26,24 +27,25 @@ import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  setDetailDataReport,
+  setReportData
+} from '@/lib/store/reportSlice/reportSlice';
+import { checkValidationShippingInstructionFn } from '@/lib/apis/shippinginstruction.api';
+import { getShippingInstructionByIdFn } from '../../../../lib/apis/shippinginstruction.api';
+import {
+  filterShippingInstruction,
+  ShippingInstruction
+} from '@/lib/types/shippingIntruction.type';
 import DataGrid, {
   CellKeyDownArgs,
   Column,
   DataGridHandle
 } from 'react-data-grid';
-import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-import { numberToTerbilang } from '@/lib/utils/terbilang';
-import {
-  setDetailDataReport,
-  setReportData
-} from '@/lib/store/reportSlice/reportSlice';
-import {
-  filterShippingInstruction,
-  ShippingInstruction
-} from '@/lib/types/shippingIntruction.type';
 import {
   useCreateShippingInstruction,
   useDeleteShippingInstruction,
@@ -58,6 +60,8 @@ import {
 import {
   cancelPreviousRequest,
   handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
 import {
@@ -66,13 +70,6 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import { checkValidationShippingInstructionFn } from '@/lib/apis/shippinginstruction.api';
-import { getShippingInstructionByIdFn } from '../../../../lib/apis/shippinginstruction.api';
-
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
 
 interface Filter {
   page: number;
@@ -107,10 +104,6 @@ const GridShippingInstruction = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const [addMode, setAddMode] = useState<boolean>(false);
-  const [editMode, setEditMode] = useState<boolean>(false);
-  const [viewMode, setViewMode] = useState<boolean>(false);
-  const [deleteMode, setDeleteMode] = useState<boolean>(false);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -200,6 +193,10 @@ const GridShippingInstruction = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -1716,53 +1713,6 @@ const GridShippingInstruction = () => {
     }
   };
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
   const onColumnResize = (index: number, width: number) => {
     const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
 
@@ -1806,36 +1756,6 @@ const GridShippingInstruction = () => {
       );
       return newOrder;
     });
-  };
-
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridShippingInstruction',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -1902,25 +1822,6 @@ const GridShippingInstruction = () => {
       setSelectedRow(rowIndex);
       dispatch(setHeaderData(foundRow));
     }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
   }
 
   function getRowClass(row: ShippingInstruction) {
@@ -2026,7 +1927,13 @@ const GridShippingInstruction = () => {
   }
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridShippingInstruction');
+    loadGridConfig(
+      user.id,
+      'GridShippingInstruction',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
 
   useEffect(() => {
@@ -2306,7 +2213,21 @@ const GridShippingInstruction = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridShippingInstruction',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>
@@ -2322,7 +2243,7 @@ const GridShippingInstruction = () => {
         onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
         isLoadingUpdate={isLoadingUpdate}
-        // isLoadingDelete={isLoadingDelete}
+        isLoadingDelete={isLoadingDelete}
       />
     </div>
   );

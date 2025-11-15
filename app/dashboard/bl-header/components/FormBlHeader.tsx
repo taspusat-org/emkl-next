@@ -3,27 +3,28 @@ import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import LookUp from '@/components/custom-ui/LookUp';
+import { BLDetail, BlDetailRincian } from '@/lib/types/blheader.type';
 import { useSelector, useDispatch } from 'react-redux';
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import DataGrid, { Column, DataGridHandle } from 'react-data-grid';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
+import { useGetAllOrderanMuatan } from '@/lib/server/useOrderanHeader';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import {
+  getAllBlHeaderHeaderFn,
+  getBlDetailRincianFn,
+  prosesBlFn
+} from '@/lib/apis/blheader.api';
 import {
   filterOrderanMuatan,
   OrderanMuatan
 } from '@/lib/types/orderanHeader.type';
-import { useGetAllOrderanMuatan } from '@/lib/server/useOrderanHeader';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { prosesShippingOrderanMuatanFn } from '@/lib/apis/orderanHeader.api';
-import { JENISORDERMUATAN, statusJobMasukGudang } from '@/constants/statusjob';
 import {
-  ShippingInstructionDetail,
-  ShippingInstructionDetailRincian
-} from '@/lib/types/shippingIntruction.type';
-import {
-  setClearLookup,
-  setSubmitClicked
-} from '@/lib/store/lookupSlice/lookupSlice';
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 import FormLabel, {
   Form,
   FormControl,
@@ -31,18 +32,8 @@ import FormLabel, {
   FormItem,
   FormMessage
 } from '@/components/ui/form';
-import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-import {
-  useGetShippingInstructionDetail,
-  useGetShippingInstructionDetailRincian
-} from '@/lib/server/useShippingIntruction';
-import {
-  getAllShippingInstructionHeaderFn,
-  getShippingInstructionDetailRincianFn
-} from '@/lib/apis/shippinginstruction.api';
+import { useGetBlDetail } from '@/lib/server/useBlHeader';
+import { getShippingInstructionDetailRincianFn } from '@/lib/apis/shippinginstruction.api';
 
 interface Filter {
   page: number;
@@ -53,7 +44,7 @@ interface Filter {
   sortDirection: 'asc' | 'desc';
 }
 
-const FormShippingInstruction = ({
+const FormBlHeader = ({
   popOver,
   setPopOver,
   forms,
@@ -64,27 +55,20 @@ const FormShippingInstruction = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const [dataGridKey, setDataGridKey] = useState(0);
-  const [daftarBlValue, setDaftarBlValue] = useState(0);
-  const [scheduleValue, setScheduleValue] = useState(0);
   const [notIn, setNotIn] = useState('');
+  const [dataGridKey, setDataGridKey] = useState(0);
+  const [scheduleValue, setScheduleValue] = useState(0);
   const [reloadForm, setReloadForm] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
     new Map()
   ); // Nilai yang sedang diedit untuk setiap baris
   const [rows, setRows] = useState<
-    (
-      | ShippingInstructionDetail
-      | (Partial<ShippingInstructionDetail> & { isNew: boolean })
-    )[]
+    (BLDetail | (Partial<BLDetail> & { isNew: boolean }))[]
   >([]);
 
   const [rowsDetailRincian, setRowsDetailRincian] = useState<
-    (
-      | ShippingInstructionDetail
-      | (Partial<ShippingInstructionDetail> & { isNew: boolean })
-    )[]
+    (BlDetailRincian | (Partial<BlDetailRincian> & { isNew: boolean }))[]
   >([]);
 
   const dispatch = useDispatch();
@@ -93,33 +77,12 @@ const FormShippingInstruction = ({
   const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const headerData = useSelector((state: RootState) => state.header.headerData);
-  const detailData = useSelector((state: RootState) => state.header.detailData);
-
-  const [filters, setFilters] = useState<Filter>({
-    page: 1,
-    limit: 30,
-    filters: {
-      ...filterOrderanMuatan
-    },
-    search: '',
-    sortBy: 'nobukti',
-    sortDirection: 'asc'
-  });
-
-  const {
-    data: allDataOrderanMuatan,
-    isLoading: isLoadingOrderanMuatan,
-    refetch
-  } = useGetAllOrderanMuatan(
-    { ...filters, page: 1 },
-    abortControllerRef.current?.signal
-  );
 
   const {
     data: allDataDetail,
     isLoading,
-    refetch: refetchDetail
-  } = useGetShippingInstructionDetail(headerData?.id ?? 0);
+    refetch: refetch
+  } = useGetBlDetail(headerData?.id ?? 0);
 
   const lookupPropsSchedule = [
     {
@@ -133,7 +96,8 @@ const FormShippingInstruction = ({
       labelLookup: 'SCHEDULE KAPAL LOOKUP',
       required: true,
       selectedRequired: false,
-      endpoint: `schedule-kapal?join=orderanmuatan&${notIn}`,
+      // endpoint: `schedule-kapal?join=shippinginstructionheader`,
+      endpoint: `schedule-kapal?join=shippinginstructionheader&${notIn}`,
       label: 'SCHEDULE KAPAL',
       singleColumn: false,
       pageSize: 20,
@@ -182,15 +146,8 @@ const FormShippingInstruction = ({
     e.stopPropagation();
   };
 
-  const handleOnFocus = (value: number, index: number) => {
-    setDaftarBlValue(value);
-    setEditingRowId(index);
-  };
-
   const processOnReload = async () => {
     try {
-      // forms.setValue(`details.detailsrincian`, []);
-      // setRowsDetailRincian([])
       const tglbukti = forms.getValues('tglbukti');
       if (!scheduleValue || !tglbukti) {
         setReloadForm(false);
@@ -200,100 +157,50 @@ const FormShippingInstruction = ({
       }
 
       dispatch(setProcessing());
-      const test = await prosesShippingOrderanMuatanFn(Number(scheduleValue));
+      const processBl = await prosesBlFn(Number(scheduleValue));
+      forms.setValue(
+        'shippinginstruction_nobukti',
+        processBl.data[0].shippinginstruction_nobukti
+      );
       setReloadForm(true);
 
-      // await Promise.all(
-      //   dataDaftarBL.map(async (data: any, index: number) => {
-      //     setFilters((prev) => ({
-      //       ...prev,
-      //       filters: {
-      //         ...prev.filters,
-      //         schedule_id: String(scheduleValue),
-      //         daftarbl_id: String(data.daftarbl_id)
-      //       }
-      //     }));
+      for (const [index, data] of processBl.data.entries()) {
+        const fetchShippingRincian =
+          await getShippingInstructionDetailRincianFn(
+            data.shippinginstructiondetail_id,
+            {
+              filters: {
+                limit: 0,
+                filters: {}
+              }
+            }
+          );
 
-      //     // Tunggu refetch selesai
-      //     const ref = await refetch();
-
-      //     const rowsData = ref?.data?.data ?? [];
-      //     // Kalau ada data, format untuk dimasukkan ke form
-      //     if (rowsData.length > 0) {
-      //       const formattedRows = rowsData.map((item: any) => ({
-      //         id: Number(item.id),
-      //         orderanmuatan_nobukti: item.nobukti ?? '',
-      //         comodity: item.comodity ?? '',
-      //         nocontainer: item.nocontainer ?? '',
-      //         noseal: item.noseal ?? '',
-      //         shipper_id: Number(item.shipper_id) ?? '',
-      //         shipper_nama: item.shipper_nama ?? '',
-      //         isNew: false
-      //       }));
-
-      //       // Set langsung ke form sesuai index barisnya
-      //       forms.setValue(`details.${index}.detailsrincian`, formattedRows);
-      //       return formattedRows;
-      //     } else {
-      //       forms.setValue(`details.${index}.detailsrincian`, []);
-      //       return [];
-      //     }
-      //   })
-      // );
-
-      for (const [index, data] of test.data.entries()) {
-        const daftarbl_id = data.daftarbl_id;
-        // Update filter sebelum refetch
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            schedule_id: String(scheduleValue),
-            daftarbl_id: daftarbl_id
-          }
-        }));
-
-        // kasih jeda supaya state filters sempat update
-        await new Promise((r) => setTimeout(r, 5));
-
-        // Tunggu hasil refetch berdasarkan daftarbl_id saat ini
-        const ref = await refetch();
-        const rowsData = ref?.data?.data ?? [];
-
+        const rowsData = fetchShippingRincian?.data ?? [];
         const formattedRows = rowsData.map((item: any) => ({
-          idOrderan: Number(item.id),
-          orderanmuatan_nobukti: item.nobukti ?? '',
-          keterangan: '',
-          comodity: item.comodity ?? '',
+          orderanmuatan_nobukti: item.orderanmuatan_nobukti ?? '',
           nocontainer: item.nocontainer ?? '',
           noseal: item.noseal ?? '',
-          shipper_id: Number(item.shipper_id) ?? '',
-          shipper_nama: item.shipper_nama ?? '',
+          keterangan: '',
           isNew: false
         }));
-
-        // kasih jeda kecil biar React Hook Form sempat update internalnya
-        await new Promise((r) => setTimeout(r, 5));
 
         forms.setValue(`details.${index}.detailsrincian`, formattedRows);
       }
 
-      setDaftarBlValue(test.data[0].daftarbl_id);
-      const rowsBaru = test.data.map((item: any, idx: number) => ({
+      const rowsBaru = processBl.data.map((item: any, idx: number) => ({
         id: idx,
-        orderan_id: Number(item.orderan_id) ?? 0,
-        daftarbl_id: Number(item.daftarbl_id) ?? 0,
-        containerpelayaran_id: Number(item.pelayarancontainer_id) ?? 0,
-        emkllain_id: Number(item.emkllain_id) ?? 0,
-        tujuankapal_id: Number(item.tujuankapal_id) ?? 0,
-        shippinginstructiondetail_nobukti: '',
-        asalpelabuhan: '',
-        keterangan: '',
-        consignee: '',
-        shipper: '',
-        comodity: '',
-        notifyparty: '',
-        totalgw: ''
+        bl_nobukti: '',
+        shippinginstructiondetail_nobukti:
+          item.shippinginstructiondetail_nobukti ?? '',
+        asalpelabuhan: item.asalpelabuhan ?? '',
+        keterangan: item.keterangan ?? '',
+        consignee: item.consignee ?? '',
+        shipper: item.shipper ?? '',
+        comodity: item.comodity ?? '',
+        notifyparty: item.notifyparty ?? '',
+        emkllain_nama: item.emkllain_nama ?? '',
+        pelayaran_nama: item.pelayaran_nama ?? ''
       }));
       setRows(rowsBaru);
 
@@ -356,7 +263,7 @@ const FormShippingInstruction = ({
     });
   };
 
-  const columns = useMemo((): Column<ShippingInstructionDetail>[] => {
+  const columns = useMemo((): Column<BLDetail>[] => {
     return [
       {
         key: 'nomor',
@@ -365,22 +272,12 @@ const FormShippingInstruction = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        colSpan: (args) => {
-          if (args.type === 'ROW' && args.row.isAddRow) {
-            return 5; // Spanning the "Add Row" button across 3 columns (adjust as needed)
-          }
-          return undefined; // For other rows, no column spanning
-        },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm">No.</p>
             </div>
-
-            {/* <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -392,8 +289,8 @@ const FormShippingInstruction = ({
         }
       },
       {
-        key: 'shippinginstructiondetail_nobukti',
-        name: 'shippinginstructiondetail_nobukti',
+        key: 'bl_nobukti',
+        name: 'bl_nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -402,9 +299,50 @@ const FormShippingInstruction = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>NOMOR BL</p>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div>
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  value={props.row.bl_nobukti}
+                  readOnly={mode == 'delete' || mode == 'view'}
+                  onKeyDown={inputStopPropagation}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => {
+                    handleInputChange(
+                      props.rowIdx,
+                      'bl_nobukti',
+                      e.target.value
+                    );
+                  }}
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'shippinginstructiondetail_nobukti',
+        name: 'shippinginstructiondetail_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 350,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>nomor shipping</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -416,7 +354,8 @@ const FormShippingInstruction = ({
                 <Input
                   type="text"
                   value={props.row.shippinginstructiondetail_nobukti || ''}
-                  disabled={true}
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -435,9 +374,8 @@ const FormShippingInstruction = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>pelabuhan asal</p>
+              <p className={`text-sm`}>PELABUHAN ASAL</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -448,45 +386,11 @@ const FormShippingInstruction = ({
               ) : (
                 <Input
                   type="text"
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
-                  value={props.row.asalpelabuhan}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => {
-                    handleInputChange(
-                      props.rowIdx,
-                      'asalpelabuhan',
-                      e.target.value
-                    );
-                  }}
+                  value={props.row.asalpelabuhan || ''}
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
-                // <FormField
-                //   name="pelabuhanasal"
-                //   control={forms.control}
-                //   render={({ field }) => (
-                //     <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                //       <div className="flex flex-col lg:w-full">
-                //         <FormControl>
-                //             <Input
-                //               type="text"
-                //               value={props.row.pelabuhanasal}
-                //               onKeyDown={inputStopPropagation}
-                //               onClick={(e) => e.stopPropagation()}
-                //               onChange={(e) =>
-                //                 handleInputChange(props.rowIdx, 'pelabuhanasal', e.target.value)
-                //               }
-                //               className="h-2 min-h-9 w-full rounded border border-gray-300"
-                //             />
-                //         </FormControl>
-                //         <FormMessage />
-                //       </div>
-                //     </FormItem>
-                //   )}
-                // />
               )}
             </div>
           );
@@ -517,9 +421,7 @@ const FormShippingInstruction = ({
                   type="text"
                   value={props.row.keterangan}
                   readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) =>
@@ -549,7 +451,6 @@ const FormShippingInstruction = ({
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>consignee</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -560,16 +461,9 @@ const FormShippingInstruction = ({
               ) : (
                 <Input
                   type="text"
-                  value={props.row.consignee}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'consignee', e.target.value)
-                  }
+                  value={props.row.consignee || ''}
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -590,7 +484,6 @@ const FormShippingInstruction = ({
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>shipper</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -602,15 +495,8 @@ const FormShippingInstruction = ({
                 <Input
                   type="text"
                   value={props.row.shipper}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'shipper', e.target.value)
-                  }
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -631,7 +517,6 @@ const FormShippingInstruction = ({
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>comodity</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -643,15 +528,8 @@ const FormShippingInstruction = ({
                 <Input
                   type="text"
                   value={props.row.comodity}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'comodity', e.target.value)
-                  }
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -672,7 +550,6 @@ const FormShippingInstruction = ({
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>notify party</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -684,19 +561,8 @@ const FormShippingInstruction = ({
                 <Input
                   type="text"
                   value={props.row.notifyparty}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(
-                      props.rowIdx,
-                      'notifyparty',
-                      e.target.value
-                    )
-                  }
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -705,8 +571,8 @@ const FormShippingInstruction = ({
         }
       },
       {
-        key: 'totalgw',
-        name: 'totalgw',
+        key: 'emkllain_nama',
+        name: 'emkllain_nama',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -715,9 +581,8 @@ const FormShippingInstruction = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>total gw / nw</p>
+              <p className={`text-sm`}>NAMA EMKL</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -728,16 +593,42 @@ const FormShippingInstruction = ({
               ) : (
                 <Input
                   type="text"
-                  value={props.row.totalgw}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() =>
-                    handleOnFocus(props.row.daftarbl_id, props.rowIdx)
-                  }
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) =>
-                    handleInputChange(props.rowIdx, 'totalgw', e.target.value)
-                  }
+                  value={props.row.emkllain_nama}
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'pelayaran_nama',
+        name: 'pelayaran_nama',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>NAMA PELAYARAN</p>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div>
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  value={props.row.pelayaran_nama}
+                  readOnly={true}
+                  onFocus={() => setEditingRowId(props.rowIdx)}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -745,115 +636,10 @@ const FormShippingInstruction = ({
           );
         }
       }
-      // {
-      //   key: 'namapelayaran',
-      //   name: 'namapelayaran',
-      //   headerCellClass: 'column-headers',
-      //   resizable: true,
-      //   draggable: true,
-      //   cellClass: 'form-input',
-      //   width: 250,
-      //   renderHeaderCell: () => (
-      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-      //       <div className="headers-cell h-[50%] px-8">
-      //         <p className={`text-sm`}>namapelayaran</p>
-      //       </div>
-      //       {/* <div className="relative h-[50%] w-full px-1"></div> */}
-      //     </div>
-      //   ),
-      //   renderCell: (props: any) => {
-      //     return (
-      //       <div>
-      //         {props.row.isAddRow ? (
-      //           ''
-      //         ) : (
-      //           <Input
-      //             type="text"
-      //             value={props.row.namapelayaran}
-      //             readOnly={mode == 'delete' || mode == 'view'}
-      //             onKeyDown={inputStopPropagation}
-      //             onClick={(e) => e.stopPropagation()}
-      //             onChange={(e) =>
-      //               handleInputChange(
-      //                 props.rowIdx,
-      //                 'namapelayaran',
-      //                 e.target.value
-      //               )
-      //             }
-      //             className="h-2 min-h-9 w-full rounded border border-gray-300"
-      //           />
-      //           // <FormField
-      //           //   name="namapelayaran"
-      //           //   control={forms.control}
-      //           //   render={({ field }) => (
-      //           //     <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-      //           //       <div className="flex flex-col lg:w-full">
-      //           //         <FormControl>
-      //           //             <Input
-      //           //               type="text"
-      //           //               value={props.row.namapelayaran}
-      //           //               onKeyDown={inputStopPropagation}
-      //           //               onClick={(e) => e.stopPropagation()}
-      //           //               onChange={(e) =>
-      //           //                 handleInputChange(
-      //           //                   props.rowIdx,
-      //           //                   'namapelayaran',
-      //           //                   e.target.value
-      //           //                 )
-      //           //               }
-      //           //               className="h-2 min-h-9 w-full rounded border border-gray-300"
-      //           //             />
-      //           //         </FormControl>
-      //           //         <FormMessage />
-      //           //       </div>
-      //           //     </FormItem>
-      //           //   )}
-      //           // />
-      //         )}
-      //       </div>
-      //     );
-      //   }
-      // },
-
-      // {
-      //   key: 'shipper',
-      //   name: 'SHIPPER',
-      //   headerCellClass: 'column-headers',
-      //   resizable: true,
-      //   draggable: true,
-      //   cellClass: 'form-input',
-      //   width: 250,
-      //   renderHeaderCell: () => (
-      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-      //       <div className="headers-cell h-[50%] px-8">
-      //         <p className={`text-sm`}>SHIPPER</p>
-      //       </div>
-      //       {/* <div className="relative h-[50%] w-full px-1"></div> */}
-      //     </div>
-      //   ),
-      //   renderCell: (props: any) => {
-      //     return (
-      //       <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-      //         {props.row.isAddRow ? (
-      //           ''
-      //         ) : (
-      //           <Input
-      //             type="text"
-      //             value={props.row.shipper_nama}
-      //             onKeyDown={inputStopPropagation}
-      //             onClick={(e) => e.stopPropagation()}
-      //             readOnly
-      //             className="h-2 min-h-9 w-full rounded border border-gray-300"
-      //           />
-      //         )}
-      //       </div>
-      //     );
-      //   }
-      // },
     ];
   }, [rows, editingRowId, editableValues]);
 
-  const columnsDetailRincian = useMemo((): Column<OrderanMuatan>[] => {
+  const columnsDetailRincian = useMemo((): Column<BlDetailRincian>[] => {
     return [
       {
         key: 'nomor',
@@ -862,22 +648,12 @@ const FormShippingInstruction = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        colSpan: (args) => {
-          // if (args.type === 'ROW' && args.row.isAddRow) {
-          //   return 5; // Spanning the "Add Row" button across 3 columns (adjust as needed)
-          // }
-          return undefined; // For other rows, no column spanning
-        },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm">No.</p>
             </div>
-
-            {/* <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -901,7 +677,6 @@ const FormShippingInstruction = ({
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Job</p>
             </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
           </div>
         ),
         renderCell: (props: any) => {
@@ -922,8 +697,8 @@ const FormShippingInstruction = ({
         }
       },
       {
-        key: 'comodity',
-        name: 'comodity',
+        key: 'nocontainer',
+        name: 'nocontainer',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -932,7 +707,7 @@ const FormShippingInstruction = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>comodity</p>
+              <p className={`text-sm`}>no count</p>
             </div>
           </div>
         ),
@@ -944,17 +719,40 @@ const FormShippingInstruction = ({
               ) : (
                 <Input
                   type="text"
-                  value={props.row.comodity || ''}
-                  readOnly={mode == 'delete' || mode == 'view'}
-                  onKeyDown={inputStopPropagation}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => {
-                    handleInputChangeDetailRincian(
-                      props.rowIdx,
-                      'comodity',
-                      e.target.value
-                    );
-                  }}
+                  value={props.row.nocontainer || ''}
+                  readOnly={true}
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'noseal',
+        name: 'noseal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>no seal</p>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div>
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  value={props.row.noseal || ''}
+                  readOnly={true}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -996,105 +794,6 @@ const FormShippingInstruction = ({
                       e.target.value
                     );
                   }}
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'nocontainer',
-        name: 'nocontainer',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>nocontainer</p>
-            </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div>
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  value={props.row.nocontainer || ''}
-                  readOnly={true}
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'noseal',
-        name: 'noseal',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>noseal</p>
-            </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div>
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  value={props.row.noseal || ''}
-                  readOnly={true}
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
-                />
-              )}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'shipper',
-        name: 'shipper',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>shipper</p>
-            </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
-          </div>
-        ),
-        renderCell: (props: any) => {
-          return (
-            <div>
-              {props.row.isAddRow ? (
-                ''
-              ) : (
-                <Input
-                  type="text"
-                  value={props.row.shipper_nama || ''}
-                  readOnly={true}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -1228,19 +927,19 @@ const FormShippingInstruction = ({
         // Format data detail utama (tanpa rincian)
         const formattedDetails = allDataDetail.data.map((item: any) => ({
           id: Number(item.id),
-          daftarbl_id: Number(item.daftarbl_id) ?? '',
-          containerpelayaran_id: Number(item.containerpelayaran_id) ?? '',
-          emkllain_id: Number(item.emkllain_id) ?? '',
-          tujuankapal_id: Number(item.tujuankapal_id) ?? '',
+          nobukti: item.nobukti ?? '',
+          bl_nobukti: item.bl_nobukti ?? '',
+          bl_id: Number(item.bl_id),
+          keterangan: item.keterangan ?? '',
           shippinginstructiondetail_nobukti:
             item.shippinginstructiondetail_nobukti ?? '',
           asalpelabuhan: item.asalpelabuhan ?? '',
-          keterangan: item.keterangan ?? '',
           consignee: item.consignee ?? '',
           shipper: item.shipper ?? '',
           comodity: item.comodity ?? '',
           notifyparty: item.notifyparty ?? '',
-          totalgw: item.totalgw ?? '',
+          emkllain_nama: item.emkllain_nama ?? '',
+          pelayaran_nama: item.pelayaran_nama ?? '',
           isNew: false
         }));
 
@@ -1252,23 +951,22 @@ const FormShippingInstruction = ({
           try {
             setEditingRowId(0);
             // Tunggu refetch selesai
-            const rincian = await getShippingInstructionDetailRincianFn(
-              Number(detail.id),
-              { search: '' }
-            );
+            const rincian = await getBlDetailRincianFn(Number(detail.id), {
+              search: ''
+            });
             const rowsData = rincian?.data ?? [];
+            console.log('rowsData HASIL FETCH RINCIAN BL', rowsData);
 
             // Format data rincian
             const formattedRincian = rowsData.map((r: any) => ({
               id: Number(r.id),
-              idOrderan: Number(r.id),
+              nobukti: r.nobukti ?? '',
+              bldetail_id: Number(r.bldetail_id),
+              bldetail_nobukti: r.bldetail_nobukti ?? '',
               orderanmuatan_nobukti: r.orderanmuatan_nobukti ?? '',
               keterangan: r.keterangan ?? '',
-              comodity: r.comodity ?? '',
               nocontainer: r.nocontainer ?? '',
               noseal: r.noseal ?? '',
-              shipper_id: Number(r.shipper_id) ?? '',
-              shipper_nama: r.shipper_nama ?? '',
               isNew: false
             }));
 
@@ -1294,7 +992,7 @@ const FormShippingInstruction = ({
   useEffect(() => {
     const fetchAllShippingHeader = async () => {
       try {
-        const allHeader = await getAllShippingInstructionHeaderFn({
+        const allHeader = await getAllBlHeaderHeaderFn({
           filters: {
             limit: 0,
             filters: {}
@@ -1316,7 +1014,7 @@ const FormShippingInstruction = ({
         setNotIn(`notIn=${jsonString}`);
       } catch (err) {
         console.error(
-          `Gagal fetch all data shipping instruction header for get all schedule_id`,
+          `Gagal fetch all data bl header for get all schedule_id`,
           err
         );
       }
@@ -1328,7 +1026,6 @@ const FormShippingInstruction = ({
     if (mode === 'add') {
       setRows([]);
       setScheduleValue(0);
-      setDaftarBlValue(0);
       setRowsDetailRincian([]);
       setReloadForm(false);
     } else {
@@ -1343,12 +1040,12 @@ const FormShippingInstruction = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Add Shipping Instruction'
+              ? 'Add BL'
               : mode === 'edit'
-              ? 'Edit Shipping Instruction'
+              ? 'Edit BL'
               : mode === 'delete'
-              ? 'Delete Shipping Instruction'
-              : 'View Shipping Instruction'}
+              ? 'Delete BL'
+              : 'View BL'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -1409,8 +1106,8 @@ const FormShippingInstruction = ({
                             <InputDatePicker
                               value={field.value}
                               onChange={field.onChange}
-                              showCalendar={mode == 'add' || mode == 'edit'}
-                              disabled={mode == 'delete' || mode == 'view'}
+                              showCalendar={mode === 'add'}
+                              disabled={mode != 'add'}
                               onSelect={(date) =>
                                 forms.setValue('tglbukti', date)
                               }
@@ -1470,7 +1167,6 @@ const FormShippingInstruction = ({
                               onClear={() => {
                                 setReloadForm(false);
                                 setScheduleValue(0);
-                                // forms.setValue('schedule_id', 0);
                                 forms.setValue('tglberangkat', '');
                                 forms.setValue('voyberangkat', '');
                                 forms.setValue('kapal_id', 0);
@@ -1691,8 +1387,7 @@ const FormShippingInstruction = ({
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
             <p className="text-center">
-              {' '}
-              {mode === 'delete' ? 'DELETE' : 'SAVE'}{' '}
+              {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
           </Button>
 
@@ -1700,6 +1395,7 @@ const FormShippingInstruction = ({
             <Button
               type="submit"
               variant="success"
+              // onClick={onSubmit}
               onClick={(e) => {
                 e.preventDefault();
                 onSubmit(true);
@@ -1708,7 +1404,6 @@ const FormShippingInstruction = ({
                 setRows([]);
                 setRowsDetailRincian([]);
                 setScheduleValue(0);
-                setDaftarBlValue(0);
                 setEditingRowId(0);
               }}
               className="flex w-fit items-center gap-1 text-sm"
@@ -1728,4 +1423,4 @@ const FormShippingInstruction = ({
   );
 };
 
-export default FormShippingInstruction;
+export default FormBlHeader;

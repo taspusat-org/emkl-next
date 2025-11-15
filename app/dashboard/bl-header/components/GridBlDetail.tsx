@@ -3,31 +3,21 @@
 import Image from 'next/image';
 import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
-import { useSelector } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { useQueryClient } from 'react-query';
-import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useSelector, useDispatch } from 'react-redux';
 import { LoadRowsRenderer } from '@/components/LoadRows';
+import { useGetBlDetail } from '@/lib/server/useBlHeader';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
-import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { setDetailData } from '@/lib/store/headerSlice/headerSlice';
+import { BLDetail, filterBlDetail } from '@/lib/types/blheader.type';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
-import { JENISORDERMUATAN, statusJobMasukGudang } from '@/constants/statusjob';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState
-} from 'react';
-import { useGetAllStatusJobMasukGudangByTglStatus } from '@/lib/server/useStatusJob';
-import {
-  filterStatusJobMasukGudang,
-  StatusJobMasukGudang
-} from '@/lib/types/statusJob.type';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Tooltip,
   TooltipContent,
@@ -42,7 +32,6 @@ import {
   saveGridConfig
 } from '@/lib/utils';
 import DataGrid, {
-  CellClickArgs,
   CellKeyDownArgs,
   Column,
   DataGridHandle
@@ -52,83 +41,92 @@ interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterStatusJobMasukGudang;
+  filters: typeof filterBlDetail;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
 
-const GridStatusJobMasukGudang = () => {
-  const queryClient = useQueryClient();
-  const { clearError } = useFormError();
+const GridBlDetail = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const headerData = useSelector((state: RootState) => state.header.headerData);
-  const {
-    selectedJenisOrderan,
-    selectedJenisOrderanNama,
-    selectedJenisStatusJob,
-    selectedJenisStatusJobNama,
-    onReload
-  } = useSelector((state: RootState) => state.filter);
 
   const gridRef = useRef<DataGridHandle>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
-  const colTimersRef = useRef<
-    Map<keyof Filter['filters'], ReturnType<typeof setTimeout>>
-  >(new Map());
 
-  const [hasMore, setHasMore] = useState(true);
-  const [totalPages, setTotalPages] = useState(1);
-  const [inputValue, setInputValue] = useState('');
   const [dataGridKey, setDataGridKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const [isDataUpdated, setIsDataUpdated] = useState(false);
+  const [inputValue, setInputValue] = useState<string>('');
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
-  const [selectedCol, setSelectedCol] = useState<number>(0);
-  const [reloadForm, setReloadForm] = useState<boolean>(false);
-  const [rows, setRows] = useState<StatusJobMasukGudang[]>([]);
-  const [isFetchingManually, setIsFetchingManually] = useState(false);
+  const [rows, setRows] = useState<BLDetail[]>([]);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
-  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
+  const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
+    {}
+  );
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
   } | null>(null);
-  const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
-    {}
-  );
+
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
-    filters: {
-      ...filterStatusJobMasukGudang,
-      // tglDari: selectedDate,
-      // tglSampai: selectedDate2,
-      jenisOrderan: String(selectedJenisOrderan),
-      jenisStatusJob: String(selectedJenisStatusJob)
-    },
     search: '',
-    sortBy: 'tglstatus',
+    filters: filterBlDetail,
+    sortBy: 'bl_nobukti',
     sortDirection: 'asc'
   });
-  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
   const {
-    data: allDataDetailStatusJob,
-    isLoading: isLoadingStatusJobMasukGudang,
+    data: allDataDetail,
+    isLoading,
     refetch
-  } = useGetAllStatusJobMasukGudangByTglStatus(
-    headerData?.tglstatus ?? '',
-    { ...filters, page: currentPage },
-    abortControllerRef.current?.signal
-  );
+  } = useGetBlDetail(headerData?.id ?? 0, {
+    ...filters,
+    page: 1
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
+    const searchValue = e.target.value;
+    setInputValue(searchValue);
+
+    // Menunggu beberapa waktu sebelum update filter
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+    debounceTimerRef.current = setTimeout(() => {
+      // Mengupdate filter setelah debounce
+      setCurrentPage(1);
+      setFilters((prev) => ({
+        ...prev,
+        filters: filterBlDetail,
+        search: searchValue,
+        page: 1
+      }));
+
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setTimeout(() => {
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 100);
+
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 200);
+      setSelectedRow(0);
+      setCurrentPage(1);
+      setRows([]);
+    }, 300); // Mengatur debounce hanya untuk update filter
+  };
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -155,44 +153,6 @@ const GridStatusJobMasukGudang = () => {
     },
     []
   );
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    cancelPreviousRequest(abortControllerRef);
-    const searchValue = e.target.value;
-    // Langsung update input value tanpa debounce
-    setInputValue(searchValue);
-
-    // Menunggu beberapa waktu sebelum update filter
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-
-    debounceTimerRef.current = setTimeout(() => {
-      // Mengupdate filter setelah debounce
-      setCurrentPage(1);
-      setFilters((prev) => ({
-        ...prev,
-        filters: filterStatusJobMasukGudang, // Gunakan filter yang relevan
-        jenisOrderan: String(selectedJenisOrderan),
-        jenisStatusJob: String(selectedJenisStatusJob),
-        search: searchValue,
-        page: 1
-      }));
-
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-      setTimeout(() => {
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 100);
-
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 200);
-      setSelectedRow(0);
-      setCurrentPage(1);
-      setRows([]);
-    }, 300); // Mengatur debounce hanya untuk update filter
-  };
 
   const handleClearFilter = useCallback((colKey: string) => {
     cancelPreviousRequest(abortControllerRef);
@@ -248,759 +208,8 @@ const GridStatusJobMasukGudang = () => {
     }, 250);
     setSelectedRow(0);
     setCurrentPage(1);
-    setFetchedPages(new Set([1]));
     setRows([]);
   };
-
-  const handleRowSelect = (rowId: number) => {
-    setCheckedRows((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
-      } else {
-        updated.add(rowId);
-      }
-
-      setIsAllSelected(updated.size === rows.length);
-      return updated;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setCheckedRows(new Set());
-    } else {
-      const allIds = rows.map((row) => Number(row.id));
-      setCheckedRows(new Set(allIds));
-    }
-    setIsAllSelected(!isAllSelected);
-  };
-
-  const columns = useMemo((): Column<StatusJobMasukGudang>[] => {
-    return [
-      {
-        key: 'nomor',
-        name: 'NO',
-        width: 50,
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm font-normal">No.</p>
-            </div>
-
-            <div
-              className="flex h-[50%] w-full cursor-pointer items-center justify-center"
-              onClick={() => {
-                setFilters({
-                  ...filters,
-                  search: '',
-                  filters: filterStatusJobMasukGudang
-                }),
-                  setInputValue('');
-                setTimeout(() => {
-                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-                }, 0);
-              }}
-            >
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
-          return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
-              {rowIndex + 1}
-            </div>
-          );
-        }
-      },
-      {
-        key: 'select',
-        name: '',
-        width: 50,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
-            <div className="flex h-[50%] w-full items-center justify-center">
-              <Checkbox
-                checked={isAllSelected}
-                onCheckedChange={() => handleSelectAll()}
-                id="header-checkbox"
-                className="mb-2"
-              />
-            </div>
-          </div>
-        ),
-        renderCell: ({ row }: { row: StatusJobMasukGudang }) => (
-          <div className="flex h-full items-center justify-center">
-            <Checkbox
-              checked={checkedRows.has(Number(row.id))}
-              onCheckedChange={() => handleRowSelect(Number(row.id))}
-              id={`row-checkbox-${row.id}`}
-            />
-          </div>
-        )
-      },
-      {
-        key: 'job',
-        name: 'job',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('job_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'job_text' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                JOB MUATAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'job_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'job_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="job"
-                value={filters.filters.job_text || ''}
-                onChange={(value) => handleFilterInputChange('job_text', value)}
-                onClear={() => handleClearFilter('job_text')}
-                inputRef={(el) => {
-                  inputColRefs.current['job'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.job_text || '';
-          const cellValue = props.row.job_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'tglorder',
-        name: 'tglorder',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('tglorder')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'tglorder' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                tgl order
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'tglorder' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tglorder' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="tglorder"
-                value={filters.filters.tglorder || ''}
-                onChange={(value) => handleFilterInputChange('tglorder', value)}
-                onClear={() => handleClearFilter('tglorder')}
-                inputRef={(el) => {
-                  inputColRefs.current['tglorder'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.tglorder || '';
-          const cellValue = props.row.tglorder || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'nocontainer',
-        name: 'nocontainer',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nocontainer')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'nocontainer' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NO CONTAINER
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'nocontainer' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'nocontainer' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="nocontainer"
-                value={filters.filters.nocontainer || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('nocontainer', value)
-                }
-                onClear={() => handleClearFilter('nocontainer')}
-                inputRef={(el) => {
-                  inputColRefs.current['nocontainer'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.nocontainer || '';
-          const cellValue = props.row.nocontainer || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'noseal',
-        name: 'noseal',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('noseal')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'noseal' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NO SEAL
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'noseal' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'noseal' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="noseal"
-                value={filters.filters.noseal || ''}
-                onChange={(value) => handleFilterInputChange('noseal', value)}
-                onClear={() => handleClearFilter('noseal')}
-                inputRef={(el) => {
-                  inputColRefs.current['noseal'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.noseal || '';
-          const cellValue = props.row.noseal || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'shipper',
-        name: 'shipper',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_text'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="shipper"
-                value={filters.filters.shipper_text || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('shipper_text', value)
-                }
-                onClear={() => handleClearFilter('shipper_text')}
-                inputRef={(el) => {
-                  inputColRefs.current['shipper'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.shipper_text || '';
-          const cellValue = props.row.shipper_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'nosp',
-        name: 'nosp',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nosp')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'nosp' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NO SP
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'nosp' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'nosp' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="nosp"
-                value={filters.filters.nosp || ''}
-                onChange={(value) => handleFilterInputChange('nosp', value)}
-                onClear={() => handleClearFilter('nosp')}
-                inputRef={(el) => {
-                  inputColRefs.current['nosp'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.nosp || '';
-          const cellValue = props.row.nosp || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'lokasistuffing',
-        name: 'lokasistuffing',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('lokasistuffing_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'lokasistuffing_text'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                LOKASI STUFFING
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'lokasistuffing_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'lokasistuffing_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="lokasistuffing"
-                value={filters.filters.lokasistuffing_text || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('lokasistuffing_text', value)
-                }
-                onClear={() => handleClearFilter('lokasistuffing_text')}
-                inputRef={(el) => {
-                  inputColRefs.current['lokasistuffing'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.lokasistuffing_text || '';
-          const cellValue = props.row.lokasistuffing_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'keterangan',
-        name: 'keterangan',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('keterangan')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                KETERANGAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'keterangan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'keterangan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="keterangan"
-                value={filters.filters.keterangan || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('keterangan', value)
-                }
-                onClear={() => handleClearFilter('keterangan')}
-                inputRef={(el) => {
-                  inputColRefs.current['keterangan'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.keterangan || '';
-          const cellValue = props.row.keterangan || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      }
-    ];
-  }, [filters, rows, checkedRows]);
-
-  const orderedColumns = useMemo(() => {
-    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // Mapping dan filter untuk menghindari undefined
-      return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
-        .filter((col) => col !== undefined);
-    }
-    return columns;
-  }, [columns, columnsOrder]);
-
-  const finalColumns = useMemo(() => {
-    return orderedColumns.map((col) => ({
-      ...col,
-      width: columnsWidth[col.key] ?? col.width
-    }));
-  }, [orderedColumns, columnsWidth]);
-
-  const onColumnResize = (index: number, width: number) => {
-    // 1) Dapatkan key kolom yang di-resize
-    const columnKey = columns[columnsOrder[index]].key;
-
-    // 2) Update state width seketika (biar kolom langsung responsif)
-    const newWidthMap = { ...columnsWidth, [columnKey]: width };
-    setColumnsWidth(newWidthMap);
-
-    // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
-    if (resizeDebounceTimeout.current) {
-      clearTimeout(resizeDebounceTimeout.current);
-    }
-
-    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
-    //    saveGridConfig akan dipanggil
-    resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridStatusJobMasukGudang',
-        [...columnsOrder],
-        newWidthMap
-      );
-    }, 300);
-  };
-
-  const onColumnsReorder = (sourceKey: string, targetKey: string) => {
-    setColumnsOrder((prevOrder) => {
-      const sourceIndex = prevOrder.findIndex(
-        (index) => columns[index].key === sourceKey
-      );
-      const targetIndex = prevOrder.findIndex(
-        (index) => columns[index].key === targetKey
-      );
-
-      const newOrder = [...prevOrder];
-      newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
-
-      saveGridConfig(
-        user.id,
-        'GridStatusJobMasukGudang',
-        [...newOrder],
-        columnsWidth
-      );
-      return newOrder;
-    });
-  };
-
-  const handleClickOutside = (event: MouseEvent) => {
-    if (
-      contextMenuRef.current &&
-      !contextMenuRef.current.contains(event.target as Node)
-    ) {
-      setContextMenu(null);
-    }
-  };
-
-  document.querySelectorAll('.column-headers').forEach((element) => {
-    element.classList.remove('c1kqdw7y7-0-0-beta-47');
-  });
 
   function highlightText(
     text: string | number | null | undefined,
@@ -1039,225 +248,1085 @@ const GridStatusJobMasukGudang = () => {
     );
   }
 
-  function handleCellClick(args: CellClickArgs<StatusJobMasukGudang>) {
+  const handleRowSelect = (rowId: number) => {
+    setCheckedRows((prev) => {
+      const updated = new Set(prev);
+      if (updated.has(rowId)) {
+        updated.delete(rowId);
+      } else {
+        updated.add(rowId);
+      }
+
+      setIsAllSelected(updated.size === rows.length);
+      return updated;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (isAllSelected) {
+      setCheckedRows(new Set());
+    } else {
+      const allIds = rows.map((row) => Number(row.id));
+      setCheckedRows(new Set(allIds));
+    }
+    setIsAllSelected(!isAllSelected);
+  };
+
+  const columns = useMemo((): Column<BLDetail>[] => {
+    return [
+      {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm font-normal">No.</p>
+            </div>
+
+            <div
+              className="flex h-[50%] w-full cursor-pointer items-center justify-center"
+              onClick={() => {
+                setFilters({
+                  ...filters,
+                  search: '',
+                  filters: filterBlDetail
+                }),
+                  setInputValue('');
+                setTimeout(() => {
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+                }, 0);
+              }}
+            >
+              <FaTimes className="bg-red-500 text-white" />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {rowIndex + 1}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'select',
+        name: '',
+        width: 50,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%]"></div>
+            <div className="flex h-[50%] w-full items-center justify-center">
+              <Checkbox
+                checked={isAllSelected}
+                onCheckedChange={() => handleSelectAll()}
+                id="header-checkbox"
+                className="mb-2"
+              />
+            </div>
+          </div>
+        ),
+        renderCell: ({ row }: { row: BLDetail }) => (
+          <div className="flex h-full items-center justify-center">
+            <Checkbox
+              checked={checkedRows.has(Number(row.id))}
+              onCheckedChange={() => handleRowSelect(Number(row.id))}
+              id={`row-checkbox-${row.id}`}
+            />
+          </div>
+        )
+      },
+      {
+        key: 'nobukti',
+        name: 'nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('nobukti')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NO BUKTI
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nobukti' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nobukti' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="nobukti"
+                value={filters.filters.nobukti || ''}
+                onChange={(value) => handleFilterInputChange('nobukti', value)}
+                onClear={() => handleClearFilter('nobukti')}
+                inputRef={(el) => {
+                  inputColRefs.current['nobukti'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nobukti || '';
+          const cellValue = props.row.nobukti || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'bl_nobukti',
+        name: 'bl_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('bl_nobukti')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'bl_nobukti' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NOMOR BL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'bl_nobukti' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'bl_nobukti' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="bl_nobukti"
+                value={filters.filters.bl_nobukti || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('bl_nobukti', value)
+                }
+                onClear={() => handleClearFilter('bl_nobukti')}
+                inputRef={(el) => {
+                  inputColRefs.current['bl_nobukti'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.bl_nobukti || '';
+          const cellValue = props.row.bl_nobukti || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'shippinginstructiondetail_nobukti',
+        name: 'shippinginstructiondetail_nobukti',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 300,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('shippinginstructiondetail_nobukti')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'shippinginstructiondetail_nobukti'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NOMOR SHIPPING
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'shippinginstructiondetail_nobukti' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'shippinginstructiondetail_nobukti' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="shippinginstructiondetail_nobukti"
+                value={filters.filters.shippinginstructiondetail_nobukti || ''}
+                onChange={(value) =>
+                  handleFilterInputChange(
+                    'shippinginstructiondetail_nobukti',
+                    value
+                  )
+                }
+                onClear={() =>
+                  handleClearFilter('shippinginstructiondetail_nobukti')
+                }
+                inputRef={(el) => {
+                  inputColRefs.current['shippinginstructiondetail_nobukti'] =
+                    el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter =
+            filters.filters.shippinginstructiondetail_nobukti || '';
+          const cellValue = props.row.shippinginstructiondetail_nobukti || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'asalpelabuhan',
+        name: 'asalpelabuhan',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('asalpelabuhan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'asalpelabuhan'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                PELABUHAN ASAL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'asalpelabuhan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'asalpelabuhan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="asalpelabuhan"
+                value={filters.filters.asalpelabuhan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('asalpelabuhan', value)
+                }
+                onClear={() => handleClearFilter('asalpelabuhan')}
+                inputRef={(el) => {
+                  inputColRefs.current['asalpelabuhan'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.asalpelabuhan || '';
+          const cellValue = props.row.asalpelabuhan || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'keterangan',
+        name: 'keterangan',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('keterangan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                KETERANGAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'keterangan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'keterangan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
+                  inputColRefs.current['keterangan'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'consignee',
+        name: 'consignee',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('consignee')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'consignee' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                CONSIGNEE
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'consignee' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'consignee' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="consignee"
+                value={filters.filters.consignee || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('consignee', value)
+                }
+                onClear={() => handleClearFilter('consignee')}
+                inputRef={(el) => {
+                  inputColRefs.current['consignee'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.consignee || '';
+          const cellValue = props.row.consignee || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'shipper',
+        name: 'shipper',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('shipper')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'shipper' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                SHIPPER
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'shipper' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'shipper' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="shipper"
+                value={filters.filters.shipper || ''}
+                onChange={(value) => handleFilterInputChange('shipper', value)}
+                onClear={() => handleClearFilter('shipper')}
+                inputRef={(el) => {
+                  inputColRefs.current['shipper'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.shipper || '';
+          const cellValue = props.row.shipper || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'comodity',
+        name: 'comodity',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('comodity')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'comodity' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                COMODITY
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'comodity' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'comodity' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="comodity"
+                value={filters.filters.comodity || ''}
+                onChange={(value) => handleFilterInputChange('comodity', value)}
+                onClear={() => handleClearFilter('comodity')}
+                inputRef={(el) => {
+                  inputColRefs.current['comodity'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.comodity || '';
+          const cellValue = props.row.comodity || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'notifyparty',
+        name: 'notifyparty',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('notifyparty')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'notifyparty' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                NOTIFY PARTY
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'notifyparty' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'notifyparty' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="notifyparty"
+                value={filters.filters.notifyparty || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('notifyparty', value)
+                }
+                onClear={() => handleClearFilter('notifyparty')}
+                inputRef={(el) => {
+                  inputColRefs.current['notifyparty'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.notifyparty || '';
+          const cellValue = props.row.notifyparty || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'statuspisahbl',
+        name: 'statuspisahbl',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 100,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statuspisahbl_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statuspisahbl_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                STATUS PISAH BL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statuspisahbl_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statuspisahbl_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleFilterInputChange('statuspisahbl_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statuspisahbl_memo
+            ? JSON.parse(props.row.statuspisahbl_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'emkllain_nama',
+        name: 'emkllain_nama',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('emkllain_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'emkllain_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NAMA EMKL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'emkllain_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'emkllain_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="emkllain_nama"
+                value={filters.filters.emkllain_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('emkllain_text', value)
+                }
+                onClear={() => handleClearFilter('emkllain_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['emkllain_nama'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.emkllain_text || '';
+          const cellValue = props.row.emkllain_nama || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'pelayaran_nama',
+        name: 'pelayaran_nama',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('pelayaran_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'pelayaran_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NAMA PELAYARAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'pelayaran_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'pelayaran_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="pelayaran_nama"
+                value={filters.filters.pelayaran_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('pelayaran_text', value)
+                }
+                onClear={() => handleClearFilter('pelayaran_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['pelayaran_nama'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.pelayaran_text || '';
+          const cellValue = props.row.pelayaran_nama || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      }
+    ];
+  }, [rows, rows, filters.filters]);
+
+  const orderedColumns = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // Mapping dan filter untuk menghindari undefined
+      return columnsOrder
+        .map((orderIndex) => columns[orderIndex])
+        .filter((col) => col !== undefined);
+    }
+    return columns;
+  }, [columns, columnsOrder]);
+
+  const finalColumns = useMemo(() => {
+    return orderedColumns.map((col) => ({
+      ...col,
+      width: columnsWidth[col.key] ?? col.width
+    }));
+  }, [orderedColumns, columnsWidth]);
+
+  const onColumnResize = (index: number, width: number) => {
+    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
+    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
+    setColumnsWidth(newWidthMap);
+
+    if (resizeDebounceTimeout.current) {
+      // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
+      clearTimeout(resizeDebounceTimeout.current);
+    }
+    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu, saveGridConfig akan dipanggil
+    resizeDebounceTimeout.current = setTimeout(() => {
+      saveGridConfig(user.id, 'GridBlDetail', [...columnsOrder], newWidthMap);
+    }, 300);
+  };
+
+  const onColumnsReorder = (sourceKey: string, targetKey: string) => {
+    setColumnsOrder((prevOrder) => {
+      const sourceIndex = prevOrder.findIndex(
+        (index) => columns[index].key === sourceKey
+      );
+      const targetIndex = prevOrder.findIndex(
+        (index) => columns[index].key === targetKey
+      );
+
+      const newOrder = [...prevOrder];
+      newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
+
+      saveGridConfig(user.id, 'GridBlDetail', [...newOrder], columnsWidth);
+      return newOrder;
+    });
+  };
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      contextMenuRef.current &&
+      !contextMenuRef.current.contains(event.target as Node)
+    ) {
+      setContextMenu(null);
+    }
+  };
+
+  function handleCellClick(args: { row: BLDetail }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
     if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
-    }
-  }
-
-  function getRowClass(row: StatusJobMasukGudang) {
-    const rowIndex = rows.findIndex((r) => r.id === row.id);
-    return rowIndex === selectedRow ? 'selected-row' : '';
-  }
-
-  function rowKeyGetter(row: StatusJobMasukGudang) {
-    return row.id;
-  }
-
-  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
-    return currentTarget.scrollTop <= 10;
-  }
-
-  function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
-    const { currentTarget } = event;
-    if (!currentTarget) return false;
-
-    return (
-      currentTarget.scrollTop + currentTarget.clientHeight >=
-      currentTarget.scrollHeight - 2
-    );
-  }
-
-  async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingStatusJobMasukGudang || !hasMore || rows.length === 0) return;
-
-    const findUnfetchedPage = (pageOffset: number) => {
-      let page = currentPage + pageOffset;
-      while (page > 0 && fetchedPages.has(page)) {
-        page += pageOffset;
-      }
-      return page > 0 ? page : null;
-    };
-
-    if (isAtBottom(event)) {
-      const nextPage = findUnfetchedPage(1);
-
-      if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
-        setCurrentPage(nextPage);
-        setIsAllSelected(false);
-      }
-    }
-
-    if (isAtTop(event)) {
-      const prevPage = findUnfetchedPage(-1);
-      if (prevPage && !fetchedPages.has(prevPage)) {
-        setCurrentPage(prevPage);
-      }
+      dispatch(setDetailData(foundRow));
     }
   }
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<StatusJobMasukGudang>,
+    args: CellKeyDownArgs<BLDetail>,
     event: React.KeyboardEvent
   ) {
-    const visibleRowCount = 10;
-    const firstDataRowIndex = 0;
-    const selectedRowId = rows[selectedRow]?.id;
-
-    if (event.key === 'ArrowDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const nextRow = Math.min(prev + 1, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'ArrowUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const newRow = Math.max(prev - 1, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === 'ArrowRight') {
-      setSelectedCol((prev) => {
-        return Math.min(prev + 1, columns.length - 1);
-      });
-    } else if (event.key === 'ArrowLeft') {
-      setSelectedCol((prev) => {
-        return Math.max(prev - 1, 0);
-      });
-    } else if (event.key === 'PageDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const nextRow = Math.min(prev + visibleRowCount - 2, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'PageUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(Number(selectedRowId)); // Toggling the selection of the row
-      }
+    if (event.key === 'ArrowUp' && args.rowIdx === 0) {
+      event.preventDefault();
     }
   }
 
-  // useEffect(() => {
-  //   return () => {
-  //     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-  //     colTimersRef.current.forEach((t) => clearTimeout(t));
-  //     colTimersRef.current.clear();
-  //   };
-  // }, []);
+  function getRowClass(row: BLDetail) {
+    const rowIndex = rows.findIndex((r) => r.id === row.id);
+    return rowIndex === selectedRow ? 'selected-row' : '';
+  }
+
+  function rowKeyGetter(row: BLDetail) {
+    return row.id;
+  }
 
   useEffect(() => {
-    // setIsFirstLoad(true);
     loadGridConfig(
       user.id,
-      'GridStatusJobMasukGudang',
+      'GridBlDetail',
       columns,
       setColumnsOrder,
       setColumnsWidth
     );
   }, []);
-
-  useEffect(() => {
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        jenisOrderan: selectedJenisOrderan
-          ? String(selectedJenisOrderan)
-          : String(JENISORDERMUATAN),
-        jenisStatusJob: selectedJenisStatusJob
-          ? String(selectedJenisStatusJob)
-          : String(statusJobMasukGudang)
-      }
-    }));
-  }, [selectedJenisOrderan, selectedJenisStatusJob]);
-
-  // useEffect(() => {
-  //   if (isFirstLoad && gridRef.current && rows.length > 0) {
-  //     setSelectedRow(0);
-  //     gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-  //     setIsFirstLoad(false);
-  //   }
-  // }, [rows, isFirstLoad]);
-
-  useEffect(() => {
-    if (allDataDetailStatusJob) {
-      const formattedRows = allDataDetailStatusJob?.data?.map((item: any) => ({
-        tglstatus: item.tglstatus,
-        id: item.id,
-        job: item.job,
-        job_nama: item.job_nama,
-        jenisorderan_id: item.jenisorderan_id,
-        jenisorder_nama: item.jenisorder_nama,
-        tglorder: item.tglorder,
-        nocontainer: item.nocontainer,
-        noseal: item.noseal,
-        shipper_id: item.shipper_id,
-        shipper_nama: item.shipper_nama,
-        nosp: item.nosp,
-        lokasistuffing: item.lokasistuffing,
-        lokasistuffing_nama: item.lokasistuffing_nama,
-        keterangan: item.keterangan,
-        modifiedby: item.modifiedby,
-        created_at: item.created_at,
-        updated_at: item.updated_at
-      }));
-
-      setRows(formattedRows);
-    } else if (!headerData?.tglstatus) {
-      setRows([]);
-    }
-  }, [allDataDetailStatusJob, headerData?.tglstatus]);
-
-  useEffect(() => {
-    const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
-    headerCells.forEach((cell) => {
-      cell.setAttribute('tabindex', '-1');
-    });
-  }, []);
-
-  // useEffect(() => {
-  //   if (gridRef.current && dataGridKey) {
-  //     setTimeout(() => {
-  //       gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-  //       setIsFirstLoad(false);
-  //     }, 0);
-  //   }
-  // }, [dataGridKey]);
-
-  // useEffect(() => {
-  //   const preventScrollOnSpace = (event: KeyboardEvent) => {
-  //     // Cek apakah target yang sedang fokus adalah input atau textarea
-  //     if (
-  //       event.key === ' ' &&
-  //       !(
-  //         event.target instanceof HTMLInputElement ||
-  //         event.target instanceof HTMLTextAreaElement
-  //       )
-  //     ) {
-  //       event.preventDefault(); // Mencegah scroll pada tombol space jika bukan di input
-  //     }
-  //   };
-
-  //   // Menambahkan event listener saat komponen di-mount
-  //   document.addEventListener('keydown', preventScrollOnSpace);
-
-  //   // Menghapus event listener saat komponen di-unmount
-  //   return () => {
-  //     document.removeEventListener('keydown', preventScrollOnSpace);
-  //   };
-  // }, []);
 
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
@@ -1266,28 +1335,69 @@ const GridStatusJobMasukGudang = () => {
     };
   }, []);
 
-  // useEffect(() => {
-  //   // Initialize the refs based on columns dynamically
-  //   columns.forEach((col) => {
-  //     if (!inputColRefs.current[col.key]) {
-  //       inputColRefs.current[col.key] = null;
-  //     }
-  //   });
-  // }, []);
+  useEffect(() => {
+    if (allDataDetail) {
+      const formattedRows = allDataDetail?.data?.map((item: any) => ({
+        id: Number(item?.id),
+        nobukti: item?.nobukti,
+        bl_id: item?.bl_id,
+        bl_nobukti: item?.bl_nobukti,
+        shippinginstructiondetail_nobukti:
+          item?.shippinginstructiondetail_nobukti,
+        asalpelabuhan: item?.asalpelabuhan,
+        keterangan: item?.keterangan,
+        consignee: item?.consignee,
+        shipper: item?.shipper,
+        comodity: item?.comodity,
+        notifyparty: item?.notifyparty,
+        emkllain_id: item?.emkllain_id,
+        emkllain_nama: item?.emkllain_nama,
+        pelayaran_nama: item?.pelayaran_nama,
+        statuspisahbl_nama: item?.statuspisahbl_nama
+      }));
+
+      setRows(formattedRows);
+    } else if (!headerData?.id) {
+      setRows([]);
+    }
+  }, [allDataDetail, headerData?.id]);
 
   useEffect(() => {
-    // Memastikan refetch dilakukan saat filters berubah dan headerData
-    if (headerData || filters !== prevFilters) {
-      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
-      setPrevFilters(filters); // Simpan filters terbaru
+    if (gridRef.current && rows.length > 0) {
+      setSelectedRow(0);
+
+      gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+      dispatch(setDetailData(rows[0]));
     }
-  }, [filters, headerData, refetch]); // Dependency array termasuk filters dan refetch
+  }, [rows]);
+
+  useEffect(() => {
+    if (rows.length > 0 && selectedRow !== null) {
+      const selectedRowData = rows[selectedRow];
+      dispatch(setDetailData(selectedRowData)); // Pastikan data sudah benar
+    } else {
+      dispatch(setDetailData({}));
+    }
+  }, [rows, selectedRow, dispatch]);
+
+  useEffect(() => {
+    const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
+    headerCells.forEach((cell) => {
+      cell.setAttribute('tabindex', '-1');
+    });
+  }, []);
+
+  useEffect(() => {
+    if (headerData) {
+      refetch();
+    }
+  }, [headerData]);
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
         <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
+          className="flex h-[38px] w-full flex-row items-center border-b border-blue-500 px-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
@@ -1302,9 +1412,10 @@ const GridStatusJobMasukGudang = () => {
               onChange={(e) => {
                 handleInputChange(e);
               }}
-              className="overflow m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
               placeholder="Type to search..."
             />
+
             {(filters.search !== '' || inputValue !== '') && (
               <Button
                 type="button"
@@ -1317,32 +1428,33 @@ const GridStatusJobMasukGudang = () => {
             )}
           </div>
         </div>
-
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
+          onColumnResize={onColumnResize}
+          onColumnsReorder={onColumnsReorder}
           rows={rows}
+          headerRowHeight={70}
+          onCellKeyDown={handleKeyDown}
+          rowHeight={30}
+          renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
+          className="rdg-light fill-grid text-xs"
           rowKeyGetter={rowKeyGetter}
           rowClass={getRowClass}
           onCellClick={handleCellClick}
-          headerRowHeight={70}
-          rowHeight={30}
-          className="rdg-light fill-grid"
-          onColumnResize={onColumnResize}
-          onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
-          onScroll={handleScroll}
-          renderers={{
-            noRowsFallback: <EmptyRowsRenderer />
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
           }}
         />
         <div
-          className="mt-1 flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          {isLoadingStatusJobMasukGudang ? <LoadRowsRenderer /> : null}
+          {isLoading ? <LoadRowsRenderer /> : null}
+
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1362,7 +1474,7 @@ const GridStatusJobMasukGudang = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridStatusJobMasukGudang',
+                    'GridBlDetail',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -1382,4 +1494,4 @@ const GridStatusJobMasukGudang = () => {
   );
 };
 
-export default GridStatusJobMasukGudang;
+export default GridBlDetail;

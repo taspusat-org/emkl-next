@@ -1,13 +1,16 @@
-import { useGetAllTypeAkuntansi } from '@/lib/server/useTypeAkuntansi';
-import { RootState } from '@/lib/store/store';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { FaSave } from 'react-icons/fa';
 import { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { IoMdClose } from 'react-icons/io';
+import { RootState } from '@/lib/store/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { FaSave } from 'react-icons/fa';
 import LookUp from '@/components/custom-ui/LookUp';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import InputNumeric from '@/components/custom-ui/InputNumeric';
+import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -16,10 +19,6 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import { useDispatch } from 'react-redux';
-import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
-import InputNumeric from '@/components/custom-ui/InputNumeric';
-import { useFormError } from '@/lib/hooks/formErrorContext';
 
 const FormTypeAkuntansi = ({
   forms,
@@ -32,7 +31,6 @@ const FormTypeAkuntansi = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
-  const { errors, setError } = useFormError(); // Mengakses errors dan setError
   const lookupPropsStatusAktif = [
     {
       columns: [{ key: 'text', name: 'NAMA' }],
@@ -67,9 +65,6 @@ const FormTypeAkuntansi = ({
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
-  const selectLookup = useSelector(
-    (state: RootState) => state.selectLookup.selectLookup
-  );
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -320,16 +315,15 @@ const FormTypeAkuntansi = ({
           <Button
             type="submit"
             // onClick={onSubmit}
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);
               dispatch(setSubmitClicked(true));
             }}
             disabled={mode === 'view'}
-            className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -348,7 +342,7 @@ const FormTypeAkuntansi = ({
                 }}
                 disabled={mode === 'view'}
                 className="flex w-fit items-center gap-1 text-sm"
-                loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
+                loading={isLoadingCreate}
               >
                 <FaSave />
                 <p className="text-center">SAVE & ADD</p>
@@ -356,13 +350,8 @@ const FormTypeAkuntansi = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

@@ -39,8 +39,8 @@ const FormJobParty = ({
   // popOver,
   onSubmit,
   isLoadingCreate // mode,
-  // isLoadingUpdate,
-} // isLoadingDelete
+  // isLoadingDelete
+} // isLoadingUpdate,
 : any) => {
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);
@@ -1239,29 +1239,19 @@ const FormJobParty = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit();
               dispatch(setSubmitClicked(true));
             }}
-            className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate}
           >
-            <FaSave />
             <p className="text-center">SAVE</p>
           </Button>
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={(e) => {
-              handleClose();
-              setReloadForm(false);
-              setPartyCount(0);
-            }}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { ImSpinner2 } from 'react-icons/im';
 import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
@@ -17,12 +16,30 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
 import FormPengeluaranEmkl from './FormPengeluaranEmkl';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
+import {
+  filterPengeluaranEmkl,
+  PengeluaranEmkl
+} from '@/lib/types/pengeluaranemkl.type';
+import {
+  checkValidationPengeluaranEmklFn,
+  getAllPengeluaranEmklFn
+} from '@/lib/apis/pengeluaranemkl.api';
 import {
   Tooltip,
   TooltipContent,
@@ -37,25 +54,9 @@ import {
   saveGridConfig
 } from '@/lib/utils';
 import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-import {
-  clearOpenName,
-  setClearLookup
-} from '@/lib/store/lookupSlice/lookupSlice';
-import {
-  filterPengeluaranEmkl,
-  PengeluaranEmkl
-} from '@/lib/types/pengeluaranemkl.type';
-import {
   pengeluaranEmklInput,
   pengeluaranEmklSchema
 } from '@/lib/validations/pengeluaranemkl.validation';
-import {
-  checkValidationPengeluaranEmklFn,
-  getAllPengeluaranEmklFn
-} from '@/lib/apis/pengeluaranemkl.api';
 import {
   useCreatePengeluaranEmkl,
   useDeletePengeluaranEmkl,
@@ -171,6 +172,10 @@ const GridPengeluaranEmkl = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -2185,25 +2190,6 @@ const GridPengeluaranEmkl = () => {
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
   }
 
   function getRowClass(row: PengeluaranEmkl) {
