@@ -339,31 +339,6 @@
       "updated_at": 250
     }
   },
-  "GridLabaRugiKalkulasi-1": {
-    "columnsOrder": [
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
-    ],
-    "columnsWidth": {
-      "nomor": 50,
-      "select": 50,
-      "periode": 100,
-      "estkomisimarketing": 250,
-      "komisimarketing": 250,
-      "biayakantorpusat": 250,
-      "biayatour": 250,
-      "gajidireksi": 250,
-      "estkomisikacab": 250,
-      "biayabonustriwulan": 250,
-      "estkomisimarketing2": 250,
-      "estkomisikacabcabang1": 250,
-      "estkomisikacabcabang2": 250,
-      "statusfinalkomisimarketing": 250,
-      "statusfinalbonustriwulan": 150,
-      "modifiedby": 150,
-      "created_at": 250,
-      "updated_at": 250
-    }
-  },
   "b-1": {
     "columnsOrder": [0, 1, 3, 4, 5, 6, 7, 8, 9, 10, 2],
     "columnsWidth": {
@@ -733,6 +708,26 @@
       "modifiedby": 672.7271728515625,
       "created_at": 250,
       "updated_at": 250
+    }
+  },
+  "GridShippingInstructionDetail-1": {
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "columnsWidth": {
+      "nomor": 50,
+      "select": 50,
+      "nobukti": 200,
+      "shippinginstructiondetail_nobukti": 300,
+      "asalpelabuhan": 200,
+      "keterangan": 200,
+      "consignee": 200,
+      "shipper": 200,
+      "comodity": 200,
+      "notifyparty": 200,
+      "statuspisahbl": 144.44446563720703,
+      "emkllain_nama": 200,
+      "containerpelayaran_nama": 200,
+      "tujuankapal_nama": 200,
+      "daftarbl_nama": 200
     }
   }
 }
