@@ -1223,97 +1223,103 @@ const GridJenisseal = () => {
       setMode('edit');
     }
   };
-  const handleDelete = async () => {
-    try {
-      dispatch(setProcessing());
-
-      if (checkedRows.size === 0) {
-        if (selectedRow !== null) {
-          const selectedRowId = rows[selectedRow]?.id;
-
-          if (selectedRowId) {
-            const validationResponse = await checkValidationJenissealFn({
-              aksi: 'DELETE',
-              value: selectedRowId
-            });
-
-            if (validationResponse.data.status !== 'success') {
-              alert({
-                title: 'Data tidak dapat dihapus!',
-                variant: 'danger',
-                submitText: 'OK'
-              });
-              return;
-            }
-
-            setMode('delete');
-            setPopOver(true);
-          }
-        }
-      } else {
-        const checkedRowsArray = Array.from(checkedRows);
-        const validationPromises = checkedRowsArray.map(async (id) => {
-          try {
-            const response = await checkValidationJenissealFn({
-              aksi: 'DELETE',
-              value: id
-            });
-            return {
-              id,
-              canDelete: response.data.status === 'success',
-              message: response.data?.message
-            };
-          } catch (error) {
-            return { id, canDelete: false, message: 'Error validating data' };
-          }
-        });
-
-        const validationResults = await Promise.all(validationPromises);
-
-        const cannotDeleteItems = validationResults.filter(
-          (result) => !result.canDelete
-        );
-
-        if (cannotDeleteItems.length > 0) {
-          const cannotDeleteIds = cannotDeleteItems
-            .map((item) => item.id)
-            .join(', ');
-          alert({
-            title: 'Beberapa data tidak dapat dihapus!',
-            variant: 'danger',
-            submitText: 'OK'
-          });
-          return;
-        }
-
-        try {
-          await alert({
-            title: 'Apakah anda yakin ingin menghapus data ini ?',
-            variant: 'danger',
-            submitText: 'YA',
-            cancelText: 'TIDAK',
-            catchOnCancel: true
-          });
-
-          await handleMultipleDelete(checkedRowsArray);
-
-          dispatch(setProcessed());
-        } catch (alertError) {
-          dispatch(setProcessed());
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleDelete:', error);
-      alert({
-        title: 'Error!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    } finally {
-      dispatch(setProcessed());
+  const handleDelete = () => {
+    if (selectedRow !== null) {
+      setMode('delete');
+      setPopOver(true);
     }
   };
+  // const handleDelete = async () => {
+  //   try {
+  //     dispatch(setProcessing());
+
+  //     if (checkedRows.size === 0) {
+  //       if (selectedRow !== null) {
+  //         const selectedRowId = rows[selectedRow]?.id;
+
+  //         if (selectedRowId) {
+  //           const validationResponse = await checkValidationJenissealFn({
+  //             aksi: 'DELETE',
+  //             value: selectedRowId
+  //           });
+
+  //           if (validationResponse.data.status !== 'success') {
+  //             alert({
+  //               title: 'Data tidak dapat dihapus!',
+  //               variant: 'danger',
+  //               submitText: 'OK'
+  //             });
+  //             return;
+  //           }
+
+  //           setMode('delete');
+  //           setPopOver(true);
+  //         }
+  //       }
+  //     } else {
+  //       const checkedRowsArray = Array.from(checkedRows);
+  //       const validationPromises = checkedRowsArray.map(async (id) => {
+  //         try {
+  //           const response = await checkValidationJenissealFn({
+  //             aksi: 'DELETE',
+  //             value: id
+  //           });
+  //           return {
+  //             id,
+  //             canDelete: response.data.status === 'success',
+  //             message: response.data?.message
+  //           };
+  //         } catch (error) {
+  //           return { id, canDelete: false, message: 'Error validating data' };
+  //         }
+  //       });
+
+  //       const validationResults = await Promise.all(validationPromises);
+
+  //       const cannotDeleteItems = validationResults.filter(
+  //         (result) => !result.canDelete
+  //       );
+
+  //       if (cannotDeleteItems.length > 0) {
+  //         const cannotDeleteIds = cannotDeleteItems
+  //           .map((item) => item.id)
+  //           .join(', ');
+  //         alert({
+  //           title: 'Beberapa data tidak dapat dihapus!',
+  //           variant: 'danger',
+  //           submitText: 'OK'
+  //         });
+  //         return;
+  //       }
+
+  //       try {
+  //         await alert({
+  //           title: 'Apakah anda yakin ingin menghapus data ini ?',
+  //           variant: 'danger',
+  //           submitText: 'YA',
+  //           cancelText: 'TIDAK',
+  //           catchOnCancel: true
+  //         });
+
+  //         await handleMultipleDelete(checkedRowsArray);
+
+  //         dispatch(setProcessed());
+  //       } catch (alertError) {
+  //         dispatch(setProcessed());
+  //         return;
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in handleDelete:', error);
+  //     alert({
+  //       title: 'Error!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   } finally {
+  //     dispatch(setProcessed());
+  //   }
+  // };
 
   // Fungsi baru untuk menangani multiple delete
   const handleMultipleDelete = async (idsToDelete: number[]) => {
