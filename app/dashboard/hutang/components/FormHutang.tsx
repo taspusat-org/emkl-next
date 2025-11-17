@@ -491,7 +491,7 @@ const FormHutang = ({
                           <Input
                             {...field}
                             type="text"
-                            disabled={mode === 'view' || mode === 'delete'}
+                            readOnly={mode === 'view' || mode === 'delete'}
                             value={field.value ?? ''}
                             onKeyDown={inputStopPropagation}
                             onClick={(e) => e.stopPropagation()}
@@ -766,7 +766,7 @@ const FormHutang = ({
               ) : (
                 <Input
                   type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
+                  readOnly={mode === 'view' || mode === 'delete'}
                   value={props.row.nofakturpajakemkl}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
@@ -1147,7 +1147,7 @@ const FormHutang = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />

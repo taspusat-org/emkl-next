@@ -410,7 +410,7 @@ const GridPengeluaranDetail = ({
                   filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                TANGGAL BUKTI
+                KETERANGAN
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'keterangan' &&
