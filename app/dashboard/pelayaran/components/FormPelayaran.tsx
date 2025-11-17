@@ -230,7 +230,6 @@ const FormPelayaran = ({
           <Button
             type="submit"
             variant="save"
-            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);

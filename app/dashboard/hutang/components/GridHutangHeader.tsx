@@ -1313,6 +1313,8 @@ const GridHutangHeader = () => {
   ) => {
     clearError();
     dispatch(setClearLookup(true));
+    setIsFetchingManually(true);
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1320,10 +1322,9 @@ const GridHutangHeader = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
       }
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/hutang-allItems`);
+        const response = await api2.get(`/redis/get/hutangheader-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
