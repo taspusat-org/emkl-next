@@ -406,7 +406,7 @@ const FormMasterbiaya = ({
                             <InputDatePicker
                               value={field.value}
                               onChange={field.onChange}
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                               showCalendar
                               onSelect={(date) =>
                                 forms.setValue('tglberlaku', date)
@@ -447,7 +447,7 @@ const FormMasterbiaya = ({
                               onValueChange={(val) => {
                                 field.onChange(val);
                               }}
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />

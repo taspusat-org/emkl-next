@@ -104,7 +104,7 @@ const Page = () => {
   return (
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-7 h-[600px]">
+        <div className="col-span-7 h-[500px]">
           <GridBank />
         </div>
       </div>

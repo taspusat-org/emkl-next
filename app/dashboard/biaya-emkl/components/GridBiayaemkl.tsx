@@ -82,6 +82,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -1334,6 +1336,8 @@ const GridBiayaEmkl = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1341,29 +1345,26 @@ const GridBiayaEmkl = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/biaya-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/biayaemkl-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1424,7 +1425,7 @@ const GridBiayaEmkl = () => {
             onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
           }
         );
-        queryClient.invalidateQueries('biaya');
+        queryClient.invalidateQueries('biayaemkl');
       }
     } catch (error) {
       console.error(error);
@@ -1633,26 +1634,6 @@ const GridBiayaEmkl = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1822,20 +1803,21 @@ const GridBiayaEmkl = () => {
       mode !== 'add' &&
       mode !== ''
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
 
-      forms.setValue('biaya_id', Number(rowData.biaya_id));
-      forms.setValue('biaya_text', rowData.biaya_text);
+      forms.setValue('biaya_id', Number(rowData?.biaya_id));
+      forms.setValue('biaya_text', rowData?.biaya_text);
 
-      forms.setValue('coahut', rowData.coahut);
-      forms.setValue('coahut_text', rowData.coahut_text);
+      forms.setValue('coahut', rowData?.coahut);
+      forms.setValue('coahut_text', rowData?.coahut_text);
 
-      forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id));
-      forms.setValue('jenisorderan_text', rowData.jenisorderan_text);
+      forms.setValue('jenisorderan_id', Number(rowData?.jenisorderan_id));
+      forms.setValue('jenisorderan_text', rowData?.jenisorderan_text);
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();

@@ -38,16 +38,11 @@ export const useGetAkuntansi = (
 export const useCreateAkuntansi = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const { alert } = useAlert();
 
   return useMutation(storeAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('akuntansi');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -76,49 +71,58 @@ export const useCreateAkuntansi = () => {
 };
 
 export const useDeleteAkuntansi = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(deleteAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('akuntansi');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });
 };
 export const useUpdateAkuntansi = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(updateAkuntansiFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('akuntansi');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        if (errorResponse.statusCode === 400) {
+          // Normalisasi pesan error agar konsisten array
+          const messages = Array.isArray(errorResponse.message)
+            ? errorResponse.message
+            : [{ path: ['form'], message: errorResponse.message }];
+
+          messages.forEach((err) => {
+            const path = err.path?.[0] ?? 'form';
+            setError(path, err.message);
+          });
+        } else {
+          // toast({
+          //   variant: 'destructive',
+          //   title: errorResponse.message ?? 'Gagal',
+          //   description: 'Terjadi masalah dengan permintaan Anda'
+          // });
+        }
       }
     }
   });

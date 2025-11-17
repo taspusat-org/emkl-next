@@ -386,7 +386,7 @@ const FormManagerMarketing = ({
                     <FormControl>
                       <InputCurrency
                         {...field}
-                        disabled={mode === 'view' || mode === 'delete'}
+                        readOnly={mode === 'view' || mode === 'delete'}
                         value={String(props.row.nominalawal ?? '')}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -442,7 +442,7 @@ const FormManagerMarketing = ({
                     <FormControl>
                       <InputCurrency
                         {...field}
-                        disabled={mode === 'view' || mode === 'delete'}
+                        readOnly={mode === 'view' || mode === 'delete'}
                         value={String(props.row.nominalakhir ?? '')}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -498,7 +498,7 @@ const FormManagerMarketing = ({
                     <FormControl>
                       <InputCurrency
                         {...field}
-                        disabled={mode === 'view' || mode === 'delete'}
+                        readOnly={mode === 'view' || mode === 'delete'}
                         value={String(props.row.persentase ?? '')}
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -827,7 +827,7 @@ const FormManagerMarketing = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -853,7 +853,7 @@ const FormManagerMarketing = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -879,7 +879,7 @@ const FormManagerMarketing = ({
                               onValueChange={(val) => {
                                 field.onChange(val);
                               }}
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1010,7 +1010,6 @@ const FormManagerMarketing = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            // onClick={onSubmit}
             variant="save"
             onClick={(e) => {
               e.preventDefault();

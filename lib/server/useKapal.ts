@@ -39,16 +39,11 @@ export const useGetKapal = (
 export const useCreateKapal = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const { alert } = useAlert();
 
   return useMutation(storeKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('kapal');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -57,20 +52,14 @@ export const useCreateKapal = () => {
         // Menangani error berdasarkan path
         const errorFields = errorResponse.message || [];
 
-        // Iterasi error message dan set error di form
-        if (Array.isArray(errorFields)) {
-          errorFields.forEach((err: { path: string[]; message: string }) => {
-            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'kapal_id')
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
 
             setError(path, err.message); // Update error di context
           });
         }
-
-        // toast({
-        //   variant: 'destructive',
-        //   title: errorResponse.message ?? 'Gagal',
-        //   description: 'Terjadi masalah dengan permintaan Anda'
-        // });
       }
     }
   });
@@ -78,48 +67,55 @@ export const useCreateKapal = () => {
 
 export const useDeleteKapal = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
+  const { setError } = useFormError();
 
   return useMutation(deleteKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('kapal');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });
 };
 export const useUpdateKapal = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(updateKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('kapal');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
+
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        // Menangani error berdasarkan path
+        const errorFields = errorResponse.message || [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });

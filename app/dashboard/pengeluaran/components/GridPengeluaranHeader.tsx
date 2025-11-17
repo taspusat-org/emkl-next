@@ -1781,7 +1781,7 @@ const GridPengeluaranHeader = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
+
         if (mode !== 'delete') {
           const response = await api2.get(`/redis/get/pengeluaran-allItems`);
           // Set the rows only if the data has changed
@@ -1801,7 +1801,6 @@ const GridPengeluaranHeader = () => {
           setSubmitSuccessful(true);
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {

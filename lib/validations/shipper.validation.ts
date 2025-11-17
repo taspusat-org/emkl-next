@@ -3,6 +3,7 @@ import { REQUIRED_FIELD } from '@/constants/validation';
 import { dynamicRequiredMessage } from '../utils';
 
 export const ShipperSchema = z.object({
+  id: z.number().nullable().optional(),
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
   keterangan: z.string().nullable().optional(),
   contactperson: z.string().nullable().optional(),

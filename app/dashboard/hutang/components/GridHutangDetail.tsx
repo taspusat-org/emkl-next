@@ -37,6 +37,8 @@ import {
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import JsxParser from 'react-jsx-parser';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   search: string;
@@ -1068,23 +1070,6 @@ const GridHutangDetail = ({
     setPopOver(true);
   };
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const saveGridConfig = async (
     userId: string, // userId sebagai identifier
     gridName: string,

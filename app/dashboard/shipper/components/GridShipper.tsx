@@ -96,6 +96,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -356,7 +358,7 @@ const GridShipper = () => {
     search: string,
     columnFilter: string = ''
   ) {
-    const textValue = text != null ? String(text) : '';
+    const textValue = text != null ? String(text) : formatCurrency(0);
     if (!textValue) return '';
 
     // Priority: columnFilter over search
@@ -1607,7 +1609,7 @@ const GridShipper = () => {
           const cellValue =
             props.row.creditlimit != null
               ? formatCurrency(props.row.creditlimit)
-              : '';
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1682,7 +1684,7 @@ const GridShipper = () => {
           const cellValue =
             props.row.creditterm != null
               ? formatCurrency(props.row.creditterm)
-              : '';
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1759,7 +1761,7 @@ const GridShipper = () => {
           const cellValue =
             props.row.credittermplus != null
               ? formatCurrency(props.row.credittermplus)
-              : '';
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1971,7 +1973,9 @@ const GridShipper = () => {
         renderCell: (props: any) => {
           const columnFilter = filters.filters.ppn || '';
           const cellValue =
-            props.row.ppn != null ? formatCurrency(props.row.ppn) : '';
+            props.row.ppn != null
+              ? formatCurrency(props.row.ppn)
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -2118,7 +2122,7 @@ const GridShipper = () => {
           const cellValue =
             props.row.ppnbatalmuat != null
               ? formatCurrency(props.row.ppnbatalmuat)
-              : '';
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -2263,17 +2267,17 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.formatdeliveryreport || '';
-          const cellValue = props.row.formatdeliveryreport || '';
+          const cellValue =
+            props.row.formatdeliveryreport != null
+              ? formatCurrency(props.row.formatdeliveryreport)
+              : formatCurrency(0);
+
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
-                    {highlightText(
-                      props.row.formatdeliveryreport || '',
-                      filters.search,
-                      columnFilter
-                    )}
+                    {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
@@ -2483,12 +2487,15 @@ const GridShipper = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.formatcetak || '';
-          const cellValue = props.row.formatcetak || '';
+          const cellValue =
+            props.row.formatcetak != null
+              ? formatCurrency(props.row.formatcetak)
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
@@ -3196,7 +3203,7 @@ const GridShipper = () => {
           const cellValue =
             props.row.isdpp10psn != null
               ? formatCurrency(props.row.isdpp10psn)
-              : '';
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -3852,7 +3859,7 @@ const GridShipper = () => {
           const cellValue =
             props.row.saldopiutang != null
               ? formatCurrency(props.row.saldopiutang)
-              : '';
+              : formatCurrency(0);
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -10165,6 +10172,8 @@ const GridShipper = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -10172,29 +10181,26 @@ const GridShipper = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/shipper-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/shipper-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -10437,33 +10443,13 @@ const GridShipper = () => {
   });
   function getRowClass(row: IShipper) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
-    return rowIndex === selectedRow ? 'selected-row' : '';
+    return rowIndex === selectedRow ? 'selected-row' : formatCurrency(0);
   }
 
   function rowKeyGetter(row: IShipper) {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -10614,133 +10600,128 @@ const GridShipper = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' &&
-      mode !== ''
-    ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('contactperson', rowData.contactperson);
-      forms.setValue('alamat', rowData.alamat);
-      forms.setValue('kota', rowData.kota);
-      forms.setValue('kodepos', rowData.kodepos);
-      forms.setValue('telp', rowData.telp);
-      forms.setValue('email', rowData.email);
-      forms.setValue('fax', rowData.fax);
-      forms.setValue('web', rowData.web);
-      forms.setValue('npwp', rowData.npwp);
-      forms.setValue('titipke', rowData.titipke);
-      forms.setValue('comodity', rowData.comodity);
-      forms.setValue('namashippercetak', rowData.namashippercetak);
-      forms.setValue('blok', rowData.blok);
-      forms.setValue('nomor', rowData.nomor);
-      forms.setValue('rt', rowData.rt);
-      forms.setValue('rw', rowData.rw);
-      forms.setValue('kelurahan', rowData.kelurahan);
-      forms.setValue('kabupaten', rowData.kabupaten);
-      forms.setValue('kecamatan', rowData.kecamatan);
-      forms.setValue('propinsi', rowData.propinsi);
-      forms.setValue('usertracing', rowData.usertracing);
-      forms.setValue('passwordtracing', rowData.passwordtracing);
-      forms.setValue('kodeprospek', rowData.kodeprospek);
-      forms.setValue('namashipperprospek', rowData.namashipperprospek);
-      forms.setValue('emaildelay', rowData.emaildelay);
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('contactperson', rowData?.contactperson);
+      forms.setValue('alamat', rowData?.alamat);
+      forms.setValue('kota', rowData?.kota);
+      forms.setValue('kodepos', rowData?.kodepos);
+      forms.setValue('telp', rowData?.telp);
+      forms.setValue('email', rowData?.email);
+      forms.setValue('fax', rowData?.fax);
+      forms.setValue('web', rowData?.web);
+      forms.setValue('npwp', rowData?.npwp);
+      forms.setValue('titipke', rowData?.titipke);
+      forms.setValue('comodity', rowData?.comodity);
+      forms.setValue('namashippercetak', rowData?.namashippercetak);
+      forms.setValue('blok', rowData?.blok);
+      forms.setValue('nomor', rowData?.nomor);
+      forms.setValue('rt', rowData?.rt);
+      forms.setValue('rw', rowData?.rw);
+      forms.setValue('kelurahan', rowData?.kelurahan);
+      forms.setValue('kabupaten', rowData?.kabupaten);
+      forms.setValue('kecamatan', rowData?.kecamatan);
+      forms.setValue('propinsi', rowData?.propinsi);
+      forms.setValue('usertracing', rowData?.usertracing);
+      forms.setValue('passwordtracing', rowData?.passwordtracing);
+      forms.setValue('kodeprospek', rowData?.kodeprospek);
+      forms.setValue('namashipperprospek', rowData?.namashipperprospek);
+      forms.setValue('emaildelay', rowData?.emaildelay);
       forms.setValue(
         'keterangan1barisinvoice',
-        rowData.keterangan1barisinvoice
+        rowData?.keterangan1barisinvoice
       );
-      forms.setValue('nik', rowData.nik);
-      forms.setValue('namaparaf', rowData.namaparaf);
+      forms.setValue('nik', rowData?.nik);
+      forms.setValue('namaparaf', rowData?.namaparaf);
       forms.setValue(
         'keteranganshipperjobminus',
-        rowData.keteranganshipperjobminus
+        rowData?.keteranganshipperjobminus
       );
-      forms.setValue('initial', rowData.initial);
-      forms.setValue('tipe', rowData.tipe);
-      forms.setValue('nshipperprospek', rowData.nshipperprospek);
-      forms.setValue('npwpnik', rowData.npwpnik);
-      forms.setValue('nitku', rowData.nitku);
-      forms.setValue('kodepajak', rowData.kodepajak);
+      forms.setValue('initial', rowData?.initial);
+      forms.setValue('tipe', rowData?.tipe);
+      forms.setValue('nshipperprospek', rowData?.nshipperprospek);
+      forms.setValue('npwpnik', rowData?.npwpnik);
+      forms.setValue('nitku', rowData?.nitku);
+      forms.setValue('kodepajak', rowData?.kodepajak);
 
       forms.setValue(
         'tglemailshipperjobminus',
-        rowData.tglemailshipperjobminus
+        rowData?.tglemailshipperjobminus
       );
-      forms.setValue('tgllahir', rowData.tgllahir);
+      forms.setValue('tgllahir', rowData?.tgllahir);
 
-      forms.setValue('coa', rowData.coa);
-      forms.setValue('coapiutang', rowData.coapiutang);
-      forms.setValue('coahutang', rowData.coahutang);
-      forms.setValue('creditlimit', formatCurrency(rowData.creditlimit));
-      forms.setValue('creditterm', rowData.creditterm);
-      forms.setValue('credittermplus', rowData.credittermplus);
-      forms.setValue('coagiro', rowData.coagiro);
+      forms.setValue('coa', rowData?.coa);
+      forms.setValue('coapiutang', rowData?.coapiutang);
+      forms.setValue('coahutang', rowData?.coahutang);
+      forms.setValue('creditlimit', formatCurrency(rowData?.creditlimit));
+      forms.setValue('creditterm', rowData?.creditterm);
+      forms.setValue('credittermplus', rowData?.credittermplus);
+      forms.setValue('coagiro', rowData?.coagiro);
       forms.setValue(
         'ppn',
-        rowData.ppn == null ? undefined : formatCurrency(rowData.ppn)
+        rowData?.ppn == null ? undefined : formatCurrency(rowData?.ppn)
       );
 
       forms.setValue(
         'ppnbatalmuat',
-        rowData.ppnbatalmuat == null
+        rowData?.ppnbatalmuat == null
           ? undefined
-          : formatCurrency(rowData.ppnbatalmuat)
+          : formatCurrency(rowData?.ppnbatalmuat)
       );
 
-      forms.setValue('grup', rowData.grup);
+      forms.setValue('grup', rowData?.grup);
       forms.setValue(
         'formatdeliveryreport',
         rowData?.formatdeliveryreport != null
-          ? Number(rowData.formatdeliveryreport)
+          ? Number(rowData?.formatdeliveryreport)
           : undefined
       );
 
       forms.setValue(
         'formatcetak',
-        rowData?.formatcetak != null ? Number(rowData.formatcetak) : undefined
+        rowData?.formatcetak != null ? Number(rowData?.formatcetak) : undefined
       );
 
-      forms.setValue('marketing_id', Number(rowData.marketing_id));
+      forms.setValue('marketing_id', Number(rowData?.marketing_id));
       forms.setValue(
         'isdpp10psn',
-        rowData.isdpp10psn == null
+        rowData?.isdpp10psn == null
           ? undefined
-          : formatCurrency(rowData.isdpp10psn)
+          : formatCurrency(rowData?.isdpp10psn)
       );
       forms.setValue(
         'saldopiutang',
-        rowData.saldopiutang == null
+        rowData?.saldopiutang == null
           ? undefined
-          : formatCurrency(rowData.saldopiutang)
+          : formatCurrency(rowData?.saldopiutang)
       );
-      forms.setValue('idshipperasal', Number(rowData.idshipperasal));
+      forms.setValue('idshipperasal', Number(rowData?.idshipperasal));
       forms.setValue(
         'idtipe',
-        rowData?.idtipe != null ? Number(rowData.idtipe) : undefined
+        rowData?.idtipe != null ? Number(rowData?.idtipe) : undefined
       );
 
       forms.setValue(
         'idinitial',
-        rowData?.idinitial != null ? Number(rowData.idinitial) : undefined
+        rowData?.idinitial != null ? Number(rowData?.idinitial) : undefined
       );
-      forms.setValue('parentshipper_id', Number(rowData.parentshipper_id));
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
+      forms.setValue('parentshipper_id', Number(rowData?.parentshipper_id));
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
 
       // Join / text reference
-      forms.setValue('coa_text', rowData.coa_text);
-      forms.setValue('coapiutang_text', rowData.coapiutang_text);
-      forms.setValue('coahutang_text', rowData.coahutang_text);
-      forms.setValue('coagiro_text', rowData.coagiro_text);
-      forms.setValue('shipperasal_text', rowData.shipperasal_text);
-      forms.setValue('parentshipper_text', rowData.parentshipper_text);
-      forms.setValue('marketing_text', rowData.marketing_text);
+      forms.setValue('coa_text', rowData?.coa_text);
+      forms.setValue('coapiutang_text', rowData?.coapiutang_text);
+      forms.setValue('coahutang_text', rowData?.coahutang_text);
+      forms.setValue('coagiro_text', rowData?.coagiro_text);
+      forms.setValue('shipperasal_text', rowData?.shipperasal_text);
+      forms.setValue('parentshipper_text', rowData?.parentshipper_text);
+      forms.setValue('marketing_text', rowData?.marketing_text);
 
-      forms.setValue('text', rowData.text);
+      forms.setValue('text', rowData?.text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();
