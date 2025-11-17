@@ -1652,7 +1652,7 @@ const GridMasterbiaya = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
+
         if (mode !== 'delete') {
           const response = await api2.get(`/redis/get/masterbiaya-allItems`);
           // Set the rows only if the data has changed
@@ -1671,7 +1671,6 @@ const GridMasterbiaya = () => {
           }
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {
@@ -1681,7 +1680,6 @@ const GridMasterbiaya = () => {
     }
   };
   const onSubmit = async (values: MasterBiayaInput, keepOpenModal = false) => {
-    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
@@ -2163,12 +2161,7 @@ const GridMasterbiaya = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' &&
-      mode !== ''
-    ) {
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       forms.setValue('tujuankapal_id', Number(rowData.tujuankapal_id));
       forms.setValue('tujuankapal_text', rowData.tujuankapal_text);
 

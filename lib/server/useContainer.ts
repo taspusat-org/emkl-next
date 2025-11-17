@@ -22,7 +22,7 @@ export const useGetContainer = (
     sortBy?: string;
     sortDirection?: string;
     limit?: number;
-    search?: string; // Kata kunci pencarian
+    search?: string;
   } = {},
   signal?: AbortSignal
 ) => {
@@ -63,12 +63,6 @@ export const useCreateContainer = () => {
 
             setError(path, err.message); // Update error di context
           });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda'
-          });
         }
       }
     }
@@ -78,15 +72,10 @@ export const useCreateContainer = () => {
 export const useDeleteContainer = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation(deleteContainerFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('container');
-      // toast({
-      //   title: 'Proses Berhasil.',
-      //   description: 'Data Berhasil Dihapus.'
-      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -98,12 +87,6 @@ export const useDeleteContainer = () => {
 
             setError(path, err.message); // Update error di context
           });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda.'
-          });
         }
       }
     }
@@ -112,15 +95,10 @@ export const useDeleteContainer = () => {
 export const useUpdateContainer = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation(updateContainerFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('container');
-      // toast({
-      //   title: 'Proses Berhasil.',
-      //   description: 'Data Berhasil Diubah.'
-      // });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -132,12 +110,6 @@ export const useUpdateContainer = () => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
 
             setError(path, err.message); // Update error di context
-          });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda'
           });
         }
       }

@@ -10,11 +10,12 @@ interface updateCabangParams {
 }
 
 export const getAllCabangFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllCabang> => {
   try {
     const queryParams = buildQueryParams(filters);
-    const response = await api2.get('/cabang', { params: queryParams });
+    const response = await api2.get('/cabang', { params: queryParams, signal });
     return response.data;
   } catch (error) {
     console.error('Error fetching cabang data:', error);

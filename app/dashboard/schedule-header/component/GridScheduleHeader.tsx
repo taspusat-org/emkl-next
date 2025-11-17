@@ -1070,7 +1070,6 @@ const GridScheduleHeader = () => {
           }
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {

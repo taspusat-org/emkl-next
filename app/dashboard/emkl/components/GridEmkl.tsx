@@ -85,6 +85,8 @@ import {
 } from '@/lib/utils';
 import { debounce } from 'lodash';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -1941,7 +1943,7 @@ const GridEmkl = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -2016,7 +2018,7 @@ const GridEmkl = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 250,
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -2232,7 +2234,7 @@ const GridEmkl = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
+
         if (mode !== 'delete') {
           const response = await api2.get(`/redis/get/emkl-allItems`);
           // Set the rows only if the data has changed
@@ -2251,7 +2253,6 @@ const GridEmkl = () => {
           }
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {
@@ -2570,23 +2571,6 @@ const GridEmkl = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');

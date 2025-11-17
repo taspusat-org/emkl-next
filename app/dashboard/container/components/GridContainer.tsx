@@ -104,6 +104,8 @@ import {
   saveGridConfig
 } from '@/lib/utils';
 import { debounce } from 'lodash';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -448,32 +450,6 @@ const GridContainer = () => {
     }));
     setInputValue('');
   };
-
-  useEffect(() => {
-    const filterHandler = (e: any) => {
-      const ukuran = e.detail;
-
-      setFilters((prev) => ({
-        ...prev,
-        filters: { ...prev.filters, nama: ukuran },
-        page: 1
-      }));
-      setRows([]);
-      setCurrentPage(1);
-    };
-
-    const printHandler = () => {
-      handleReport();
-    };
-
-    window.addEventListener('AI_FILTER_CONTAINER', filterHandler);
-    window.addEventListener('AI_PRINT', printHandler);
-
-    return () => {
-      window.removeEventListener('AI_FILTER_CONTAINER', filterHandler);
-      window.removeEventListener('AI_PRINT', printHandler);
-    };
-  }, []);
 
   const columns = useMemo((): Column<IContainer>[] => {
     return [
@@ -863,7 +839,7 @@ const GridContainer = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -938,7 +914,7 @@ const GridContainer = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1146,6 +1122,7 @@ const GridContainer = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
 
     try {
       if (keepOpenModal) {
@@ -1154,33 +1131,24 @@ const GridContainer = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          console.log('pageNumber', pageNumber);
-          console.log('indexOnPage', indexOnPage);
-          console.log('rows', rows);
-          const response = await api2.get(`/redis/get/container-allItems`);
-          // Set the rows only if the data has changed
-          console.log('response', response);
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/container-allItems`);
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1188,7 +1156,6 @@ const GridContainer = () => {
     }
   };
   const onSubmit = async (values: ContainerInput, keepOpenModal = false) => {
-    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
@@ -1592,27 +1559,6 @@ const GridContainer = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1762,10 +1708,11 @@ const GridContainer = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');

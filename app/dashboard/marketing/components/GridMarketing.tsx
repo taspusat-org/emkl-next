@@ -1869,7 +1869,6 @@ const GridMarketing = () => {
           }
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {

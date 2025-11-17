@@ -28,11 +28,15 @@ export const useGetAllCabang = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   return useQuery(
     ['cabang', filters],
-    async () => await getAllCabangFn(filters)
+    async () => await getAllCabangFn(filters, signal),
+    {
+      enabled: !signal?.aborted
+    }
   );
 };
 
@@ -65,49 +69,37 @@ export const useGetAllCabangHr = (
 
 export const useCreateCabang = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation(storeCabangFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('cabang');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
 
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
       }
     }
   });
 };
 export const useUpdateCabang = () => {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation(updateCabangFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('cabang');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });
@@ -127,11 +119,14 @@ export const useDeleteCabang = () => {
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });
