@@ -1783,7 +1783,9 @@ const GridPengeluaranHeader = () => {
         setIsFetchingManually(true);
 
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/pengeluaran-allItems`);
+          const response = await api2.get(
+            `/redis/get/pengeluaranheader-allItems`
+          );
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
