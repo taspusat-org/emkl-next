@@ -1822,6 +1822,16 @@ const GridManagerMarketingHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
+    loadGridConfig(
+      user.id,
+      'GridManagerMarketingHeader',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
+  }, []);
+
+  useEffect(() => {
     setIsFirstLoad(true);
   }, []);
   useEffect(() => {
@@ -2070,7 +2080,7 @@ const GridManagerMarketingHeader = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridAkunPusat',
+                    'GridManagerMarketingHeader',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth

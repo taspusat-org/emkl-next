@@ -685,13 +685,13 @@ const GridComodity = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  className="justify-end rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
                   <p>{formatCurrency(cellValue)}</p>
                 </TooltipContent>

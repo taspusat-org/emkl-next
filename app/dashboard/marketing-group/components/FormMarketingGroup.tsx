@@ -168,7 +168,7 @@ const FormMarketingGroup = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                  {/* <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
@@ -193,7 +193,37 @@ const FormMarketingGroup = ({
                         />
                       ))}
                     </div>
-                  </div>
+                  </div> */}
+
+                  <FormField
+                    name="marketing_nama"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="text-sm font-semibold text-gray-700">
+                          Marketing
+                        </FormLabel>
+                        <div className="w-full lg:w-[85%]">
+                          {lookUpPropsMarketing.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              name="marketing_id"
+                              forms={forms}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('marketing_id', Number(id))
+                              }
+                              required={true}
+                              inputLookupValue={forms.getValues('marketing_id')}
+                              lookupNama={forms.getValues('marketing_nama')}
+                            />
+                          ))}
+                          <FormMessage />{' '}
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
