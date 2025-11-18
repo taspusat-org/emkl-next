@@ -103,6 +103,11 @@ interface Filter {
     jenisorderan_id: string;
     jenisorderan_text: string;
 
+    statusbiayabl: string;
+    statusbiayabl_text: string;
+    statusseal: string;
+    statusseal_text: string;
+
     statusaktif: string;
     text: string;
     modifiedby: string;
@@ -206,6 +211,10 @@ const GridBiayaEmkl = () => {
       jenisorderan_text: '',
       statusaktif: '',
       text: '',
+      statusbiayabl: '',
+      statusbiayabl_text: '',
+      statusseal: '',
+      statusseal_text: '',
       modifiedby: '',
 
       created_at: '',
@@ -367,6 +376,10 @@ const GridBiayaEmkl = () => {
         coahut_text: '',
         jenisorderan_id: '',
         jenisorderan_text: '',
+        statusbiayabl: '',
+        statusbiayabl_text: '',
+        statusseal: '',
+        statusseal_text: '',
         statusaktif: '',
         text: '',
         modifiedby: '',
@@ -488,6 +501,10 @@ const GridBiayaEmkl = () => {
                     coahut_text: '',
                     jenisorderan_id: '',
                     jenisorderan_text: '',
+                    statusbiayabl: '',
+                    statusbiayabl_text: '',
+                    statusseal: '',
+                    statusseal_text: '',
                     statusaktif: '',
                     text: '',
                     modifiedby: '',
@@ -555,7 +572,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -623,7 +642,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -693,7 +714,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('biaya_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -763,7 +786,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coahut_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -833,7 +858,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('jenisorderan_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -893,7 +920,182 @@ const GridBiayaEmkl = () => {
           );
         }
       },
+      {
+        key: 'statusbiayabl',
+        name: 'Status Biaya Bl',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusbiayabl')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusbiayabl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                Status Biaya Bl
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusbiayabl' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusbiayabl' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusbiayabl', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusbiayabl_memo
+            ? JSON.parse(props.row.statusbiayabl_memo)
+            : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
 
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'statusseal',
+        name: 'Status Seal',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusseal')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusseal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Seal
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusseal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusseal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusseal', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusseal_memo
+            ? JSON.parse(props.row.statusseal_memo)
+            : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
       {
         key: 'statusaktif',
         name: 'Status Aktif',
@@ -906,7 +1108,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -991,7 +1195,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1062,7 +1268,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1136,7 +1344,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1797,12 +2007,7 @@ const GridBiayaEmkl = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' &&
-      mode !== ''
-    ) {
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);
@@ -1818,6 +2023,12 @@ const GridBiayaEmkl = () => {
 
       forms.setValue('statusaktif', Number(rowData?.statusaktif));
       forms.setValue('text', rowData?.text);
+
+      forms.setValue('statusbiayabl', Number(rowData?.statusbiayabl));
+      forms.setValue('statusbiayabl_text', rowData?.statusbiayabl_text);
+
+      forms.setValue('statusseal', Number(rowData?.statusseal));
+      forms.setValue('statusseal_text', rowData?.statusseal_text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();

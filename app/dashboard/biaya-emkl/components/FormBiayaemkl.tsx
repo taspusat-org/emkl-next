@@ -108,6 +108,38 @@ const FormBiayaemkl = ({
     }
   ];
 
+  const lookUpPropsStatusBiayabl = [
+    {
+      columns: [{ key: 'text', name: 'STATUS BIAYA BL' }],
+      labelLookup: 'STATUS BIAYA BL LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=status+nilai',
+      label: 'STATUS BIAYA BL',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
+    }
+  ];
+
+  const lookUpPropsStatusSeal = [
+    {
+      columns: [{ key: 'text', name: 'STATUS SEAL' }],
+      labelLookup: 'STATUS SEAL LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=status+nilai',
+      label: 'STATUS SEAL',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
+    }
+  ];
+
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
@@ -335,6 +367,54 @@ const FormBiayaemkl = ({
                             forms.setValue('jenisorderan_id', Number(value));
                           }}
                           lookupNama={forms.getValues('jenisorderan_text')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Biaya Bl
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatusBiayabl.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) => {
+                            forms.setValue('statusbiayabl', id);
+                          }}
+                          lookupNama={forms.getValues('statusbiayabl_text')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Seal
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatusSeal.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) => {
+                            forms.setValue('statusseal', id);
+                          }}
+                          lookupNama={forms.getValues('statusseal_text')}
                           disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}
