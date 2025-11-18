@@ -16,6 +16,12 @@ export interface IBiayaemkl {
 
   statusaktif: number;
   text: string;
+
+  statusbiayabl: number;
+  statusbiayabl_text: string;
+
+  statusseal: number;
+  statusseal_text: string;
 }
 
 export interface IAllBiayaemkl {

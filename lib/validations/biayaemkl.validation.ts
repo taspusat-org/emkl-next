@@ -22,7 +22,13 @@ export const BiayaemklSchema = z.object({
   jenisorderan_text: z.string().nullable().optional(),
 
   statusaktif: z.number().min(1, { message: REQUIRED_FIELD }),
-  text: z.string().nullable().optional()
+  text: z.string().nullable().optional(),
+
+  statusbiayabl: z.number().min(1, { message: REQUIRED_FIELD }),
+  statusbiayabl_text: z.string().nullable().optional(),
+
+  statusseal: z.number().min(1, { message: REQUIRED_FIELD }),
+  statusseal_text: z.string().nullable().optional()
 });
 
 export type BiayaemklInput = z.infer<typeof BiayaemklSchema>;
