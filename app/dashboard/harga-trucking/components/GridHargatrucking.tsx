@@ -1932,7 +1932,6 @@ const GridHargatrucking = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('id', Number(rowData?.id));
       forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id) || 1);
       forms.setValue('tujuankapal_text', rowData?.tujuankapal_text || '');
 
