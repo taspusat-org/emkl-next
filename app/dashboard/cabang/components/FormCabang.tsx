@@ -243,6 +243,7 @@ const FormCabang = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
+            variant="save"
             onClick={async (e) => {
               setSubmitClick(true); // Set true saat pertama kali klik
 
@@ -257,20 +258,19 @@ const FormCabang = ({
             disabled={viewMode}
             className="flex w-fit items-center gap-1 text-sm"
           >
-            <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>
           </Button>
+
           <Button
             type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+            variant="cancel"
             onClick={(e) => {
               // Set your state here
               setSubmitClick(false); // Ganti dengan logika state yang diinginkan
               handleClose(e); // Panggil onSubmit setelahnya
             }}
           >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

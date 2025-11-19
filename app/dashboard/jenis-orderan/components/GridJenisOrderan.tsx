@@ -88,6 +88,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -1162,28 +1164,26 @@ const GridJenisOrderan = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/jenisorderan-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/jenisorderan-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1191,54 +1191,64 @@ const GridJenisOrderan = () => {
     }
   };
   const onSubmit = async (values: JenisOrderanInput, keepOpenModal = false) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteJenisOrderan(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteJenisOrderan(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createJenisOrderan(
-        {
-          ...values,
-          ...filters
-        },
-        {
-          onSuccess: (data) =>
-            onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
+      if (mode === 'add') {
+        const newOrder = await createJenisOrderan(
+          {
+            ...values,
+            ...filters
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+          }
+        );
 
-    if (selectedRowId && mode === 'edit') {
-      await updateJenisOrderan(
-        {
-          id: selectedRowId as unknown as string,
-          fields: { ...values, ...filters }
-        },
-        { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
-      );
-      queryClient.invalidateQueries('jenisorderans');
+        if (newOrder !== undefined && newOrder !== null) {
+        }
+        return;
+      }
+
+      if (selectedRowId && mode === 'edit') {
+        await updateJenisOrderan(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('jenisorderans');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
@@ -1355,23 +1365,6 @@ const GridJenisOrderan = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1525,6 +1518,7 @@ const GridJenisOrderan = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('statusaktif', rowData?.statusaktif || 1);

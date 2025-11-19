@@ -21,6 +21,7 @@ export type ManagerMarketingDetailInput = z.infer<
 >;
 
 export const managermarketingHeaderSchema = z.object({
+  id: z.number().nullable().optional(),
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
   keterangan: z
     .string()

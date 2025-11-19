@@ -98,6 +98,8 @@ import {
   saveGridConfig
 } from '@/lib/utils';
 import { debounce } from 'lodash';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -1105,6 +1107,7 @@ const GridDivisi = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
 
     try {
       if (keepOpenModal) {
@@ -1113,29 +1116,26 @@ const GridDivisi = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/divisi-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/divisi-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1143,6 +1143,7 @@ const GridDivisi = () => {
     }
   };
   const onSubmit = async (values: DivisiInput, keepOpenModal = false) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1279,69 +1280,86 @@ const GridDivisi = () => {
   //     });
   //   }
   // };
-
   const handleReport = async () => {
-    const { page, limit, ...filtersWithoutLimit } = filters;
+    try {
+      dispatch(setProcessing());
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
 
-    const response = await getDivisiFn(filtersWithoutLimit);
-    const reportRows = response.data.map((row) => ({
-      ...row,
-      judullaporan: 'Laporan Divisi',
-      usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
-      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-    }));
-    sessionStorage.setItem(
-      'filtersWithoutLimit',
-      JSON.stringify(filtersWithoutLimit)
-    );
-    // Dynamically import Stimulsoft and generate the PDF report
-    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-      .then((module) => {
-        const { Stimulsoft } = module;
-        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/tahoma.ttf',
-          'Arial'
-        );
-        Stimulsoft.Base.StiLicense.Key =
-          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+      const response = await getDivisiFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Divisi',
+        usercetak: user.username,
+        tglcetak: tglcetak,
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      // Dynamically import Stimulsoft and generate the PDF report
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          ); // Bold
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-        const report = new Stimulsoft.Report.StiReport();
-        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-        // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanDivisi.mrt');
-        report.dictionary.dataSources.clear();
-        dataSet.readJson({ data: reportRows });
-        report.regData(dataSet.dataSetName, '', dataSet);
-        report.dictionary.synchronize();
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanDivisi.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
 
-        // Render the report asynchronously
-        report.renderAsync(() => {
-          // Export the report to PDF asynchronously
-          report.exportDocumentAsync((pdfData: any) => {
-            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-              type: 'application/pdf'
-            });
-            const pdfUrl = URL.createObjectURL(pdfBlob);
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
 
-            // Store the Blob URL in sessionStorage
-            sessionStorage.setItem('pdfUrl', pdfUrl);
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
 
-            // Navigate to the report page
-            window.open('/reports/laporandivisi', '_blank');
-          }, Stimulsoft.Report.StiExportFormat.Pdf);
+              // Navigate to the report page
+              window.open('/reports/laporandivisi', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
         });
-      })
-      .catch((error) => {
-        console.error('Failed to load Stimulsoft:', error);
-      });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
+    }
   };
 
   // const handleReportBySelect = async () => {
@@ -1386,27 +1404,6 @@ const GridDivisi = () => {
 
   function rowKeyGetter(row: IDivisi) {
     return row.id;
-  }
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
   }
 
   const handleClose = () => {
@@ -1560,10 +1557,11 @@ const GridDivisi = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');

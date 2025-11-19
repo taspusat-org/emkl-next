@@ -105,6 +105,8 @@ import {
   saveGridConfig
 } from '@/lib/utils';
 import { debounce } from 'lodash';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -683,13 +685,13 @@ const GridComodity = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  className="justify-end rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
                 >
                   <p>{formatCurrency(cellValue)}</p>
                 </TooltipContent>
@@ -1148,6 +1150,7 @@ const GridComodity = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
 
     try {
       if (keepOpenModal) {
@@ -1156,29 +1159,26 @@ const GridComodity = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/Comodity-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/comodity-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1186,7 +1186,6 @@ const GridComodity = () => {
     }
   };
   const onSubmit = async (values: ComodityInput, keepOpenModal = false) => {
-    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
@@ -1248,7 +1247,6 @@ const GridComodity = () => {
       dispatch(setProcessed());
     }
   };
-  console.log(forms.getValues());
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -1461,27 +1459,6 @@ const GridComodity = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1631,6 +1608,7 @@ const GridComodity = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('rate', formatCurrency(rowData?.rate));
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);

@@ -491,7 +491,7 @@ const FormHutang = ({
                           <Input
                             {...field}
                             type="text"
-                            disabled={mode === 'view' || mode === 'delete'}
+                            readOnly={mode === 'view' || mode === 'delete'}
                             value={field.value ?? ''}
                             onKeyDown={inputStopPropagation}
                             onClick={(e) => e.stopPropagation()}
@@ -766,7 +766,7 @@ const FormHutang = ({
               ) : (
                 <Input
                   type="text"
-                  disabled={mode === 'view' || mode === 'delete'}
+                  readOnly={mode === 'view' || mode === 'delete'}
                   value={props.row.nofakturpajakemkl}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
@@ -1147,7 +1147,7 @@ const FormHutang = ({
                               {...field}
                               value={field.value ?? ''}
                               type="text"
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1235,7 +1235,6 @@ const FormHutang = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            // onClick={onSubmit}
             variant="save"
             onClick={(e) => {
               e.preventDefault();
@@ -1265,7 +1264,6 @@ const FormHutang = ({
                 className="flex w-fit items-center gap-1 text-sm"
                 loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
               >
-                <FaSave />
                 <p className="text-center">
                   {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
                 </p>

@@ -94,6 +94,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -948,7 +950,7 @@ const GridHargatrucking = () => {
         name: 'Nominal',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -999,7 +1001,7 @@ const GridHargatrucking = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
@@ -1468,6 +1470,8 @@ const GridHargatrucking = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1475,29 +1479,26 @@ const GridHargatrucking = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/hargatrucking-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/hargatrucking-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1508,6 +1509,7 @@ const GridHargatrucking = () => {
     values: hargatruckingInput,
     keepOpenModal = false
   ) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1774,26 +1776,6 @@ const GridHargatrucking = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');

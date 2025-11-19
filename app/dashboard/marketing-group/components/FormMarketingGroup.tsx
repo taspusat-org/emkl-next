@@ -168,7 +168,7 @@ const FormMarketingGroup = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
-                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                  {/* <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
@@ -193,7 +193,37 @@ const FormMarketingGroup = ({
                         />
                       ))}
                     </div>
-                  </div>
+                  </div> */}
+
+                  <FormField
+                    name="marketing_nama"
+                    control={forms.control}
+                    render={({ field }) => (
+                      <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                        <FormLabel className="text-sm font-semibold text-gray-700">
+                          Marketing
+                        </FormLabel>
+                        <div className="w-full lg:w-[85%]">
+                          {lookUpPropsMarketing.map((props, index) => (
+                            <LookUp
+                              key={index}
+                              name="marketing_id"
+                              forms={forms}
+                              {...props}
+                              lookupValue={(id) =>
+                                forms.setValue('marketing_id', Number(id))
+                              }
+                              required={true}
+                              inputLookupValue={forms.getValues('marketing_id')}
+                              lookupNama={forms.getValues('marketing_nama')}
+                            />
+                          ))}
+                          <FormMessage />{' '}
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
@@ -228,7 +258,7 @@ const FormMarketingGroup = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
-            // onClick={onSubmit}
+            variant="save"
             onClick={(e) => {
               e.preventDefault();
               onSubmit(false);
@@ -237,7 +267,6 @@ const FormMarketingGroup = ({
             disabled={mode === 'view'}
             className="flex w-fit items-center gap-1 text-sm"
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -266,13 +295,8 @@ const FormMarketingGroup = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { dynamicRequiredMessage } from '../utils';
 
 export const tujuankapalSchema = z.object({
-  nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }), // Nama wajib diisi
+  id: z.number().nullable().optional(),
+  nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
   kode: z
     .string({
       required_error: dynamicRequiredMessage('KODE TUJUAN KAPAL'),

@@ -60,12 +60,6 @@ export const useCreateJenisMuatan = () => {
 
             setError(path, err.message); // Update error di context
           });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda'
-          });
         }
       }
     }
@@ -95,12 +89,6 @@ export const useDeleteJenisMuatan = () => {
 
             setError(path, err.message); // Update error di context
           });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda.'
-          });
         }
       }
     }
@@ -114,10 +102,6 @@ export const useUpdateJenisMuatan = () => {
   return useMutation(updateJenisMuatanFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('jenismuatans');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -128,12 +112,6 @@ export const useUpdateJenisMuatan = () => {
             const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
 
             setError(path, err.message); // Update error di context
-          });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: errorResponse.message ?? 'Gagal',
-            description: 'Terjadi masalah dengan permintaan Anda.'
           });
         }
       }

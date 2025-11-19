@@ -110,6 +110,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface GridConfig {
   columnsOrder: number[];
@@ -575,7 +577,7 @@ const GridTujuankapal = () => {
         name: 'kode',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 70,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -645,7 +647,7 @@ const GridTujuankapal = () => {
         name: 'Nama Cabang',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -717,7 +719,7 @@ const GridTujuankapal = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -951,7 +953,7 @@ const GridTujuankapal = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1027,7 +1029,7 @@ const GridTujuankapal = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 250,
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1240,6 +1242,7 @@ const GridTujuankapal = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1248,28 +1251,26 @@ const GridTujuankapal = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/tujuankapal-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/tujuankapal-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1277,6 +1278,7 @@ const GridTujuankapal = () => {
     }
   };
   const onSubmit = async (values: TujuankapalInput, keepOpenModal = false) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
@@ -1536,32 +1538,15 @@ const GridTujuankapal = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
   const handleResequence = () => {
     router.push('/dashboard/resequence');
   };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
+
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
-    forms.reset();
     clearError();
+    forms.reset();
   };
   const handleAdd = async () => {
     try {
@@ -1727,16 +1712,17 @@ const GridTujuankapal = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('kode', rowData.kode);
-      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('kode', rowData?.kode);
+      forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue(
         'cabang_id',
-        rowData.cabang_id > 0 ? Number(rowData.cabang_id) : null
+        rowData?.cabang_id > 0 ? Number(rowData?.cabang_id) : null
       );
-      forms.setValue('namacabang', rowData.namacabang);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('namacabang', rowData?.namacabang);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();

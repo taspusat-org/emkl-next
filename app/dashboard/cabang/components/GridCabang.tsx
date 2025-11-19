@@ -1,5 +1,11 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback
+} from 'react';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -73,6 +79,21 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import FilterInput from '@/components/custom-ui/FilterInput';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
+import { debounce } from 'lodash';
 
 interface Row {
   id: number;
@@ -133,22 +154,17 @@ const GridCabang = () => {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const { data: cabang, isLoading: isLoadingCabang } = useGetAllCabang({
-    ...filters,
-    page: currentPage
-  });
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const { data: cabang, isLoading: isLoadingCabang } = useGetAllCabang(
+    {
+      ...filters,
+      page: currentPage
+    },
+    abortControllerRef.current?.signal
+  );
   const { reportData } = useSelector((state: RootState) => state.report);
-  const inputColRefs = {
-    kodecabang: useRef<HTMLInputElement>(null),
-    nama: useRef<HTMLInputElement>(null),
-    keterangan: useRef<HTMLInputElement>(null),
-    text: useRef<HTMLInputElement>(null),
-    statusaktif: useRef<HTMLInputElement>(null),
-    modifiedby: useRef<HTMLInputElement>(null),
-    created_at: useRef<HTMLInputElement>(null),
-    updated_at: useRef<HTMLInputElement>(null),
-    namacabang_hr: useRef<HTMLInputElement>(null)
-  };
+  const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const { user } = useSelector((state: RootState) => state.auth);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -256,30 +272,72 @@ const GridCabang = () => {
     search: string,
     columnFilter: string = ''
   ) {
-    const textValue = text !== null && text !== undefined ? String(text) : ''; // Pastikan 0 tidak dianggap falsy
+    const textValue = text != null ? String(text) : '';
     if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) return textValue;
+    // Priority: columnFilter over search
+    const searchTerm = columnFilter?.trim() || search?.trim() || '';
 
-    const combinedSearch = search + columnFilter;
-    const regex = new RegExp(`(${combinedSearch})`, 'gi');
+    if (!searchTerm) {
+      return textValue;
+    }
 
-    const parts = textValue.split(regex);
+    const escapeRegExp = (s: string) =>
+      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 
-    return parts.map((part, index) =>
-      part.toLowerCase() === combinedSearch.toLowerCase() ? (
-        <span
-          className="text-sm"
-          key={index}
-          style={{ backgroundColor: 'yellow' }}
-        >
-          {part}
-        </span>
-      ) : (
-        part
-      )
+    // Create regex for continuous string match
+    const escapedTerm = escapeRegExp(searchTerm);
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+
+    // Replace all occurrences
+    const highlighted = textValue.replace(
+      regex,
+      (match) =>
+        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
+    );
+
+    return (
+      <span
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
     );
   }
+
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
@@ -485,7 +543,9 @@ const GridCabang = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('kodecabang')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -507,37 +567,39 @@ const GridCabang = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.kodecabang}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="kodecabang"
                 value={filters.filters.kodecabang || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('kodecabang', value);
+                onChange={(value) =>
+                  handleFilterInputChange('kodecabang', value)
+                }
+                onClear={() => handleClearFilter('kodecabang')}
+                inputRef={(el) => {
+                  inputColRefs.current['kodecabang'] = el;
                 }}
               />
-              {filters.filters.kodecabang && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('kodecabang', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.kodecabang || '';
+          const cellValue = props.row.kodecabang || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.kodecabang || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -553,7 +615,9 @@ const GridCabang = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -576,37 +640,37 @@ const GridCabang = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.nama}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="nama"
                 value={filters.filters.nama || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('nama', value);
+                onChange={(value) => handleFilterInputChange('nama', value)}
+                onClear={() => handleClearFilter('nama')}
+                inputRef={(el) => {
+                  inputColRefs.current['nama'] = el;
                 }}
               />
-              {filters.filters.nama && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('nama', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nama || '';
+          const cellValue = props.row.nama || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.nama || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -622,7 +686,9 @@ const GridCabang = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('namacabang_hr')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -647,37 +713,39 @@ const GridCabang = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.namacabang_hr}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="namacabang_hr"
                 value={filters.filters.namacabang_hr || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('namacabang_hr', value);
+                onChange={(value) =>
+                  handleFilterInputChange('namacabang_hr', value)
+                }
+                onClear={() => handleClearFilter('namacabang_hr')}
+                inputRef={(el) => {
+                  inputColRefs.current['namacabang_hr'] = el;
                 }}
               />
-              {filters.filters.namacabang_hr && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('namacabang_hr', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.namacabang_hr || '';
+          const cellValue = props.row.namacabang_hr || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.namacabang_hr || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -694,7 +762,9 @@ const GridCabang = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -717,37 +787,39 @@ const GridCabang = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.keterangan}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="keterangan"
                 value={filters.filters.keterangan || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('keterangan', value);
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
+                inputRef={(el) => {
+                  inputColRefs.current['keterangan'] = el;
                 }}
               />
-              {filters.filters.keterangan && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('keterangan', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.keterangan || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -760,8 +832,31 @@ const GridCabang = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]">
-              <p className="text-sm font-normal">Status Aktif</p>
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
@@ -778,24 +873,35 @@ const GridCabang = () => {
         ),
         renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-
           if (memoData) {
             return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-fit w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             );
           }
 
@@ -804,24 +910,28 @@ const GridCabang = () => {
       },
       {
         key: 'modifiedby',
-        name: 'Modified By',
+        name: 'Updated At',
         resizable: true,
         draggable: true,
-        width: 150,
+
         headerCellClass: 'column-headers',
+
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Modified By
+                MODIFIED BY
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
@@ -837,53 +947,58 @@ const GridCabang = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.modifiedby}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="modifiedby"
                 value={filters.filters.modifiedby || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('modifiedby', value);
+                onChange={(value) =>
+                  handleFilterInputChange('modifiedby', value)
+                }
+                onClear={() => handleClearFilter('modifiedby')}
+                inputRef={(el) => {
+                  inputColRefs.current['modifiedby'] = el;
                 }}
               />
-              {filters.filters.modifiedby && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('modifiedby', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.modifiedby || '';
+          const cellValue = props.row.modifiedby || '';
           return (
-            <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.modifiedby || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
+
       {
         key: 'created_at',
         name: 'Created At',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 150,
+        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -906,37 +1021,39 @@ const GridCabang = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.created_at}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="created_at"
                 value={filters.filters.created_at || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('created_at', value);
+                onChange={(value) =>
+                  handleFilterInputChange('created_at', value)
+                }
+                onClear={() => handleClearFilter('created_at')}
+                inputRef={(el) => {
+                  inputColRefs.current['created_at'] = el;
                 }}
               />
-              {filters.filters.created_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('created_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
+          const cellValue = props.row.created_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.created_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       },
@@ -945,15 +1062,18 @@ const GridCabang = () => {
         name: 'Updated At',
         resizable: true,
         draggable: true,
+
         headerCellClass: 'column-headers',
 
-        width: 150,
+        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -976,37 +1096,39 @@ const GridCabang = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <Input
-                ref={inputColRefs.updated_at}
-                className="filter-input z-[999999] h-8 rounded-none"
+              <FilterInput
+                colKey="updated_at"
                 value={filters.filters.updated_at || ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  handleColumnFilterChange('updated_at', value);
+                onChange={(value) =>
+                  handleFilterInputChange('updated_at', value)
+                }
+                onClear={() => handleClearFilter('updated_at')}
+                inputRef={(el) => {
+                  inputColRefs.current['updated_at'] = el;
                 }}
               />
-              {filters.filters.updated_at && (
-                <button
-                  className="absolute right-2 top-2 text-xs text-gray-500"
-                  onClick={() => handleColumnFilterChange('updated_at', '')}
-                  type="button"
-                >
-                  <FaTimes />
-                </button>
-              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
+          const cellValue = props.row.updated_at || '';
           return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
-              {highlightText(
-                props.row.updated_at || '',
-                filters.search,
-                columnFilter
-              )}
-            </div>
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           );
         }
       }
@@ -1494,56 +1616,6 @@ const GridCabang = () => {
     }
   };
 
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -1572,7 +1644,13 @@ const GridCabang = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridCabang');
+    loadGridConfig(
+      user.id,
+      'GridCabang',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   function getRowClass(row: Row) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
@@ -1693,6 +1771,13 @@ const GridCabang = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+
+  useEffect(() => {
+    return () => {
+      debouncedFilterUpdate.cancel();
+    };
+  }, []);
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">

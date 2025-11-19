@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { dynamicRequiredMessage } from '../utils';
 
 export const hargatruckingSchema = z.object({
+  id: z.number().nullable().optional(),
   tujuankapal_id: z.number().min(1, { message: REQUIRED_FIELD }),
   tujuankapal_text: z.string().nullable().optional(),
 

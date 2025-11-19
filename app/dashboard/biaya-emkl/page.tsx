@@ -32,11 +32,15 @@ const Page = () => {
           getBiayaLookup,
           getAkunpusatLookup,
           getJenisorderanLookup,
-          getStatusAktifLookup
+          getStatusAktifLookup,
+          getStatusBiayablLookup,
+          getStatusSealLookup
         ] = await Promise.all([
           getBiayaFn({ isLookUp: 'true' }),
           getAkunpusatFn({ isLookUp: 'true' }),
           getJenisOrderanFn({ isLookUp: 'true' }),
+          getParameterFn({ isLookUp: 'true' }),
+          getParameterFn({ isLookUp: 'true' }),
           getParameterFn({ isLookUp: 'true' })
         ]);
 
@@ -99,6 +103,38 @@ const Page = () => {
             dispatch(setDefault({ key: grp, isdefault: String(defaultValue) }));
           });
         }
+
+        const statusbiayabl = getStatusBiayablLookup.data.filter(
+          (item: IParameter) => item.grp === 'STATUS NILAI'
+        );
+
+        if (statusbiayabl && statusbiayabl.length > 0) {
+          dispatch(setData({ key: 'STATUS BIAYA BL', data: statusbiayabl }));
+          dispatch(setType({ key: 'STATUS BIAYA BL', type: 'local' }));
+
+          const defaultItem = statusbiayabl.find(
+            (item: IParameter) => item.default !== null
+          );
+          const defaultValue = defaultItem ? String(defaultItem.default) : '';
+          dispatch(
+            setDefault({ key: 'STATUS BIAYA BL', isdefault: defaultValue })
+          );
+        }
+
+        const statusseal = getStatusSealLookup.data.filter(
+          (item: IParameter) => item.grp === 'STATUS NILAI'
+        );
+
+        if (statusseal && statusseal.length > 0) {
+          dispatch(setData({ key: 'STATUS SEAL', data: statusseal }));
+          dispatch(setType({ key: 'STATUS SEAL', type: 'local' }));
+
+          const defaultItem = statusseal.find(
+            (item: IParameter) => item.default !== null
+          );
+          const defaultValue = defaultItem ? String(defaultItem.default) : '';
+          dispatch(setDefault({ key: 'STATUS SEAL', isdefault: defaultValue }));
+        }
       } catch (err) {
         console.error('Error fetching lookup data:', err);
       }
@@ -110,7 +146,7 @@ const Page = () => {
   return (
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-7 h-[600px]">
+        <div className="col-span-7 h-[500px]">
           <GridBank />
         </div>
       </div>

@@ -705,13 +705,8 @@ const FormUserAcl = ({
             <FaSave />
             <p className="text-center">{deleteMode ? 'DELETE' : 'SAVE'}</p>
           </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

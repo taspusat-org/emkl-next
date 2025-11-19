@@ -399,7 +399,7 @@ const FormMasterbiaya = ({
                           required={true}
                           className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
                         >
-                          TANGGAL BERLAKU
+                          TGL BERLAKU
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
                           <FormControl>
@@ -447,7 +447,7 @@ const FormMasterbiaya = ({
                               onValueChange={(val) => {
                                 field.onChange(val);
                               }}
-                              disabled={mode === 'view' || mode === 'delete'}
+                              readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>
                           <FormMessage />

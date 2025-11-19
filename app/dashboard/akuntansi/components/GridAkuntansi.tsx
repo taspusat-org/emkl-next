@@ -99,6 +99,8 @@ import {
   saveGridConfig
 } from '@/lib/utils';
 import { debounce } from 'lodash';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -107,7 +109,6 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -172,6 +173,11 @@ const GridAkuntansi = () => {
       statusaktif: 1
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -182,7 +188,6 @@ const GridAkuntansi = () => {
       modifiedby: '',
       created_at: '',
       updated_at: '',
-      text: '',
       statusaktif: ''
     },
     search: '',
@@ -322,11 +327,9 @@ const GridAkuntansi = () => {
       filters: {
         nama: '',
         keterangan: '',
-        icon: '',
         modifiedby: '',
         created_at: '',
         updated_at: '',
-        text: '',
         statusaktif: ''
       },
       search: searchValue,
@@ -396,6 +399,13 @@ const GridAkuntansi = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -454,7 +464,6 @@ const GridAkuntansi = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    text: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: '',
@@ -819,7 +828,7 @@ const GridAkuntansi = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -894,7 +903,7 @@ const GridAkuntansi = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 250,
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1114,7 +1123,7 @@ const GridAkuntansi = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
+
         if (mode !== 'delete') {
           const response = await api2.get(`/redis/get/akuntansi-allItems`);
           // Set the rows only if the data has changed
@@ -1133,7 +1142,6 @@ const GridAkuntansi = () => {
           }
         }
 
-        setIsFetchingManually(false);
         setIsDataUpdated(false);
       }
     } catch (error) {
@@ -1281,67 +1289,77 @@ const GridAkuntansi = () => {
   // };
 
   const handleReport = async () => {
-    const { page, limit, ...filtersWithoutLimit } = filters;
+    try {
+      dispatch(setProcessing());
+      const { page, limit, ...filtersWithoutLimit } = filters;
 
-    const response = await getAkuntansiFn(filtersWithoutLimit);
-    const reportRows = response.data.map((row) => ({
-      ...row,
-      judullaporan: 'Laporan Akuntansi',
-      usercetak: user.username,
-      tglcetak: new Date().toLocaleDateString(),
-      judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-    }));
-    sessionStorage.setItem(
-      'filtersWithoutLimit',
-      JSON.stringify(filtersWithoutLimit)
-    );
-    // Dynamically import Stimulsoft and generate the PDF report
-    import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-      .then((module) => {
-        const { Stimulsoft } = module;
-        Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-          '/fonts/tahoma.ttf',
-          'Tahoma'
-        );
-        Stimulsoft.Base.StiLicense.Key =
-          '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-          '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-          'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-          'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-          '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-          'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-          'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+      const response = await getAkuntansiFn(filtersWithoutLimit);
+      const reportRows = response.data.map((row) => ({
+        ...row,
+        judullaporan: 'Laporan Akuntansi',
+        usercetak: user.username,
+        tglcetak: new Date().toLocaleDateString(),
+        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+      }));
+      sessionStorage.setItem(
+        'filtersWithoutLimit',
+        JSON.stringify(filtersWithoutLimit)
+      );
+      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+        .then((module) => {
+          const { Stimulsoft } = module;
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          ); // Bold
+          Stimulsoft.Base.StiLicense.Key =
+            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-        const report = new Stimulsoft.Report.StiReport();
-        const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+          const report = new Stimulsoft.Report.StiReport();
+          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-        // Load the report template (MRT file)
-        report.loadFile('/reports/LaporanAkuntansi.mrt');
-        report.dictionary.dataSources.clear();
-        dataSet.readJson({ data: reportRows });
-        report.regData(dataSet.dataSetName, '', dataSet);
-        report.dictionary.synchronize();
+          // Load the report template (MRT file)
+          report.loadFile('/reports/LaporanAkuntansi.mrt');
+          report.dictionary.dataSources.clear();
+          dataSet.readJson({ data: reportRows });
+          report.regData(dataSet.dataSetName, '', dataSet);
+          report.dictionary.synchronize();
 
-        // Render the report asynchronously
-        report.renderAsync(() => {
-          // Export the report to PDF asynchronously
-          report.exportDocumentAsync((pdfData: any) => {
-            const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-              type: 'application/pdf'
-            });
-            const pdfUrl = URL.createObjectURL(pdfBlob);
+          // Render the report asynchronously
+          report.renderAsync(() => {
+            // Export the report to PDF asynchronously
+            report.exportDocumentAsync((pdfData: any) => {
+              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+                type: 'application/pdf'
+              });
+              const pdfUrl = URL.createObjectURL(pdfBlob);
 
-            // Store the Blob URL in sessionStorage
-            sessionStorage.setItem('pdfUrl', pdfUrl);
+              // Store the Blob URL in sessionStorage
+              sessionStorage.setItem('pdfUrl', pdfUrl);
 
-            // Navigate to the report page
-            window.open('/reports/laporanakuntansi', '_blank');
-          }, Stimulsoft.Report.StiExportFormat.Pdf);
+              // Navigate to the report page
+              window.open('/reports/laporanakuntansi', '_blank');
+            }, Stimulsoft.Report.StiExportFormat.Pdf);
+          });
+        })
+        .catch((error) => {
+          console.error('Failed to load Stimulsoft:', error);
         });
-      })
-      .catch((error) => {
-        console.error('Failed to load Stimulsoft:', error);
-      });
+    } catch (error) {
+      dispatch(setProcessed());
+    } finally {
+      dispatch(setProcessed());
+    }
   };
 
   // const handleReportBySelect = async () => {
@@ -1388,26 +1406,9 @@ const GridAkuntansi = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
   const handleResequence = () => {
     router.push('/dashboard/resequence');
   };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
 
   const handleClose = () => {
     setPopOver(false);
@@ -1560,10 +1561,11 @@ const GridAkuntansi = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');

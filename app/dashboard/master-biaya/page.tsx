@@ -2,7 +2,7 @@
 
 import PageContainer from '@/components/layout/page-container';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import GridBank from './components/GridMasterbiaya';
+import GridMasterbiaya from './components/GridMasterbiaya';
 import { fieldLength } from '@/lib/apis/field-length.api';
 
 import React, { useEffect } from 'react';
@@ -185,8 +185,8 @@ const Page = () => {
   return (
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-7 h-[600px]">
-          <GridBank />
+        <div className="col-span-7 h-[500px]">
+          <GridMasterbiaya />
         </div>
       </div>
     </PageContainer>

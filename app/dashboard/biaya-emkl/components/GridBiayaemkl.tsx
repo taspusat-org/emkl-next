@@ -82,6 +82,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -100,6 +102,11 @@ interface Filter {
 
     jenisorderan_id: string;
     jenisorderan_text: string;
+
+    statusbiayabl: string;
+    statusbiayabl_text: string;
+    statusseal: string;
+    statusseal_text: string;
 
     statusaktif: string;
     text: string;
@@ -204,6 +211,10 @@ const GridBiayaEmkl = () => {
       jenisorderan_text: '',
       statusaktif: '',
       text: '',
+      statusbiayabl: '',
+      statusbiayabl_text: '',
+      statusseal: '',
+      statusseal_text: '',
       modifiedby: '',
 
       created_at: '',
@@ -365,6 +376,10 @@ const GridBiayaEmkl = () => {
         coahut_text: '',
         jenisorderan_id: '',
         jenisorderan_text: '',
+        statusbiayabl: '',
+        statusbiayabl_text: '',
+        statusseal: '',
+        statusseal_text: '',
         statusaktif: '',
         text: '',
         modifiedby: '',
@@ -486,6 +501,10 @@ const GridBiayaEmkl = () => {
                     coahut_text: '',
                     jenisorderan_id: '',
                     jenisorderan_text: '',
+                    statusbiayabl: '',
+                    statusbiayabl_text: '',
+                    statusseal: '',
+                    statusseal_text: '',
                     statusaktif: '',
                     text: '',
                     modifiedby: '',
@@ -553,7 +572,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -621,7 +642,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -691,7 +714,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('biaya_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -761,7 +786,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coahut_text')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -831,7 +858,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('jenisorderan_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -891,7 +920,182 @@ const GridBiayaEmkl = () => {
           );
         }
       },
+      {
+        key: 'statusbiayabl',
+        name: 'Status Biaya Bl',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusbiayabl')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusbiayabl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                Status Biaya Bl
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusbiayabl' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusbiayabl' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusbiayabl', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusbiayabl_memo
+            ? JSON.parse(props.row.statusbiayabl_memo)
+            : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
 
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'statusseal',
+        name: 'Status Seal',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusseal')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusseal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Seal
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusseal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusseal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusseal', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusseal_memo
+            ? JSON.parse(props.row.statusseal_memo)
+            : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
       {
         key: 'statusaktif',
         name: 'Status Aktif',
@@ -904,7 +1108,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -989,7 +1195,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1060,7 +1268,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1134,7 +1344,9 @@ const GridBiayaEmkl = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1334,6 +1546,8 @@ const GridBiayaEmkl = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1341,29 +1555,26 @@ const GridBiayaEmkl = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/biaya-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/biayaemkl-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1424,7 +1635,7 @@ const GridBiayaEmkl = () => {
             onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
           }
         );
-        queryClient.invalidateQueries('biaya');
+        queryClient.invalidateQueries('biayaemkl');
       }
     } catch (error) {
       console.error(error);
@@ -1633,26 +1844,6 @@ const GridBiayaEmkl = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1816,26 +2007,28 @@ const GridBiayaEmkl = () => {
 
   useEffect(() => {
     const rowData = rows[selectedRow];
-    if (
-      selectedRow !== null &&
-      rows.length > 0 &&
-      mode !== 'add' &&
-      mode !== ''
-    ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
+    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
 
-      forms.setValue('biaya_id', Number(rowData.biaya_id));
-      forms.setValue('biaya_text', rowData.biaya_text);
+      forms.setValue('biaya_id', Number(rowData?.biaya_id));
+      forms.setValue('biaya_text', rowData?.biaya_text);
 
-      forms.setValue('coahut', rowData.coahut);
-      forms.setValue('coahut_text', rowData.coahut_text);
+      forms.setValue('coahut', rowData?.coahut);
+      forms.setValue('coahut_text', rowData?.coahut_text);
 
-      forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id));
-      forms.setValue('jenisorderan_text', rowData.jenisorderan_text);
+      forms.setValue('jenisorderan_id', Number(rowData?.jenisorderan_id));
+      forms.setValue('jenisorderan_text', rowData?.jenisorderan_text);
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
+
+      forms.setValue('statusbiayabl', Number(rowData?.statusbiayabl));
+      forms.setValue('statusbiayabl_text', rowData?.statusbiayabl_text);
+
+      forms.setValue('statusseal', Number(rowData?.statusseal));
+      forms.setValue('statusseal_text', rowData?.statusseal_text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();

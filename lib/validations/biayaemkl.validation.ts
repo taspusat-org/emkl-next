@@ -3,6 +3,7 @@ import { REQUIRED_FIELD } from '@/constants/validation';
 import { dynamicRequiredMessage } from '../utils';
 
 export const BiayaemklSchema = z.object({
+  id: z.number().nullable().optional(),
   nama: z.string().nonempty({ message: dynamicRequiredMessage('NAMA') }),
   keterangan: z
     .string()
@@ -21,7 +22,13 @@ export const BiayaemklSchema = z.object({
   jenisorderan_text: z.string().nullable().optional(),
 
   statusaktif: z.number().min(1, { message: REQUIRED_FIELD }),
-  text: z.string().nullable().optional()
+  text: z.string().nullable().optional(),
+
+  statusbiayabl: z.number().min(1, { message: REQUIRED_FIELD }),
+  statusbiayabl_text: z.string().nullable().optional(),
+
+  statusseal: z.number().min(1, { message: REQUIRED_FIELD }),
+  statusseal_text: z.string().nullable().optional()
 });
 
 export type BiayaemklInput = z.infer<typeof BiayaemklSchema>;

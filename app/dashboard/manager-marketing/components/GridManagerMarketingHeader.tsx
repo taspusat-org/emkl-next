@@ -731,7 +731,7 @@ const GridManagerMarketingHeader = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
@@ -1388,31 +1388,27 @@ const GridManagerMarketingHeader = () => {
         forms.reset();
         setPopOver(false);
         setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(
-            `/redis/get/managermarketing-allItems`
-          );
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-          setSubmitSuccessful(true);
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/managermarketing-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+        setSubmitSuccessful(true);
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1826,6 +1822,16 @@ const GridManagerMarketingHeader = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
+    loadGridConfig(
+      user.id,
+      'GridManagerMarketingHeader',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
+  }, []);
+
+  useEffect(() => {
     setIsFirstLoad(true);
   }, []);
   useEffect(() => {
@@ -1921,15 +1927,16 @@ const GridManagerMarketingHeader = () => {
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
-      forms.setValue('nama', row.nama);
-      forms.setValue('keterangan', row.keterangan);
-      forms.setValue('minimalprofit', formatCurrency(row.minimalprofit));
-      forms.setValue('statusmentor', Number(row.statusmentor) ?? null);
-      forms.setValue('statusmentor_text', row.statusmentor_text ?? null);
-      forms.setValue('statusleader', Number(row.statusleader) ?? null);
-      forms.setValue('statusleader_text', row.statusleader_text ?? null);
-      forms.setValue('statusaktif', Number(row.statusaktif) ?? null);
-      forms.setValue('text', row.text ?? null);
+      forms.setValue('id', Number(row?.id));
+      forms.setValue('nama', row?.nama);
+      forms.setValue('keterangan', row?.keterangan);
+      forms.setValue('minimalprofit', formatCurrency(row?.minimalprofit));
+      forms.setValue('statusmentor', Number(row?.statusmentor) ?? null);
+      forms.setValue('statusmentor_text', row?.statusmentor_text ?? null);
+      forms.setValue('statusleader', Number(row?.statusleader) ?? null);
+      forms.setValue('statusleader_text', row?.statusleader_text ?? null);
+      forms.setValue('statusaktif', Number(row?.statusaktif) ?? null);
+      forms.setValue('text', row?.text ?? null);
       forms.setValue('details', []);
     } else {
       // Clear or set defaults when adding a new record
@@ -2073,7 +2080,7 @@ const GridManagerMarketingHeader = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridAkunPusat',
+                    'GridManagerMarketingHeader',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth

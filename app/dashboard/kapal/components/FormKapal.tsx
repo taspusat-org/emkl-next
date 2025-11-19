@@ -20,6 +20,7 @@ import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
 import { useDispatch } from 'react-redux';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
 
 const FormKapal = ({
   popOver,
@@ -67,7 +68,7 @@ const FormKapal = ({
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
-
+  const { clearError } = useFormError();
   useEffect(() => {
     // Fungsi untuk menangani pergerakan fokus berdasarkan tombol
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -285,6 +286,7 @@ const FormKapal = ({
         <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
           <Button
             type="submit"
+            variant="save"
             // onClick={onSubmit}
             onClick={(e) => {
               e.preventDefault();
@@ -295,7 +297,6 @@ const FormKapal = ({
             className="flex w-fit items-center gap-1 text-sm"
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
           >
-            <FaSave />
             <p className="text-center">
               {mode === 'delete' ? 'DELETE' : 'SAVE'}
             </p>
@@ -308,6 +309,7 @@ const FormKapal = ({
                 variant="success"
                 // onClick={onSubmit}
                 onClick={(e) => {
+                  clearError();
                   e.preventDefault();
                   onSubmit(true);
                   dispatch(setSubmitClicked(true));
@@ -324,13 +326,8 @@ const FormKapal = ({
             </div>
           )}
 
-          <Button
-            type="button"
-            variant="secondary"
-            className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
-            onClick={handleClose}
-          >
-            <IoMdClose /> <p className="text-center text-white">Cancel</p>
+          <Button type="button" variant="cancel" onClick={handleClose}>
+            <p>Cancel</p>
           </Button>
         </div>
       </DialogContent>

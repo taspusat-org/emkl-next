@@ -1113,7 +1113,7 @@ const GridAlatbayar = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1189,7 +1189,7 @@ const GridAlatbayar = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 250,
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1397,6 +1397,7 @@ const GridAlatbayar = () => {
   ) => {
     clearError();
     dispatch(setClearLookup(true));
+    setIsFetchingManually(true);
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1404,29 +1405,26 @@ const GridAlatbayar = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/alatbayar-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/alatbayar-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1434,7 +1432,6 @@ const GridAlatbayar = () => {
     }
   };
   const onSubmit = async (values: AlatbayarInput, keepOpenModal = false) => {
-    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
@@ -1867,6 +1864,7 @@ const GridAlatbayar = () => {
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
+      forms.setValue('id', Number(rowData?.id));
       forms.setValue('nama', rowData.nama);
       forms.setValue('keterangan', rowData.keterangan);
 

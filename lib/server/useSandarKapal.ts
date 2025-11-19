@@ -44,10 +44,6 @@ export const useCreateSandarKapal = () => {
   return useMutation(storeSandarKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('sandarkapal');
-      toast({
-        title: 'Proses Berhasil',
-        description: 'Data Berhasil Ditambahkan'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -76,49 +72,51 @@ export const useCreateSandarKapal = () => {
 };
 
 export const useDeleteSandarKapal = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(deleteSandarKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('sandarkapal');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Dihapus.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });
 };
 export const useUpdateSandarKapal = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation(updateSandarKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('sandarkapal');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        }
       }
     }
   });

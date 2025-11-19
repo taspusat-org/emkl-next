@@ -103,6 +103,8 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -1117,6 +1119,7 @@ const GridJenisseal = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+    setIsFetchingManually(true);
 
     try {
       if (keepOpenModal) {
@@ -1125,29 +1128,26 @@ const GridJenisseal = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-        setRows([]);
-        if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/jenisseal-allItems`);
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-        }
-
-        setIsFetchingManually(false);
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(`/redis/get/jenisseal-allItems`);
+        // Set the rows only if the data has changed
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setCurrentPage(pageNumber);
+          setFetchedPages(new Set([pageNumber]));
+          setSelectedRow(indexOnPage);
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+      }
+
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1155,7 +1155,6 @@ const GridJenisseal = () => {
     }
   };
   const onSubmit = async (values: JenissealInput, keepOpenModal = false) => {
-    forms.reset();
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
@@ -1224,97 +1223,103 @@ const GridJenisseal = () => {
       setMode('edit');
     }
   };
-  const handleDelete = async () => {
-    try {
-      dispatch(setProcessing());
-
-      if (checkedRows.size === 0) {
-        if (selectedRow !== null) {
-          const selectedRowId = rows[selectedRow]?.id;
-
-          if (selectedRowId) {
-            const validationResponse = await checkValidationJenissealFn({
-              aksi: 'DELETE',
-              value: selectedRowId
-            });
-
-            if (validationResponse.data.status !== 'success') {
-              alert({
-                title: 'Data tidak dapat dihapus!',
-                variant: 'danger',
-                submitText: 'OK'
-              });
-              return;
-            }
-
-            setMode('delete');
-            setPopOver(true);
-          }
-        }
-      } else {
-        const checkedRowsArray = Array.from(checkedRows);
-        const validationPromises = checkedRowsArray.map(async (id) => {
-          try {
-            const response = await checkValidationJenissealFn({
-              aksi: 'DELETE',
-              value: id
-            });
-            return {
-              id,
-              canDelete: response.data.status === 'success',
-              message: response.data?.message
-            };
-          } catch (error) {
-            return { id, canDelete: false, message: 'Error validating data' };
-          }
-        });
-
-        const validationResults = await Promise.all(validationPromises);
-
-        const cannotDeleteItems = validationResults.filter(
-          (result) => !result.canDelete
-        );
-
-        if (cannotDeleteItems.length > 0) {
-          const cannotDeleteIds = cannotDeleteItems
-            .map((item) => item.id)
-            .join(', ');
-          alert({
-            title: 'Beberapa data tidak dapat dihapus!',
-            variant: 'danger',
-            submitText: 'OK'
-          });
-          return;
-        }
-
-        try {
-          await alert({
-            title: 'Apakah anda yakin ingin menghapus data ini ?',
-            variant: 'danger',
-            submitText: 'YA',
-            cancelText: 'TIDAK',
-            catchOnCancel: true
-          });
-
-          await handleMultipleDelete(checkedRowsArray);
-
-          dispatch(setProcessed());
-        } catch (alertError) {
-          dispatch(setProcessed());
-          return;
-        }
-      }
-    } catch (error) {
-      console.error('Error in handleDelete:', error);
-      alert({
-        title: 'Error!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    } finally {
-      dispatch(setProcessed());
+  const handleDelete = () => {
+    if (selectedRow !== null) {
+      setMode('delete');
+      setPopOver(true);
     }
   };
+  // const handleDelete = async () => {
+  //   try {
+  //     dispatch(setProcessing());
+
+  //     if (checkedRows.size === 0) {
+  //       if (selectedRow !== null) {
+  //         const selectedRowId = rows[selectedRow]?.id;
+
+  //         if (selectedRowId) {
+  //           const validationResponse = await checkValidationJenissealFn({
+  //             aksi: 'DELETE',
+  //             value: selectedRowId
+  //           });
+
+  //           if (validationResponse.data.status !== 'success') {
+  //             alert({
+  //               title: 'Data tidak dapat dihapus!',
+  //               variant: 'danger',
+  //               submitText: 'OK'
+  //             });
+  //             return;
+  //           }
+
+  //           setMode('delete');
+  //           setPopOver(true);
+  //         }
+  //       }
+  //     } else {
+  //       const checkedRowsArray = Array.from(checkedRows);
+  //       const validationPromises = checkedRowsArray.map(async (id) => {
+  //         try {
+  //           const response = await checkValidationJenissealFn({
+  //             aksi: 'DELETE',
+  //             value: id
+  //           });
+  //           return {
+  //             id,
+  //             canDelete: response.data.status === 'success',
+  //             message: response.data?.message
+  //           };
+  //         } catch (error) {
+  //           return { id, canDelete: false, message: 'Error validating data' };
+  //         }
+  //       });
+
+  //       const validationResults = await Promise.all(validationPromises);
+
+  //       const cannotDeleteItems = validationResults.filter(
+  //         (result) => !result.canDelete
+  //       );
+
+  //       if (cannotDeleteItems.length > 0) {
+  //         const cannotDeleteIds = cannotDeleteItems
+  //           .map((item) => item.id)
+  //           .join(', ');
+  //         alert({
+  //           title: 'Beberapa data tidak dapat dihapus!',
+  //           variant: 'danger',
+  //           submitText: 'OK'
+  //         });
+  //         return;
+  //       }
+
+  //       try {
+  //         await alert({
+  //           title: 'Apakah anda yakin ingin menghapus data ini ?',
+  //           variant: 'danger',
+  //           submitText: 'YA',
+  //           cancelText: 'TIDAK',
+  //           catchOnCancel: true
+  //         });
+
+  //         await handleMultipleDelete(checkedRowsArray);
+
+  //         dispatch(setProcessed());
+  //       } catch (alertError) {
+  //         dispatch(setProcessed());
+  //         return;
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error('Error in handleDelete:', error);
+  //     alert({
+  //       title: 'Error!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   } finally {
+  //     dispatch(setProcessed());
+  //   }
+  // };
 
   // Fungsi baru untuk menangani multiple delete
   const handleMultipleDelete = async (idsToDelete: number[]) => {
@@ -1494,27 +1499,6 @@ const GridJenisseal = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1662,10 +1646,11 @@ const GridJenisseal = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif) || 1);
-      forms.setValue('statusaktif_nama', rowData.text || '');
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.setValue('statusaktif_nama', rowData?.text || '');
