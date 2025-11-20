@@ -1,5 +1,28 @@
-import { z } from 'zod';
+import { nullable, z } from 'zod';
 import { dynamicRequiredMessage } from '../utils';
+
+export const blRincianBiayaSchema = z.object({
+  id: z.number().optional(),
+  nobukti: z.string().nullable().optional(),
+  bldetail_id: z.number().nullable().optional(),
+  bldetail_nobukti: z.string().nullable().optional(),
+
+  orderanmuatan_nobukti: z
+    .string({ message: dynamicRequiredMessage('JOB') })
+    .nonempty({ message: dynamicRequiredMessage('JOB') }),
+
+  nominal: z
+    .string({ message: dynamicRequiredMessage('NOMINAL') })
+    .nonempty({ message: dynamicRequiredMessage('NOMINAL') }),
+
+  biayaemkl_id: z
+    .number({
+      required_error: dynamicRequiredMessage('BIAYA EMKL')
+    })
+    .min(1, { message: dynamicRequiredMessage('BIAYA EMKL') }),
+  biayaemkl_nama: z.string().optional()
+});
+export type blRincianBiayaInput = z.infer<typeof blRincianBiayaSchema>;
 
 export const blDetailRincianSchema = z.object({
   id: z.number().optional(),
@@ -12,7 +35,9 @@ export const blDetailRincianSchema = z.object({
     .string({ message: dynamicRequiredMessage('JOB') })
     .nonempty({ message: dynamicRequiredMessage('JOB') }),
 
-  keterangan: z.string().nullable().optional()
+  keterangan: z.string().nullable().optional(),
+
+  rincianbiaya: z.array(blRincianBiayaSchema).min(1)
 });
 export type blHeaderDetailRincianInput = z.infer<typeof blDetailRincianSchema>;
 

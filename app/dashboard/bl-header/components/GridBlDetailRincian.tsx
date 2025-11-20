@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/tooltip';
 import {
   cancelPreviousRequest,
+  formatCurrency,
   handleContextMenu,
   loadGridConfig,
   resetGridConfig,
@@ -150,7 +151,7 @@ const GridBlDetailRincian = () => {
       setTimeout(() => {
         setSelectedRow(0);
         gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 400);
+      }, 300);
     },
     []
   );
@@ -779,6 +780,314 @@ const GridBlDetailRincian = () => {
             </TooltipProvider>
           );
         }
+      },
+      {
+        key: 'biayatruckingmuat',
+        name: 'biayatruckingmuat',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('biayatruckingmuat')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'biayatruckingmuat'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                BIAYA TRUCKING MUAT
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'biayatruckingmuat' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'biayatruckingmuat' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="biayatruckingmuat"
+                value={filters.filters.biayatruckingmuat || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('biayatruckingmuat', value)
+                }
+                onClear={() => handleClearFilter('biayatruckingmuat')}
+                inputRef={(el) => {
+                  inputColRefs.current['biayatruckingmuat'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.biayatruckingmuat || '';
+          const cellValue =
+            props.row.biayatruckingmuat != null &&
+            props.row.biayatruckingmuat !== ''
+              ? formatCurrency(props.row.biayatruckingmuat)
+              : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'biayadokumenbl',
+        name: 'biayadokumenbl',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('biayadokumenbl')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'biayadokumenbl'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                BIAYA DOKUMEN BL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'biayadokumenbl' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'biayadokumenbl' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="biayadokumenbl"
+                value={filters.filters.biayadokumenbl || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('biayadokumenbl', value)
+                }
+                onClear={() => handleClearFilter('biayadokumenbl')}
+                inputRef={(el) => {
+                  inputColRefs.current['biayadokumenbl'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.biayadokumenbl || '';
+          const cellValue =
+            props.row.biayadokumenbl != null && props.row.biayadokumenbl !== ''
+              ? formatCurrency(props.row.biayadokumenbl)
+              : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'biayaoperationalpelabuhan',
+        name: 'biayaoperationalpelabuhan',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('biayaoperationalpelabuhan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'biayaoperationalpelabuhan'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                BIAYA OPERASIONAL PELABUHAN
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'biayaoperationalpelabuhan' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'biayaoperationalpelabuhan' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="biayaoperationalpelabuhan"
+                value={filters.filters.biayaoperationalpelabuhan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('biayaoperationalpelabuhan', value)
+                }
+                onClear={() => handleClearFilter('biayaoperationalpelabuhan')}
+                inputRef={(el) => {
+                  inputColRefs.current['biayaoperationalpelabuhan'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.biayaoperationalpelabuhan || '';
+          const cellValue =
+            props.row.biayaoperationalpelabuhan != null &&
+            props.row.biayaoperationalpelabuhan !== ''
+              ? formatCurrency(props.row.biayaoperationalpelabuhan)
+              : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'biayaseal',
+        name: 'biayaseal',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('biayaseal')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'biayaseal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                BIAYA SEAL
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'biayaseal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'biayaseal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="biayaseal"
+                value={filters.filters.biayaseal || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('biayaseal', value)
+                }
+                onClear={() => handleClearFilter('biayaseal')}
+                inputRef={(el) => {
+                  inputColRefs.current['biayaseal'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.biayaseal || '';
+          const cellValue =
+            props.row.biayaseal != null && props.row.biayaseal !== ''
+              ? formatCurrency(props.row.biayaseal)
+              : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
       }
     ];
   }, [rows, rows, filters.filters]);
@@ -905,7 +1214,11 @@ const GridBlDetailRincian = () => {
         orderanmuatan_nobukti: item.orderanmuatan_nobukti,
         keterangan: item.keterangan,
         nocontainer: item.nocontainer,
-        noseal: item.noseal
+        noseal: item.noseal,
+        biayatruckingmuat: item.biayatruckingmuat,
+        biayadokumenbl: item.biayadokumenbl,
+        biayaoperationalpelabuhan: item.biayaoperationalpelabuhan,
+        biayaseal: item.biayaseal
       }));
 
       setRows(formattedRows);
