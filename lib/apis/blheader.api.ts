@@ -4,7 +4,8 @@ import { api2 } from '../utils/AxiosInstance';
 import {
   IAllBlDetail,
   IAllBlDetailRincian,
-  IAllBlHeader
+  IAllBlHeader,
+  IAllBlRincianBiaya
 } from '../types/blheader.type';
 import { blHeaderInput } from '../validations/blheader.validation';
 
@@ -64,6 +65,18 @@ export const getBlDetailRincianFn = async (
   return response.data;
 };
 
+export const getBlRincianBiayaFn = async (
+  id: number,
+  filters: GetParams = {}
+): Promise<IAllBlRincianBiaya> => {
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/bldetailrincianbiaya/${id}`, {
+    params: queryParams
+  });
+
+  return response.data;
+};
+
 export const getBlHeaderByIdFn = async (id: number) => {
   try {
     const response = await api2.get(`/blheader/${id}`);
@@ -107,6 +120,17 @@ export const prosesBlFn = async (schedule_id: number) => {
   } catch (error) {
     console.error('Error fetching process bl data:', error);
     throw new Error('Failed to fetch process bl data');
+  }
+};
+
+export const prosesBlRincianBiayaFn = async () => {
+  try {
+    const response = await api2.get(`blheader/processblrincianbiaya`);
+
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching process bl rincian biaya data:', error);
+    throw new Error('Failed to fetch process bl rincian biaya data');
   }
 };
 

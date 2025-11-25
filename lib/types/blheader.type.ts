@@ -48,6 +48,22 @@ export interface BlDetailRincian {
   keterangan: string;
   nocontainer: string;
   noseal: string;
+  biayatruckingmuat: string;
+  biayadokumenbl: string;
+  biayaoperationalpelabuhan: string;
+  biayaseal: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export interface BlRincianBiaya {
+  id: number | string;
+  nobukti: string;
+  bldetail_id: number;
+  bldetail_nobukti: number;
+  orderanmuatan_nobukti: string;
+  nominal: string;
+  biayaemkl_id: number;
+  biayaemkl_nama: string;
   [key: string]: string | number | boolean | null | undefined;
 }
 
@@ -65,6 +81,12 @@ export interface IAllBlDetail {
 
 export interface IAllBlDetailRincian {
   data: BlDetailRincian[];
+  type: string;
+  pagination: IMeta;
+}
+
+export interface IAllBlRincianBiaya {
+  data: BlRincianBiaya[];
   type: string;
   pagination: IMeta;
 }
@@ -116,5 +138,17 @@ export const filterBlDetailRincian = {
   orderanmuatan_nobukti: '',
   keterangan: '',
   nocontainer: '',
-  noseal: ''
+  noseal: '',
+  biayatruckingmuat: '',
+  biayadokumenbl: '',
+  biayaoperationalpelabuhan: '',
+  biayaseal: ''
+};
+
+export const filterBlRincianBiaya = {
+  nobukti: '',
+  bldetail_nobukti: '',
+  orderanmuatan_nobukti: '',
+  nominal: '',
+  biayaemkl_text: ''
 };

@@ -3,28 +3,34 @@ import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import LookUp from '@/components/custom-ui/LookUp';
-import { BLDetail, BlDetailRincian } from '@/lib/types/blheader.type';
+import { useAlert } from '@/lib/store/client/useAlert';
 import { useSelector, useDispatch } from 'react-redux';
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
+import { useGetBlDetail } from '@/lib/server/useBlHeader';
+import { formatCurrency, parseCurrency } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import InputCurrency from '@/components/custom-ui/InputCurrency';
 import DataGrid, { Column, DataGridHandle } from 'react-data-grid';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { useGetAllOrderanMuatan } from '@/lib/server/useOrderanHeader';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import {
-  getAllBlHeaderHeaderFn,
-  getBlDetailRincianFn,
-  prosesBlFn
-} from '@/lib/apis/blheader.api';
-import {
-  filterOrderanMuatan,
-  OrderanMuatan
-} from '@/lib/types/orderanHeader.type';
 import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
+import {
+  BLDetail,
+  BlDetailRincian,
+  BlRincianBiaya
+} from '@/lib/types/blheader.type';
+import { getShippingInstructionDetailRincianFn } from '@/lib/apis/shippinginstruction.api';
+import {
+  getAllBlHeaderHeaderFn,
+  getBlDetailRincianFn,
+  getBlRincianBiayaFn,
+  prosesBlFn,
+  prosesBlRincianBiayaFn
+} from '@/lib/apis/blheader.api';
 import FormLabel, {
   Form,
   FormControl,
@@ -32,17 +38,6 @@ import FormLabel, {
   FormItem,
   FormMessage
 } from '@/components/ui/form';
-import { useGetBlDetail } from '@/lib/server/useBlHeader';
-import { getShippingInstructionDetailRincianFn } from '@/lib/apis/shippinginstruction.api';
-
-interface Filter {
-  page: number;
-  limit: number;
-  search: string;
-  filters: typeof filterOrderanMuatan;
-  sortBy: string;
-  sortDirection: 'asc' | 'desc';
-}
 
 const FormBlHeader = ({
   popOver,
@@ -55,11 +50,14 @@ const FormBlHeader = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const { alert } = useAlert();
+  const todayDate = new Date();
   const [notIn, setNotIn] = useState('');
   const [dataGridKey, setDataGridKey] = useState(0);
   const [scheduleValue, setScheduleValue] = useState(0);
   const [reloadForm, setReloadForm] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
+  const [editingRowDetailRincianId, setEditingRowDetailRincianId] = useState(0); // Menyimpan ID baris detail rincian yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
     new Map()
   ); // Nilai yang sedang diedit untuk setiap baris
@@ -71,10 +69,13 @@ const FormBlHeader = ({
     (BlDetailRincian | (Partial<BlDetailRincian> & { isNew: boolean }))[]
   >([]);
 
+  const [rowsRincianBiaya, setRowsRincianBiaya] = useState<
+    (BlRincianBiaya | (Partial<BlRincianBiaya> & { isNew: boolean }))[]
+  >([]);
+
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
-  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const headerData = useSelector((state: RootState) => state.header.headerData);
 
@@ -83,6 +84,11 @@ const FormBlHeader = ({
     isLoading,
     refetch: refetch
   } = useGetBlDetail(headerData?.id ?? 0);
+
+  const fmt = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
 
   const lookupPropsSchedule = [
     {
@@ -186,6 +192,29 @@ const FormBlHeader = ({
         }));
 
         forms.setValue(`details.${index}.detailsrincian`, formattedRows);
+
+        if (rowsData.length > 0) {
+          for (const [
+            indexRincianBiaya,
+            dataRincianBiaya
+          ] of rowsData?.entries()) {
+            const fetchProcessRincianBiaya = await prosesBlRincianBiayaFn();
+            const result = fetchProcessRincianBiaya.data ?? [];
+
+            const formattedRowsRincianBiaya = result.map((item: any) => ({
+              orderanmuatan_nobukti:
+                dataRincianBiaya.orderanmuatan_nobukti ?? '',
+              nominal: '',
+              biayaemkl_id: Number(item.id) ?? '',
+              biayaemkl_nama: item.nama ?? '',
+              isNew: false
+            }));
+            forms.setValue(
+              `details.${index}.detailsrincian.${indexRincianBiaya}.rincianbiaya`,
+              formattedRowsRincianBiaya
+            );
+          }
+        }
       }
 
       const rowsBaru = processBl.data.map((item: any, idx: number) => ({
@@ -213,6 +242,11 @@ const FormBlHeader = ({
       dispatch(setProcessed());
     }
   };
+
+  const totalNominal = rowsRincianBiaya.reduce(
+    (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
+    0
+  );
 
   const handleInputChange = (
     index: number,
@@ -243,7 +277,11 @@ const FormBlHeader = ({
     setRowsDetailRincian((prevRows) => {
       const updatedData = [...prevRows];
 
-      updatedData[index][field] = value;
+      // updatedData[index][field] = value;
+      updatedData[index] = {
+        ...updatedData[index], // pertahankan rincianbiaya!
+        [field]: value
+      };
 
       if (
         updatedData[index].isNew &&
@@ -253,7 +291,42 @@ const FormBlHeader = ({
       }
 
       if (editingRowId !== null) {
-        forms.setValue(`details.${editingRowId}.detailsrincian`, updatedData);
+        // forms.setValue(`details.${editingRowId}.detailsrincian`, updatedData);
+        forms.setValue(
+          `details.${editingRowId}.detailsrincian.${index}`,
+          updatedData[index]
+        );
+      }
+      // else {
+      //   forms.setValue(`details.0.detailsrincian`, updatedData);
+      // }
+
+      return updatedData;
+    });
+  };
+
+  const handleInputChangeRincianBiaya = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
+    setRowsRincianBiaya((prevRows) => {
+      const updatedData = [...prevRows];
+
+      updatedData[index][field] = value;
+
+      if (
+        updatedData[index].isNew &&
+        Object.values(updatedData[index]).every((val) => val !== '')
+      ) {
+        updatedData[index].isNew = false;
+      }
+
+      if (editingRowId !== null && editingRowDetailRincianId !== null) {
+        forms.setValue(
+          `details.${editingRowId}.detailsrincian.${editingRowDetailRincianId}.rincianbiaya`,
+          updatedData
+        );
       }
       // else {
       //   forms.setValue(`details.0.detailsrincian`, updatedData);
@@ -311,7 +384,10 @@ const FormBlHeader = ({
               ) : (
                 <Input
                   type="text"
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   value={props.row.bl_nobukti}
                   readOnly={mode == 'delete' || mode == 'view'}
                   onKeyDown={inputStopPropagation}
@@ -355,7 +431,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.shippinginstructiondetail_nobukti || ''}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -388,7 +467,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.asalpelabuhan || ''}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -421,7 +503,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.keterangan}
                   readOnly={mode == 'delete' || mode == 'view'}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   onKeyDown={inputStopPropagation}
                   onClick={(e) => e.stopPropagation()}
                   onChange={(e) =>
@@ -463,7 +548,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.consignee || ''}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -496,7 +584,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.shipper}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -529,7 +620,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.comodity}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -562,7 +656,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.notifyparty}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -595,7 +692,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.emkllain_nama}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -628,7 +728,10 @@ const FormBlHeader = ({
                   type="text"
                   value={props.row.pelayaran_nama}
                   readOnly={true}
-                  onFocus={() => setEditingRowId(props.rowIdx)}
+                  onFocus={() => {
+                    setEditingRowId(props.rowIdx);
+                    setEditingRowDetailRincianId(0);
+                  }}
                   className="h-2 min-h-9 w-full rounded border border-gray-300"
                 />
               )}
@@ -686,6 +789,7 @@ const FormBlHeader = ({
                 ''
               ) : (
                 <Input
+                  onFocus={() => setEditingRowDetailRincianId(props.rowIdx)}
                   type="text"
                   value={props.row.orderanmuatan_nobukti || ''}
                   readOnly={true}
@@ -718,6 +822,7 @@ const FormBlHeader = ({
                 ''
               ) : (
                 <Input
+                  onFocus={() => setEditingRowDetailRincianId(props.rowIdx)}
                   type="text"
                   value={props.row.nocontainer || ''}
                   readOnly={true}
@@ -750,6 +855,7 @@ const FormBlHeader = ({
                 ''
               ) : (
                 <Input
+                  onFocus={() => setEditingRowDetailRincianId(props.rowIdx)}
                   type="text"
                   value={props.row.noseal || ''}
                   readOnly={true}
@@ -782,6 +888,7 @@ const FormBlHeader = ({
                 ''
               ) : (
                 <Input
+                  onFocus={() => setEditingRowDetailRincianId(props.rowIdx)}
                   type="text"
                   value={props.row.keterangan || ''}
                   readOnly={mode == 'delete' || mode == 'view'}
@@ -803,6 +910,110 @@ const FormBlHeader = ({
       }
     ];
   }, [rowsDetailRincian, editingRowId, editableValues]);
+
+  const columnsRincianBiaya = useMemo((): Column<BlRincianBiaya>[] => {
+    return [
+      {
+        key: 'nomor',
+        name: 'NO',
+        width: 50,
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] items-center justify-center text-center">
+              <p className="text-sm">No.</p>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+              {props.row.isAddRow ? '' : props.rowIdx + 1}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'biayaemkl_nama',
+        name: 'biayaemkl_nama',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>BIAYA EMKl</p>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          return (
+            <div>
+              {props.row.isAddRow ? (
+                ''
+              ) : (
+                <Input
+                  type="text"
+                  value={props.row.biayaemkl_nama || ''}
+                  readOnly={true}
+                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                />
+              )}
+            </div>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        name: 'nominal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        cellClass: 'form-input',
+        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div className="headers-cell h-[50%] px-8">
+              <p className={`text-sm`}>NOMINAL</p>
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const rowIdx = props.rowIdx;
+          let raw = props.row.nominal ?? '';
+          console.log('rowIdx', rowIdx);
+
+          return (
+            <div>
+              {props.row.isAddRow ? (
+                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+                  {formatCurrency(totalNominal)}
+                </div>
+              ) : (
+                <InputCurrency
+                  value={String(raw)}
+                  disabled={mode === 'view' || mode === 'delete'}
+                  onValueChange={(value) =>
+                    handleInputChangeRincianBiaya(rowIdx, 'nominal', value)
+                  }
+                />
+              )}
+            </div>
+          );
+        }
+      }
+    ];
+  }, [
+    rowsRincianBiaya,
+    editingRowId,
+    editingRowDetailRincianId,
+    editableValues
+  ]);
 
   function EmptyRowsRenderer() {
     return (
@@ -899,6 +1110,19 @@ const FormBlHeader = ({
   }, [editingRowId, reloadForm, rows]);
 
   useEffect(() => {
+    const allDetails = forms.getValues('details');
+    const activeDetail = allDetails?.[editingRowId];
+    const activeRincian =
+      activeDetail?.detailsrincian?.[editingRowDetailRincianId];
+
+    if (activeRincian?.rincianbiaya) {
+      setRowsRincianBiaya(activeRincian.rincianbiaya);
+    } else {
+      setRowsRincianBiaya([]);
+    }
+  }, [editingRowId, editingRowDetailRincianId, reloadForm, rows]);
+
+  useEffect(() => {
     if (rows) {
       const currentDetails = forms.getValues('details') || [];
 
@@ -955,10 +1179,8 @@ const FormBlHeader = ({
               search: ''
             });
             const rowsData = rincian?.data ?? [];
-            console.log('rowsData HASIL FETCH RINCIAN BL', rowsData);
-
-            // Format data rincian
             const formattedRincian = rowsData.map((r: any) => ({
+              // Set data rincian
               id: Number(r.id),
               nobukti: r.nobukti ?? '',
               bldetail_id: Number(r.bldetail_id),
@@ -972,6 +1194,37 @@ const FormBlHeader = ({
 
             // Set ke form sesuai index detail
             forms.setValue(`details.${index}.detailsrincian`, formattedRincian);
+
+            if (rowsData.length > 0) {
+              for (const [indexRincian, rincian] of rowsData?.entries()) {
+                const fetchRincianBiaya = await getBlRincianBiayaFn(
+                  Number(detail.id),
+                  {
+                    filters: {
+                      orderanmuatan_nobukti: rincian.orderanmuatan_nobukti
+                    }
+                  }
+                );
+                const result = fetchRincianBiaya.data ?? [];
+                console.log('fetchRincianBiaya', fetchRincianBiaya);
+
+                const formattedRowsRincianBiaya = result.map((item: any) => ({
+                  id: Number(item.id),
+                  nobukti: item.nobukti,
+                  bldetail_id: Number(item.bldetail_id),
+                  bldetail_nobukti: item.bldetail_nobukti,
+                  orderanmuatan_nobukti: item.orderanmuatan_nobukti ?? '',
+                  nominal: String(item.nominal),
+                  biayaemkl_id: Number(item.biayaemkl_id) ?? '',
+                  biayaemkl_nama: item.biayaemkl_nama ?? '',
+                  isNew: false
+                }));
+                forms.setValue(
+                  `details.${index}.detailsrincian.${indexRincian}.rincianbiaya`,
+                  formattedRowsRincianBiaya
+                );
+              }
+            }
           } catch (err) {
             console.error(`Gagal ambil rincian untuk detail ${detail.id}`, err);
           }
@@ -979,9 +1232,14 @@ const FormBlHeader = ({
 
         const allDetails = forms.getValues('details');
         let activeDetail = allDetails?.[0];
+        const activeRincian = activeDetail?.detailsrincian?.[0];
 
         if (activeDetail?.detailsrincian) {
           setRowsDetailRincian(activeDetail.detailsrincian);
+        }
+
+        if (activeRincian?.rincianbiaya) {
+          setRowsRincianBiaya(activeRincian.rincianbiaya);
         }
       }
     };
@@ -1021,7 +1279,9 @@ const FormBlHeader = ({
     };
 
     setEditingRowId(0);
+    setEditingRowDetailRincianId(0);
     fetchAllShippingHeader();
+    forms.setValue('tglbukti', fmt(todayDate));
 
     if (mode === 'add') {
       setRows([]);
@@ -1106,8 +1366,8 @@ const FormBlHeader = ({
                             <InputDatePicker
                               value={field.value}
                               onChange={field.onChange}
-                              showCalendar={mode === 'add'}
-                              disabled={mode != 'add'}
+                              showCalendar={true}
+                              disabled={true}
                               onSelect={(date) =>
                                 forms.setValue('tglbukti', date)
                               }
@@ -1369,6 +1629,42 @@ const FormBlHeader = ({
                       </div>
                     </div>
                   )}
+
+                  {reloadForm && (
+                    <div className="h-[400px] min-h-[400px]">
+                      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
+                        <div
+                          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
+                          style={{
+                            background:
+                              'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                          }}
+                        ></div>
+
+                        <DataGrid
+                          key={dataGridKey}
+                          ref={gridRef}
+                          columns={columnsRincianBiaya as any[]}
+                          defaultColumnOptions={{
+                            sortable: true,
+                            resizable: true
+                          }}
+                          rows={rowsRincianBiaya}
+                          headerRowHeight={70}
+                          rowHeight={55}
+                          renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
+                          className="rdg-light fill-grid text-sm"
+                        />
+                        <div
+                          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+                          style={{
+                            background:
+                              'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </form>
             </Form>
@@ -1380,8 +1676,17 @@ const FormBlHeader = ({
             variant="save"
             onClick={(e) => {
               e.preventDefault();
-              onSubmit(false);
-              dispatch(setSubmitClicked(true));
+
+              if (!reloadForm) {
+                alert({
+                  title: 'HARAP LAKUKAN PROSES BL TERLEBIH DAHULU',
+                  variant: 'danger',
+                  submitText: 'OK'
+                });
+              } else {
+                onSubmit(false);
+                dispatch(setSubmitClicked(true));
+              }
             }}
             disabled={mode === 'view'}
             loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
@@ -1398,13 +1703,23 @@ const FormBlHeader = ({
               // onClick={onSubmit}
               onClick={(e) => {
                 e.preventDefault();
+                if (!reloadForm) {
+                  alert({
+                    title: 'HARAP LAKUKAN PROSES BL TERLEBIH DAHULU',
+                    variant: 'danger',
+                    submitText: 'OK'
+                  });
+                  return;
+                }
                 onSubmit(true);
                 dispatch(setSubmitClicked(true));
                 setReloadForm(false);
                 setRows([]);
                 setRowsDetailRincian([]);
+                setRowsRincianBiaya([]);
                 setScheduleValue(0);
                 setEditingRowId(0);
+                setEditingRowDetailRincianId(0);
               }}
               className="flex w-fit items-center gap-1 text-sm"
               loading={isLoadingCreate}

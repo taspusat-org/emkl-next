@@ -151,7 +151,11 @@ const GridBlHeader = () => {
       // nobukti: ''
       details: [
         {
-          detailsrincian: []
+          detailsrincian: [
+            {
+              rincianbiaya: []
+            }
+          ]
         }
       ]
     }
