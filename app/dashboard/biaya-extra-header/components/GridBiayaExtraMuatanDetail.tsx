@@ -3,19 +3,17 @@
 import Image from 'next/image';
 import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
+import { useSelector } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
-import { RootState } from '@/lib/store/store';
+import { ImSpinner2 } from 'react-icons/im';
 import { Input } from '@/components/ui/input';
+import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useSelector, useDispatch } from 'react-redux';
 import { LoadRowsRenderer } from '@/components/LoadRows';
-import { useGetBlDetail } from '@/lib/server/useBlHeader';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import FilterInput from '@/components/custom-ui/FilterInput';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { setDetailData } from '@/lib/store/headerSlice/headerSlice';
-import { BLDetail, filterBlDetail } from '@/lib/types/blheader.type';
+import { useGetScheduleDetail } from '@/lib/server/useSchedule';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -26,6 +24,7 @@ import {
 } from '@/components/ui/tooltip';
 import {
   cancelPreviousRequest,
+  formatCurrency,
   handleContextMenu,
   loadGridConfig,
   resetGridConfig,
@@ -36,35 +35,40 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
+import {
+  BiayaExtraMuatanDetail,
+  filterBiayaExtraMuatanDetail
+} from '@/lib/types/biayaextraheader.type';
+import { useGetBiayaExtraMuatanDetail } from '@/lib/server/useBiayaExtraHeader';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterBlDetail;
+  filters: typeof filterBiayaExtraMuatanDetail;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
 
-const GridBlDetail = () => {
-  const dispatch = useDispatch();
+const GridBiayaExtraMuatanDetail = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const headerData = useSelector((state: RootState) => state.header.headerData);
-
+  const { selectedJenisOrderan, selectedJenisOrderanNama } = useSelector(
+    (state: RootState) => state.filter
+  );
   const gridRef = useRef<DataGridHandle>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const contextMenuRef = useRef<HTMLDivElement | null>(null);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
+  const abortControllerRef = useRef<AbortController | null>(null);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-
   const [dataGridKey, setDataGridKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [rows, setRows] = useState<BiayaExtraMuatanDetail[]>([]);
   const [inputValue, setInputValue] = useState<string>('');
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
-  const [rows, setRows] = useState<BLDetail[]>([]);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
@@ -79,8 +83,8 @@ const GridBlDetail = () => {
     page: 1,
     limit: 30,
     search: '',
-    filters: filterBlDetail,
-    sortBy: 'bl_nobukti',
+    filters: filterBiayaExtraMuatanDetail,
+    sortBy: 'id',
     sortDirection: 'asc'
   });
 
@@ -88,7 +92,7 @@ const GridBlDetail = () => {
     data: allDataDetail,
     isLoading,
     refetch
-  } = useGetBlDetail(headerData?.id ?? 0, {
+  } = useGetBiayaExtraMuatanDetail(headerData?.id ?? 0, {
     ...filters,
     page: 1
   });
@@ -97,35 +101,25 @@ const GridBlDetail = () => {
     cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
+    setFilters((prev) => ({
+      ...prev,
+      filters: filterBiayaExtraMuatanDetail,
+      search: searchValue,
+      page: 1
+    }));
 
-    // Menunggu beberapa waktu sebelum update filter
-    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    setTimeout(() => {
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+    }, 100);
 
-    debounceTimerRef.current = setTimeout(() => {
-      // Mengupdate filter setelah debounce
-      setCurrentPage(1);
-      setFilters((prev) => ({
-        ...prev,
-        filters: filterBlDetail,
-        search: searchValue,
-        page: 1
-      }));
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 200);
 
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-      setTimeout(() => {
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 100);
-
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 200);
-      setSelectedRow(0);
-      setCurrentPage(1);
-      setRows([]);
-    }, 300); // Mengatur debounce hanya untuk update filter
+    setSelectedRow(0);
+    setRows([]);
   };
 
   const debouncedFilterUpdate = useRef(
@@ -272,7 +266,7 @@ const GridBlDetail = () => {
     setIsAllSelected(!isAllSelected);
   };
 
-  const columns = useMemo((): Column<BLDetail>[] => {
+  const columns = useMemo((): Column<BiayaExtraMuatanDetail>[] => {
     return [
       {
         key: 'nomor',
@@ -291,7 +285,7 @@ const GridBlDetail = () => {
                 setFilters({
                   ...filters,
                   search: '',
-                  filters: filterBlDetail
+                  filters: filterBiayaExtraMuatanDetail
                 }),
                   setInputValue('');
                 setTimeout(() => {
@@ -330,7 +324,7 @@ const GridBlDetail = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: BLDetail }) => (
+        renderCell: ({ row }: { row: BiayaExtraMuatanDetail }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(Number(row.id))}
@@ -412,8 +406,8 @@ const GridBlDetail = () => {
         }
       },
       {
-        key: 'bl_nobukti',
-        name: 'bl_nobukti',
+        key: 'orderanmuatan_nobukti',
+        name: 'orderanmuatan_nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -422,23 +416,25 @@ const GridBlDetail = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('bl_nobukti')}
+              onClick={() => handleSort('orderanmuatan_nobukti')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'bl_nobukti' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'orderanmuatan_nobukti'
+                    ? 'font-bold'
+                    : 'font-normal'
                 }`}
               >
-                NOMOR BL
+                NO BUKTI ORDERAN
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'bl_nobukti' &&
+                {filters.sortBy === 'orderanmuatan_nobukti' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'bl_nobukti' &&
+                ) : filters.sortBy === 'orderanmuatan_nobukti' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -449,22 +445,22 @@ const GridBlDetail = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="bl_nobukti"
-                value={filters.filters.bl_nobukti || ''}
+                colKey="orderanmuatan_nobukti"
+                value={filters.filters.orderanmuatan_nobukti || ''}
                 onChange={(value) =>
-                  handleFilterInputChange('bl_nobukti', value)
+                  handleFilterInputChange('orderanmuatan_nobukti', value)
                 }
-                onClear={() => handleClearFilter('bl_nobukti')}
+                onClear={() => handleClearFilter('orderanmuatan_nobukti')}
                 inputRef={(el) => {
-                  inputColRefs.current['bl_nobukti'] = el;
+                  inputColRefs.current['orderanmuatan_nobukti'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.bl_nobukti || '';
-          const cellValue = props.row.bl_nobukti || '';
+          const columnFilter = filters.filters.orderanmuatan_nobukti || '';
+          const cellValue = props.row.orderanmuatan_nobukti || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -485,35 +481,33 @@ const GridBlDetail = () => {
         }
       },
       {
-        key: 'shippinginstructiondetail_nobukti',
-        name: 'shippinginstructiondetail_nobukti',
+        key: 'estimasi',
+        name: 'estimasi',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('shippinginstructiondetail_nobukti')}
+              onClick={() => handleSort('estimasi')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'shippinginstructiondetail_nobukti'
-                    ? 'font-bold'
-                    : 'font-normal'
+                  filters.sortBy === 'estimasi' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                NOMOR SHIPPING
+                ESTIMASI
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'shippinginstructiondetail_nobukti' &&
+                {filters.sortBy === 'estimasi' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shippinginstructiondetail_nobukti' &&
+                ) : filters.sortBy === 'estimasi' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -524,34 +518,28 @@ const GridBlDetail = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="shippinginstructiondetail_nobukti"
-                value={filters.filters.shippinginstructiondetail_nobukti || ''}
-                onChange={(value) =>
-                  handleFilterInputChange(
-                    'shippinginstructiondetail_nobukti',
-                    value
-                  )
-                }
-                onClear={() =>
-                  handleClearFilter('shippinginstructiondetail_nobukti')
-                }
+                colKey="estimasi"
+                value={filters.filters.estimasi || ''}
+                onChange={(value) => handleFilterInputChange('estimasi', value)}
+                onClear={() => handleClearFilter('estimasi')}
                 inputRef={(el) => {
-                  inputColRefs.current['shippinginstructiondetail_nobukti'] =
-                    el;
+                  inputColRefs.current['estimasi'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter =
-            filters.filters.shippinginstructiondetail_nobukti || '';
-          const cellValue = props.row.shippinginstructiondetail_nobukti || '';
+          const columnFilter = filters.filters.estimasi || '';
+          const cellValue =
+            props.row.estimasi != null && props.row.estimasi !== ''
+              ? formatCurrency(props.row.estimasi)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
@@ -567,8 +555,8 @@ const GridBlDetail = () => {
         }
       },
       {
-        key: 'asalpelabuhan',
-        name: 'asalpelabuhan',
+        key: 'nominal',
+        name: 'nominal',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -577,25 +565,23 @@ const GridBlDetail = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('asalpelabuhan')}
+              onClick={() => handleSort('nominal')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'asalpelabuhan'
-                    ? 'font-bold'
-                    : 'font-normal'
+                  filters.sortBy === 'nominal' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                PELABUHAN ASAL
+                nominal
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'asalpelabuhan' &&
+                {filters.sortBy === 'nominal' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'asalpelabuhan' &&
+                ) : filters.sortBy === 'nominal' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -606,27 +592,182 @@ const GridBlDetail = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="asalpelabuhan"
-                value={filters.filters.asalpelabuhan || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('asalpelabuhan', value)
-                }
-                onClear={() => handleClearFilter('asalpelabuhan')}
+                colKey="nominal"
+                value={filters.filters.nominal || ''}
+                onChange={(value) => handleFilterInputChange('nominal', value)}
+                onClear={() => handleClearFilter('nominal')}
                 inputRef={(el) => {
-                  inputColRefs.current['asalpelabuhan'] = el;
+                  inputColRefs.current['nominal'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.asalpelabuhan || '';
-          const cellValue = props.row.asalpelabuhan || '';
+          const columnFilter = filters.filters.nominal || '';
+          const cellValue =
+            props.row.nominal != null && props.row.nominal !== ''
+              ? formatCurrency(props.row.nominal)
+              : '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'statustagih',
+        name: 'statustagih',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('statustagih_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statustagih_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                Status Tagih
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statustagih_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statustagih_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleFilterInputChange('statustagih_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statustagih_memo
+            ? JSON.parse(props.row.statustagih_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'nominaltagih',
+        name: 'nominaltagih',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('nominaltagih')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nominaltagih'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                nominal tagih
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nominaltagih' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nominaltagih' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="nominaltagih"
+                value={filters.filters.nominaltagih || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('nominaltagih', value)
+                }
+                onClear={() => handleClearFilter('nominaltagih')}
+                inputRef={(el) => {
+                  inputColRefs.current['nominaltagih'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nominaltagih || '';
+          const cellValue =
+            props.row.nominaltagih != null && props.row.nominaltagih !== ''
+              ? formatCurrency(props.row.nominaltagih)
+              : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
                   </div>
                 </TooltipTrigger>
@@ -715,8 +856,8 @@ const GridBlDetail = () => {
         }
       },
       {
-        key: 'consignee',
-        name: 'consignee',
+        key: 'groupbiayaextra_nama',
+        name: 'groupbiayaextra_nama',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -725,390 +866,25 @@ const GridBlDetail = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('consignee')}
+              onClick={() => handleSort('groupbiayaextra_text')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'consignee' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                CONSIGNEE
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'consignee' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'consignee' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="consignee"
-                value={filters.filters.consignee || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('consignee', value)
-                }
-                onClear={() => handleClearFilter('consignee')}
-                inputRef={(el) => {
-                  inputColRefs.current['consignee'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.consignee || '';
-          const cellValue = props.row.consignee || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'shipper',
-        name: 'shipper',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('shipper')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                SHIPPER
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="shipper"
-                value={filters.filters.shipper || ''}
-                onChange={(value) => handleFilterInputChange('shipper', value)}
-                onClear={() => handleClearFilter('shipper')}
-                inputRef={(el) => {
-                  inputColRefs.current['shipper'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.shipper || '';
-          const cellValue = props.row.shipper || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'comodity',
-        name: 'comodity',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('comodity')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'comodity' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                COMODITY
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'comodity' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'comodity' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="comodity"
-                value={filters.filters.comodity || ''}
-                onChange={(value) => handleFilterInputChange('comodity', value)}
-                onClear={() => handleClearFilter('comodity')}
-                inputRef={(el) => {
-                  inputColRefs.current['comodity'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.comodity || '';
-          const cellValue = props.row.comodity || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'notifyparty',
-        name: 'notifyparty',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('notifyparty')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'notifyparty' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NOTIFY PARTY
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'notifyparty' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'notifyparty' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="notifyparty"
-                value={filters.filters.notifyparty || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('notifyparty', value)
-                }
-                onClear={() => handleClearFilter('notifyparty')}
-                inputRef={(el) => {
-                  inputColRefs.current['notifyparty'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.notifyparty || '';
-          const cellValue = props.row.notifyparty || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'statuspisahbl',
-        name: 'statuspisahbl',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 100,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('statuspisahbl_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'statuspisahbl_text'
+                  filters.sortBy === 'groupbiayaextra_text'
                     ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
-                STATUS PISAH BL
+                GROUP BIAYA EXTRA
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'statuspisahbl_text' &&
+                {filters.sortBy === 'groupbiayaextra_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'statuspisahbl_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleFilterInputChange('statuspisahbl_text', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.statuspisahbl_memo
-            ? JSON.parse(props.row.statuspisahbl_memo)
-            : null;
-          if (memoData) {
-            return (
-              <div className="flex h-full w-full items-center justify-center py-1">
-                <div
-                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                  style={{
-                    backgroundColor: memoData.WARNA,
-                    color: memoData.WARNATULISAN,
-                    padding: '2px 6px',
-                    borderRadius: '2px',
-                    textAlign: 'left',
-                    fontWeight: '600'
-                  }}
-                >
-                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                </div>
-              </div>
-            );
-          }
-          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'emkllain_nama',
-        name: 'emkllain_nama',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('emkllain_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'emkllain_text'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NAMA EMKL
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'emkllain_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'emkllain_text' &&
+                ) : filters.sortBy === 'groupbiayaextra_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -1119,97 +895,22 @@ const GridBlDetail = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="emkllain_nama"
-                value={filters.filters.emkllain_text || ''}
+                colKey="groupbiayaextra_nama"
+                value={filters.filters.groupbiayaextra_text || ''}
                 onChange={(value) =>
-                  handleFilterInputChange('emkllain_text', value)
+                  handleFilterInputChange('groupbiayaextra_text', value)
                 }
-                onClear={() => handleClearFilter('emkllain_text')}
+                onClear={() => handleClearFilter('groupbiayaextra_text')}
                 inputRef={(el) => {
-                  inputColRefs.current['emkllain_nama'] = el;
+                  inputColRefs.current['groupbiayaextra_nama'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.emkllain_text || '';
-          const cellValue = props.row.emkllain_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'pelayaran_nama',
-        name: 'pelayaran_nama',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('pelayaran_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'pelayaran_text'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NAMA PELAYARAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'pelayaran_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'pelayaran_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="pelayaran_nama"
-                value={filters.filters.pelayaran_text || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('pelayaran_text', value)
-                }
-                onClear={() => handleClearFilter('pelayaran_text')}
-                inputRef={(el) => {
-                  inputColRefs.current['pelayaran_nama'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.pelayaran_text || '';
-          const cellValue = props.row.pelayaran_nama || '';
+          const columnFilter = filters.filters.groupbiayaextra_text || '';
+          const cellValue = props.row.groupbiayaextra_nama || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1260,7 +961,12 @@ const GridBlDetail = () => {
     }
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu, saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridBlDetail', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        user.id,
+        'GridBiayaExtraMuatanDetail',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
 
@@ -1276,7 +982,12 @@ const GridBlDetail = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridBlDetail', [...newOrder], columnsWidth);
+      saveGridConfig(
+        user.id,
+        'GridBiayaExtraMuatanDetail',
+        [...newOrder],
+        columnsWidth
+      );
       return newOrder;
     });
   };
@@ -1290,18 +1001,8 @@ const GridBlDetail = () => {
     }
   };
 
-  function handleCellClick(args: { row: BLDetail }) {
-    const clickedRow = args.row;
-    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    const foundRow = rows.find((r) => r.id === clickedRow?.id);
-    if (rowIndex !== -1 && foundRow) {
-      setSelectedRow(rowIndex);
-      dispatch(setDetailData(foundRow));
-    }
-  }
-
   async function handleKeyDown(
-    args: CellKeyDownArgs<BLDetail>,
+    args: CellKeyDownArgs<BiayaExtraMuatanDetail>,
     event: React.KeyboardEvent
   ) {
     if (event.key === 'ArrowUp' && args.rowIdx === 0) {
@@ -1309,19 +1010,28 @@ const GridBlDetail = () => {
     }
   }
 
-  function getRowClass(row: BLDetail) {
+  function handleCellClick(args: { row: BiayaExtraMuatanDetail }) {
+    const clickedRow = args.row;
+    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
+    if (rowIndex !== -1) {
+      setSelectedRow(rowIndex);
+    }
+  }
+
+  function getRowClass(row: BiayaExtraMuatanDetail) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: BLDetail) {
+  function rowKeyGetter(row: BiayaExtraMuatanDetail) {
     return row.id;
   }
 
   useEffect(() => {
+    // useEffect untuk trigger grid yg kesipan di config kalo ada
     loadGridConfig(
       user.id,
-      'GridBlDetail',
+      'GridBiayaExtraMuatanDetail',
       columns,
       setColumnsOrder,
       setColumnsWidth
@@ -1338,23 +1048,20 @@ const GridBlDetail = () => {
   useEffect(() => {
     if (allDataDetail) {
       const formattedRows = allDataDetail?.data?.map((item: any) => ({
-        id: Number(item?.id),
-        nobukti: item?.nobukti,
-        bl_id: item?.bl_id,
-        bl_nobukti: item?.bl_nobukti,
-        shippinginstructiondetail_nobukti:
-          item?.shippinginstructiondetail_nobukti,
-        asalpelabuhan: item?.asalpelabuhan,
-        keterangan: item?.keterangan,
-        consignee: item?.consignee,
-        shipper: item?.shipper,
-        comodity: item?.comodity,
-        notifyparty: item?.notifyparty,
-        emkllain_id: item?.emkllain_id,
-        emkllain_nama: item?.emkllain_nama,
-        pelayaran_nama: item?.pelayaran_nama,
-        statuspisahbl_nama: item?.statuspisahbl_nama,
-        statuspisahbl_memo: item?.statuspisahbl_memo
+        id: item.id,
+        nobukti: item.nobukti,
+        biayaextra_id: item.biayaextra_id,
+        orderanmuatan_id: item.orderanmuatan_id,
+        orderanmuatan_nobukti: item.orderanmuatan_nobukti,
+        estimasi: item.estimasi,
+        nominal: item.nominal,
+        statustagih: item.statustagih,
+        statustagih_nama: item.statustagih_nama,
+        statustagih_memo: item.statustagih_memo,
+        nominaltagih: item.nominaltagih,
+        keterangan: item.keterangan,
+        groupbiayaextra_id: item.groupbiayaextra_id,
+        groupbiayaextra_nama: item.groupbiayaextra_nama
       }));
 
       setRows(formattedRows);
@@ -1362,24 +1069,6 @@ const GridBlDetail = () => {
       setRows([]);
     }
   }, [allDataDetail, headerData?.id]);
-
-  useEffect(() => {
-    if (gridRef.current && rows.length > 0) {
-      setSelectedRow(0);
-
-      gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-      dispatch(setDetailData(rows[0]));
-    }
-  }, [rows]);
-
-  useEffect(() => {
-    if (rows.length > 0 && selectedRow !== null) {
-      const selectedRowData = rows[selectedRow];
-      dispatch(setDetailData(selectedRowData)); // Pastikan data sudah benar
-    } else {
-      dispatch(setDetailData({}));
-    }
-  }, [rows, selectedRow, dispatch]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1475,7 +1164,7 @@ const GridBlDetail = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridBlDetail',
+                    'GridBiayaExtraMuatanDetail',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -1495,4 +1184,4 @@ const GridBlDetail = () => {
   );
 };
 
-export default GridBlDetail;
+export default GridBiayaExtraMuatanDetail;
