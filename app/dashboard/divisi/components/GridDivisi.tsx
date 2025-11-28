@@ -1477,7 +1477,7 @@ const GridDivisi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allDivisi || isFetchingManually || isDataUpdated) return;
+    if (!allDivisi || isDataUpdated) return;
 
     const newRows = allDivisi.data || [];
 
@@ -1558,7 +1558,7 @@ const GridDivisi = () => {
       mode !== 'add' // Only fill the form if not in addMode
     ) {
       forms.setValue('id', Number(rowData?.id));
-      forms.setValue('nama', rowData.nama);
+      forms.setValue('nama', rowData?.nama);
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
       forms.setValue('statusaktif_nama', rowData?.text || '');

@@ -18,19 +18,19 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import FormSandarKapal from './FormSandarKapal';
+import FormMenu from './FormDaftarbl';
 import { useQueryClient } from 'react-query';
 import {
-  SandarKapalInput,
-  sandarkapalSchema
-} from '@/lib/validations/sandarkapal.validation';
+  DaftarblInput,
+  daftarblSchema
+} from '@/lib/validations/daftarbl.validation';
 
 import {
-  useCreateSandarKapal,
-  useDeleteSandarKapal,
-  useGetSandarKapal,
-  useUpdateSandarKapal
-} from '@/lib/server/useSandarKapal';
+  useCreateDaftarbl,
+  useDeleteDaftarbl,
+  useGetDaftarbl,
+  useUpdateDaftarbl
+} from '@/lib/server/useDaftarbl';
 
 import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
@@ -70,7 +70,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import { ISandarKapal } from '@/lib/types/sandarkapal.type';
+import { IDaftarbl } from '@/lib/types/daftarbl.type';
 import { number } from 'zod';
 import {
   clearOpenName,
@@ -82,15 +82,14 @@ import {
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterOptions from '@/components/custom-ui/FilterOptions';
-import { getSandarKapalFn } from '@/lib/apis/sandarkapal.api';
-import { setReportFilter } from '@/lib/store/printSlice/printSlice';
-import Alert from '@/components/custom-ui/AlertCustom';
+import { getDaftarblFn } from '@/lib/apis/daftarbl.api';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
+import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import {
   cancelPreviousRequest,
@@ -99,7 +98,6 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
-import { debounce } from 'lodash';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { LoadRowsRenderer } from '@/components/LoadRows';
 
@@ -110,7 +108,6 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
-    text: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
@@ -124,23 +121,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridSandarKapal = () => {
+const GridDaftarbl = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createSandarKapal, isLoading: isLoadingCreate } =
-    useCreateSandarKapal();
-  const { mutateAsync: updateSandarKapal, isLoading: isLoadingUpdate } =
-    useUpdateSandarKapal();
+  const { mutateAsync: createDaftarbl, isLoading: isLoadingCreate } =
+    useCreateDaftarbl();
+  const { mutateAsync: updateDaftarbl, isLoading: isLoadingUpdate } =
+    useUpdateDaftarbl();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const { mutateAsync: deleteSandarKapal, isLoading: isLoadingDelete } =
-    useDeleteSandarKapal();
+  const { mutateAsync: deleteDaftarbl, isLoading: isLoadingDelete } =
+    useDeleteDaftarbl();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -157,7 +154,7 @@ const GridSandarKapal = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<ISandarKapal[]>([]);
+  const [rows, setRows] = useState<IDaftarbl[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -166,15 +163,24 @@ const GridSandarKapal = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<SandarKapalInput>({
-    resolver: zodResolver(sandarkapalSchema),
+  const forms = useForm<DaftarblInput>({
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(daftarblSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 1,
+      statusaktif_nama: ''
     }
   });
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -185,7 +191,6 @@ const GridSandarKapal = () => {
       modifiedby: '',
       created_at: '',
       updated_at: '',
-      text: '',
       statusaktif: ''
     },
     search: '',
@@ -196,15 +201,48 @@ const GridSandarKapal = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { data: allSandarKapal, isLoading: isLoadingSandarKapal } =
-    useGetSandarKapal(
-      {
-        ...filters,
-        page: currentPage
-      },
-      abortControllerRef.current?.signal
-    );
+  const { data: allDaftarbl, isLoading: isLoadingDaftarbl } = useGetDaftarbl(
+    {
+      ...filters,
+      page: currentPage
+    },
+    abortControllerRef.current?.signal
+  );
 
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
@@ -281,41 +319,6 @@ const GridSandarKapal = () => {
       />
     );
   }
-  const debouncedFilterUpdate = useRef(
-    debounce((colKey: string, value: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        filters: { ...prev.filters, [colKey]: value },
-        page: 1
-      }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-      setRows([]);
-      setCurrentPage(1);
-    }, 300) // Bisa dikurangi jadi 250-300ms
-  ).current;
-
-  const handleFilterInputChange = useCallback(
-    (colKey: string, value: string) => {
-      cancelPreviousRequest(abortControllerRef);
-      debouncedFilterUpdate(colKey, value);
-    },
-    []
-  );
-  const handleClearFilter = useCallback((colKey: string) => {
-    cancelPreviousRequest(abortControllerRef);
-    debouncedFilterUpdate.cancel(); // Cancel pending updates
-    setFilters((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [colKey]: '' },
-      page: 1
-    }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setRows([]);
-    setCurrentPage(1);
-  }, []);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
@@ -326,11 +329,9 @@ const GridSandarKapal = () => {
       filters: {
         nama: '',
         keterangan: '',
-        icon: '',
         modifiedby: '',
         created_at: '',
         updated_at: '',
-        text: '',
         statusaktif: ''
       },
       search: searchValue,
@@ -353,6 +354,14 @@ const GridSandarKapal = () => {
     setRows([]);
   };
   const handleSort = (column: string) => {
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -365,7 +374,7 @@ const GridSandarKapal = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -376,9 +385,9 @@ const GridSandarKapal = () => {
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        clearError();
         forms.reset(); // Reset the form when the Escape key is pressed
         setMode(''); // Reset the mode to empty
-        clearError();
         setPopOver(false);
         dispatch(clearOpenName());
       }
@@ -392,6 +401,13 @@ const GridSandarKapal = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -414,7 +430,6 @@ const GridSandarKapal = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
-
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -426,7 +441,7 @@ const GridSandarKapal = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<ISandarKapal>[] => {
+  const columns = useMemo((): Column<IDaftarbl>[] => {
     return [
       {
         key: 'nomor',
@@ -450,7 +465,6 @@ const GridSandarKapal = () => {
                   filters: {
                     nama: '',
                     keterangan: '',
-                    text: '',
                     modifiedby: '',
                     created_at: '',
                     updated_at: '',
@@ -494,7 +508,7 @@ const GridSandarKapal = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: ISandarKapal }) => (
+        renderCell: ({ row }: { row: IDaftarbl }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -684,15 +698,17 @@ const GridSandarKapal = () => {
               </div>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('statusaktif', value)
-                } // Menangani perubahan nilai di parent
-              />
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusaktif', value)
+                  } // Menangani perubahan nilai di parent
+                />
+              </div>
             </div>
           </div>
         ),
@@ -733,10 +749,9 @@ const GridSandarKapal = () => {
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-
       {
         key: 'modifiedby',
-        name: 'Updated At',
+        name: 'Modified By',
         resizable: true,
         draggable: true,
 
@@ -809,14 +824,13 @@ const GridSandarKapal = () => {
           );
         }
       },
-
       {
         key: 'created_at',
         name: 'Created At',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 200,
+        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -891,7 +905,7 @@ const GridSandarKapal = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 200,
+        width: 250,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -977,12 +991,7 @@ const GridSandarKapal = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridSandarKapal',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridDaftarbl', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -997,7 +1006,7 @@ const GridSandarKapal = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridSandarKapal', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridDaftarbl', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1014,7 +1023,7 @@ const GridSandarKapal = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingSandarKapal || !hasMore || rows.length === 0) return;
+    if (isLoadingDaftarbl || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1041,18 +1050,15 @@ const GridSandarKapal = () => {
     }
   }
 
-  function handleCellClick(args: { row: ISandarKapal }) {
+  function handleCellClick(args: { row: IDaftarbl }) {
     const clickedRow = args.row;
-    //
-
-    if (!clickedRow) return;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<ISandarKapal>,
+    args: CellKeyDownArgs<IDaftarbl>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1105,8 +1111,8 @@ const GridSandarKapal = () => {
     pageNumber: any,
     keepOpenModal: any = false
   ) => {
-    dispatch(setClearLookup(true));
     clearError();
+    dispatch(setClearLookup(true));
     setIsFetchingManually(true);
 
     try {
@@ -1118,7 +1124,7 @@ const GridSandarKapal = () => {
         setPopOver(false);
       }
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/sandarkapal-allItems`);
+        const response = await api2.get(`/redis/get/daftarbl-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1142,14 +1148,14 @@ const GridSandarKapal = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: SandarKapalInput, keepOpenModal = false) => {
-    clearError();
+  const onSubmit = async (values: DaftarblInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
+    clearError();
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteSandarKapal(selectedRowId as unknown as string, {
+          await deleteDaftarbl(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1171,7 +1177,7 @@ const GridSandarKapal = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createSandarKapal(
+        const newOrder = await createDaftarbl(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1187,14 +1193,14 @@ const GridSandarKapal = () => {
         return;
       }
       if (selectedRowId && mode === 'edit') {
-        await updateSandarKapal(
+        await updateDaftarbl(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('sandarkapal');
+        queryClient.invalidateQueries('daftarbl');
       }
     } catch (error) {
       console.error(error);
@@ -1202,7 +1208,6 @@ const GridSandarKapal = () => {
       dispatch(setProcessed());
     }
   };
-
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -1215,10 +1220,6 @@ const GridSandarKapal = () => {
       setMode('delete');
       setPopOver(true);
     }
-    //  else {
-    //   // Alert()
-    //   // pass;
-    // }
   };
   const handleView = () => {
     if (selectedRow !== null) {
@@ -1293,10 +1294,10 @@ const GridSandarKapal = () => {
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await getSandarKapalFn(filtersWithoutLimit);
+      const response = await getDaftarblFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Sandar Kapal',
+        judullaporan: 'Laporan Daftar BL',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1310,9 +1311,13 @@ const GridSandarKapal = () => {
         .then((module) => {
           const { Stimulsoft } = module;
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahoma.ttf',
+            'Tahoma'
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahomabd.ttf',
             'Tahoma'
-          );
+          ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
@@ -1326,7 +1331,7 @@ const GridSandarKapal = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanSandarKapal.mrt');
+          report.loadFile('/reports/LaporanDaftarbl.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1345,7 +1350,7 @@ const GridSandarKapal = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/laporansandarkapal', '_blank');
+              window.open('/reports/daftarbl', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1394,28 +1399,21 @@ const GridSandarKapal = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: ISandarKapal) {
+  function getRowClass(row: IDaftarbl) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: ISandarKapal) {
+  function rowKeyGetter(row: IDaftarbl) {
     return row.id;
   }
-
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
 
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
     clearError();
-
     forms.reset();
   };
-
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
@@ -1429,6 +1427,7 @@ const GridSandarKapal = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
+
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -1455,16 +1454,17 @@ const GridSandarKapal = () => {
       width: columnsWidth[col.key] ?? col.width
     }));
   }, [orderedColumns, columnsWidth]);
-
   useEffect(() => {
+    // loadGridConfig(user.id, 'GridAkunPusat');
     loadGridConfig(
       user.id,
-      'GridSandarKapal',
+      'GridDaftarbl',
       columns,
       setColumnsOrder,
       setColumnsWidth
     );
   }, []);
+
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
@@ -1477,9 +1477,9 @@ const GridSandarKapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allSandarKapal || isFetchingManually || isDataUpdated) return;
+    if (!allDaftarbl || isDataUpdated) return;
 
-    const newRows = allSandarKapal.data || [];
+    const newRows = allDaftarbl.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1497,14 +1497,14 @@ const GridSandarKapal = () => {
       return prevRows;
     });
 
-    if (allSandarKapal.pagination.totalPages) {
-      setTotalPages(allSandarKapal.pagination.totalPages);
+    if (allDaftarbl.pagination.totalPages) {
+      setTotalPages(allDaftarbl.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allSandarKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allDaftarbl, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1642,7 +1642,7 @@ const GridSandarKapal = () => {
           }}
         >
           <ActionButton
-            module="sandarkapal"
+            module="DAFTARBL"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
@@ -1656,38 +1656,53 @@ const GridSandarKapal = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
+            // customActions={[
+            //   {
+            //     label: 'Resequence',
+            //     icon: <FaPlus />, // Custom icon
+            //     onClick: () => handleResequence(),
+            //     variant: 'success', // Optional styling variant
+            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
+            //   }
+            // ]}
             // dropdownMenus={[
             //   {
-            //     label: 'Print',
+            //     label: 'Report',
             //     icon: <FaPrint />,
             //     className: 'bg-cyan-500 hover:bg-cyan-700',
-            //     actions: { onClick: () => handleReport()}
-            //       // {
-            //       //   label: 'REPORT BY SELECT',
-            //       //   onClick: () => handleReportBySelect(),
-            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       // }
+            //     actions: [
+            //       {
+            //         label: 'REPORT ALL',
+            //         onClick: () => handleReport(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       },
+            //       {
+            //         label: 'REPORT BY SELECT',
+            //         onClick: () => handleReportBySelect(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       }
+            //     ]
+            //   },
+            //   {
+            //     label: 'Export',
+            //     icon: <FaFileExport />,
+            //     className: 'bg-green-600 hover:bg-green-700',
+            //     actions: [
+            //       {
+            //         label: 'EXPORT ALL',
+            //         onClick: () => handleExport(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       },
+            //       {
+            //         label: 'EXPORT BY SELECT',
+            //         onClick: () => handleExportBySelect(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       }
+            //     ]
             //   }
-            //   // {
-            //   //   label: 'Export',
-            //   //   icon: <FaFileExport />,
-            //   //   className: 'bg-green-600 hover:bg-green-700',
-            //   //   actions: [
-            //   //     {
-            //   //       label: 'EXPORT ALL',
-            //   //       onClick: () => handleExport(),
-            //   //       className: 'bg-green-600 hover:bg-green-700'
-            //   //     },
-            //   //     {
-            //   //       label: 'EXPORT BY SELECT',
-            //   //       onClick: () => handleExportBySelect(),
-            //   //       className: 'bg-green-600 hover:bg-green-700'
-            //   //     }
-            //   //   ]
-            //   // }
             // ]}
           />
-          {isLoadingSandarKapal ? <LoadRowsRenderer /> : null}
+          {isLoadingDaftarbl ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1708,7 +1723,7 @@ const GridSandarKapal = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridSandarKapal',
+                    'GridDaftarbl',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -1724,7 +1739,7 @@ const GridSandarKapal = () => {
           )}
         </div>
       </div>
-      <FormSandarKapal
+      <FormMenu
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1739,4 +1754,4 @@ const GridSandarKapal = () => {
   );
 };
 
-export default GridSandarKapal;
+export default GridDaftarbl;

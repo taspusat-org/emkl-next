@@ -1566,7 +1566,7 @@ const GridJenisseal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allJenisseal || isFetchingManually || isDataUpdated) return;
+    if (!allJenisseal || isDataUpdated) return;
 
     const newRows = allJenisseal.data || [];
 

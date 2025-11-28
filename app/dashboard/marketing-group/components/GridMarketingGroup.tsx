@@ -1422,7 +1422,7 @@ const GridMarketingGroup = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allMarketingGroup || isFetchingManually || isDataUpdated) return;
+    if (!allMarketingGroup || isDataUpdated) return;
 
     const newRows = allMarketingGroup.data || [];
 

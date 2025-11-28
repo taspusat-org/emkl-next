@@ -1764,7 +1764,7 @@ const GridHutangHeader = () => {
     isFirstLoad
   ]);
   useEffect(() => {
-    if (!allData || isFetchingManually || isDataUpdated) return;
+    if (!allData || isDataUpdated) return;
 
     const newRows = allData.data || [];
 
@@ -1846,12 +1846,12 @@ const GridHutangHeader = () => {
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
-      forms.setValue('nobukti', row.nobukti);
-      forms.setValue('tglbukti', row.tglbukti);
-      forms.setValue('tgljatuhtempo', row.tgljatuhtempo);
-      forms.setValue('keterangan', row.keterangan);
-      forms.setValue('relasi_id', Number(row.relasi_id));
-      forms.setValue('relasi_text', row.relasi_text);
+      forms.setValue('nobukti', row?.nobukti);
+      forms.setValue('tglbukti', row?.tglbukti);
+      forms.setValue('tgljatuhtempo', row?.tgljatuhtempo);
+      forms.setValue('keterangan', row?.keterangan);
+      forms.setValue('relasi_id', Number(row?.relasi_id));
+      forms.setValue('relasi_text', row?.relasi_text);
       forms.setValue('details', []);
     } else {
       const currentDate = new Date();

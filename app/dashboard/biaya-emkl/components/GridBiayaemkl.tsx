@@ -105,8 +105,12 @@ interface Filter {
 
     statusbiayabl: string;
     statusbiayabl_text: string;
+
     statusseal: string;
     statusseal_text: string;
+
+    statustagih: string;
+    statustagih_text: string;
 
     statusaktif: string;
     text: string;
@@ -159,7 +163,6 @@ const GridBiayaEmkl = () => {
   const [rows, setRows] = useState<IBiayaemkl[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
-  const prevPageRef = useRef(currentPage);
   const dispatch = useDispatch();
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
@@ -215,6 +218,8 @@ const GridBiayaEmkl = () => {
       statusbiayabl_text: '',
       statusseal: '',
       statusseal_text: '',
+      statustagih: '',
+      statustagih_text: '',
       modifiedby: '',
 
       created_at: '',
@@ -227,7 +232,11 @@ const GridBiayaEmkl = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { data: allBiaya, isLoading: isLoadingBiaya } = useGetBiayaemkl(
+  const {
+    data: allBiayaemkl,
+    isLoading: isLoadingBiaya,
+    refetch
+  } = useGetBiayaemkl(
     {
       ...filters,
       page: currentPage
@@ -380,6 +389,8 @@ const GridBiayaEmkl = () => {
         statusbiayabl_text: '',
         statusseal: '',
         statusseal_text: '',
+        statustagih: '',
+        statustagih_text: '',
         statusaktif: '',
         text: '',
         modifiedby: '',
@@ -505,6 +516,8 @@ const GridBiayaEmkl = () => {
                     statusbiayabl_text: '',
                     statusseal: '',
                     statusseal_text: '',
+                    statustagih: '',
+                    statustagih_text: '',
                     statusaktif: '',
                     text: '',
                     modifiedby: '',
@@ -1060,6 +1073,93 @@ const GridBiayaEmkl = () => {
         renderCell: (props: any) => {
           const memoData = props.row.statusseal_memo
             ? JSON.parse(props.row.statusseal_memo)
+            : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
+
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
+      {
+        key: 'statustagih',
+        name: 'Status Tagih',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statustagih')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statustagih' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Tagih
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statustagih' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statustagih' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statustagih', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statustagih_memo
+            ? JSON.parse(props.row.statustagih_memo)
             : null;
           if (memoData) {
             return (
@@ -1932,9 +2032,9 @@ const GridBiayaEmkl = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBiaya || isFetchingManually || isDataUpdated) return;
+    if (!allBiayaemkl || isDataUpdated) return;
 
-    const newRows = allBiaya.data || [];
+    const newRows = allBiayaemkl.data || [];
 
     setRows((prevRows: any) => {
       // Reset data if filter changes (first page)
@@ -1952,14 +2052,13 @@ const GridBiayaEmkl = () => {
       return prevRows;
     });
 
-    if (allBiaya.pagination.totalPages) {
-      setTotalPages(allBiaya.pagination.totalPages);
+    if (allBiayaemkl.pagination.totalPages) {
+      setTotalPages(allBiayaemkl.pagination.totalPages);
     }
-
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allBiaya, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allBiayaemkl, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -2029,6 +2128,9 @@ const GridBiayaEmkl = () => {
 
       forms.setValue('statusseal', Number(rowData?.statusseal));
       forms.setValue('statusseal_text', rowData?.statusseal_text);
+
+      forms.setValue('statustagih', Number(rowData?.statustagih));
+      forms.setValue('statustagih_text', rowData?.statustagih_text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();
@@ -2042,6 +2144,13 @@ const GridBiayaEmkl = () => {
       }
     });
   }, []);
+  useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
+    if (filters !== prevFilters) {
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
+    }
+  }, [filters, refetch]);
   useEffect(() => {
     if (isSubmitSuccessful) {
       // reset();

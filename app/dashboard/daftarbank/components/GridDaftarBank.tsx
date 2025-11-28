@@ -49,19 +49,19 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import { IJenisMuatan } from '@/lib/types/jenismuatan.type';
+import { IDaftarBank } from '@/lib/types/daftarbank.type';
 import {
-  JenisMuatanInput,
-  jenismuatanSchema
-} from '@/lib/validations/jenismuatan.validation';
+  DaftarBankInput,
+  daftarbankSchema
+} from '@/lib/validations/daftarbank.validation';
 import {
-  useCreateJenisMuatan,
-  useDeleteJenisMuatan,
-  useGetJenisMuatan,
-  useUpdateJenisMuatan
-} from '@/lib/server/useJenisMuatan';
-import FormJenisMuatan from './FormJenisMuatan';
-import { getJenisMuatanFn } from '@/lib/apis/jenismuatan.api';
+  useCreateDaftarBank,
+  useDeleteDaftarBank,
+  useGetDaftarBank,
+  useUpdateDaftarBank
+} from '@/lib/server/useDaftarBank';
+import FormDaftarBank from './FormDaftarBank';
+import { getDaftarBankFn } from '@/lib/apis/daftarbank.api';
 import {
   clearOpenName,
   setClearLookup
@@ -88,8 +88,6 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
-import { EmptyRowsRenderer } from '@/components/EmptyRows';
-import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
@@ -98,10 +96,10 @@ interface Filter {
   filters: {
     nama: string;
     keterangan: string;
+    statusaktif: string;
     modifiedby: string;
     created_at: string;
     updated_at: string;
-    statusaktif: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -111,20 +109,19 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-
-const GridJenisMuatan = () => {
+const GridDaftarBank = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createJenisMuatan, isLoading: isLoadingCreate } =
-    useCreateJenisMuatan();
-  const { mutateAsync: updateJenisMuatan, isLoading: isLoadingUpdate } =
-    useUpdateJenisMuatan();
-  const { mutateAsync: deleteJenisMuatan, isLoading: isLoadingDelete } =
-    useDeleteJenisMuatan();
+  const { mutateAsync: createDaftarBank, isLoading: isLoadingCreate } =
+    useCreateDaftarBank();
+  const { mutateAsync: updateDaftarBank, isLoading: isLoadingUpdate } =
+    useUpdateDaftarBank();
+  const { mutateAsync: deleteDaftarBank, isLoading: isLoadingDelete } =
+    useDeleteDaftarBank();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
@@ -145,7 +142,7 @@ const GridJenisMuatan = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IJenisMuatan[]>([]);
+  const [rows, setRows] = useState<IDaftarBank[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -154,11 +151,11 @@ const GridJenisMuatan = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<JenisMuatanInput>({
+  const forms = useForm<DaftarBankInput>({
     resolver:
       mode === 'delete'
         ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(jenismuatanSchema),
+        : zodResolver(daftarbankSchema),
     mode: 'onSubmit',
     defaultValues: {
       nama: '',
@@ -191,8 +188,8 @@ const GridJenisMuatan = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { data: allJenisMuatan, isLoading: isLoadingJenisMuatan } =
-    useGetJenisMuatan(
+  const { data: allDaftarBank, isLoading: isLoadingDaftarBank } =
+    useGetDaftarBank(
       {
         ...filters,
         page: currentPage
@@ -366,13 +363,7 @@ const GridJenisMuatan = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
+
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -406,7 +397,7 @@ const GridJenisMuatan = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IJenisMuatan>[] => {
+  const columns = useMemo((): Column<IDaftarBank>[] => {
     return [
       {
         key: 'nomor',
@@ -473,7 +464,7 @@ const GridJenisMuatan = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IJenisMuatan }) => (
+        renderCell: ({ row }: { row: IDaftarBank }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -489,7 +480,7 @@ const GridJenisMuatan = () => {
         name: 'Nama',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -559,7 +550,7 @@ const GridJenisMuatan = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 300,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -629,7 +620,7 @@ const GridJenisMuatan = () => {
       },
       {
         key: 'statusaktif',
-        name: 'Status Aktif',
+        name: 'STATUS AKTIF',
         resizable: true,
         draggable: true,
         width: 150,
@@ -639,9 +630,6 @@ const GridJenisMuatan = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('statusaktif')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
             >
               <p
                 className={`text-sm ${
@@ -954,12 +942,7 @@ const GridJenisMuatan = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(
-        user.id,
-        'GridJenismuatan',
-        [...columnsOrder],
-        newWidthMap
-      );
+      saveGridConfig(user.id, 'GridDaftarbank', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -974,7 +957,7 @@ const GridJenisMuatan = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridJenismuatan', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridDaftarbank', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -991,7 +974,7 @@ const GridJenisMuatan = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingJenisMuatan || !hasMore || rows.length === 0) return;
+    if (isLoadingDaftarBank || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1018,7 +1001,7 @@ const GridJenisMuatan = () => {
     }
   }
 
-  function handleCellClick(args: { row: IJenisMuatan }) {
+  function handleCellClick(args: { row: IDaftarBank }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -1026,7 +1009,7 @@ const GridJenisMuatan = () => {
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IJenisMuatan>,
+    args: CellKeyDownArgs<IDaftarBank>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1081,8 +1064,6 @@ const GridJenisMuatan = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
-    setIsFetchingManually(true);
-
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1090,9 +1071,10 @@ const GridJenisMuatan = () => {
       } else {
         forms.reset();
         setPopOver(false);
+        setIsFetchingManually(true);
       }
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/jenismuatan-allItems`);
+        const response = await api2.get(`/redis/get/daftarbank-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1116,7 +1098,7 @@ const GridJenisMuatan = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: JenisMuatanInput, keepOpenModal = false) => {
+  const onSubmit = async (values: DaftarBankInput, keepOpenModal = false) => {
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
 
@@ -1124,7 +1106,7 @@ const GridJenisMuatan = () => {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteJenisMuatan(selectedRowId as unknown as string, {
+          await deleteDaftarBank(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1146,7 +1128,7 @@ const GridJenisMuatan = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createJenisMuatan(
+        const newOrder = await createDaftarBank(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1163,14 +1145,14 @@ const GridJenisMuatan = () => {
       }
 
       if (selectedRowId && mode === 'edit') {
-        await updateJenisMuatan(
+        await updateDaftarBank(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('jenismuatans');
+        queryClient.invalidateQueries('daftarbank');
       }
     } catch (error) {
       console.error(error);
@@ -1211,10 +1193,10 @@ const GridJenisMuatan = () => {
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
 
-      const response = await getJenisMuatanFn(filtersWithoutLimit);
+      const response = await getDaftarBankFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Jenis Muatan',
+        judullaporan: 'Laporan Daftar Bank',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1248,7 +1230,7 @@ const GridJenisMuatan = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanJenismuatan.mrt');
+          report.loadFile('/reports/LaporanDaftarbank.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1267,7 +1249,7 @@ const GridJenisMuatan = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/jenismuatan', '_blank');
+              window.open('/reports/daftarbank', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1284,15 +1266,32 @@ const GridJenisMuatan = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IJenisMuatan) {
+  function getRowClass(row: IDaftarBank) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IJenisMuatan) {
+  function rowKeyGetter(row: IDaftarBank) {
     return row.id;
   }
 
+  function EmptyRowsRenderer() {
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center"
+        style={{ textAlign: 'center', gridColumn: '1/-1' }}
+      >
+        NO ROWS DATA FOUND
+      </div>
+    );
+  }
+  function LoadRowsRenderer() {
+    return (
+      <div>
+        <ImSpinner2 className="animate-spin text-3xl text-primary" />
+      </div>
+    );
+  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1335,9 +1334,10 @@ const GridJenisMuatan = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
+    // loadGridConfig(user.id, 'GridAkunPusat');
     loadGridConfig(
       user.id,
-      'GridJenismuatan',
+      'GridDaftarbank',
       columns,
       setColumnsOrder,
       setColumnsWidth
@@ -1355,9 +1355,9 @@ const GridJenisMuatan = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allJenisMuatan || isFetchingManually || isDataUpdated) return;
+    if (!allDaftarBank || isDataUpdated) return;
 
-    const newRows = allJenisMuatan.data || [];
+    const newRows = allDaftarBank.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1375,14 +1375,14 @@ const GridJenisMuatan = () => {
       return prevRows;
     });
 
-    if (allJenisMuatan.pagination.totalPages) {
-      setTotalPages(allJenisMuatan.pagination.totalPages);
+    if (allDaftarBank.pagination.totalPages) {
+      setTotalPages(allDaftarBank.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allJenisMuatan, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allDaftarBank, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1400,13 +1400,6 @@ const GridJenisMuatan = () => {
   }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        clearError();
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
       // Cek apakah target yang sedang fokus adalah input atau textarea
       if (
         event.key === ' ' &&
@@ -1416,6 +1409,14 @@ const GridJenisMuatan = () => {
         )
       ) {
         event.preventDefault(); // Mencegah scroll pada tombol space jika bukan di input
+      }
+
+      if (event.key === 'Escape') {
+        forms.reset();
+        setMode('');
+        setPopOver(false);
+        clearError();
+        dispatch(clearOpenName());
       }
     };
 
@@ -1460,6 +1461,13 @@ const GridJenisMuatan = () => {
     });
   }, []);
 
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
@@ -1528,7 +1536,7 @@ const GridJenisMuatan = () => {
           }}
         >
           <ActionButton
-            module="JENISMUATAN"
+            module="DAFTARBANK"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onDelete={handleDelete}
@@ -1543,7 +1551,7 @@ const GridJenisMuatan = () => {
               }
             ]}
           />
-          {isLoadingJenisMuatan ? <LoadRowsRenderer /> : null}
+          {isLoadingDaftarBank ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1560,10 +1568,11 @@ const GridJenisMuatan = () => {
             >
               <Button
                 variant="default"
+                // onClick={resetGridConfig}
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridJenismuatan',
+                    'GridDaftarbank',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -1579,7 +1588,7 @@ const GridJenisMuatan = () => {
           )}
         </div>
       </div>
-      <FormJenisMuatan
+      <FormDaftarBank
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1594,4 +1603,4 @@ const GridJenisMuatan = () => {
   );
 };
 
-export default GridJenisMuatan;
+export default GridDaftarBank;

@@ -1563,7 +1563,7 @@ const GridKapal = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allKapal || isFetchingManually || isDataUpdated) return;
+    if (!allKapal || isDataUpdated) return;
 
     const newRows = allKapal.data || [];
 

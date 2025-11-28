@@ -1733,7 +1733,7 @@ const GridBiaya = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBiaya || isFetchingManually || isDataUpdated) return;
+    if (!allBiaya || isDataUpdated) return;
 
     const newRows = allBiaya.data || [];
 
@@ -1810,20 +1810,20 @@ const GridBiaya = () => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       forms.setValue('id', Number(rowData?.id));
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
 
-      forms.setValue('coa', rowData.coa);
-      forms.setValue('coa_text', rowData.coa_text);
+      forms.setValue('coa', rowData?.coa);
+      forms.setValue('coa_text', rowData?.coa_text);
 
-      forms.setValue('coahut', rowData.coahut);
-      forms.setValue('coahut_text', rowData.coahut_text);
+      forms.setValue('coahut', rowData?.coahut);
+      forms.setValue('coahut_text', rowData?.coahut_text);
 
-      forms.setValue('jenisorderan_id', Number(rowData.jenisorderan_id));
-      forms.setValue('jenisorderan_text', rowData.jenisorderan_text);
+      forms.setValue('jenisorderan_id', Number(rowData?.jenisorderan_id));
+      forms.setValue('jenisorderan_text', rowData?.jenisorderan_text);
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();

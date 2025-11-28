@@ -1782,7 +1782,7 @@ const GridRelasi = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allRelasi || isFetchingManually || isDataUpdated) return;
+    if (!allRelasi || isDataUpdated) return;
 
     const newRows = allRelasi.data || [];
 

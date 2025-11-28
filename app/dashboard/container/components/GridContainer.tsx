@@ -1618,7 +1618,7 @@ const GridContainer = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allContainer || isFetchingManually || isDataUpdated) return;
+    if (!allContainer || isDataUpdated) return;
 
     const newRows = allContainer.data || [];
 

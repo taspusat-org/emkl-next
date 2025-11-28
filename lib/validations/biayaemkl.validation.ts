@@ -28,7 +28,10 @@ export const BiayaemklSchema = z.object({
   statusbiayabl_text: z.string().nullable().optional(),
 
   statusseal: z.number().min(1, { message: REQUIRED_FIELD }),
-  statusseal_text: z.string().nullable().optional()
+  statusseal_text: z.string().nullable().optional(),
+
+  statustagih: z.number().min(1, { message: REQUIRED_FIELD }),
+  statustagih_text: z.string().nullable().optional()
 });
 
 export type BiayaemklInput = z.infer<typeof BiayaemklSchema>;

@@ -3106,7 +3106,7 @@ const GridSupplier = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allSupplier || isFetchingManually || isDataUpdated) return;
+    if (!allSupplier || isDataUpdated) return;
 
     const newRows = allSupplier.data || [];
 

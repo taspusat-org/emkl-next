@@ -22,6 +22,9 @@ export interface IBiayaemkl {
 
   statusseal: number;
   statusseal_text: string;
+
+  statustagih: number;
+  statustagih_text: string;
 }
 
 export interface IAllBiayaemkl {

@@ -1845,7 +1845,7 @@ const GridManagerMarketingHeader = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allData || isFetchingManually || isDataUpdated) return;
+    if (!allData || isDataUpdated) return;
 
     const newRows = allData.data || [];
 

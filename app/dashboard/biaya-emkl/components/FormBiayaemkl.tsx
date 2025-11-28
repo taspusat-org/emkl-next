@@ -140,6 +140,22 @@ const FormBiayaemkl = ({
     }
   ];
 
+  const lookUpPropsStatustagih = [
+    {
+      columns: [{ key: 'text', name: 'STATUS TAGIH' }],
+      labelLookup: 'STATUS TAGIH LOOKUP',
+      required: true,
+      selectedRequired: false,
+      endpoint: 'parameter?grp=status+nilai',
+      label: 'STATUS TAGIH',
+      singleColumn: true,
+      pageSize: 20,
+      dataToPost: 'id',
+      showOnButton: true,
+      postData: 'text'
+    }
+  ];
+
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
@@ -415,6 +431,30 @@ const FormBiayaemkl = ({
                             forms.setValue('statusseal', id);
                           }}
                           lookupNama={forms.getValues('statusseal_text')}
+                          disabled={mode === 'view' || mode === 'delete'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel
+                        required={true}
+                        className="text-sm font-semibold text-gray-700"
+                      >
+                        Status Tagih
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsStatustagih.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          lookupValue={(id) => {
+                            forms.setValue('statustagih', id);
+                          }}
+                          lookupNama={forms.getValues('statustagih_text')}
                           disabled={mode === 'view' || mode === 'delete'}
                         />
                       ))}

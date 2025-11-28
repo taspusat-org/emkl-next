@@ -2316,7 +2316,7 @@ const GridPengeluaranEmkl = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allPengeluaranEmkl || isFetchingManually || isDataUpdated) return;
+    if (!allPengeluaranEmkl || isDataUpdated) return;
 
     const newRows = allPengeluaranEmkl.data || [];
 

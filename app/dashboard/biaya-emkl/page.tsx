@@ -34,11 +34,13 @@ const Page = () => {
           getJenisorderanLookup,
           getStatusAktifLookup,
           getStatusBiayablLookup,
-          getStatusSealLookup
+          getStatusSealLookup,
+          getStatusTagihLookup
         ] = await Promise.all([
           getBiayaFn({ isLookUp: 'true' }),
           getAkunpusatFn({ isLookUp: 'true' }),
           getJenisOrderanFn({ isLookUp: 'true' }),
+          getParameterFn({ isLookUp: 'true' }),
           getParameterFn({ isLookUp: 'true' }),
           getParameterFn({ isLookUp: 'true' }),
           getParameterFn({ isLookUp: 'true' })
@@ -134,6 +136,23 @@ const Page = () => {
           );
           const defaultValue = defaultItem ? String(defaultItem.default) : '';
           dispatch(setDefault({ key: 'STATUS SEAL', isdefault: defaultValue }));
+        }
+
+        const statustagih = getStatusTagihLookup.data.filter(
+          (item: IParameter) => item.grp === 'STATUS NILAI'
+        );
+
+        if (statustagih && statustagih.length > 0) {
+          dispatch(setData({ key: 'STATUS TAGIH', data: statustagih }));
+          dispatch(setType({ key: 'STATUS TAGIH', type: 'local' }));
+
+          const defaultItem = statustagih.find(
+            (item: IParameter) => item.default !== null
+          );
+          const defaultValue = defaultItem ? String(defaultItem.default) : '';
+          dispatch(
+            setDefault({ key: 'STATUS TAGIH', isdefault: defaultValue })
+          );
         }
       } catch (err) {
         console.error('Error fetching lookup data:', err);

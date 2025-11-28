@@ -2384,7 +2384,7 @@ const GridMarketing = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allDataMarketing || isFetchingManually || isDataUpdated) return;
+    if (!allDataMarketing || isDataUpdated) return;
 
     const newRows = allDataMarketing.data || [];
 

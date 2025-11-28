@@ -1487,7 +1487,7 @@ const GridPelayaran = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allPelayaran || isFetchingManually || isDataUpdated) return;
+    if (!allPelayaran || isDataUpdated) return;
 
     const newRows = allPelayaran.data || [];
 

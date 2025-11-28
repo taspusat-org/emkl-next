@@ -2465,7 +2465,7 @@ const GridBank = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBank || isFetchingManually || isDataUpdated) return;
+    if (!allBank || isDataUpdated) return;
 
     const newRows = allBank.data || [];
 
@@ -2542,67 +2542,67 @@ const GridBank = () => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       forms.setValue('id', Number(rowData?.id));
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
 
-      forms.setValue('coa', rowData.coa);
-      forms.setValue('keterangancoa', rowData.keterangancoa);
+      forms.setValue('coa', rowData?.coa);
+      forms.setValue('keterangancoa', rowData?.keterangancoa);
 
-      forms.setValue('coagantung', rowData.coagantung);
-      forms.setValue('keterangancoagantung', rowData.keterangancoagantung);
+      forms.setValue('coagantung', rowData?.coagantung);
+      forms.setValue('keterangancoagantung', rowData?.keterangancoagantung);
 
-      forms.setValue('statusbank', Number(rowData.statusbank));
-      forms.setValue('textbank', rowData.textbank);
+      forms.setValue('statusbank', Number(rowData?.statusbank));
+      forms.setValue('textbank', rowData?.textbank);
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
 
-      forms.setValue('statusdefault', Number(rowData.statusdefault));
-      forms.setValue('textdefault', rowData.textdefault);
+      forms.setValue('statusdefault', Number(rowData?.statusdefault));
+      forms.setValue('textdefault', rowData?.textdefault);
 
-      forms.setValue('formatpenerimaan', Number(rowData.formatpenerimaan));
-      forms.setValue('formatpenerimaantext', rowData.formatpenerimaantext);
+      forms.setValue('formatpenerimaan', Number(rowData?.formatpenerimaan));
+      forms.setValue('formatpenerimaantext', rowData?.formatpenerimaantext);
 
-      forms.setValue('formatpengeluaran', Number(rowData.formatpengeluaran));
-      forms.setValue('formatpengeluarantext', rowData.formatpengeluarantext);
+      forms.setValue('formatpengeluaran', Number(rowData?.formatpengeluaran));
+      forms.setValue('formatpengeluarantext', rowData?.formatpengeluarantext);
 
       forms.setValue(
         'formatpenerimaangantung',
-        Number(rowData.formatpenerimaangantung)
+        Number(rowData?.formatpenerimaangantung)
       );
       forms.setValue(
         'formatpenerimaangantungtext',
-        rowData.formatpenerimaangantungtext
+        rowData?.formatpenerimaangantungtext
       );
 
       forms.setValue(
         'formatpengeluarangantung',
-        Number(rowData.formatpengeluarangantung)
+        Number(rowData?.formatpengeluarangantung)
       );
       forms.setValue(
         'formatpengeluarangantungtext',
-        rowData.formatpengeluarangantungtext
+        rowData?.formatpengeluarangantungtext
       );
 
-      forms.setValue('formatpencairan', Number(rowData.formatpencairan));
-      forms.setValue('formatpencairantext', rowData.formatpencairantext);
+      forms.setValue('formatpencairan', Number(rowData?.formatpencairan));
+      forms.setValue('formatpencairantext', rowData?.formatpencairantext);
 
       forms.setValue(
         'formatrekappenerimaan',
-        Number(rowData.formatrekappenerimaan)
+        Number(rowData?.formatrekappenerimaan)
       );
       forms.setValue(
         'formatrekappenerimaantext',
-        rowData.formatrekappenerimaantext
+        rowData?.formatrekappenerimaantext
       );
 
       forms.setValue(
         'formatrekappengeluaran',
-        Number(rowData.formatrekappengeluaran)
+        Number(rowData?.formatrekappengeluaran)
       );
       forms.setValue(
         'formatrekappengeluarantext',
-        rowData.formatrekappengeluarantext
+        rowData?.formatrekappengeluarantext
       );
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared

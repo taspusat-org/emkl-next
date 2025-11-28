@@ -2086,7 +2086,7 @@ const GridMasterbiaya = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBiaya || isFetchingManually || isDataUpdated) return;
+    if (!allBiaya || isDataUpdated) return;
 
     const newRows = allBiaya.data || [];
 
@@ -2162,29 +2162,29 @@ const GridMasterbiaya = () => {
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      forms.setValue('tujuankapal_id', Number(rowData.tujuankapal_id));
-      forms.setValue('tujuankapal_text', rowData.tujuankapal_text);
+      forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id));
+      forms.setValue('tujuankapal_text', rowData?.tujuankapal_text);
 
-      forms.setValue('sandarkapal_id', Number(rowData.sandarkapal_id));
-      forms.setValue('sandarkapal_text', rowData.sandarkapal_text);
+      forms.setValue('sandarkapal_id', Number(rowData?.sandarkapal_id));
+      forms.setValue('sandarkapal_text', rowData?.sandarkapal_text);
 
-      forms.setValue('pelayaran_id', Number(rowData.pelayaran_id));
-      forms.setValue('pelayaran_text', rowData.pelayaran_text);
+      forms.setValue('pelayaran_id', Number(rowData?.pelayaran_id));
+      forms.setValue('pelayaran_text', rowData?.pelayaran_text);
 
-      forms.setValue('container_id', Number(rowData.container_id));
-      forms.setValue('container_text', rowData.container_text);
+      forms.setValue('container_id', Number(rowData?.container_id));
+      forms.setValue('container_text', rowData?.container_text);
 
-      forms.setValue('biayaemkl_id', Number(rowData.biayaemkl_id));
-      forms.setValue('biayaemkl_text', rowData.biayaemkl_text);
+      forms.setValue('biayaemkl_id', Number(rowData?.biayaemkl_id));
+      forms.setValue('biayaemkl_text', rowData?.biayaemkl_text);
 
-      forms.setValue('jenisorder_id', Number(rowData.jenisorder_id));
-      forms.setValue('jenisorderan_text', rowData.jenisorderan_text);
+      forms.setValue('jenisorder_id', Number(rowData?.jenisorder_id));
+      forms.setValue('jenisorderan_text', rowData?.jenisorderan_text);
 
-      forms.setValue('tglberlaku', rowData.tglberlaku);
-      forms.setValue('nominal', formatCurrency(rowData.nominal));
+      forms.setValue('tglberlaku', rowData?.tglberlaku);
+      forms.setValue('nominal', formatCurrency(rowData?.nominal));
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();

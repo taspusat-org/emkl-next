@@ -1435,7 +1435,7 @@ const GridScheduleHeader = () => {
 
   useEffect(() => {
     //useEffect untuk tigger data ke grid pertama load
-    if (!allScheduleHeaderData || isFetchingManually || isDataUpdated) return;
+    if (!allScheduleHeaderData || isDataUpdated) return;
 
     const newRows = allScheduleHeaderData.data || [];
 

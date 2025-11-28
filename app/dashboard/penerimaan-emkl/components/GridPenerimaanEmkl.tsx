@@ -2314,7 +2314,7 @@ const GridPenerimaanEmkl = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allPenerimaanEmkl || isFetchingManually || isDataUpdated) return;
+    if (!allPenerimaanEmkl || isDataUpdated) return;
 
     const newRows = allPenerimaanEmkl.data || [];
 

@@ -2147,7 +2147,7 @@ const GridPindahBuku = () => {
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
 
   useEffect(() => {
-    if (!allPindahBuku || isFetchingManually || isDataUpdated) return;
+    if (!allPindahBuku || isDataUpdated) return;
 
     const newRows = allPindahBuku.data || [];
 
