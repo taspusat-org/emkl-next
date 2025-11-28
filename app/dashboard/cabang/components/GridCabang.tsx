@@ -1369,13 +1369,13 @@ const GridCabang = () => {
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      forms.setValue('kodecabang', rowData.kodecabang);
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
-      forms.setValue('cabang_id', Number(rowData.cabang_id));
-      forms.setValue('namacabang_hr', rowData.namacabang_hr);
+      forms.setValue('kodecabang', rowData?.kodecabang);
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
+      forms.setValue('cabang_id', Number(rowData?.cabang_id));
+      forms.setValue('namacabang_hr', rowData?.namacabang_hr);
 
       setPopOver(true);
       setDeleteMode(false);
@@ -1388,7 +1388,7 @@ const GridCabang = () => {
     setMode('delete');
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      const checkCabang = await checkCabangFn(rowData.id);
+      const checkCabang = await checkCabangFn(rowData?.id);
       if (checkCabang === true) {
         alert({
           title: 'DATA INI TIDAK DIIZINKAN UNTUK DIHAPUS!',
@@ -1396,13 +1396,13 @@ const GridCabang = () => {
           submitText: 'ok'
         });
       } else {
-        forms.setValue('kodecabang', rowData.kodecabang);
-        forms.setValue('nama', rowData.nama);
-        forms.setValue('keterangan', rowData.keterangan);
-        forms.setValue('statusaktif', Number(rowData.statusaktif));
-        forms.setValue('text', rowData.text);
-        forms.setValue('cabang_id', Number(rowData.cabang_id));
-        forms.setValue('namacabang_hr', rowData.namacabang_hr);
+        forms.setValue('kodecabang', rowData?.kodecabang);
+        forms.setValue('nama', rowData?.nama);
+        forms.setValue('keterangan', rowData?.keterangan);
+        forms.setValue('statusaktif', Number(rowData?.statusaktif));
+        forms.setValue('text', rowData?.text);
+        forms.setValue('cabang_id', Number(rowData?.cabang_id));
+        forms.setValue('namacabang_hr', rowData?.namacabang_hr);
         setPopOver(true);
         setEditMode(false);
         setDeleteMode(true);
@@ -1413,13 +1413,13 @@ const GridCabang = () => {
     setMode('view');
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      forms.setValue('kodecabang', rowData.kodecabang);
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
-      forms.setValue('cabang_id', Number(rowData.cabang_id));
-      forms.setValue('namacabang_hr', rowData.namacabang_hr);
+      forms.setValue('kodecabang', rowData?.kodecabang);
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
+      forms.setValue('cabang_id', Number(rowData?.cabang_id));
+      forms.setValue('namacabang_hr', rowData?.namacabang_hr);
       setPopOver(true);
       setDeleteMode(true);
       setEditMode(false);

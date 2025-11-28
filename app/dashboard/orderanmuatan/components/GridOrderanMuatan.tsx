@@ -3899,8 +3899,8 @@ const GridOrderanMuatan = () => {
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      forms.setValue('nobukti', rowData.nobukti);
-      forms.setValue('tglbukti', rowData.tglbukti);
+      forms.setValue('nobukti', rowData?.nobukti);
+      forms.setValue('tglbukti', rowData?.tglbukti);
       forms.setValue(
         'jenisorder_id',
         Number(selectedJenisOrderan) || JENISORDERMUATAN

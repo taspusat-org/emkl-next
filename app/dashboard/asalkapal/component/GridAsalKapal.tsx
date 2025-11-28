@@ -1634,7 +1634,7 @@ const GridAsalKapal = () => {
     ) {
       forms.setValue(
         'nominal',
-        rowData?.nominal ? formatCurrency(rowData.nominal) : ''
+        rowData?.nominal ? formatCurrency(rowData?.nominal) : ''
       );
       forms.setValue('keterangan', rowData?.keterangan);
       forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);

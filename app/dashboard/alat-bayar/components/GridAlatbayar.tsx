@@ -1865,23 +1865,23 @@ const GridAlatbayar = () => {
     const rowData = rows[selectedRow];
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       forms.setValue('id', Number(rowData?.id));
-      forms.setValue('nama', rowData.nama);
-      forms.setValue('keterangan', rowData.keterangan);
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('keterangan', rowData?.keterangan);
 
-      forms.setValue('statuslangsungcair', Number(rowData.statuslangsungcair));
+      forms.setValue('statuslangsungcair', Number(rowData?.statuslangsungcair));
       forms.setValue(
         'statuslangsungcair_text',
-        rowData.statuslangsungcair_text
+        rowData?.statuslangsungcair_text
       );
 
-      forms.setValue('statusdefault', Number(rowData.statusdefault));
-      forms.setValue('statusdefault_text', rowData.statusdefault_text);
+      forms.setValue('statusdefault', Number(rowData?.statusdefault));
+      forms.setValue('statusdefault_text', rowData?.statusdefault_text);
 
-      forms.setValue('statusbank', Number(rowData.statusbank));
-      forms.setValue('statusbank_text', rowData.statusbank_text);
+      forms.setValue('statusbank', Number(rowData?.statusbank));
+      forms.setValue('statusbank_text', rowData?.statusbank_text);
 
-      forms.setValue('statusaktif', Number(rowData.statusaktif));
-      forms.setValue('text', rowData.text);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif));
+      forms.setValue('text', rowData?.text);
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
       forms.reset();
