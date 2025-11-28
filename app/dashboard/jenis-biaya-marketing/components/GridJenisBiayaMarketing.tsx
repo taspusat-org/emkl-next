@@ -1500,7 +1500,7 @@ const GridJenisBiayaMarketing = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allJenisBiayaMarketing || isFetchingManually || isDataUpdated) return;
+    if (!allJenisBiayaMarketing || isDataUpdated) return;
 
     const newRows = allJenisBiayaMarketing.data || [];
 

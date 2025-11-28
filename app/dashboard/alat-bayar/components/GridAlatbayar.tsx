@@ -1788,7 +1788,7 @@ const GridAlatbayar = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allAlatbayar || isFetchingManually || isDataUpdated) return;
+    if (!allAlatbayar || isDataUpdated) return;
 
     const newRows = allAlatbayar.data || [];
 

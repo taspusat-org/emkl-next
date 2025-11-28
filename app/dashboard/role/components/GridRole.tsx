@@ -1323,7 +1323,7 @@ const GridRole = () => {
   }, [rows, selectedRow, dispatch]);
 
   useEffect(() => {
-    if (!role || isFetchingManually || isDataUpdated) return;
+    if (!role || isDataUpdated) return;
 
     const newRows = role.data || [];
 

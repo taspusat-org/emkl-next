@@ -1555,7 +1555,7 @@ const GridJabatan = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allJabatan || isFetchingManually || isDataUpdated) return;
+    if (!allJabatan || isDataUpdated) return;
 
     const newRows = allJabatan.data || [];
 

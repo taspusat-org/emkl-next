@@ -1846,7 +1846,7 @@ const GridHargatrucking = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allHargatrucking || isFetchingManually || isDataUpdated) return;
+    if (!allHargatrucking || isDataUpdated) return;
 
     const newRows = allHargatrucking.data || [];
 

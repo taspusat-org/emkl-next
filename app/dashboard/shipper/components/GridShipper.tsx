@@ -10528,7 +10528,7 @@ const GridShipper = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allShipper || isFetchingManually || isDataUpdated) return;
+    if (!allShipper || isDataUpdated) return;
 
     const newRows = allShipper.data || [];
 

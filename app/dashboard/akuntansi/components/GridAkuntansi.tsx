@@ -1481,7 +1481,7 @@ const GridAkuntansi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allAkuntansi || isFetchingManually || isDataUpdated) return;
+    if (!allAkuntansi || isDataUpdated) return;
 
     const newRows = allAkuntansi.data || [];
 
@@ -1508,7 +1508,7 @@ const GridAkuntansi = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allAkuntansi, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allAkuntansi, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');

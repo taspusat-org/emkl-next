@@ -18,7 +18,21 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import FormAsalKapal from './FormAsalKapal';
 import { useQueryClient } from 'react-query';
+import {
+  AsalKapalInput,
+  asalkapalSchema
+} from '@/lib/validations/asalkapal.validation';
+
+import {
+  useCreateAsalKapal,
+  useDeleteAsalKapal,
+  useGetAsalKapal,
+  useUpdateAsalKapal
+} from '@/lib/server/useAsalKapal';
+
+import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import {
@@ -41,6 +55,12 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  exportMenuBySelectFn,
+  exportMenuFn,
+  getMenuFn,
+  reportMenuBySelectFn
+} from '@/lib/apis/menu.api';
 import { HiDocument } from 'react-icons/hi2';
 import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
@@ -49,38 +69,30 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import { IDaftarBank } from '@/lib/types/daftarbank.type';
-import {
-  DaftarBankInput,
-  daftarbankSchema
-} from '@/lib/validations/daftarbank.validation';
-import {
-  useCreateDaftarBank,
-  useDeleteDaftarBank,
-  useGetDaftarBank,
-  useUpdateDaftarBank
-} from '@/lib/server/useDaftarBank';
-import FormDaftarBank from './FormDaftarBank';
-import { getDaftarBankFn } from '@/lib/apis/daftarbank.api';
+import ReportDesignerMenu from '@/app/reports/menu/page';
+import { IAsalKapal } from '@/lib/types/asalkapal.type';
+import { number } from 'zod';
 import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { useFormError } from '@/lib/hooks/formErrorContext';
 import {
-  setProcessed,
-  setProcessing
+  setProcessing,
+  setProcessed
 } from '@/lib/store/loadingSlice/loadingSlice';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getAsalKapalFn } from '@/lib/apis/asalkapal.api';
+import { setReportFilter } from '@/lib/store/printSlice/printSlice';
+import Alert from '@/components/custom-ui/AlertCustom';
+import { formatCurrency } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
-
 import {
   cancelPreviousRequest,
   handleContextMenu,
@@ -88,18 +100,23 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import { debounce } from 'lodash';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface Filter {
   page: number;
   limit: number;
   search: string;
   filters: {
-    nama: string;
     keterangan: string;
-    statusaktif: string;
-    modifiedby: string;
+    text: string;
+    nominal: string;
     created_at: string;
     updated_at: string;
+    statusaktif: string;
+    cabang: string;
+    container: string;
   };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
@@ -109,23 +126,23 @@ interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridDaftarBank = () => {
+const GridAsalKapal = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const { mutateAsync: createDaftarBank, isLoading: isLoadingCreate } =
-    useCreateDaftarBank();
-  const { mutateAsync: updateDaftarBank, isLoading: isLoadingUpdate } =
-    useUpdateDaftarBank();
-  const { mutateAsync: deleteDaftarBank, isLoading: isLoadingDelete } =
-    useDeleteDaftarBank();
+  const { mutateAsync: createAsalKapal, isLoading: isLoadingCreate } =
+    useCreateAsalKapal();
+  const { mutateAsync: updateAsalKapal, isLoading: isLoadingUpdate } =
+    useUpdateAsalKapal();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { mutateAsync: deleteAsalKapal, isLoading: isLoadingDelete } =
+    useDeleteAsalKapal();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -142,7 +159,7 @@ const GridDaftarBank = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<IDaftarBank[]>([]);
+  const [rows, setRows] = useState<IAsalKapal[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -151,97 +168,63 @@ const GridDaftarBank = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<DaftarBankInput>({
-    resolver:
-      mode === 'delete'
-        ? undefined // Tidak pakai resolver saat delete
-        : zodResolver(daftarbankSchema),
+  const forms = useForm<AsalKapalInput>({
+    resolver: zodResolver(asalkapalSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nama: '',
+      nominal: undefined,
       keterangan: '',
-      statusaktif: 1
+      statusaktif: 1,
+      cabang_id: 0,
+      container_id: 0
     }
   });
-  const {
-    setFocus,
-    reset,
-    formState: { isSubmitSuccessful }
-  } = forms;
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
     filters: {
-      nama: '',
+      nominal: '',
       keterangan: '',
-      statusaktif: '',
-      modifiedby: '',
       created_at: '',
-      updated_at: ''
+      updated_at: '',
+      text: '',
+      statusaktif: '',
+      cabang: '',
+      container: ''
     },
     search: '',
-    sortBy: 'nama',
+    sortBy: 'cabang',
     sortDirection: 'asc'
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
-  const { data: allDaftarBank, isLoading: isLoadingDaftarBank } =
-    useGetDaftarBank(
-      {
-        ...filters,
-        page: currentPage
-      },
-      abortControllerRef.current?.signal
-    );
-
-  const debouncedFilterUpdate = useRef(
-    debounce((colKey: string, value: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        filters: { ...prev.filters, [colKey]: value },
-        page: 1
-      }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-      setRows([]);
-      setCurrentPage(1);
-    }, 300) // Bisa dikurangi jadi 250-300ms
-  ).current;
-
-  const handleFilterInputChange = useCallback(
-    (colKey: string, value: string) => {
-      cancelPreviousRequest(abortControllerRef);
-      debouncedFilterUpdate(colKey, value);
+  const { data: allAsalKapal, isLoading: isLoadingAsalKapal } = useGetAsalKapal(
+    {
+      ...filters,
+      page: currentPage
     },
-    []
+    abortControllerRef.current?.signal
   );
-  const handleClearFilter = useCallback((colKey: string) => {
-    cancelPreviousRequest(abortControllerRef);
-    debouncedFilterUpdate.cancel(); // Cancel pending updates
-    setFilters((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [colKey]: '' },
-      page: 1
-    }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setRows([]);
-    setCurrentPage(1);
-  }, []);
+
   const { clearError } = useFormError();
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
   ) => {
+    // 1. cari index di array columns asli
     const originalIndex = columns.findIndex((col) => col.key === colKey);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
         : originalIndex;
 
+    // update filter seperti biasa…
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: value },
@@ -252,10 +235,12 @@ const GridDaftarBank = () => {
     setCheckedRows(new Set());
     setIsAllSelected(false);
 
+    // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 100);
 
+    // 4. focus input filter
     setTimeout(() => {
       const ref = inputColRefs.current[colKey];
       ref?.focus();
@@ -300,6 +285,40 @@ const GridDaftarBank = () => {
       />
     );
   }
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+  const handleClearFilter = useCallback((colKey: string) => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: '' },
+      page: 1
+    }));
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
+  }, []);
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
@@ -308,12 +327,15 @@ const GridDaftarBank = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        nama: '',
+        nominal: '',
         keterangan: '',
-        statusaktif: '',
-        modifiedby: '',
+        icon: '',
         created_at: '',
-        updated_at: ''
+        updated_at: '',
+        text: '',
+        statusaktif: '',
+        cabang: '',
+        container: ''
       },
       search: searchValue,
       page: 1
@@ -363,7 +385,25 @@ const GridDaftarBank = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        clearError();
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
 
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -386,6 +426,7 @@ const GridDaftarBank = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -397,7 +438,7 @@ const GridDaftarBank = () => {
     }));
     setInputValue('');
   };
-  const columns = useMemo((): Column<IDaftarBank>[] => {
+  const columns = useMemo((): Column<IAsalKapal>[] => {
     return [
       {
         key: 'nomor',
@@ -419,12 +460,14 @@ const GridDaftarBank = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    nama: '',
+                    nominal: '',
                     keterangan: '',
-                    statusaktif: '',
-                    modifiedby: '',
+                    text: '',
                     created_at: '',
-                    updated_at: ''
+                    updated_at: '',
+                    statusaktif: '',
+                    cabang: '',
+                    container: ''
                   }
                 }),
                   setInputValue('');
@@ -464,7 +507,7 @@ const GridDaftarBank = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: IDaftarBank }) => (
+        renderCell: ({ row }: { row: IAsalKapal }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -476,8 +519,8 @@ const GridDaftarBank = () => {
       },
 
       {
-        key: 'nama',
-        name: 'Nama',
+        key: 'cabang',
+        name: 'cabang',
         resizable: true,
         draggable: true,
         width: 150,
@@ -485,24 +528,24 @@ const GridDaftarBank = () => {
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nama')}
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('cabang')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'cabang' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nama
+                Cabang
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'nama' &&
+                {filters.sortBy === 'cabang' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'nama' &&
+                ) : filters.sortBy === 'cabang' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -510,22 +553,23 @@ const GridDaftarBank = () => {
                 )}
               </div>
             </div>
+
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="nama"
-                value={filters.filters.nama || ''}
-                onChange={(value) => handleFilterInputChange('nama', value)}
-                onClear={() => handleClearFilter('nama')}
+                colKey="cabang"
+                value={filters.filters.cabang || ''}
+                onChange={(value) => handleFilterInputChange('cabang', value)}
+                onClear={() => handleClearFilter('cabang')}
                 inputRef={(el) => {
-                  inputColRefs.current['nama'] = el;
+                  inputColRefs.current['cabang'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.nama || '';
-          const cellValue = props.row.nama || '';
+          const columnFilter = filters.filters.cabang || '';
+          const cellValue = props.row.cabang || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -550,7 +594,7 @@ const GridDaftarBank = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 250,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -619,6 +663,150 @@ const GridDaftarBank = () => {
         }
       },
       {
+        key: 'container',
+        name: 'container',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%]"
+              onClick={() => handleSort('container')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'container' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Container
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'container' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'container' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="container"
+                value={filters.filters.container || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('container', value)
+                }
+                onClear={() => handleClearFilter('container')}
+                inputRef={(el) => {
+                  inputColRefs.current['container'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.container || '';
+          const cellValue = props.row.container || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        name: 'Nominal',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('nominal')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'nominal' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Nominal
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'nominal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nominal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="nominal"
+                value={filters.filters.nominal || ''}
+                onChange={(value) => handleFilterInputChange('nominal', value)}
+                onClear={() => handleClearFilter('nominal')}
+                inputRef={(el) => {
+                  inputColRefs.current['nominal'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nominal || '';
+          const cellValue =
+            props.row.nominal != null ? formatCurrency(props.row.nominal) : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{formatCurrency(cellValue)}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
         key: 'statusaktif',
         name: 'STATUS AKTIF',
         resizable: true,
@@ -628,8 +816,11 @@ const GridDaftarBank = () => {
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
-              className="headers-cell h-[50%] px-8"
+              className="headers-cell h-[50%]"
               onClick={() => handleSort('statusaktif')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -701,81 +892,6 @@ const GridDaftarBank = () => {
         }
       },
       {
-        key: 'modifiedby',
-        name: 'Modified By',
-        resizable: true,
-        draggable: true,
-
-        headerCellClass: 'column-headers',
-
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('modifiedby')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                MODIFIED BY
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'modifiedby' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'modifiedby' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="modifiedby"
-                value={filters.filters.modifiedby || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('modifiedby', value)
-                }
-                onClear={() => handleClearFilter('modifiedby')}
-                inputRef={(el) => {
-                  inputColRefs.current['modifiedby'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.modifiedby || '';
-          const cellValue = props.row.modifiedby || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
         key: 'created_at',
         name: 'Created At',
         resizable: true,
@@ -812,39 +928,39 @@ const GridDaftarBank = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="created_at"
-                value={filters.filters.created_at || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('created_at', value)
-                }
-                onClear={() => handleClearFilter('created_at')}
-                inputRef={(el) => {
+              <Input
+                ref={(el) => {
                   inputColRefs.current['created_at'] = el;
                 }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.created_at.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('created_at', value);
+                }}
               />
+              {filters.filters.created_at && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('created_at', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.created_at || '';
-          const cellValue = props.row.created_at || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.created_at || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
           );
         }
       },
@@ -887,39 +1003,39 @@ const GridDaftarBank = () => {
             </div>
 
             <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="updated_at"
-                value={filters.filters.updated_at || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('updated_at', value)
-                }
-                onClear={() => handleClearFilter('updated_at')}
-                inputRef={(el) => {
-                  inputColRefs.current['updated_at'] = el;
+              <Input
+                ref={(el) => {
+                  inputColRefs.current['created_at'] = el;
+                }}
+                className="filter-input z-[999999] h-8 rounded-none"
+                value={filters.filters.updated_at.toUpperCase() || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase();
+                  handleColumnFilterChange('updated_at', value);
                 }}
               />
+              {filters.filters.updated_at && (
+                <button
+                  className="absolute right-2 top-2 text-xs text-gray-500"
+                  onClick={() => handleColumnFilterChange('updated_at', '')}
+                  type="button"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
           </div>
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.updated_at || '';
-          const cellValue = props.row.updated_at || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-sm">
+              {highlightText(
+                props.row.updated_at || '',
+                filters.search,
+                columnFilter
+              )}
+            </div>
           );
         }
       }
@@ -942,7 +1058,7 @@ const GridDaftarBank = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridDaftarbank', [...columnsOrder], newWidthMap);
+      saveGridConfig(user.id, 'GridAsalKapal', [...columnsOrder], newWidthMap);
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -957,7 +1073,7 @@ const GridDaftarBank = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridDaftarbank', [...newOrder], columnsWidth);
+      saveGridConfig(user.id, 'GridAsalKapal', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -974,7 +1090,7 @@ const GridDaftarBank = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingDaftarBank || !hasMore || rows.length === 0) return;
+    if (isLoadingAsalKapal || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1001,15 +1117,18 @@ const GridDaftarBank = () => {
     }
   }
 
-  function handleCellClick(args: { row: IDaftarBank }) {
+  function handleCellClick(args: { row: IAsalKapal }) {
     const clickedRow = args.row;
+    //
+
+    if (!clickedRow) return;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<IDaftarBank>,
+    args: CellKeyDownArgs<IAsalKapal>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1064,6 +1183,7 @@ const GridDaftarBank = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
+
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1074,7 +1194,7 @@ const GridDaftarBank = () => {
         setIsFetchingManually(true);
       }
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/daftarbank-allItems`);
+        const response = await api2.get(`/redis/get/asalkapal-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1098,15 +1218,13 @@ const GridDaftarBank = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: DaftarBankInput, keepOpenModal = false) => {
-    clearError();
+  const onSubmit = async (values: AsalKapalInput, keepOpenModal = false) => {
     const selectedRowId = rows[selectedRow]?.id;
-
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteDaftarBank(selectedRowId as unknown as string, {
+          await deleteAsalKapal(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1128,7 +1246,7 @@ const GridDaftarBank = () => {
         return;
       }
       if (mode === 'add') {
-        const newOrder = await createDaftarBank(
+        const newOrder = await createAsalKapal(
           {
             ...values,
             ...filters // Kirim filter ke body/payload
@@ -1143,16 +1261,15 @@ const GridDaftarBank = () => {
         }
         return;
       }
-
       if (selectedRowId && mode === 'edit') {
-        await updateDaftarBank(
+        await updateAsalKapal(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('daftarbank');
+        queryClient.invalidateQueries('asalkapal');
       }
     } catch (error) {
       console.error(error);
@@ -1173,6 +1290,10 @@ const GridDaftarBank = () => {
       setMode('delete');
       setPopOver(true);
     }
+    //  else {
+    //   // Alert()
+    //   // pass;
+    // }
   };
   const handleView = () => {
     if (selectedRow !== null) {
@@ -1180,6 +1301,60 @@ const GridDaftarBank = () => {
       setPopOver(true);
     }
   };
+
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
+
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
 
   const handleReport = async () => {
     try {
@@ -1192,11 +1367,10 @@ const GridDaftarBank = () => {
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
       const { page, limit, ...filtersWithoutLimit } = filters;
-
-      const response = await getDaftarBankFn(filtersWithoutLimit);
+      const response = await getAsalKapalFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Daftar Bank',
+        judullaporan: 'Laporan Asal Kapal',
         usercetak: user.username,
         tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
@@ -1230,7 +1404,7 @@ const GridDaftarBank = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanDaftarbank.mrt');
+          report.loadFile('/reports/LaporanAsalKapal.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1249,7 +1423,7 @@ const GridDaftarBank = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/daftarbank', '_blank');
+              window.open('/reports/laporanasalkapal', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1263,47 +1437,71 @@ const GridDaftarBank = () => {
     }
   };
 
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: IDaftarBank) {
+  function getRowClass(row: IAsalKapal) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: IDaftarBank) {
+  function rowKeyGetter(row: IAsalKapal) {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
+
     clearError();
+
     forms.reset();
   };
+
   const handleAdd = async () => {
-    setMode('add');
+    try {
+      // Jalankan API sinkronisasi
+      const syncResponse = await syncAcosFn();
+      setMode('add');
 
-    setPopOver(true);
+      setPopOver(true);
 
-    forms.reset();
+      forms.reset();
+    } catch (error) {
+      console.error('Error syncing ACOS:', error);
+    }
   };
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -1334,16 +1532,14 @@ const GridDaftarBank = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    // loadGridConfig(user.id, 'GridAkunPusat');
     loadGridConfig(
       user.id,
-      'GridDaftarbank',
+      'GridAsalKapal',
       columns,
       setColumnsOrder,
       setColumnsWidth
     );
   }, []);
-
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
@@ -1354,10 +1550,11 @@ const GridDaftarBank = () => {
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad]);
-  useEffect(() => {
-    if (!allDaftarBank || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allDaftarBank.data || [];
+  useEffect(() => {
+    if (!allAsalKapal || isDataUpdated) return;
+
+    const newRows = allAsalKapal.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1375,14 +1572,14 @@ const GridDaftarBank = () => {
       return prevRows;
     });
 
-    if (allDaftarBank.pagination.totalPages) {
-      setTotalPages(allDaftarBank.pagination.totalPages);
+    if (allAsalKapal.pagination.totalPages) {
+      setTotalPages(allAsalKapal.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allDaftarBank, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allAsalKapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1410,14 +1607,6 @@ const GridDaftarBank = () => {
       ) {
         event.preventDefault(); // Mencegah scroll pada tombol space jika bukan di input
       }
-
-      if (event.key === 'Escape') {
-        forms.reset();
-        setMode('');
-        setPopOver(false);
-        clearError();
-        dispatch(clearOpenName());
-      }
     };
 
     // Menambahkan event listener saat komponen di-mount
@@ -1435,6 +1624,7 @@ const GridDaftarBank = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
     const rowData = rows[selectedRow];
     if (
@@ -1442,14 +1632,20 @@ const GridDaftarBank = () => {
       rows.length > 0 &&
       mode !== 'add' // Only fill the form if not in addMode
     ) {
-      forms.setValue('id', Number(rowData?.id));
-      forms.setValue('nama', rowData?.nama);
+      forms.setValue(
+        'nominal',
+        rowData?.nominal ? formatCurrency(rowData.nominal) : ''
+      );
       forms.setValue('keterangan', rowData?.keterangan);
-      forms.setValue('statusaktif', rowData?.statusaktif || 1);
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
+      forms.setValue('cabang_id', Number(rowData?.cabang_id) || 1);
+      forms.setValue('cabang', rowData?.cabang || '');
+      forms.setValue('container_id', Number(rowData?.container_id) || 1);
+      forms.setValue('container', rowData?.container || '');
     } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
       // If in addMode, ensure the form values are cleared
-      forms.setValue('statusaktif_text', rowData?.statusaktif_text || '');
+      forms.setValue('statusaktif_nama', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
@@ -1460,20 +1656,11 @@ const GridDaftarBank = () => {
       }
     });
   }, []);
-
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
     };
   }, []);
-
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
@@ -1536,9 +1723,9 @@ const GridDaftarBank = () => {
           }}
         >
           <ActionButton
-            module="DAFTARBANK"
-            onAdd={handleAdd}
+            module="asalkapal"
             checkedRows={checkedRows}
+            onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
@@ -1550,8 +1737,38 @@ const GridDaftarBank = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Print',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: { onClick: () => handleReport()}
+            //       // {
+            //       //   label: 'REPORT BY SELECT',
+            //       //   onClick: () => handleReportBySelect(),
+            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       // }
+            //   }
+            //   // {
+            //   //   label: 'Export',
+            //   //   icon: <FaFileExport />,
+            //   //   className: 'bg-green-600 hover:bg-green-700',
+            //   //   actions: [
+            //   //     {
+            //   //       label: 'EXPORT ALL',
+            //   //       onClick: () => handleExport(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     },
+            //   //     {
+            //   //       label: 'EXPORT BY SELECT',
+            //   //       onClick: () => handleExportBySelect(),
+            //   //       className: 'bg-green-600 hover:bg-green-700'
+            //   //     }
+            //   //   ]
+            //   // }
+            // ]}
           />
-          {isLoadingDaftarBank ? <LoadRowsRenderer /> : null}
+          {isLoadingAsalKapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1572,7 +1789,7 @@ const GridDaftarBank = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridDaftarbank',
+                    'GridAsalKapal',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -1588,7 +1805,7 @@ const GridDaftarBank = () => {
           )}
         </div>
       </div>
-      <FormDaftarBank
+      <FormAsalKapal
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1603,4 +1820,4 @@ const GridDaftarBank = () => {
   );
 };
 
-export default GridDaftarBank;
+export default GridAsalKapal;

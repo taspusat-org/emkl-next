@@ -1408,7 +1408,7 @@ const GridError = () => {
     }
   }, [forms, selectedRow, rows, addMode, editMode, deleteMode, viewMode]);
   useEffect(() => {
-    if (!allerror || isFetchingManually || isDataUpdated) return;
+    if (!allerror || isDataUpdated) return;
 
     const newRows = allerror.data || [];
 

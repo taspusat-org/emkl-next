@@ -2330,17 +2330,17 @@ const GridKasGantungHeader = () => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
 
-      forms.setValue('nobukti', row.nobukti);
-      forms.setValue('tglbukti', row.tglbukti);
-      forms.setValue('keterangan', row.keterangan ?? '');
-      forms.setValue('bank_id', row.bank_id ?? null);
-      forms.setValue('pengeluaran_nobukti', row.pengeluaran_nobukti ?? '');
-      forms.setValue('coakaskeluar', row.coakaskeluar ?? '');
-      forms.setValue('relasi_id', row.relasi_id ?? null);
-      forms.setValue('alatbayar_id', row.alatbayar_id ?? null);
-      forms.setValue('bank_nama', row.bank_nama);
-      forms.setValue('relasi_nama', row.relasi_nama);
-      forms.setValue('alatbayar_nama', row.alatbayar_nama);
+      forms.setValue('nobukti', row?.nobukti);
+      forms.setValue('tglbukti', row?.tglbukti);
+      forms.setValue('keterangan', row?.keterangan ?? '');
+      forms.setValue('bank_id', row?.bank_id ?? null);
+      forms.setValue('pengeluaran_nobukti', row?.pengeluaran_nobukti ?? '');
+      forms.setValue('coakaskeluar', row?.coakaskeluar ?? '');
+      forms.setValue('relasi_id', row?.relasi_id ?? null);
+      forms.setValue('alatbayar_id', row?.alatbayar_id ?? null);
+      forms.setValue('bank_nama', row?.bank_nama);
+      forms.setValue('relasi_nama', row?.relasi_nama);
+      forms.setValue('alatbayar_nama', row?.alatbayar_nama);
       // Saat form pertama kali di-render
       forms.setValue('details', []); // Menyiapkan details sebagai array kosong jika belum ada
     } else {

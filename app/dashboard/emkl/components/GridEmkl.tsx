@@ -2632,7 +2632,7 @@ const GridEmkl = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    if (!allEmkl || isFetchingManually || isDataUpdated) return;
+    if (!allEmkl || isDataUpdated) return;
 
     const newRows = allEmkl.data || [];
 

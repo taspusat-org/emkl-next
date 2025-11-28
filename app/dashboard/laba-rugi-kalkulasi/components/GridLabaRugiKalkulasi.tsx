@@ -2323,7 +2323,7 @@ const GridLabaRugiKalkulasi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allLabaRugiKalkulasi || isFetchingManually || isDataUpdated) return;
+    if (!allLabaRugiKalkulasi || isDataUpdated) return;
 
     const newRows = allLabaRugiKalkulasi.data || [];
 

@@ -3,15 +3,15 @@ import { useToast } from '@/hooks/use-toast';
 import { IErrorResponse } from '../types/user.type';
 import { AxiosError } from 'axios';
 import {
-  deleteComodityFn,
-  getComodityFn,
-  storeComodityFn,
-  updateComodityFn
-} from '../apis/comodity.api';
+  deleteGroupbiayaextraFn,
+  getGroupbiayaextraFn,
+  storeGroupbiayaextraFn,
+  updateGroupbiayaextraFn
+} from '../apis/groupbiayaextra.api';
 import { useAlert } from '../store/client/useAlert';
 import { useFormError } from '../hooks/formErrorContext';
 
-export const useGetComodity = (
+export const useGetGroupbiayaextra = (
   filters: {
     filters?: {
       keterangan?: string;
@@ -26,23 +26,23 @@ export const useGetComodity = (
   signal?: AbortSignal
 ) => {
   return useQuery(
-    ['comodity', filters],
-    async () => await getComodityFn(filters, signal),
+    ['groupbiayaextra', filters],
+    async () => await getGroupbiayaextraFn(filters, signal),
     {
       enabled: !signal?.aborted
     }
   );
 };
 
-export const useCreateComodity = () => {
+export const useCreateGroupbiayaextra = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { alert } = useAlert();
 
-  return useMutation(storeComodityFn, {
+  return useMutation(storeGroupbiayaextraFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('comodity');
+      void queryClient.invalidateQueries('groupbiayaextra');
       // toast({
       //   title: 'Proses Berhasil',
       //   description: 'Data Berhasil Ditambahkan'
@@ -65,18 +65,14 @@ export const useCreateComodity = () => {
   });
 };
 
-export const useDeleteComodity = () => {
+export const useDeleteGroupbiayaextra = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteComodityFn, {
+  return useMutation(deleteGroupbiayaextraFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('comodity');
-      // toast({
-      //   title: 'Proses Berhasil.',
-      //   description: 'Data Berhasil Dihapus.'
-      // });
+      void queryClient.invalidateQueries('groupbiayaextra');
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -94,18 +90,14 @@ export const useDeleteComodity = () => {
     }
   });
 };
-export const useUpdateComodity = () => {
+export const useUpdateGroupbiayaextra = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(updateComodityFn, {
+  return useMutation(updateGroupbiayaextraFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('comodity');
-      // toast({
-      //   title: 'Proses Berhasil.',
-      //   description: 'Data Berhasil Diubah.'
-      // });
+      void queryClient.invalidateQueries('groupbiayaextra');
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;

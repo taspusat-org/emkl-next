@@ -1539,7 +1539,7 @@ const GridUser = () => {
   }, [rows, selectedRow, dispatch]);
 
   useEffect(() => {
-    if (!users || isFetchingManually || isDataUpdated) return;
+    if (!users || isDataUpdated) return;
 
     const newRows = users.data || [];
 

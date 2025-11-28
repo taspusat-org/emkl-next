@@ -1477,7 +1477,7 @@ const GridDivisi = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allDivisi || isFetchingManually || isDataUpdated) return;
+    if (!allDivisi || isDataUpdated) return;
 
     const newRows = allDivisi.data || [];
 

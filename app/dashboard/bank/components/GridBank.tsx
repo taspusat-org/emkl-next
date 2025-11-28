@@ -2465,7 +2465,7 @@ const GridBank = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBank || isFetchingManually || isDataUpdated) return;
+    if (!allBank || isDataUpdated) return;
 
     const newRows = allBank.data || [];
 

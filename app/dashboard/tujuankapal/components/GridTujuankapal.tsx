@@ -1,11 +1,12 @@
 'use client';
 import React, {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
+  useCallback
 } from 'react';
+import { debounce } from 'lodash';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -18,10 +19,32 @@ import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import FormMenu from './FormTujuankapal';
 import { useQueryClient } from 'react-query';
+import {
+  TujuankapalInput,
+  tujuankapalSchema
+} from '@/lib/validations/tujuankapal.validation';
+
+import {
+  useCreateTujuankapal,
+  useDeleteTujuankapal,
+  useGetTujuankapal,
+  useUpdateTujuankapal
+} from '@/lib/server/useTujuankapal';
+
+import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
-import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
+import {
+  FaFileExport,
+  FaPlus,
+  FaPrint,
+  FaSort,
+  FaSortDown,
+  FaSortUp,
+  FaTimes
+} from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter } from 'next/navigation';
@@ -33,17 +56,9 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {
-  exportMenuBySelectFn,
-  exportMenuFn,
-  getMenuFn,
-  reportMenuBySelectFn
-} from '@/lib/apis/menu.api';
+
 import { HiDocument } from 'react-icons/hi2';
-import {
-  setDetailDataReport,
-  setReportData
-} from '@/lib/store/reportSlice/reportSlice';
+import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
@@ -51,84 +66,78 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
 import ReportDesignerMenu from '@/app/reports/menu/page';
-import FormPengembalianKasGantung from './FormPengembalianKasGantung';
+import { ITujuanKapal } from '@/lib/types/tujuankapal.type';
+import { number } from 'zod';
 import {
-  useCreatePengembalianKasGantung,
-  useDeletePengembalianKasGantung,
-  useGetPengembalianKasGantung,
-  useUpdatePengembalianKasGantung
-} from '@/lib/server/usePengembalianKasGantung';
-import {
-  filterPengembalianKasGantung,
-  PengembalianKasGantungHeader
-} from '@/lib/types/pengembaliankasgantung.type';
-import {
-  PengembalianKasGantungHeaderInput,
-  pengembalianKasGantungHeaderSchema
-} from '@/lib/validations/pengembaliankasgantung.validation';
-import {
-  getPengembalianKasGantungDetailFn,
-  getPengembalianKasGantungHeaderByIdFn,
-  getPengembalianKasGantungHeaderFn,
-  getPengembalianKasGantungReportFn
-} from '@/lib/apis/pengembaliankasgantung.api';
+  clearOpenName,
+  setClearLookup
+} from '@/lib/store/lookupSlice/lookupSlice';
 import {
   setProcessed,
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
-import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
-import { formatDateToDDMMYYYY } from '@/lib/utils';
-import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
-import JsxParser from 'react-jsx-parser';
+import { useFormError } from '@/lib/hooks/formErrorContext';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { getTujuankapalFn } from '@/lib/apis/tujuankapal.api';
+import FilterInput from '@/components/custom-ui/FilterInput';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
-import { debounce } from 'lodash';
-import FilterInput from '@/components/custom-ui/FilterInput';
-import { cancelPreviousRequest } from '@/lib/utils';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
 interface Filter {
   page: number;
   limit: number;
   search: string;
-  filters: typeof filterPengembalianKasGantung;
+  filters: {
+    nama: string;
+    kode: string;
+    keterangan: string;
+    created_at: string;
+    updated_at: string;
+    statusaktif: string;
+    namacabang: string;
+    modifiedby: string;
+  };
   sortBy: string;
   sortDirection: 'asc' | 'desc';
 }
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface GridConfig {
   columnsOrder: number[];
   columnsWidth: { [key: string]: number };
 }
-const GridPengembalianKasGantung = () => {
+const GridTujuankapal = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
-  const {
-    mutateAsync: createPengembalianKasgantungHeader,
-    isLoading: isLoadingCreate
-  } = useCreatePengembalianKasGantung();
-  const { mutateAsync: update, isLoading: isLoadingUpdate } =
-    useUpdatePengembalianKasGantung();
-  const { mutateAsync: deleteData, isLoading: isLoadingDelete } =
-    useDeletePengembalianKasGantung();
+  const { mutateAsync: createTujuankapal, isLoading: isLoadingCreate } =
+    useCreateTujuankapal();
+  const { mutateAsync: updateTujuankapal, isLoading: isLoadingUpdate } =
+    useUpdateTujuankapal();
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
+  const { mutateAsync: deleteTujuankapal, isLoading: isLoadingDelete } =
+    useDeleteTujuankapal();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
-  const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
-
   const [mode, setMode] = useState<string>('');
 
   const [dataGridKey, setDataGridKey] = useState(0);
@@ -141,7 +150,7 @@ const GridPengembalianKasGantung = () => {
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const queryClient = useQueryClient();
   const [isFetchingManually, setIsFetchingManually] = useState(false);
-  const [rows, setRows] = useState<PengembalianKasGantungHeader[]>([]);
+  const [rows, setRows] = useState<ITujuanKapal[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const prevPageRef = useRef(currentPage);
@@ -150,53 +159,59 @@ const GridPengembalianKasGantung = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
-  const forms = useForm<PengembalianKasGantungHeaderInput>({
-    resolver: zodResolver(pengembalianKasGantungHeaderSchema),
+  const forms = useForm<TujuankapalInput>({
+    resolver:
+      mode === 'delete'
+        ? undefined // Tidak pakai resolver saat delete
+        : zodResolver(tujuankapalSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nobukti: '',
-      tglbukti: '',
-      keterangan: null,
-      bank_id: null,
-      penerimaan_nobukti: '',
-      coakasmasuk: '',
-      relasi_id: null,
-      details: []
+      nama: '',
+      keterangan: '',
+      statusaktif: 0,
+      cabang_id: null
     }
   });
-  const gridRef = useRef<DataGridHandle>(null);
+  const {
+    setFocus,
+    reset,
+    formState: { isSubmitSuccessful }
+  } = forms;
   const router = useRouter();
-  const { selectedDate, selectedDate2, onReload } = useSelector(
-    (state: RootState) => state.filter
-  );
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
     filters: {
-      ...filterPengembalianKasGantung,
-      tglDari: selectedDate,
-      tglSampai: selectedDate2
+      nama: '',
+      kode: '',
+      keterangan: '',
+      created_at: '',
+      updated_at: '',
+      namacabang: '',
+      statusaktif: '',
+      modifiedby: ''
     },
     search: '',
-    sortBy: 'nobukti',
+    sortBy: 'nama',
     sortDirection: 'asc'
   });
+  const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
-  const {
-    data: allData,
-    isLoading: isLoadingData,
-    refetch
-  } = useGetPengembalianKasGantung({
-    ...filters,
-    page: currentPage
-  });
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const { data: allTujuankapal, isLoading: isLoadingTujuankapal } =
+    useGetTujuankapal(
+      {
+        ...filters,
+        page: currentPage
+      },
+      abortControllerRef.current?.signal
+    );
+
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
-      setInputValue('');
       setFilters((prev) => ({
         ...prev,
-        search: '',
         filters: { ...prev.filters, [colKey]: value },
         page: 1
       }));
@@ -227,6 +242,43 @@ const GridPengembalianKasGantung = () => {
     setRows([]);
     setCurrentPage(1);
   }, []);
+  const handleColumnFilterChange = (
+    colKey: keyof Filter['filters'],
+    value: string
+  ) => {
+    // 1. cari index di array columns asli
+    const originalIndex = columns.findIndex((col) => col.key === colKey);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
+
+    // update filter seperti biasa…
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, [colKey]: value },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    // 3. focus sel di grid pakai displayIndex
+    setTimeout(() => {
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+    }, 100);
+
+    // 4. focus input filter
+    setTimeout(() => {
+      const ref = inputColRefs.current[colKey];
+      ref?.focus();
+    }, 200);
+
+    setSelectedRow(0);
+  };
 
   function highlightText(
     text: string | number | null | undefined,
@@ -264,6 +316,7 @@ const GridPengembalianKasGantung = () => {
       />
     );
   }
+  const { clearError } = useFormError();
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
@@ -271,7 +324,16 @@ const GridPengembalianKasGantung = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterPengembalianKasGantung,
+      filters: {
+        nama: '',
+        kode: '',
+        keterangan: '',
+        created_at: '',
+        updated_at: '',
+        namacabang: '',
+        statusaktif: '',
+        modifiedby: ''
+      },
       search: searchValue,
       page: 1
     }));
@@ -292,7 +354,14 @@ const GridPengembalianKasGantung = () => {
     setRows([]);
   };
   const handleSort = (column: string) => {
-    cancelPreviousRequest(abortControllerRef);
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -305,7 +374,7 @@ const GridPengembalianKasGantung = () => {
       page: 1
     }));
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -313,7 +382,13 @@ const GridPengembalianKasGantung = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -337,7 +412,6 @@ const GridPengembalianKasGantung = () => {
     setIsAllSelected(!isAllSelected);
   };
   const handleClearInput = () => {
-    cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
       ...prev,
       filters: {
@@ -348,8 +422,7 @@ const GridPengembalianKasGantung = () => {
     }));
     setInputValue('');
   };
-
-  const columns = useMemo((): Column<PengembalianKasGantungHeader>[] => {
+  const columns = useMemo((): Column<ITujuanKapal>[] => {
     return [
       {
         key: 'nomor',
@@ -370,7 +443,16 @@ const GridPengembalianKasGantung = () => {
                 setFilters({
                   ...filters,
                   search: '',
-                  filters: filterPengembalianKasGantung
+                  filters: {
+                    nama: '',
+                    kode: '',
+                    keterangan: '',
+                    namacabang: '',
+                    created_at: '',
+                    updated_at: '',
+                    statusaktif: '',
+                    modifiedby: ''
+                  }
                 }),
                   setInputValue('');
                 setTimeout(() => {
@@ -409,7 +491,7 @@ const GridPengembalianKasGantung = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: PengembalianKasGantungHeader }) => (
+        renderCell: ({ row }: { row: ITujuanKapal }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -421,8 +503,8 @@ const GridPengembalianKasGantung = () => {
       },
 
       {
-        key: 'nobukti',
-        name: 'Nomor Bukti',
+        key: 'nama',
+        name: 'Nama',
         resizable: true,
         draggable: true,
         width: 300,
@@ -431,21 +513,23 @@ const GridPengembalianKasGantung = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('nobukti')}
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('nama')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'nobukti' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'nama' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nomor Bukti
+                Nama
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'nobukti' &&
+                {filters.sortBy === 'nama' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'nobukti' &&
+                ) : filters.sortBy === 'nama' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -455,20 +539,20 @@ const GridPengembalianKasGantung = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="nobukti"
-                value={filters.filters.nobukti || ''}
-                onChange={(value) => handleFilterInputChange('nobukti', value)}
-                onClear={() => handleClearFilter('nobukti')}
+                colKey="nama"
+                value={filters.filters.nama || ''}
+                onChange={(value) => handleFilterInputChange('nama', value)}
+                onClear={() => handleClearFilter('nama')}
                 inputRef={(el) => {
-                  inputColRefs.current['nobukti'] = el;
+                  inputColRefs.current['nama'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.nobukti || '';
-          const cellValue = props.row.nobukti || '';
+          const columnFilter = filters.filters.nama || '';
+          const cellValue = props.row.nama || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -489,31 +573,175 @@ const GridPengembalianKasGantung = () => {
         }
       },
       {
-        key: 'tglbukti',
-        name: 'Tanggal Bukti',
+        key: 'kode',
+        name: 'kode',
         resizable: true,
         draggable: true,
+        width: 70,
         headerCellClass: 'column-headers',
-        width: 250,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('kode')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'kode' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                kode
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'kode' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'kode' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="kode"
+                value={filters.filters.kode || ''}
+                onChange={(value) => handleFilterInputChange('kode', value)}
+                onClear={() => handleClearFilter('kode')}
+                inputRef={(el) => {
+                  inputColRefs.current['kode'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.kode || '';
+          const cellValue = props.row.kode || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'cabang',
+        name: 'Nama Cabang',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('namacabang')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'namacabang' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Nama Cabang
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'namacabang' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'namacabang' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="namacabang"
+                value={filters.filters.namacabang || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('namacabang', value)
+                }
+                onClear={() => handleClearFilter('namacabang')}
+                inputRef={(el) => {
+                  inputColRefs.current['namacabang'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.namacabang || '';
+          const cellValue = props.row.namacabang || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'keterangan',
+        name: 'Keterangan',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('tglbukti')}
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('keterangan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglbukti' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'keterangan' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Tanggal Bukti
+                Keterangan
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'tglbukti' &&
+                {filters.sortBy === 'keterangan' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tglbukti' &&
+                ) : filters.sortBy === 'keterangan' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -524,20 +752,22 @@ const GridPengembalianKasGantung = () => {
 
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="tglbukti"
-                value={filters.filters.tglbukti || ''}
-                onChange={(value) => handleFilterInputChange('tglbukti', value)}
-                onClear={() => handleClearFilter('tglbukti')}
+                colKey="keterangan"
+                value={filters.filters.keterangan || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('keterangan', value)
+                }
+                onClear={() => handleClearFilter('keterangan')}
                 inputRef={(el) => {
-                  inputColRefs.current['tglbukti'] = el;
+                  inputColRefs.current['keterangan'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.tglbukti || '';
-          const cellValue = props.row.tglbukti || '';
+          const columnFilter = filters.filters.keterangan || '';
+          const cellValue = props.row.keterangan || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -558,8 +788,8 @@ const GridPengembalianKasGantung = () => {
         }
       },
       {
-        key: 'bank_id',
-        name: 'Nama Bank',
+        key: 'statusaktif',
+        name: 'STATUS AKTIF',
         resizable: true,
         draggable: true,
         width: 150,
@@ -568,21 +798,23 @@ const GridPengembalianKasGantung = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onClick={() => handleSort('bank_id')}
-              onContextMenu={handleContextMenu}
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'bank_id' ? 'font-bold' : 'font-normal'
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Nama Bank
+                Status Aktif
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'bank_id' &&
+                {filters.sortBy === 'statusaktif' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'bank_id' &&
+                ) : filters.sortBy === 'statusaktif' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -590,282 +822,80 @@ const GridPengembalianKasGantung = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
-                endpoint="bank"
+                endpoint="parameter"
                 value="id"
-                label="nama"
-                onChange={(value) => handleFilterInputChange('bank_id', value)} // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.bank_id || '';
-          const cellValue = props.row.bank_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'penerimaan_nobukti',
-        name: 'Penerimaan Nomor Bukti',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('penerimaan_nobukti')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'penerimaan_nobukti'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                Penerimaan Nomor Bukti
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'penerimaan_nobukti' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'penerimaan_nobukti' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="penerimaan_nobukti"
-                value={filters.filters.penerimaan_nobukti || ''}
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
-                  handleFilterInputChange('penerimaan_nobukti', value)
-                }
-                onClear={() => handleClearFilter('penerimaan_nobukti')}
-                inputRef={(el) => {
-                  inputColRefs.current['penerimaan_nobukti'] = el;
-                }}
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.penerimaan_nobukti || '';
-          const value = props.row.penerimaan_nobukti; // atau dari props.row
-          // Buat component wrapper untuk highlightText
-          const HighlightWrapper = () => {
-            return highlightText(value, filters.search, columnFilter);
-          };
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    <JsxParser
-                      components={{ HighlightWrapper }}
-                      jsx={props.row.link}
-                      renderInWrapper={false}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{value}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'coakasmasuk_nama',
-        name: 'COA KAS MASUK',
-        resizable: true,
-        draggable: true,
-        width: 300,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('coakasmasuk_nama')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'coakasmasuk_nama'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                COA KAS MASUK
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'coakasmasuk_nama' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'coakasmasuk_nama' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="coakasmasuk_nama"
-                value={filters.filters.coakasmasuk_nama || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('coakasmasuk_nama', value)
-                }
-                onClear={() => handleClearFilter('coakasmasuk_nama')}
-                inputRef={(el) => {
-                  inputColRefs.current['coakasmasuk_nama'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.coakasmasuk_nama || '';
-          const cellValue = props.row.coakasmasuk_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'relasi_id',
-        name: 'Relasi',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('relasi_id')}
-              onContextMenu={handleContextMenu}
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'relasi_id' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                Relasi
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'relasi_id' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'relasi_id' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
+          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
 
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="relasi_nama"
-                value={filters.filters.relasi_nama || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('relasi_nama', value)
-                }
-                onClear={() => handleClearFilter('relasi_nama')}
-                inputRef={(el) => {
-                  inputColRefs.current['relasi_nama'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.relasi_nama || '';
-          const cellValue = props.row.relasi_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
         key: 'modifiedby',
-        name: 'Modified By',
+        name: 'Updated At',
         resizable: true,
         draggable: true,
-        width: 150,
+
         headerCellClass: 'column-headers',
+
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
               onClick={() => handleSort('modifiedby')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
                   filters.sortBy === 'modifiedby' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Modified By
+                MODIFIED BY
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'modifiedby' &&
@@ -923,13 +953,15 @@ const GridPengembalianKasGantung = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 250,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -988,6 +1020,7 @@ const GridPengembalianKasGantung = () => {
           );
         }
       },
+
       {
         key: 'updated_at',
         name: 'Updated At',
@@ -996,13 +1029,15 @@ const GridPengembalianKasGantung = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 250,
+        width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1082,7 +1117,7 @@ const GridPengembalianKasGantung = () => {
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridPengembalianKasGantung',
+        'GridTujuankapal',
         [...columnsOrder],
         newWidthMap
       );
@@ -1100,12 +1135,7 @@ const GridPengembalianKasGantung = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(
-        user.id,
-        'GridPengembalianKasGantung',
-        [...newOrder],
-        columnsWidth
-      );
+      saveGridConfig(user.id, 'GridTujuankapal', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1122,7 +1152,7 @@ const GridPengembalianKasGantung = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingData || !hasMore || rows.length === 0) return;
+    if (isLoadingTujuankapal || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1149,17 +1179,15 @@ const GridPengembalianKasGantung = () => {
     }
   }
 
-  function handleCellClick(args: { row: PengembalianKasGantungHeader }) {
+  function handleCellClick(args: { row: ITujuanKapal }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    const foundRow = rows.find((r) => r.id === clickedRow?.id);
-    if (rowIndex !== -1 && foundRow) {
+    if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
-      dispatch(setHeaderData(foundRow));
     }
   }
   async function handleKeyDown(
-    args: CellKeyDownArgs<PengembalianKasGantungHeader>,
+    args: CellKeyDownArgs<ITujuanKapal>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1207,16 +1235,25 @@ const GridPengembalianKasGantung = () => {
       }
     }
   }
-  const onSuccess = async (indexOnPage: any, pageNumber: any) => {
+  const onSuccess = async (
+    indexOnPage: any,
+    pageNumber: any,
+    keepOpenModal: any = false
+  ) => {
+    dispatch(setClearLookup(true));
+    clearError();
+    setIsFetchingManually(true);
     try {
-      forms.reset();
-      setPopOver(false);
-      setIsFetchingManually(true);
-      setRows([]);
+      if (keepOpenModal) {
+        forms.reset();
+        setPopOver(true);
+      } else {
+        forms.reset();
+        setPopOver(false);
+        setIsFetchingManually(true);
+      }
       if (mode !== 'delete') {
-        const response = await api2.get(
-          `/redis/get/pengembaliankasgantungheader-allItems`
-        );
+        const response = await api2.get(`/redis/get/tujuankapal-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1233,7 +1270,6 @@ const GridPengembalianKasGantung = () => {
         }
       }
 
-      setIsFetchingManually(false);
       setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
@@ -1241,74 +1277,70 @@ const GridPengembalianKasGantung = () => {
       setIsDataUpdated(false);
     }
   };
-  const onSubmit = async (values: PengembalianKasGantungHeaderInput) => {
+  const onSubmit = async (values: TujuankapalInput, keepOpenModal = false) => {
+    clearError();
     const selectedRowId = rows[selectedRow]?.id;
-
-    if (mode === 'delete') {
-      if (selectedRowId) {
-        await deleteData(selectedRowId as unknown as string, {
-          onSuccess: () => {
-            setPopOver(false);
-            setRows((prevRows) =>
-              prevRows.filter((row) => row.id !== selectedRowId)
-            );
-            if (selectedRow === 0) {
-              setSelectedRow(selectedRow);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-            } else {
-              setSelectedRow(selectedRow - 1);
-              gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 1 });
+    try {
+      dispatch(setProcessing());
+      if (mode === 'delete') {
+        if (selectedRowId) {
+          await deleteTujuankapal(selectedRowId as unknown as string, {
+            onSuccess: () => {
+              setPopOver(false);
+              setRows((prevRows) =>
+                prevRows.filter((row) => row.id !== selectedRowId)
+              );
+              if (selectedRow === 0) {
+                setSelectedRow(selectedRow);
+                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
+              } else {
+                setSelectedRow(selectedRow - 1);
+                gridRef?.current?.selectCell({
+                  rowIdx: selectedRow - 1,
+                  idx: 1
+                });
+              }
             }
-          }
-        });
-      }
-      return;
-    }
-    if (mode === 'add') {
-      const newOrder = await createPengembalianKasgantungHeader(
-        {
-          ...values,
-          details: values?.details?.map((detail: any) => ({
-            ...detail,
-            id: 0 // Ubah id setiap detail menjadi 0
-          })),
-          ...filters // Kirim filter ke body/payload
-        },
-        {
-          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+          });
         }
-      );
-
-      if (newOrder !== undefined && newOrder !== null) {
+        return;
       }
-      return;
-    }
-
-    if (selectedRowId && mode === 'edit') {
-      const cleanedDetails = (values.details as any[]).map(
-        ({ coadetail, kasgantungheader_id, ...rest }) => rest
-      );
-
-      await update(
-        {
-          id: selectedRowId as unknown as string,
-          fields: {
+      if (mode === 'add') {
+        const newOrder = await createTujuankapal(
+          {
             ...values,
-            details: cleanedDetails,
-            ...filters
+            ...filters // Kirim filter ke body/payload
+          },
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
           }
-        },
-        {
-          onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber)
+        );
+
+        if (newOrder !== undefined && newOrder !== null) {
         }
-      );
+        return;
+      }
+      if (selectedRowId && mode === 'edit') {
+        await updateTujuankapal(
+          {
+            id: selectedRowId as unknown as string,
+            fields: { ...values, ...filters }
+          },
+          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+        );
+        queryClient.invalidateQueries('tujuankapal');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      dispatch(setProcessed());
     }
   };
 
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-
       setPopOver(true);
       setMode('edit');
     }
@@ -1326,59 +1358,96 @@ const GridPengembalianKasGantung = () => {
     }
   };
 
-  const handleReport = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    if (checkedRows.size > 1) {
-      alert({
-        title: 'HANYA BISA MEMILIH SATU DATA!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    const rowId = Array.from(checkedRows)[0];
+  // const handleExport = async () => {
+  //   try {
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
 
-    const { page, limit, ...filtersWithoutLimit } = filters;
+  //     const response = await exportMenuFn(filtersWithoutLimit); // Kirim data tanpa pagination
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting user data:', error);
+  //   }
+  // };
+
+  // const handleExportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   // Mengubah checkedRows menjadi format JSON
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
+
+  //     // Buat link untuk mendownload file
+  //     const link = document.createElement('a');
+  //     const url = window.URL.createObjectURL(response);
+  //     link.href = url;
+  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
+  //     link.click(); // Trigger download
+
+  //     // Revoke URL setelah download
+  //     window.URL.revokeObjectURL(url);
+  //   } catch (error) {
+  //     console.error('Error exporting menu data:', error);
+  //     alert({
+  //       title: 'Failed to generate the export. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   }
+  // };
+
+  const handleReport = async () => {
     try {
       dispatch(setProcessing());
-      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
-      const response = await getPengembalianKasGantungHeaderByIdFn(
-        rowId,
-        filtersWithoutLimit
-      );
-      const responseDetail = await getPengembalianKasGantungDetailFn({
-        filters: { nobukti: selectedRowNobukti }
-      });
+      const now = new Date();
+      const pad = (n: any) => n.toString().padStart(2, '0');
+      const tglcetak = `${pad(now.getDate())}-${pad(
+        now.getMonth() + 1
+      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+        now.getMinutes()
+      )}:${pad(now.getSeconds())}`;
+      const { page, limit, ...filtersWithoutLimit } = filters;
+
+      const response = await getTujuankapalFn(filtersWithoutLimit);
       const reportRows = response.data.map((row) => ({
         ...row,
-        judullaporan: 'Laporan Kas Gantung',
+        judullaporan: 'Laporan Tujuan Kapal',
         usercetak: user.username,
-        tglcetak: new Date().toLocaleDateString(),
+        tglcetak: tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
       sessionStorage.setItem(
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      sessionStorage.setItem('dataId', JSON.stringify(rowId));
+      // Dynamically import Stimulsoft and generate the PDF report
       import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
         .then((module) => {
           const { Stimulsoft } = module;
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'TahomaBD'
-          );
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahoma.ttf',
             'Tahoma'
-          );
+          ); // Regular
+          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+            '/fonts/tahomabd.ttf',
+            'Tahoma'
+          ); // Bold
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
@@ -1392,15 +1461,13 @@ const GridPengembalianKasGantung = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanPengembalianKasGantung.mrt');
+          report.loadFile('/reports/LaporanTujuankapal.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({ data: reportRows });
-          dataSet.readJson({ detail: responseDetail.data });
           report.regData(dataSet.dataSetName, '', dataSet);
           report.dictionary.synchronize();
 
           // Render the report asynchronously
-
           report.renderAsync(() => {
             // Export the report to PDF asynchronously
             report.exportDocumentAsync((pdfData: any) => {
@@ -1413,7 +1480,7 @@ const GridPengembalianKasGantung = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/pengembaliankasgantung', '_blank');
+              window.open('/reports/tujuankapal', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1421,127 +1488,70 @@ const GridPengembalianKasGantung = () => {
           console.error('Failed to load Stimulsoft:', error);
         });
     } catch (error) {
-      console.error('Error generating report:', error);
+      dispatch(setProcessed());
     } finally {
       dispatch(setProcessed());
     }
-
-    // Dynamically import Stimulsoft and generate the PDF report
   };
-  // const handleReport = async () => {
-  //   const rowId = Array.from(checkedRows)[0];
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   dispatch(setProcessing()); // Show loading overlay when the request starts
 
-  //   try {
-  //     const response = await getPengembalianKasGantungHeaderByIdFn(
-  //       rowId,
-  //       filtersWithoutLimit
-  //     );
-  //     const responseDetail = await getPengembalianKasGantungDetailFn(rowId);
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'DATA TIDAK TERSEDIA!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //     } else {
-  //       const reportRows = response.data.map((row) => ({
-  //         ...row,
-  //         judullaporan: 'Laporan Pengembalian Kas Gantung',
-  //         usercetak: user.username,
-  //         tglcetak: new Date().toLocaleDateString(),
-  //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //       }));
-  //
-  //       dispatch(setReportData(reportRows));
-  //       dispatch(setDetailDataReport(responseDetail.data));
-  //       window.open('/reports/designer', '_blank');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
+  // const handleReportBySelect = async () => {
+  //   if (checkedRows.size === 0) {
   //     alert({
-  //       title: 'Terjadi kesalahan saat memuat data!',
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
   //       variant: 'danger',
   //       submitText: 'OK'
   //     });
-  //   } finally {
-  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
+  //     return; // Stop execution if no rows are selected
+  //   }
+
+  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
+  //   try {
+  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
+  //     const reportRows = response.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Menu',
+  //       usercetak: user.username,
+  //       tglcetak: new Date().toLocaleDateString(),
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+  //     dispatch(setReportData(reportRows));
+  //     window.open('/reports/menu', '_blank');
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Failed to generate the report. Please try again.',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
   //   }
   // };
-  const handleReportBySelect = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-
-    const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-    try {
-      const response = await reportMenuBySelectFn(jsonCheckedRows);
-      const reportRows = response.map((row: any) => ({
-        ...row,
-        judullaporan: 'Laporan Menu',
-        usercetak: user.username,
-        tglcetak: new Date().toLocaleDateString(),
-        judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-      }));
-      dispatch(setReportData(reportRows));
-      window.open('/reports/menu', '_blank');
-    } catch (error) {
-      console.error('Error generating report:', error);
-      alert({
-        title: 'Failed to generate the report. Please try again.',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-    }
-  };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function getRowClass(row: PengembalianKasGantungHeader) {
+  function getRowClass(row: ITujuanKapal) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: PengembalianKasGantungHeader) {
+  function rowKeyGetter(row: ITujuanKapal) {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
   const handleResequence = () => {
     router.push('/dashboard/resequence');
   };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
+
   const handleClose = () => {
     setPopOver(false);
     setMode('');
-
+    clearError();
     forms.reset();
   };
   const handleAdd = async () => {
     try {
       // Jalankan API sinkronisasi
+      const syncResponse = await syncAcosFn();
       setMode('add');
 
       setPopOver(true);
@@ -1551,112 +1561,27 @@ const GridPengembalianKasGantung = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+        clearError();
       }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
+    };
 
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
 
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
 
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridPengembalianKasGantung',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -1685,8 +1610,15 @@ const GridPengembalianKasGantung = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPengembalianKasGantung');
+    loadGridConfig(
+      user.id,
+      'GridTujuankapal',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
+
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
@@ -1694,20 +1626,14 @@ const GridPengembalianKasGantung = () => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-      dispatch(setHeaderData(rows[0]));
       setIsFirstLoad(false);
     }
-  }, [rows, isFirstLoad, dispatch]);
-  useEffect(() => {
-    if (rows.length > 0 && selectedRow !== null) {
-      const selectedRowData = rows[selectedRow];
-      dispatch(setHeaderData(selectedRowData));
-    }
-  }, [rows, selectedRow, dispatch]);
-  useEffect(() => {
-    if (!allData || isDataUpdated) return;
+  }, [rows, isFirstLoad]);
 
-    const newRows = allData.data || [];
+  useEffect(() => {
+    if (!allTujuankapal || isDataUpdated) return;
+
+    const newRows = allTujuankapal.data || [];
 
     setRows((prevRows) => {
       // Reset data if filter changes (first page)
@@ -1725,15 +1651,14 @@ const GridPengembalianKasGantung = () => {
       return prevRows;
     });
 
-    if (allData.pagination.totalPages) {
-      setTotalPages(allData.pagination.totalPages);
+    if (allTujuankapal.pagination.totalPages) {
+      setTotalPages(allTujuankapal.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
-    setIsFirstLoad(false);
     setPrevFilters(filters);
-  }, [allData, currentPage, filters, isFetchingManually, isDataUpdated]);
+  }, [allTujuankapal, currentPage, filters, isFetchingManually, isDataUpdated]);
 
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
@@ -1778,67 +1703,31 @@ const GridPengembalianKasGantung = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
   useEffect(() => {
-    // Hanya update filter tanggal pada dua kondisi:
-    // 1. Pertama kali load (isFirstLoad)
-    // 2. Ketika onReload diklik (onReload === true)
-    if (isFirstLoad) {
-      // Pertama kali load, set filter tanggal sesuai selectedDate & selectedDate2
-      if (
-        selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
-      ) {
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2
-          }
-        }));
-      }
-    } else if (onReload) {
-      // Jika onReload diklik, update filter tanggal
-      if (
-        selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
-      ) {
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2
-          }
-        }));
-      }
-    }
-    // Jika bukan kondisi di atas, abaikan perubahan selectedDate/selectedDate2
-  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
-  useEffect(() => {
-    if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
-      const row = rows[selectedRow];
-      forms.setValue('nobukti', row?.nobukti);
-      forms.setValue('tglbukti', row?.tglbukti);
-      forms.setValue('keterangan', row?.keterangan ?? null);
-      forms.setValue('bank_id', row?.bank_id ?? null);
-      forms.setValue('penerimaan_nobukti', row?.penerimaan_nobukti ?? null);
-      forms.setValue('coakasmasuk', row?.coakasmasuk ?? null);
-      forms.setValue('coakasmasuk_nama', row?.coakasmasuk_nama ?? null);
-      forms.setValue('relasi_id', row?.relasi_id ?? null);
-      forms.setValue('bank_nama', row?.bank_nama);
-      forms.setValue('relasi_nama', row?.relasi_nama);
-      // Saat form pertama kali di-render
-      forms.setValue('details', []);
-    } else {
-      // Clear or set defaults when adding a new record
-      const currentDate = new Date(); // Dapatkan tanggal sekarang
-      forms.setValue('bank_nama', '');
-      forms.setValue('relasi_nama', '');
-      forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
+    const rowData = rows[selectedRow];
+
+    if (
+      selectedRow !== null &&
+      rows.length > 0 &&
+      mode !== 'add' // Only fill the form if not in addMode
+    ) {
+      forms.setValue('id', Number(rowData?.id));
+      forms.setValue('nama', rowData?.nama);
+      forms.setValue('kode', rowData?.kode);
+      forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue(
+        'cabang_id',
+        rowData?.cabang_id > 0 ? Number(rowData?.cabang_id) : null
+      );
+      forms.setValue('namacabang', rowData?.namacabang);
+      forms.setValue('statusaktif', Number(rowData?.statusaktif) || 1);
+      forms.setValue('statusaktif_nama', rowData?.text || '');
+    } else if (selectedRow !== null && rows.length > 0 && mode === 'add') {
+      // If in addMode, ensure the form values are cleared
+      forms.reset();
     }
   }, [forms, selectedRow, rows, mode]);
-
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -1847,31 +1736,6 @@ const GridPengembalianKasGantung = () => {
       }
     });
   }, []);
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
-  useEffect(() => {
-    // Memastikan refetch dilakukan saat filters berubah
-    if (onReload) {
-      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
-      setPrevFilters(filters); // Simpan filters terbaru
-    }
-  }, [onReload, refetch]); // Dependency array termasuk filters dan ref
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
@@ -1921,26 +1785,26 @@ const GridPengembalianKasGantung = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          onSelectedCellChange={(args) => {
-            handleCellClick({ row: args.row });
-          }}
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           renderers={{
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
         <div
-          className="mt-1 flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
           <ActionButton
-            module="PENGEMBALIAN-KAS-GANTUNG"
+            module="TUJUANKAPAL"
+            checkedRows={checkedRows}
             onAdd={handleAdd}
             onDelete={handleDelete}
             onView={handleView}
@@ -1953,8 +1817,53 @@ const GridPengembalianKasGantung = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
+            // customActions={[
+            //   {
+            //     label: 'Resequence',
+            //     icon: <FaPlus />, // Custom icon
+            //     onClick: () => handleResequence(),
+            //     variant: 'success', // Optional styling variant
+            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
+            //   }
+            // ]}
+            // dropdownMenus={[
+            //   {
+            //     label: 'Report',
+            //     icon: <FaPrint />,
+            //     className: 'bg-cyan-500 hover:bg-cyan-700',
+            //     actions: [
+            //       {
+            //         label: 'REPORT ALL',
+            //         onClick: () => handleReport(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       },
+            //       {
+            //         label: 'REPORT BY SELECT',
+            //         onClick: () => handleReportBySelect(),
+            //         className: 'bg-cyan-500 hover:bg-cyan-700'
+            //       }
+            //     ]
+            //   },
+            //   {
+            //     label: 'Export',
+            //     icon: <FaFileExport />,
+            //     className: 'bg-green-600 hover:bg-green-700',
+            //     actions: [
+            //       {
+            //         label: 'EXPORT ALL',
+            //         onClick: () => handleExport(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       },
+            //       {
+            //         label: 'EXPORT BY SELECT',
+            //         onClick: () => handleExportBySelect(),
+            //         className: 'bg-green-600 hover:bg-green-700'
+            //       }
+            //     ]
+            //   }
+            // ]}
           />
-          {isLoadingData ? <LoadRowsRenderer /> : null}
+          {isLoadingTujuankapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -1969,14 +1878,29 @@ const GridPengembalianKasGantung = () => {
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                // onClick={resetGridConfig}
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridTujuankapal',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>
           )}
         </div>
       </div>
-      <FormPengembalianKasGantung
+      <FormMenu
         popOver={popOver}
         handleClose={handleClose}
         setPopOver={setPopOver}
@@ -1984,11 +1908,11 @@ const GridPengembalianKasGantung = () => {
         isLoadingDelete={isLoadingDelete}
         forms={forms}
         mode={mode}
-        onSubmit={forms.handleSubmit(onSubmit)}
+        onSubmit={forms.handleSubmit(onSubmit as any)}
         isLoadingCreate={isLoadingCreate}
       />
     </div>
   );
 };
 
-export default GridPengembalianKasGantung;
+export default GridTujuankapal;

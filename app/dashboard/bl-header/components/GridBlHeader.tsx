@@ -2032,7 +2032,7 @@ const GridBlHeader = () => {
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBlHeader || isFetchingManually || isDataUpdated) return;
+    if (!allBlHeader || isDataUpdated) return;
 
     const newRows = allBlHeader.data || [];
 

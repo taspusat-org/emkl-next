@@ -1518,7 +1518,7 @@ const GridComodity = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allComodity || isFetchingManually || isDataUpdated) return;
+    if (!allComodity || isDataUpdated) return;
 
     const newRows = allComodity.data || [];
 

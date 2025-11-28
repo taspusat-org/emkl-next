@@ -999,7 +999,7 @@ const GridOffdays = () => {
     }
   };
   useEffect(() => {
-    if (!offdays || isFetchingManually || isDataUpdated) return;
+    if (!offdays || isDataUpdated) return;
 
     const newRows = offdays.data || [];
 

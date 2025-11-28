@@ -2086,7 +2086,7 @@ const GridMasterbiaya = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allBiaya || isFetchingManually || isDataUpdated) return;
+    if (!allBiaya || isDataUpdated) return;
 
     const newRows = allBiaya.data || [];
 

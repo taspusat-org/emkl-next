@@ -1109,7 +1109,7 @@ const GridParameter = () => {
     }
   }, [forms, selectedRow, rows, addMode, editMode, deleteMode, viewMode]);
   useEffect(() => {
-    if (!allParameter || isFetchingManually || isDataUpdated) return;
+    if (!allParameter || isDataUpdated) return;
 
     const newRows = allParameter.data || [];
 

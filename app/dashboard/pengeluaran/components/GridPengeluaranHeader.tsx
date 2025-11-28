@@ -2277,7 +2277,7 @@ const GridPengeluaranHeader = () => {
     }, 1000); // Delay 1 detik (1000 ms)
   }, []);
   useEffect(() => {
-    if (!allData || isFetchingManually || isDataUpdated) return;
+    if (!allData || isDataUpdated) return;
 
     const newRows = allData.data || [];
 
