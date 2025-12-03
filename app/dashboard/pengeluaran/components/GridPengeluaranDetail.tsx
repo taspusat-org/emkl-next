@@ -159,6 +159,10 @@ const GridPengeluaranDetail = ({
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
