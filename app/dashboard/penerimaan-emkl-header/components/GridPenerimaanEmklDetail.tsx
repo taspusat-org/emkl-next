@@ -119,10 +119,6 @@ const GridPenerimaanEmklDetail = ({
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
-      setTimeout(() => {
-        setSelectedRow(0);
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 400);
     },
     []
   );

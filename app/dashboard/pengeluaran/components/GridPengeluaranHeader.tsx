@@ -248,6 +248,7 @@ const GridPengeluaranHeader = () => {
       setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
+      setSelectedRow(0);
     }, 300) // Bisa dikurangi jadi 250-300ms
   ).current;
 
@@ -255,10 +256,6 @@ const GridPengeluaranHeader = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
-      setTimeout(() => {
-        setSelectedRow(0);
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 400);
     },
     []
   );
@@ -2427,6 +2424,13 @@ const GridPengeluaranHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
+  useEffect(() => {
+    // Memastikan refetch dilakukan saat filters berubah
+    if (onReload) {
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
+    }
+  }, [onReload, refetch]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();

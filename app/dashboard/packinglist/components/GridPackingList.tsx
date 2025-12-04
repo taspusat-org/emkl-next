@@ -227,6 +227,7 @@ const GridPackingList = () => {
       setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
+      setSelectedRow(0);
     }, 300) // Bisa dikurangi jadi 250-300ms
   ).current;
 
