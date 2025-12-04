@@ -124,6 +124,7 @@ const GridScheduleDetail = () => {
       setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
+      setSelectedRow(0);
     }, 300) // Bisa dikurangi jadi 250-300ms
   ).current;
 
@@ -131,10 +132,6 @@ const GridScheduleDetail = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
-      setTimeout(() => {
-        setSelectedRow(0);
-        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 400);
     },
     []
   );
