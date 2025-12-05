@@ -142,6 +142,7 @@ const PeriodeValidation: React.FC<PeriodeValidationProps> = ({
           showCalendar
           onChange={handleDateChange2}
           onSelect={handleCalendarSelect2}
+          danger={showError.status}
         />
 
         {showError.status && (
