@@ -54,11 +54,6 @@ export const useGetKasGantungHeader = (
       } catch (error) {
         // Show error toast and dispatch processed
         dispatch(setProcessed());
-        toast({
-          variant: 'destructive',
-          title: 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
         throw error;
       } finally {
         // Regardless of success or failure, we dispatch setProcessed after the query finishes
