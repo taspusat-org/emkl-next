@@ -36,6 +36,7 @@ export interface DateInputProps
   /** Additional CSS classes for wrapper */
   className?: string;
   disabled?: boolean;
+  danger?: boolean;
 }
 
 /**
@@ -50,6 +51,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
   toYear = 2030,
   className = '',
   disabled = false,
+  danger = false,
   ...rest
 }) => {
   const [open, setOpen] = useState(false);
@@ -134,7 +136,11 @@ const InputDatePicker: React.FC<DateInputProps> = ({
 
   return (
     <div
-      className={`relative flex flex-row items-center rounded-sm border border-zinc-300 focus-within:border-blue-500 ${className}`}
+      className={`relative flex flex-row items-center rounded-sm border ${
+        danger
+          ? 'border-red-500 focus-within:border-red-600'
+          : 'border-zinc-300 focus-within:border-blue-500'
+      } ${className}`}
     >
       <InputMask
         mask={dateMask}

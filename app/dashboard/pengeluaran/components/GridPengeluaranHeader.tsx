@@ -2232,22 +2232,23 @@ const GridPengeluaranHeader = () => {
           }
         }));
       }
-    }
-    // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
-    else if (
-      selectedDate !== filters.filters.tglDari ||
-      selectedDate2 !== filters.filters.tglSampai ||
-      (selectedBank !== filters.filters.bank_id && onReload && !isFirstLoad)
-    ) {
-      setFilters((prevFilters) => ({
-        ...prevFilters,
-        filters: {
-          ...prevFilters.filters,
-          tglDari: selectedDate,
-          tglSampai: selectedDate2,
-          bank_id: selectedBank
-        }
-      }));
+    } else if (onReload) {
+      // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
+      if (
+        selectedDate !== filters.filters.tglDari ||
+        selectedDate2 !== filters.filters.tglSampai ||
+        (selectedBank !== filters.filters.bank_id && onReload && !isFirstLoad)
+      ) {
+        setFilters((prevFilters) => ({
+          ...prevFilters,
+          filters: {
+            ...prevFilters.filters,
+            tglDari: selectedDate,
+            tglSampai: selectedDate2,
+            bank_id: selectedBank
+          }
+        }));
+      }
     }
   }, [
     selectedDate,
