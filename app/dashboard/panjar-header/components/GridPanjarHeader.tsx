@@ -1238,7 +1238,7 @@ const GridPanjarHeader = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanBiayaExtra.mrt');
+          report.loadFile('/reports/LaporanPanjar.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({
             data: reportRows
@@ -1262,7 +1262,7 @@ const GridPanjarHeader = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/PanjarHeader', '_blank');
+              window.open('/reports/panjarheader', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1321,7 +1321,7 @@ const GridPanjarHeader = () => {
   //         judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
   //         usercetak: user.username,
   //         tglcetak,
-  //         judul: `LAPORAN BIAYA EXTRA`,
+  //         judul: `LAPORAN BIAYA EXTRA`
   //       }));
 
   //       dispatch(setReportData(reportRows));

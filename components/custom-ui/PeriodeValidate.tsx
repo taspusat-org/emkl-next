@@ -19,7 +19,7 @@ const PeriodeValidation: React.FC<PeriodeValidationProps> = ({
   triggerValidation = false
 }) => {
   const dispatch = useDispatch();
-  const { selectedDate, selectedDate2 } = useSelector(
+  const { selectedDate, selectedDate2, onReload } = useSelector(
     (state: any) => state.filter
   );
 
