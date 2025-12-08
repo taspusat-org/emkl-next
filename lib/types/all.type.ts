@@ -4,6 +4,7 @@ export interface GetParams {
   isLookUp?: string;
   filters?: Record<string, any>; // Tipe dinamis untuk filters
   sortBy?: string;
+  isreload?: boolean;
   sortDirection?: string;
   search?: string;
 }

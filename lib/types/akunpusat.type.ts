@@ -2,6 +2,7 @@ import { IMeta } from './error.type';
 
 export interface IAkunpusat {
   id: number;
+  nomor: string;
   type_id: number;
   level: number;
   coa: string;

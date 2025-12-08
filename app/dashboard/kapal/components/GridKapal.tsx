@@ -397,6 +397,7 @@ const GridKapal = () => {
         dispatch(clearOpenName());
       }
     };
+    console.log(forms.formState.errors);
 
     // Add event listener for keydown when the component is mounted
     document.addEventListener('keydown', handleEscape);

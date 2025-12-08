@@ -330,6 +330,81 @@ export const HeaderPdfViewer = (
   }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+    // Try to find a usable PDF URL in the page (download anchor, iframe, embed, object)
+    const findPdfUrl = () => {
+      const anchor = document.querySelector(
+        'a[download]'
+      ) as HTMLAnchorElement | null;
+      if (anchor && anchor.href) return anchor.href;
+
+      const iframe = document.querySelector(
+        'iframe'
+      ) as HTMLIFrameElement | null;
+      if (iframe && iframe.src) return iframe.src;
+
+      const embed = document.querySelector(
+        'embed[type="application/pdf"]'
+      ) as HTMLEmbedElement | null;
+      if (embed && embed.src) return embed.src;
+
+      const obj = document.querySelector(
+        'object[type="application/pdf"]'
+      ) as HTMLObjectElement | null;
+      if (obj && obj.data) return obj.data;
+
+      return null;
+    };
+
+    const handleShare = async () => {
+      try {
+        const url = findPdfUrl();
+
+        // If Web Share API available and we have a URL, use it
+        if (navigator.share && url) {
+          await navigator.share({
+            title: document.title || 'PDF',
+            text: 'Share PDF',
+            url
+          });
+          setIsMenuOpen(false);
+          return;
+        }
+
+        // If no URL but Web Share API supports files, try to fetch the download link and share file (best effort)
+        if ((navigator as any).canShare && !url) {
+          const downloadButton = document.querySelector(
+            '[aria-label="Download"]'
+          ) as HTMLButtonElement | null;
+          if (downloadButton) {
+            // Try to programmatically click to trigger download (fallback)
+            downloadButton.click();
+            setIsMenuOpen(false);
+            return;
+          }
+        }
+
+        // Fallback: open the PDF URL in a new tab if available, otherwise trigger download button
+        if (url) {
+          window.open(url, '_blank');
+          setIsMenuOpen(false);
+          return;
+        }
+
+        const downloadButton = document.querySelector(
+          '[aria-label="Download"]'
+        ) as HTMLButtonElement | null;
+        if (downloadButton) downloadButton.click();
+        setIsMenuOpen(false);
+      } catch (err) {
+        // On any error, fallback to clicking download
+        const downloadButton = document.querySelector(
+          '[aria-label="Download"]'
+        ) as HTMLButtonElement | null;
+        if (downloadButton) downloadButton.click();
+        setIsMenuOpen(false);
+      }
+    };
+
     return (
       <div className="relative sm:hidden">
         {/* Burger Menu Toggle Button - Only visible on mobile */}
@@ -351,6 +426,16 @@ export const HeaderPdfViewer = (
             <div className="py-1">
               <button
                 onClick={() => {
+                  handleShare();
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100"
+              >
+                <FaFileExport className="text-blue-600" />
+                <span>Share</span>
+              </button>
+
+              <button
+                onClick={() => {
                   const downloadButton = document.querySelector(
                     '[aria-label="Download"]'
                   ) as HTMLButtonElement;
@@ -362,7 +447,6 @@ export const HeaderPdfViewer = (
                 <FaDownload className="text-green-600" />
                 <span>Download</span>
               </button>
-
               <printInstance.Print>
                 {(props: RenderPrintProps) => (
                   <button

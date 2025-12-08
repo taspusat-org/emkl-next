@@ -95,19 +95,27 @@ export const buildQueryParams = ({
   page,
   filters = {},
   sortBy = '',
+  isreload,
   isLookUp = '',
   sortDirection = 'asc',
   search = ''
 }: GetParams) => {
-  return {
+  const params: any = {
     page,
     limit,
     search,
     isLookUp,
     sortBy,
     sortDirection,
-    ...filters // Spread filters directly here (e.g., title, parentId, icon)
+    ...filters
   };
+
+  // Hanya tambahkan isreload jika ada (tidak undefined)
+  if (isreload !== undefined) {
+    params.isreload = isreload;
+  }
+
+  return params;
 };
 export function isLeapYear(year: any) {
   return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;

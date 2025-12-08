@@ -79,7 +79,8 @@ export const useCreateAkunpusat = () => {
 export const useDeleteAkunpusat = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
+  const { setError } = useFormError();
+  const { alert } = useAlert();
   return useMutation(deleteAkunpusatFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('akunpusat');
@@ -91,11 +92,22 @@ export const useDeleteAkunpusat = () => {
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          alert({
+            title:
+              errorResponse.message ||
+              'Terjadi masalah dengan permintaan Anda.',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+        }
       }
     }
   });
@@ -103,23 +115,29 @@ export const useDeleteAkunpusat = () => {
 export const useUpdateAkunpusat = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
+  const { setError } = useFormError();
+  const { alert } = useAlert();
   return useMutation(updateAkunpusatFn, {
-    onSuccess: () => {
-      void queryClient.invalidateQueries('akunpusat');
-      toast({
-        title: 'Proses Berhasil.',
-        description: 'Data Berhasil Diubah.'
-      });
-    },
+    onSuccess: () => {},
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = errorResponse.message || [];
+        if (errorResponse.statusCode === 400) {
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          alert({
+            title:
+              errorResponse.message ||
+              'Terjadi masalah dengan permintaan Anda.',
+            variant: 'danger',
+            submitText: 'OK'
+          });
+        }
       }
     }
   });

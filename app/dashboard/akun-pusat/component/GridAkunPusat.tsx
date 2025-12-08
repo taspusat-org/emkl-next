@@ -114,14 +114,26 @@ const GridAkunPusat = () => {
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
+  const [fetchingPages, setFetchingPages] = useState<Set<number>>(new Set());
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
-  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
   } | null>(null);
+  const [pageDataCache, setPageDataCache] = useState<Map<number, IAkunpusat[]>>(
+    new Map()
+  );
+  const [isFetching, setIsFetching] = useState(false);
+  const [pendingPages, setPendingPages] = useState<Set<number>>(new Set());
+  const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isAfterMutation, setIsAfterMutation] = useState(false);
+  const scrollPositionRef = useRef<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null); // TAMBAHAN BARU
+  const prevRowsLengthRef = useRef<number>(0);
+  const prevMinPageRef = useRef<number>(1);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
@@ -187,7 +199,11 @@ const GridAkunPusat = () => {
       setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
-    }, 300) // Bisa dikurangi jadi 250-300ms
+      setSelectedRow(0);
+      setVisiblePages([1, 2, 3, 4, 5]);
+      setPageDataCache(new Map());
+      // setIsFirstLoad(true); // TAMBAHKAN INI
+    }, 300)
   ).current;
 
   const handleFilterInputChange = useCallback(
@@ -199,7 +215,7 @@ const GridAkunPusat = () => {
   );
   const handleClearFilter = useCallback((colKey: string) => {
     cancelPreviousRequest(abortControllerRef);
-    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    debouncedFilterUpdate.cancel();
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
@@ -209,6 +225,9 @@ const GridAkunPusat = () => {
     setIsAllSelected(false);
     setRows([]);
     setCurrentPage(1);
+    setVisiblePages([1, 2, 3, 4, 5]);
+    setPageDataCache(new Map());
+    // setIsFirstLoad(true); // TAMBAHKAN INI
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,9 +243,6 @@ const GridAkunPusat = () => {
     }));
     setCheckedRows(new Set());
     setIsAllSelected(false);
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-    }, 100);
 
     setTimeout(() => {
       if (inputRef.current) {
@@ -237,6 +253,9 @@ const GridAkunPusat = () => {
     setSelectedRow(0);
     setCurrentPage(1);
     setRows([]);
+    setVisiblePages([1, 2, 3, 4, 5]);
+    setPageDataCache(new Map());
+    // setIsFirstLoad(true); // TAMBAHKAN INI
   };
 
   const handleClearInput = () => {
@@ -251,7 +270,6 @@ const GridAkunPusat = () => {
     }));
     setInputValue('');
   };
-
   function highlightText(
     text: string | number | null | undefined,
     search: string,
@@ -290,6 +308,14 @@ const GridAkunPusat = () => {
   }
 
   const handleSort = (column: string) => {
+    const originalIndex = columns.findIndex((col) => col.key === column);
+
+    // 2. hitung index tampilan berdasar columnsOrder
+    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
+    const displayIndex =
+      columnsOrder.length > 0
+        ? columnsOrder.findIndex((idx) => idx === originalIndex)
+        : originalIndex;
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
         ? 'desc'
@@ -303,13 +329,15 @@ const GridAkunPusat = () => {
     }));
 
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
 
     setSelectedRow(0);
     setCurrentPage(1);
-    setFetchedPages(new Set([1]));
     setRows([]);
+    setVisiblePages([1, 2, 3, 4, 5]);
+    setPageDataCache(new Map());
+    // setIsFirstLoad(true); // TAMBAHKAN INI - trigger fetch pages 2-5
   };
 
   const handleRowSelect = (rowId: number) => {
@@ -382,10 +410,9 @@ const GridAkunPusat = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
           return (
             <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
-              {rowIndex + 1}
+              {props.row.nomor}
             </div>
           );
         }
@@ -1288,6 +1315,12 @@ const GridAkunPusat = () => {
 
           await handleMultipleDelete(checkedRowsArray);
 
+          setIsAfterMutation(true);
+          // Reset isAfterMutation setelah 1 detik
+          setTimeout(() => {
+            setIsAfterMutation(false);
+          }, 1000);
+
           dispatch(setProcessed());
         } catch (alertError) {
           dispatch(setProcessed());
@@ -1322,12 +1355,13 @@ const GridAkunPusat = () => {
 
   const onSuccess = async (
     indexOnPage: any,
-    pageNumber: any,
+    fetchedPages: any,
+    pagedData: any,
     keepOpenModal: any = false
   ) => {
     dispatch(setClearLookup(true));
     clearError();
-
+    setIsAfterMutation(true);
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1341,17 +1375,23 @@ const GridAkunPusat = () => {
           const response = await api2.get(`/redis/get/akunpusat-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            console.log(
-              response.data,
-              indexOnPage,
-              pageNumber,
-              'response.data'
-            );
+            setRows([]);
+            console.log('response', response);
             setRows(response.data);
             setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
+            // setCurrentPage(pageNumber);
+            setVisiblePages(fetchedPages);
+            console.log(fetchedPages, 'fetchedPages');
             setSelectedRow(indexOnPage);
+            setPageDataCache(
+              new Map(
+                Object.entries(pagedData).map(([key, value]) => [
+                  Number(key),
+                  value as IAkunpusat[]
+                ])
+              )
+            );
+
             setTimeout(() => {
               gridRef?.current?.selectCell({
                 rowIdx: indexOnPage,
@@ -1369,6 +1409,10 @@ const GridAkunPusat = () => {
     } finally {
       // dispatch(setClearLookup(false));
       setIsDataUpdated(false);
+      // Reset isAfterMutation setelah 1 detik untuk mengaktifkan kembali scroll handler
+      setTimeout(() => {
+        setIsAfterMutation(false);
+      }, 1000);
     }
   };
 
@@ -1384,6 +1428,7 @@ const GridAkunPusat = () => {
               setRows((prevRows) =>
                 prevRows.filter((row) => row.id !== selectedRowId)
               );
+              setIsAfterMutation(true);
               if (selectedRow === 0) {
                 setSelectedRow(selectedRow);
                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
@@ -1394,6 +1439,10 @@ const GridAkunPusat = () => {
                   idx: 1
                 });
               }
+              // Reset isAfterMutation setelah 1 detik
+              setTimeout(() => {
+                setIsAfterMutation(false);
+              }, 1000);
             }
           });
         }
@@ -1407,7 +1456,12 @@ const GridAkunPusat = () => {
           },
           {
             onSuccess: (data) =>
-              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                keepOpenModal
+              )
           }
         );
 
@@ -1422,7 +1476,10 @@ const GridAkunPusat = () => {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
-          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+          {
+            onSuccess: (data) =>
+              onSuccess(data.itemIndex, data.fetchedPages, data.pagedData)
+          }
         );
         queryClient.invalidateQueries('akunpusat');
       }
@@ -1592,44 +1649,53 @@ const GridAkunPusat = () => {
   function rowKeyGetter(row: IAkunpusat) {
     return row.id;
   }
-
-  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
-    return currentTarget.scrollTop <= 10;
-  }
-
-  function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
-    const { currentTarget } = event;
-    if (!currentTarget) return false;
-
-    return (
-      currentTarget.scrollTop + currentTarget.clientHeight >=
-      currentTarget.scrollHeight - 2
-    );
-  }
-
+  // Ubah fungsi handleScroll untuk menyimpan referensi scroll container
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingAkunpusat || !hasMore || rows.length === 0) return;
+    if (
+      isLoadingAkunpusat ||
+      rows.length === 0 ||
+      isTransitioning ||
+      isFetching ||
+      isAfterMutation
+    )
+      return;
 
-    const findUnfetchedPage = (pageOffset: number) => {
-      let page = currentPage + pageOffset;
-      while (page > 0 && fetchedPages.has(page)) {
-        page += pageOffset;
-      }
-      return page > 0 ? page : null;
-    };
+    const { currentTarget } = event;
+    const scrollTop = currentTarget.scrollTop;
+    const scrollHeight = currentTarget.scrollHeight;
+    const clientHeight = currentTarget.clientHeight;
 
-    if (isAtBottom(event)) {
-      const nextPage = findUnfetchedPage(1);
+    scrollPositionRef.current = scrollTop;
+    scrollContainerRef.current = currentTarget;
 
-      if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
+    // Threshold untuk trigger fetch - lebih konservatif
+    const topThreshold = scrollHeight * 0.2;
+    const bottomThreshold = scrollHeight * 0.5;
+
+    // Scroll ke bawah
+    if (scrollTop + clientHeight >= bottomThreshold) {
+      const maxPage = Math.max(...visiblePages);
+      const nextPage = maxPage + 1;
+
+      if (
+        nextPage <= totalPages &&
+        !pageDataCache.has(nextPage) &&
+        !isFetching
+      ) {
+        setIsFetching(true);
+        setIsTransitioning(true);
         setCurrentPage(nextPage);
-        setIsAllSelected(false);
       }
     }
 
-    if (isAtTop(event)) {
-      const prevPage = findUnfetchedPage(-1);
-      if (prevPage && !fetchedPages.has(prevPage)) {
+    // Scroll ke atas
+    if (scrollTop <= topThreshold) {
+      const minPage = Math.min(...visiblePages);
+      const prevPage = minPage - 1;
+
+      if (prevPage >= 1 && !pageDataCache.has(prevPage) && !isFetching) {
+        setIsFetching(true);
+        setIsTransitioning(true);
         setCurrentPage(prevPage);
       }
     }
@@ -1794,41 +1860,6 @@ const GridAkunPusat = () => {
     }
   };
 
-  // const handleReport = async () => {
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   dispatch(setProcessing()); // Show loading overlay when the request starts
-
-  //   try {
-  //     const response = await getAkunpusatFn(filtersWithoutLimit);
-
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'DATA TIDAK TERSEDIA!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //     } else {
-  //       const reportRows = response.data.map((row) => ({
-  //         ...row,
-  //         judullaporan: 'Laporan Akun Pusat',
-  //         usercetak: user.username,
-  //         tglcetak: new Date().toLocaleDateString(),
-  //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //       }));
-  //       dispatch(setReportData(reportRows));
-  //       window.open('/reports/designer', '_blank');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //     alert({
-  //       title: 'Terjadi kesalahan saat memuat data!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   } finally {
-  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
-  //   }
-  // };
   useEffect(() => {
     // loadGridConfig(user.id, 'GridAkunPusat');
     loadGridConfig(
@@ -1850,27 +1881,55 @@ const GridAkunPusat = () => {
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
       setIsFirstLoad(false);
     }
-  }, [rows, isFirstLoad]);
+  }, [isFirstLoad, rows]);
 
   useEffect(() => {
-    if (!allAkunpusat || isDataUpdated) return;
+    if (!allAkunpusat || isDataUpdated || isAfterMutation) return;
 
     const newRows = allAkunpusat.data || [];
 
-    setRows((prevRows) => {
-      // Reset data if filter changes (first page)
-      if (currentPage === 1 || filters !== prevFilters) {
-        setCurrentPage(1); // Reset currentPage to 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-        return newRows; // Use the fetched new rows directly
+    // Cache data halaman
+    setPageDataCache((prevCache) => {
+      const newCache = new Map(prevCache);
+      newCache.set(currentPage, newRows);
+      return newCache;
+    });
+
+    setVisiblePages((prevVisible) => {
+      const maxVisible = Math.max(...prevVisible);
+      const minVisible = Math.min(...prevVisible);
+
+      // Scroll ke bawah - jaga 5 pages, buang page pertama
+      if (currentPage > maxVisible) {
+        const newPages = [...prevVisible.slice(1), currentPage];
+
+        // Hapus page yang sudah tidak visible dari cache
+        const removedPage = prevVisible[0];
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
       }
 
-      // Add new data to the bottom for infinite scroll
-      if (!fetchedPages.has(currentPage)) {
-        return [...prevRows, ...newRows];
+      // Scroll ke atas - jaga 5 pages, buang page terakhir
+      if (currentPage < minVisible) {
+        const newPages = [currentPage, ...prevVisible.slice(0, 4)];
+
+        // Hapus page yang sudah tidak visible dari cache
+        const removedPage = prevVisible[4];
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
       }
 
-      return prevRows;
+      return prevVisible;
     });
 
     if (allAkunpusat.pagination.totalPages) {
@@ -1878,26 +1937,104 @@ const GridAkunPusat = () => {
     }
 
     setHasMore(newRows.length === filters.limit);
-    setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
+
+    // Reset flags setelah fetch selesai
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setIsFetching(false);
+    }, 100);
   }, [allAkunpusat, currentPage, filters, isDataUpdated]);
 
+  useEffect(() => {
+    const combinedRows: IAkunpusat[] = [];
+    const scrollContainer = scrollContainerRef.current;
+
+    // Ambil nilai dari ref (nilai sebelumnya yang tersimpan)
+    const prevMinPage = prevMinPageRef.current;
+    const prevRowsLength = prevRowsLengthRef.current; // GUNAKAN REF, BUKAN rows.length
+
+    visiblePages?.forEach((page) => {
+      const pageData = pageDataCache.get(page);
+      if (pageData) {
+        combinedRows.push(...pageData);
+      }
+    });
+
+    if (combinedRows.length > 0) {
+      const newMinPage = Math.min(...visiblePages);
+      const isScrollingUp = newMinPage < prevMinPage;
+
+      // Jika scrolling up dan rows bertambah di awal
+      if (
+        isScrollingUp &&
+        combinedRows.length > prevRowsLength &&
+        scrollContainer
+      ) {
+        requestAnimationFrame(() => {
+          // Hitung berapa banyak rows yang ditambahkan
+          const addedRowsCount = combinedRows.length - prevRowsLength;
+          const rowHeight = 30; // sesuai dengan rowHeight di DataGrid
+          const scrollOffset = addedRowsCount * rowHeight;
+          scrollContainer.scrollTop = scrollPositionRef.current + scrollOffset;
+        });
+      }
+
+      // Update rows state
+      setRows(combinedRows);
+
+      // Simpan nilai untuk perbandingan di render berikutnya
+      prevMinPageRef.current = newMinPage;
+      prevRowsLengthRef.current = combinedRows.length; // SIMPAN LENGTH BARU
+    }
+  }, [visiblePages, pageDataCache]);
+  useEffect(() => {
+    const fetchInitialPages = async () => {
+      // Kondisi: jalankan saat isFirstLoad true dan page 1 sudah ada data
+      if (
+        isFirstLoad &&
+        currentPage === 1 &&
+        rows.length > 0 &&
+        pageDataCache.has(1) &&
+        !isFetching
+      ) {
+        setIsFetching(true);
+
+        // Fetch pages 2-5 secara berurutan
+        for (let page = 2; page <= 5; page++) {
+          if (page <= totalPages && !pageDataCache.has(page)) {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            setCurrentPage(page);
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
+        }
+
+        setIsFirstLoad(false);
+        setIsFetching(false);
+      }
+    };
+
+    // Trigger hanya jika isFirstLoad true dan tidak sedang loading
+    if (isFirstLoad && !isLoadingAkunpusat && pageDataCache.has(1)) {
+      fetchInitialPages();
+    }
+  }, [
+    isFirstLoad,
+    rows.length,
+    currentPage,
+    isLoadingAkunpusat,
+    totalPages,
+    pageDataCache,
+    isFetching
+  ]);
+  console.log('pageDataCache', pageDataCache);
+  console.log('visiblePages', visiblePages);
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-
-  useEffect(() => {
-    if (gridRef.current && dataGridKey) {
-      setTimeout(() => {
-        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-        setIsFirstLoad(false);
-      }, 0);
-    }
-  }, [dataGridKey]);
-
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
@@ -2053,6 +2190,7 @@ const GridAkunPusat = () => {
           renderers={{
             noRowsFallback: <EmptyRowsRenderer />
           }}
+          enableVirtualization={false}
         />
         <div
           className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
