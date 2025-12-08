@@ -717,6 +717,7 @@ const FormKasGantung = ({
                         ref={gridRef}
                         columns={columns as any[]}
                         rows={rows}
+                        enableVirtualization={false}
                         headerRowHeight={70}
                         rowHeight={40}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}

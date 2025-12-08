@@ -58,7 +58,7 @@ export const filterJurnalUmum = {
   tglSampai: ''
 };
 export const filterJurnalUmumDetail = {
-  nobukti: '',
+  consignee_id: '',
   tglbukti: '',
   keterangan: '',
   coa: '',

@@ -1177,12 +1177,12 @@ const GridJurnalUmumDetail = ({
     }
   }, [headerData, filters]);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
         filters: {
           ...filterJurnalUmumDetail, // <--- semua filter dikosongkan dulu
-          nobukti: nobukti ?? headerData.nobukti // <--- kecuali nobukti tetap diisi
+          nobukti: nobukti ?? headerData?.nobukti // <--- kecuali nobukti tetap diisi
         }
       }));
     } else {
@@ -1194,7 +1194,7 @@ const GridJurnalUmumDetail = ({
         }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();

@@ -140,95 +140,101 @@ const FilterGrid = () => {
           }}
         />
         <div className="bg-white p-4">
-          <div className="flex w-full flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              periode:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-            </label>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate}
-                showCalendar
-                onChange={handleDateChange1}
-                onSelect={handleCalendarSelect1}
-              />
+          <div className="flex flex-col justify-between lg:flex-row">
+            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
+              <label
+                htmlFor=""
+                className="w-full text-sm font-bold text-black lg:w-[20%]"
+              >
+                periode:
+                <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
+              </label>
+              <div className="relative w-full lg:w-[60%]">
+                <InputDatePicker
+                  value={selectedDate}
+                  showCalendar
+                  onChange={handleDateChange1}
+                  onSelect={handleCalendarSelect1}
+                />
+              </div>
             </div>
 
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold text-black">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate2}
-                showCalendar
-                onChange={handleDateChange2}
-                onSelect={handleCalendarSelect2}
-              />
+            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
+              <div className="flex items-center justify-center lg:w-[20%] lg:justify-start">
+                <p className="text-center text-sm font-bold text-black">S/D</p>
+              </div>
+              <div className="relative w-full lg:w-[60%]">
+                <InputDatePicker
+                  value={selectedDate2}
+                  showCalendar
+                  onChange={handleDateChange2}
+                  onSelect={handleCalendarSelect2}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              Jenis Orderan:
-              {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
-            </label>
-            <div className="relative w-full text-black lg:w-[60%]">
-              {lookUpJenisOrderan.map((props, index) => (
-                <LookUp
-                  key={index}
-                  {...props}
-                  onSelectRow={(val) => {
-                    setJenisOrderanNama(val.nama);
-                    dispatch(setSelectedJenisOrderan(Number(val.id)));
-                    dispatch(setSelectedJenisOrderanNama(val.nama));
-                  }}
-                  onClear={() => {
-                    setJenisOrderanNama('');
-                    dispatch(setSelectedJenisOrderan(null));
-                    dispatch(setSelectedJenisOrderanNama(''));
-                  }}
-                  lookupNama={
-                    jenisOrderanNama ? jenisOrderanNama : JENISORDERMUATANNAMA
-                  }
-                />
-              ))}
+          <div className="flex flex-col justify-between lg:flex-row">
+            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
+              <label
+                htmlFor=""
+                className="w-full text-sm font-bold text-black lg:w-[20%]"
+              >
+                Jenis Orderan:
+                {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
+              </label>
+              <div className="relative w-full text-black lg:w-[60%]">
+                {lookUpJenisOrderan.map((props, index) => (
+                  <LookUp
+                    key={index}
+                    {...props}
+                    onSelectRow={(val) => {
+                      setJenisOrderanNama(val.nama);
+                      dispatch(setSelectedJenisOrderan(Number(val.id)));
+                      dispatch(setSelectedJenisOrderanNama(val.nama));
+                    }}
+                    onClear={() => {
+                      setJenisOrderanNama('');
+                      dispatch(setSelectedJenisOrderan(null));
+                      dispatch(setSelectedJenisOrderanNama(''));
+                    }}
+                    lookupNama={
+                      jenisOrderanNama ? jenisOrderanNama : JENISORDERMUATANNAMA
+                    }
+                  />
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              Jenis Status:
-              {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
-            </label>
-            <div className="relative w-full text-black lg:w-[60%]">
-              {lookUpJenisStatus.map((props, index) => (
-                <LookUp
-                  key={index}
-                  {...props}
-                  onSelectRow={(val) => {
-                    setStatusJobNama(val.nama);
-                    dispatch(setSelectedJenisStatusJob(Number(val.id)));
-                    dispatch(setSelectedJenisStatusJobNama(val.text));
-                  }}
-                  onClear={() => {
-                    setStatusJobNama('');
-                    dispatch(setSelectedJenisStatusJob(null));
-                    dispatch(setSelectedJenisStatusJobNama(''));
-                  }}
-                  lookupNama={
-                    statusJobNama ? statusJobNama : STATUSJOBMASUKGUDANGNAMA
-                  }
-                />
-              ))}
+            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
+              <label
+                htmlFor=""
+                className="w-full text-sm font-bold text-black lg:w-[20%]"
+              >
+                Jenis Status:
+                {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
+              </label>
+              <div className="relative w-full text-black lg:w-[60%]">
+                {lookUpJenisStatus.map((props, index) => (
+                  <LookUp
+                    key={index}
+                    {...props}
+                    onSelectRow={(val) => {
+                      setStatusJobNama(val.nama);
+                      dispatch(setSelectedJenisStatusJob(Number(val.id)));
+                      dispatch(setSelectedJenisStatusJobNama(val.text));
+                    }}
+                    onClear={() => {
+                      setStatusJobNama('');
+                      dispatch(setSelectedJenisStatusJob(null));
+                      dispatch(setSelectedJenisStatusJobNama(''));
+                    }}
+                    lookupNama={
+                      statusJobNama ? statusJobNama : STATUSJOBMASUKGUDANGNAMA
+                    }
+                  />
+                ))}
+              </div>
             </div>
           </div>
 

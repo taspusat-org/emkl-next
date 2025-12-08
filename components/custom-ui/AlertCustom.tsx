@@ -10,7 +10,7 @@ import useDisableBodyScroll from '@/lib/hooks/useDisableBodyScroll';
 export interface AlertOptions {
   title: string;
   variant: 'danger' | 'success';
-  submitText: string;
+  submitText?: string;
   catchOnCancel?: boolean;
   isLoading?: boolean;
   cancelText?: string;

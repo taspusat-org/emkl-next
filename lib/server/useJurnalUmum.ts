@@ -37,6 +37,7 @@ export const useGetJurnalUmumHeader = (
     sortBy?: string;
     sortDirection?: string;
     limit?: number;
+    isreload?: boolean;
     search?: string; // Kata kunci pencarian
   } = {},
   signal?: AbortSignal

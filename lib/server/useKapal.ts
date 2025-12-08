@@ -10,6 +10,8 @@ import {
 } from '../apis/kapal.api';
 import { useAlert } from '../store/client/useAlert';
 import { useFormError } from '../hooks/formErrorContext';
+import { setClearLookup } from '../store/lookupSlice/lookupSlice';
+import { useDispatch } from 'react-redux';
 
 export const useGetKapal = (
   filters: {
@@ -40,7 +42,7 @@ export const useCreateKapal = () => {
   const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { alert } = useAlert();
-
+  const dispatch = useDispatch();
   return useMutation(storeKapalFn, {
     onSuccess: () => {
       void queryClient.invalidateQueries('kapal');

@@ -110,7 +110,6 @@ export default function AppSidebar({
   });
 
   const { data: allMenu, isLoading: isLoadingMenu } = useGetSearchMenu(filters);
-
   React.useEffect(() => {
     if (filters.search) {
       setSearchResults(allMenu || []);
@@ -211,21 +210,19 @@ export default function AppSidebar({
 
             {filters.search ? (
               searchResults.length > 0 ? (
-                <div className="absolute top-full z-50 mt-2 h-fit w-full overflow-y-auto rounded bg-white shadow-md">
+                <div className="absolute top-full z-50 h-fit w-full overflow-y-auto rounded bg-white shadow-md">
                   {searchResults.map((menu) => {
-                    // Ganti spasi dengan '-' pada title
-                    const formattedTitle = menu.title
-                      .toLowerCase()
-                      .replace(/\s+/g, '-');
                     return (
                       <Link
                         key={menu.id}
                         onClick={handleClickSearch}
-                        href={`/dashboard/${formattedTitle}`}
-                        className="flex cursor-pointer items-center bg-gray-500 px-4 py-2 hover:bg-gray-400"
+                        href={`/dashboard/${menu.url.toLowerCase()}`}
+                        className="flex cursor-pointer flex-col border border-gray-400 bg-gray-700 px-2 py-1 hover:bg-gray-500"
                       >
-                        {menu.icon && <span className="mr-2"></span>}
                         <span className="text-sm">{menu.title}</span>
+                        <span className="text-[8px]">
+                          {menu.parentBreadcrumb}
+                        </span>
                       </Link>
                     );
                   })}
@@ -277,7 +274,6 @@ export default function AppSidebar({
                   openMenus,
                   setOpenMenus,
                   isMenuOpen,
-                  activePath,
                   setHoveredItemId,
                   hoveredItemId
                 }}
@@ -299,13 +295,12 @@ export default function AppSidebar({
                   SidebarMenuSubItem,
                   SidebarProvider,
                   SidebarTrigger,
-                  Icons,
+                  Icons: (props: any) => <Icons {...props} />, // Wrap Icons
                   Collapsible,
-                  activePath,
                   CollapsibleContent,
                   CollapsibleTrigger,
                   ChevronRight,
-                  Link
+                  Link: (props: any) => <Link {...props} /> // Wrap Link
                 }}
                 jsx={menuData || ''} // Ensure it's a string
               />

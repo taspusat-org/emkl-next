@@ -80,6 +80,24 @@ const FormAkunPusat = ({
     }
   ];
 
+  const lookUpPropsCOA = [
+    {
+      columns: [
+        { key: 'coa', name: 'COA' },
+        { key: 'keterangancoa', name: 'KETERANGANCOA' }
+      ],
+      labelLookup: 'COA LOOKUP',
+      required: false,
+      selectedRequired: false,
+      endpoint: 'akunpusat',
+      label: 'AKUNPUSAT',
+      singleColumn: false,
+      pageSize: 20,
+      postData: 'keterangancoa',
+      dataToPost: 'coa',
+      showOnButton: true
+    }
+  ];
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const selectLookup = useSelector(
@@ -164,7 +182,6 @@ const FormAkunPusat = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
-
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -172,12 +189,12 @@ const FormAkunPusat = ({
         <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
           <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
             {mode === 'add'
-              ? 'Add Type Akuntansi'
+              ? 'Add Akun Pusat'
               : mode === 'edit'
-              ? 'Edit Type Akuntansi'
+              ? 'Edit Akun Pusat'
               : mode === 'delete'
-              ? 'Delete Type Akuntansi'
-              : 'View Type Akuntansi'}
+              ? 'Delete Akun Pusat'
+              : 'View Akun Pusat'}
           </h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
@@ -198,6 +215,30 @@ const FormAkunPusat = ({
                 className="flex h-full flex-col gap-6"
               >
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
+                  {/* <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
+                    <div className="w-full lg:w-[15%]">
+                      <FormLabel className="text-sm font-semibold text-gray-700">
+                        COA
+                      </FormLabel>
+                    </div>
+                    <div className="w-full lg:w-[85%]">
+                      {lookUpPropsCOA.map((props, index) => (
+                        <LookUp
+                          key={index}
+                          {...props}
+                          hideFilter={true}
+                          forms={forms}
+                          name="coa"
+                          forInput={true}
+                          lookupValue={(value: any) => {
+                            forms.setValue('coa', value);
+                          }}
+                          lookupNama={forms.getValues('coa')}
+                          disabled={['view', 'delete'].includes(mode)}
+                        />
+                      ))}
+                    </div>
+                  </div> */}
                   <FormField
                     name="coa"
                     control={forms.control}
@@ -224,7 +265,6 @@ const FormAkunPusat = ({
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     name="parent"
                     control={forms.control}

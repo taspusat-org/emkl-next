@@ -64,6 +64,7 @@ import {
 } from '@/lib/server/useJurnalUmum';
 import {
   filterJurnalUmum,
+  IAllJurnalUmumHeader,
   JurnalUmumHeader
 } from '@/lib/types/jurnalumumheader.type';
 import {
@@ -86,12 +87,14 @@ import {
 } from '@/components/ui/tooltip';
 import { useDebounce } from '@/hooks/use-debounce';
 import FilterInput from '@/components/custom-ui/FilterInput';
+import { IConsignee } from '@/lib/types/consignee.type';
 interface Filter {
   page: number;
   limit: number;
   search: string;
   filters: typeof filterJurnalUmum;
   sortBy: string;
+  isreload: boolean;
   sortDirection: 'asc' | 'desc';
 }
 
@@ -171,6 +174,7 @@ const GridJurnalUmumHeader = () => {
       tglDari: selectedDate,
       tglSampai: selectedDate2
     },
+    isreload: true, // Set true untuk first load
     search: '',
     sortBy: 'nobukti',
     sortDirection: 'asc'
@@ -179,17 +183,29 @@ const GridJurnalUmumHeader = () => {
 
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      limit: filters.limit,
+      search: filters.search,
+      filters: filters.filters,
+      sortBy: filters.sortBy,
+      sortDirection: filters.sortDirection,
+      isreload: filters.isreload
+    }),
+    [currentPage, filters]
+  );
+
   const {
     data: allData,
     isLoading: isLoadingData,
     refetch
-  } = useGetJurnalUmumHeader(
-    {
-      ...filters,
-      page: currentPage
-    },
-    abortControllerRef.current?.signal
-  );
+  } = useGetJurnalUmumHeader(queryParams, abortControllerRef.current?.signal);
+
+  // Debug log
+  useEffect(() => {
+    console.log('Query params:', queryParams);
+  }, [queryParams]);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const cancelPreviousRequest = () => {
     if (abortControllerRef.current) {
@@ -203,7 +219,8 @@ const GridJurnalUmumHeader = () => {
       setFilters((prev) => ({
         ...prev,
         filters: { ...prev.filters, [colKey]: value },
-        page: 1
+        page: 1,
+        isreload: false
       }));
       setCheckedRows(new Set());
       setIsAllSelected(false);
@@ -237,21 +254,19 @@ const GridJurnalUmumHeader = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
-    // Langsung update input value tanpa debounce
     setInputValue(searchValue);
 
-    // Menunggu beberapa waktu sebelum update filter
     cancelPreviousRequest();
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
     debounceTimerRef.current = setTimeout(() => {
-      // Mengupdate filter setelah debounce
       setCurrentPage(1);
       setFilters((prev) => ({
         ...prev,
-        filters: filterJurnalUmum, // Gunakan filter yang relevan
+        filters: filterJurnalUmum,
         search: searchValue,
-        page: 1
+        page: 1,
+        isreload: false // Tambahkan ini
       }));
 
       setCheckedRows(new Set());
@@ -268,7 +283,7 @@ const GridJurnalUmumHeader = () => {
       setSelectedRow(0);
       setCurrentPage(1);
       setRows([]);
-    }, 300); // Mengatur debounce hanya untuk update filter
+    }, 300);
   };
   function highlightText(
     text: string | number | null | undefined,
@@ -322,7 +337,8 @@ const GridJurnalUmumHeader = () => {
       ...prevFilters,
       sortBy: column,
       sortDirection: newSortOrder,
-      page: 1
+      page: 1,
+      isreload: false // Ubah ke false saat sorting
     }));
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
@@ -364,9 +380,12 @@ const GridJurnalUmumHeader = () => {
         ...prev.filters
       },
       search: '',
-      page: 1
+      page: 1,
+      isreload: false // Tambahkan ini
     }));
     setInputValue('');
+    setCurrentPage(1);
+    setRows([]);
   };
 
   const columns = useMemo((): Column<JurnalUmumHeader>[] => {
@@ -1204,62 +1223,13 @@ const GridJurnalUmumHeader = () => {
     }
   }
 
-  function handleCellClick(args: CellClickArgs<JurnalUmumHeader>) {
+  function handleCellClick(args: { row: JurnalUmumHeader }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
     if (rowIndex !== -1 && foundRow) {
       setSelectedRow(rowIndex);
       dispatch(setHeaderData(foundRow));
-    }
-  }
-  async function handleKeyDown(
-    args: CellKeyDownArgs<JurnalUmumHeader>,
-    event: React.KeyboardEvent
-  ) {
-    const visibleRowCount = 10;
-    const firstDataRowIndex = 0;
-    const selectedRowId = rows[selectedRow]?.id;
-
-    if (event.key === 'ArrowDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const nextRow = Math.min(prev + 1, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'ArrowUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const newRow = Math.max(prev - 1, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === 'ArrowRight') {
-      setSelectedCol((prev) => {
-        return Math.min(prev + 1, columns.length - 1);
-      });
-    } else if (event.key === 'ArrowLeft') {
-      setSelectedCol((prev) => {
-        return Math.max(prev - 1, 0);
-      });
-    } else if (event.key === 'PageDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const nextRow = Math.min(prev + visibleRowCount - 2, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'PageUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
     }
   }
   const onSuccess = async (indexOnPage: any, pageNumber: any) => {
@@ -1326,6 +1296,7 @@ const GridJurnalUmumHeader = () => {
         return;
       }
       if (mode === 'add') {
+        setFilters((prev) => ({ ...prev, isreload: false }));
         const newOrder = await createJurnalUmum(
           {
             ...values,
@@ -1735,11 +1706,12 @@ const GridJurnalUmumHeader = () => {
             ...prevFilters.filters,
             tglDari: selectedDate,
             tglSampai: selectedDate2
-          }
+          },
+          isreload: true // True hanya untuk first load
         }));
       }
     }
-    // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
+    // Cek perubahan tanggal setelah pertama kali load
     else if (
       (selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai) &&
@@ -1752,10 +1724,22 @@ const GridJurnalUmumHeader = () => {
           ...prevFilters.filters,
           tglDari: selectedDate,
           tglSampai: selectedDate2
-        }
+        },
+        isreload: false, // Ubah ke false, karena ini filter biasa
+        page: 1
       }));
+      setCurrentPage(1);
+      setFetchedPages(new Set([1]));
+      setRows([]);
     }
-  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
+  }, [
+    selectedDate,
+    selectedDate2,
+    filters.filters.tglDari,
+    filters.filters.tglSampai,
+    onReload,
+    isFirstLoad
+  ]);
 
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
@@ -1852,12 +1836,15 @@ const GridJurnalUmumHeader = () => {
     }
   }, [filters]); // Dependency array termasuk filters dan refetch
   useEffect(() => {
-    // Memastikan refetch dilakukan saat filters berubah
     if (onReload) {
-      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
-      setPrevFilters(filters); // Simpan filters terbaru
+      setFilters((prev) => ({
+        ...prev,
+        isreload: true // Set true hanya saat explicit reload
+      }));
+      refetch();
+      setPrevFilters(filters);
     }
-  }, [onReload]); // Dependency array termasuk filters dan ref
+  }, [onReload]);
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
     if (successApproved) {
@@ -1897,14 +1884,12 @@ const GridJurnalUmumHeader = () => {
 
     const newRows = allData.data || [];
     setRows((prevRows) => {
-      // Reset data if filter changes (first page)
       if (currentPage === 1 || filters !== prevFilters) {
-        setCurrentPage(1); // Reset currentPage to 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-        return newRows; // Use the fetched new rows directly
+        setCurrentPage(1);
+        setFetchedPages(new Set([1]));
+        return newRows;
       }
 
-      // Add new data to the bottom for infinite scroll
       if (!fetchedPages.has(currentPage)) {
         return [...prevRows, ...newRows];
       }
@@ -1972,7 +1957,9 @@ const GridJurnalUmumHeader = () => {
           className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
+          onSelectedCellChange={(args) => {
+            handleCellClick({ row: args.row });
+          }}
           onScroll={handleScroll}
           renderers={{
             noRowsFallback: <EmptyRowsRenderer />
