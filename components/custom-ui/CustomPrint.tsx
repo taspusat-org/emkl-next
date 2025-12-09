@@ -386,7 +386,8 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           monochrome: colorMode === 'bw',
           copies: 1,
           orientation: layout,
-          scale: defaultScale
+          scale: defaultScale,
+          dpi: 300
         }
       });
 
