@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "dae28e75a057a7ddb21404a05ef940e7",
+  "ReportGuid": "c0de5a79024f6bea1e5c699cdaad3352",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "/reports/LaporanPanjar.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1765255019000+0700)/",
+  "ReportChanged": "/Date(1765255787000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -289,7 +289,7 @@
               "Ident": "StiText",
               "Name": "Text18",
               "Guid": "0c509b134cb3dd5499a90ee1185b1aa7",
-              "ClientRectangle": "82.9,14,121.2,3.9",
+              "ClientRectangle": "84.9,14,121.2,3.9",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -303,13 +303,19 @@
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:0,0,0",
+              "Margins": {
+                "Left": 0,
+                "Right": 2,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "DataColumn"
             },
             "3": {
               "Ident": "StiText",
               "Name": "Text51",
               "Guid": "9bb95b7a50929a76dcc88c2c382d9ca4",
-              "ClientRectangle": "97.7,18.9,106.7,4.1",
+              "ClientRectangle": "99.7,18.9,106.7,4.1",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -322,13 +328,19 @@
               "Border": ";;2;;;;;solid:0,0,0",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
+              "Margins": {
+                "Left": 0,
+                "Right": 2,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "Expression"
             },
             "4": {
               "Ident": "StiText",
               "Name": "Text16",
               "Guid": "0673dbeb41fb700c1bee5d7e9fc1f541",
-              "ClientRectangle": "97.5,22.9,106.4,4.1",
+              "ClientRectangle": "99.5,22.9,106.4,4.1",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -341,6 +353,12 @@
               "Border": ";;;;;;;solid:Black",
               "Brush": "solid:",
               "TextBrush": "solid:Black",
+              "Margins": {
+                "Left": 0,
+                "Right": 2,
+                "Top": 0,
+                "Bottom": 0
+              },
               "Type": "DataColumn"
             },
             "5": {
