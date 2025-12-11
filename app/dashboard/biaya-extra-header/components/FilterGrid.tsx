@@ -16,14 +16,12 @@ import {
 } from '@/lib/store/filterSlice/filterSlice';
 import LookUp from '@/components/custom-ui/LookUp';
 import { JENISORDERMUATANNAMA } from '@/constants/biayaextraheader';
+import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
-  const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
-  const { selectedDate, selectedDate2, onReload } = useSelector(
-    (state: any) => state.filter
-  );
+  const { onReload } = useSelector((state: any) => state.filter);
+  const [triggerValidation, setTriggerValidation] = useState(false);
 
   const lookUpJenisOrderan = [
     {
@@ -31,7 +29,7 @@ const FilterGrid = () => {
       labelLookup: 'JENIS ORDERAN LOOKUP',
       selectedRequired: false,
       endpoint: 'JenisOrderan',
-      label: 'JENIS ORDER',
+      label: 'JENIS ORDER FILTER GRID',
       singleColumn: true,
       pageSize: 20,
       postData: 'nama',
@@ -39,36 +37,17 @@ const FilterGrid = () => {
     }
   ];
 
-  const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate(newValue)); // Dispatch to Redux
-  };
-
-  const handleDateChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate2(newValue)); // Dispatch to Redux
-  };
-
-  const handleCalendarSelect1 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate(String(value)));
-      setPopOverTglDari(false); // Menutup popover setelah memilih tanggal
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
-
-  const handleCalendarSelect2 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate2(String(value)));
-      setPopOverTgl(false);
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
-
   const onSubmit = () => {
-    dispatch(setOnReload(true));
+    setTriggerValidation(true);
+  };
+
+  const handleValidationResult = (isValid: boolean) => {
+    if (triggerValidation) {
+      if (isValid) {
+        dispatch(setOnReload(true));
+      }
+      setTriggerValidation(false);
+    }
   };
 
   useEffect(() => {
@@ -101,35 +80,11 @@ const FilterGrid = () => {
           }}
         />
         <div className="bg-white p-4">
-          <div className="flex w-full flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              periode:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-            </label>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate}
-                showCalendar
-                onChange={handleDateChange1}
-                onSelect={handleCalendarSelect1}
-              />
-            </div>
-
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold text-black">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate2}
-                showCalendar
-                onChange={handleDateChange2}
-                onSelect={handleCalendarSelect2}
-              />
-            </div>
-          </div>
+          <PeriodeValidation
+            label="periode"
+            onValidationChange={handleValidationResult}
+            triggerValidation={triggerValidation}
+          />
 
           <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
             <label

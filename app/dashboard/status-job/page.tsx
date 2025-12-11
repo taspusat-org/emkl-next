@@ -1,7 +1,7 @@
 'use client';
 
 import FilterGrid from './components/FilterGrid';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fieldLength } from '@/lib/apis/field-length.api';
 import PageContainer from '@/components/layout/page-container';
@@ -19,7 +19,15 @@ import {
   statusJobMasukGudang,
   statusJobTurunDepo,
   statusJobKeluarGudang,
-  statusJobTerimaSjPabrik
+  statusJobTerimaSjPabrik,
+  JENISORDERMUATANNAMA,
+  STATUSJOBMASUKGUDANGNAMA,
+  JENISORDERBONGKARANNAMA,
+  JENISORDERANIMPORTNAMA,
+  JENISORDERANEKSPORTNAMA,
+  statusJobTurunDepoNama,
+  statusJobKeluarGudangNama,
+  statusJobTerimaSjPabrikNama
 } from '@/constants/statusjob';
 import GridStatusJobMasukGudang from './components/GridStatusJobMasukGudang';
 import GridStatusJob from './components/GridStatusJob';
@@ -31,13 +39,10 @@ interface ApiResponse {
 
 const Page = () => {
   const dispatch = useDispatch();
-  const {
-    selectedJenisOrderan,
-    selectedJenisOrderanNama,
-    selectedJenisStatusJob,
-    selectedJenisStatusJobNama
-  } = useSelector((state: RootState) => state.filter);
-  //
+  const [modegrid, setModeGrid] = useState<string>('');
+  const [modegridStatusJob, setModeGridStatusJob] = useState<string>('');
+  const { selectedJenisOrderanNama, selectedJenisStatusJobNama, onReload } =
+    useSelector((state: RootState) => state.filter);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,38 +56,45 @@ const Page = () => {
     fetchData();
   }, [dispatch]);
 
-  const renderedGrid = () => {
-    switch (selectedJenisOrderan) {
-      case JENISORDERMUATAN:
-        switch (selectedJenisStatusJob) {
-          case statusJobMasukGudang:
-            return <GridStatusJobMasukGudang />;
-          case statusJobTurunDepo:
-            return <></>;
-          case statusJobKeluarGudang:
-            return <></>;
-          case statusJobTerimaSjPabrik:
-            return <></>;
-          default:
-            return <GridStatusJobMasukGudang />;
-        }
+  // const renderedGrid = () => {
+  //   switch (selectedJenisOrderan) {
+  //     case JENISORDERMUATAN:
+  //       switch (selectedJenisStatusJob) {
+  //         case statusJobMasukGudang:
+  //           return <GridStatusJobMasukGudang />;
+  //         case statusJobTurunDepo:
+  //           return <></>;
+  //         case statusJobKeluarGudang:
+  //           return <></>;
+  //         case statusJobTerimaSjPabrik:
+  //           return <></>;
+  //         default:
+  //           return <GridStatusJobMasukGudang />;
+  //       }
 
-      case JENISORDERBONGKARAN:
-        return <></>;
-      case JENISORDERANIMPORT:
-        return <></>;
-      case JENISORDERANEKSPORT:
-        return <></>;
+  //     case JENISORDERBONGKARAN:
+  //       return <></>;
+  //     case JENISORDERANIMPORT:
+  //       return <></>;
+  //     case JENISORDERANEKSPORT:
+  //       return <></>;
 
-      default:
-        switch (selectedJenisStatusJob) {
-          case statusJobMasukGudang:
-            return <GridStatusJobMasukGudang />;
-          default:
-            return <GridStatusJobMasukGudang />;
-        }
+  //     default:
+  //       switch (selectedJenisStatusJob) {
+  //         case statusJobMasukGudang:
+  //           return <GridStatusJobMasukGudang />;
+  //         default:
+  //           return <GridStatusJobMasukGudang />;
+  //       }
+  //   }
+  // };
+
+  useEffect(() => {
+    if (onReload) {
+      setModeGrid(selectedJenisOrderanNama);
+      setModeGridStatusJob(selectedJenisStatusJobNama);
     }
-  };
+  }, [onReload, selectedJenisOrderanNama, selectedJenisStatusJobNama]);
 
   return (
     <PageContainer scrollable>
@@ -94,8 +106,28 @@ const Page = () => {
           <GridStatusJob />
         </div>
         <div className="col-span-10 h-[500px]">
-          {/* <GridBookingMuatan /> */}
-          {renderedGrid()}
+          {/* {renderedGrid} */}
+          {modegrid == JENISORDERMUATANNAMA ? (
+            modegridStatusJob === STATUSJOBMASUKGUDANGNAMA ? (
+              <GridStatusJobMasukGudang />
+            ) : modegridStatusJob === statusJobTurunDepoNama ? (
+              <></>
+            ) : modegridStatusJob === statusJobKeluarGudangNama ? (
+              <></>
+            ) : modegridStatusJob === statusJobTerimaSjPabrikNama ? (
+              <></>
+            ) : (
+              <GridStatusJobMasukGudang />
+            )
+          ) : modegrid == JENISORDERBONGKARANNAMA ? (
+            <></>
+          ) : modegrid == JENISORDERANIMPORTNAMA ? (
+            <></>
+          ) : modegrid == JENISORDERANEKSPORTNAMA ? (
+            <></>
+          ) : (
+            <GridStatusJobMasukGudang />
+          )}
         </div>
       </div>
     </PageContainer>

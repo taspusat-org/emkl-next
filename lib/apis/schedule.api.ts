@@ -18,7 +18,8 @@ interface validationFields {
 }
 
 export const getScheduleHeaderFn = async (
-  filters: GetParams = {}
+  filters: GetParams = {},
+  signal?: AbortSignal
 ): Promise<IAllScheduleHeader> => {
   try {
     const queryParams = buildQueryParams(filters);
@@ -30,6 +31,9 @@ export const getScheduleHeaderFn = async (
 
     return response.data;
   } catch (error) {
+    if (signal?.aborted) {
+      throw new Error('Request was cancelled');
+    }
     console.error('Error to get data all schedule header in api:', error);
     throw new Error('Failed to get data all schedule header in api');
   }

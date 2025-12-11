@@ -2053,6 +2053,7 @@ const GridBlHeader = () => {
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
+    setIsFirstLoad(false);
     setPrevFilters(filters);
   }, [allBlHeader, currentPage, filters, isDataUpdated]);
 

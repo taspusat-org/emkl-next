@@ -11,6 +11,11 @@ import {
   storeStatusJobFn,
   updateStatusJobFn
 } from '../apis/statusjob.api';
+import { useDispatch } from 'react-redux';
+import {
+  setProcessed,
+  setProcessing
+} from '../store/loadingSlice/loadingSlice';
 
 export const useGetAllStatusJob = (
   filters: {
@@ -27,9 +32,30 @@ export const useGetAllStatusJob = (
   } = {},
   signal?: AbortSignal
 ) => {
+  const dispatch = useDispatch();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   return useQuery(
     ['statusjob', filters],
-    async () => await getAllStatusJobFn(filters, signal),
+    async () => {
+      // Only trigger processing if the page is 1
+      if (filters.page === 1) {
+        dispatch(setProcessing());
+      }
+
+      try {
+        const data = await getAllStatusJobFn(filters, signal);
+        return data;
+      } catch (error) {
+        // Show error toast and dispatch processed
+        dispatch(setProcessed());
+        throw error;
+      } finally {
+        // Regardless of success or failure, we dispatch setProcessed after the query finishes
+        dispatch(setProcessed());
+      }
+    },
     {
       enabled: !signal?.aborted
     }
@@ -73,10 +99,15 @@ export const useCreateStatusJob = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const dispatch = useDispatch();
 
   return useMutation(storeStatusJobFn, {
+    onMutate: () => {
+      dispatch(setProcessing());
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries('statusjob');
+      dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -101,6 +132,7 @@ export const useCreateStatusJob = () => {
           });
         }
       }
+      dispatch(setProcessed());
     }
   });
 };

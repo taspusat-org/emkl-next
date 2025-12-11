@@ -3434,9 +3434,7 @@ const GridOrderanMuatan = () => {
 
         // setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(
-            `/redis/get/bookingorderanheader-allItems`
-          );
+          const response = await api2.get(`/redis/get/orderanheader-allItems`);
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows(response.data);
@@ -3763,13 +3761,15 @@ const GridOrderanMuatan = () => {
   }, []);
 
   useEffect(() => {
-    setFilters((prevFilters: Filter) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        jenisOrderan: String(selectedJenisOrderan)
-      }
-    }));
+    if (onReload) {
+      setFilters((prevFilters: Filter) => ({
+        ...prevFilters,
+        filters: {
+          ...filterOrderanMuatan,
+          jenisOrderan: String(selectedJenisOrderan)
+        }
+      }));
+    }
   }, [selectedJenisOrderan, selectedJenisOrderanNama]);
 
   useEffect(() => {
