@@ -55,6 +55,7 @@ const FormStatusJobMasukGudang = ({
   isLoadingDelete
 }: any) => {
   const { alert } = useAlert();
+  const todayDate = new Date();
   const [dataGridKey, setDataGridKey] = useState(0);
   // const [endpointLookup, setEndpointLookup] = useState('');
   // const [enabledNoSeal, setEnabledNoSeal] = useState(false);
@@ -81,6 +82,10 @@ const FormStatusJobMasukGudang = ({
   const { selectedJenisOrderan, selectedJenisStatusJob } = useSelector(
     (state: RootState) => state.filter
   );
+  const fmt = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
 
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -1091,21 +1096,6 @@ const FormStatusJobMasukGudang = ({
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependen
 
-  useEffect(() => {
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        jenisOrderan: selectedJenisOrderan
-          ? String(selectedJenisOrderan)
-          : String(JENISORDERMUATAN),
-        jenisStatusJob: selectedJenisStatusJob
-          ? String(selectedJenisStatusJob)
-          : String(statusJobMasukGudang)
-      }
-    }));
-  }, [selectedJenisOrderan, selectedJenisStatusJob]);
-
   // useEffect(() => {
   //   // cancelPreviousRequest(abortControllerRef);
   //   if (noContainerValue && noContainerValue !== '') {
@@ -1303,6 +1293,12 @@ const FormStatusJobMasukGudang = ({
       refetch();
     }
   }, [popOver]);
+
+  useEffect(() => {
+    if (mode === 'add') {
+      forms.setValue('tglstatus', fmt(todayDate));
+    }
+  }, [popOver, mode]);
 
   useEffect(() => {
     if (forms.getValues()?.details?.length === 0) {

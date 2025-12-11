@@ -797,8 +797,10 @@ const FormBiayaExtraHeader = ({
   }, [rows]);
 
   useEffect(() => {
-    forms.setValue('tglbukti', fmt(todayDate));
-  }, [popOver]);
+    if (mode === 'add') {
+      forms.setValue('tglbukti', fmt(todayDate));
+    }
+  }, [popOver, mode]);
 
   // useEffect(() => {
   //   if (forms.getValues()?.details?.length === 0) {

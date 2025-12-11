@@ -10,6 +10,11 @@ import {
   storePindahBukuFn,
   updatePindahBukuFn
 } from '../apis/pindahbuku.api';
+import { useDispatch } from 'react-redux';
+import {
+  setProcessed,
+  setProcessing
+} from '../store/loadingSlice/loadingSlice';
 
 export const useGetAllPindahBuku = (
   filters: {
@@ -40,9 +45,27 @@ export const useGetAllPindahBuku = (
   } = {},
   signal?: AbortSignal
 ) => {
+  const dispatch = useDispatch();
   return useQuery(
     ['pindahbuku', filters],
-    async () => await getAllPindahBukuFn(filters, signal),
+    async () => {
+      // Only trigger processing if the page is 1
+      if (filters.page === 1) {
+        dispatch(setProcessing());
+      }
+
+      try {
+        const data = await getAllPindahBukuFn(filters, signal);
+        return data;
+      } catch (error) {
+        // Show error toast and dispatch processed
+        dispatch(setProcessed());
+        throw error;
+      } finally {
+        // Regardless of success or failure, we dispatch setProcessed after the query finishes
+        dispatch(setProcessed());
+      }
+    },
     {
       enabled: !signal?.aborted
     }
@@ -53,13 +76,18 @@ export const useCreatePindahBuku = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const dispatch = useDispatch();
 
   return useMutation(storePindahBukuFn, {
+    onMutate: () => {
+      dispatch(setProcessing());
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries('pindahbuku');
+      dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
-      const errorResponse = error.response?.data as IErrorResponse;
+      const errorResponse = (error.response?.data as IErrorResponse) ?? {};
 
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
@@ -67,6 +95,7 @@ export const useCreatePindahBuku = () => {
         const errorFields = Array.isArray(errorResponse.message)
           ? errorResponse.message
           : [];
+
         if (errorResponse.statusCode === 400) {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
@@ -81,6 +110,7 @@ export const useCreatePindahBuku = () => {
           });
         }
       }
+      dispatch(setProcessed());
     }
   });
 };

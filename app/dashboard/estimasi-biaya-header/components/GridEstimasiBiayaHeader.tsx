@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
 import IcClose from '@/public/image/x.svg';
+import { useQueryClient } from 'react-query';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
@@ -15,7 +16,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { LoadRowsRenderer } from '@/components/LoadRows';
-import { QueryClient, useQueryClient } from 'react-query';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { useFormError } from '@/lib/hooks/formErrorContext';
 import FilterInput from '@/components/custom-ui/FilterInput';
@@ -35,30 +35,14 @@ import {
   setDetailDataReport,
   setReportData
 } from '@/lib/store/reportSlice/reportSlice';
-import { checkValidationShippingInstructionFn } from '@/lib/apis/shippinginstruction.api';
-import { getShippingInstructionByIdFn } from '../../../../lib/apis/shippinginstruction.api';
-import {
-  filterShippingInstruction,
-  ShippingInstruction
-} from '@/lib/types/shippingIntruction.type';
 import DataGrid, {
   CellKeyDownArgs,
   Column,
   DataGridHandle
 } from 'react-data-grid';
 import {
-  useCreateShippingInstruction,
-  useDeleteShippingInstruction,
-  useGetAllShippingInstructionHeader,
-  useUpdateShippingInstruction
-} from '@/lib/server/useShippingIntruction';
-import FormShippingInstruction from './FormShippingInstraction';
-import {
-  shippingInstructionHeaderInput,
-  shippingInstructionHeaderSchema
-} from '@/lib/validations/shippinginstruction.validation';
-import {
   cancelPreviousRequest,
+  formatCurrency,
   handleContextMenu,
   loadGridConfig,
   resetGridConfig,
@@ -70,6 +54,27 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
+import FormEstimasiBiayaHeader from './FormEstimasiBiayaHeader';
+import {
+  EstimasiBiayaHeader,
+  filterEstimasiBiayaHeader
+} from '@/lib/types/estimasibiayaheader.type';
+import {
+  estimasiBiayaHeaderInput,
+  estimasiBiayaHeaderSchema
+} from '@/lib/validations/estimasibiayaheader.validation';
+import {
+  useCreateEstimasiBiayaHeader,
+  useDeleteEstimasiBiayaHeader,
+  useGetAllEstimasiBiayaHeader,
+  useUpdateEstimasiBiayaHeader
+} from '@/lib/server/useEstimasiBiayaHeader';
+import {
+  checkValidationEstimasiBiayaFn,
+  getEstimasiBiayaDetailBiayaByIdFn,
+  getEstimasiBiayaHeaderByIdFn
+} from '@/lib/apis/estimasibiayaheader.api';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
 
 interface Filter {
   page: number;
@@ -77,10 +82,10 @@ interface Filter {
   search: string;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
-  filters: typeof filterShippingInstruction;
+  filters: typeof filterEstimasiBiayaHeader;
 }
 
-const GridShippingInstruction = () => {
+const GridEstimasiBiayaHeader = () => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -95,7 +100,7 @@ const GridShippingInstruction = () => {
   const abortControllerRef = useRef<AbortController | null>(null); // AbortController untuk cancel request
   const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
-  const [rows, setRows] = useState<ShippingInstruction[]>([]);
+  const [rows, setRows] = useState<EstimasiBiayaHeader[]>([]);
   const [mode, setMode] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const [inputValue, setInputValue] = useState('');
@@ -126,7 +131,7 @@ const GridShippingInstruction = () => {
     sortBy: 'nobukti',
     sortDirection: 'asc',
     filters: {
-      ...filterShippingInstruction,
+      ...filterEstimasiBiayaHeader,
       tglDari: selectedDate,
       tglSampai: selectedDate2
     }
@@ -134,31 +139,28 @@ const GridShippingInstruction = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
   const {
-    data: allShippingInstructionHeader,
-    isLoading: isLoadingShippingInstructionHeader
-  } = useGetAllShippingInstructionHeader(
+    data: allEstimasiBiayaHeader,
+    isLoading: isLoadingEstimasiBiayaHeader,
+    refetch
+  } = useGetAllEstimasiBiayaHeader(
     { ...filters, page: currentPage },
     abortControllerRef.current?.signal
   );
 
-  const { mutateAsync: createShippingInstruction, isLoading: isLoadingCreate } =
-    useCreateShippingInstruction();
-  const { mutateAsync: updateShippingInstruction, isLoading: isLoadingUpdate } =
-    useUpdateShippingInstruction();
-  const { mutateAsync: deleteShippingInstruction, isLoading: isLoadingDelete } =
-    useDeleteShippingInstruction();
+  const { mutateAsync: createEstimasiBiayaHeader, isLoading: isLoadingCreate } =
+    useCreateEstimasiBiayaHeader();
+  const { mutateAsync: updateEstimasiBiayaHeader, isLoading: isLoadingUpdate } =
+    useUpdateEstimasiBiayaHeader();
+  const { mutateAsync: deleteEstimasiBiayaHeader, isLoading: isLoadingDelete } =
+    useDeleteEstimasiBiayaHeader();
 
-  const forms = useForm<shippingInstructionHeaderInput>({
-    resolver: zodResolver(shippingInstructionHeaderSchema),
+  const forms = useForm<estimasiBiayaHeaderInput>({
+    resolver: zodResolver(estimasiBiayaHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
-      // nobukti: ''
-      details: [
-        {
-          // ...,
-          detailsrincian: []
-        }
-      ]
+      nobukti: '',
+      detailsbiaya: [],
+      detailsinvoice: []
     }
   });
 
@@ -167,11 +169,7 @@ const GridShippingInstruction = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  console.log(
-    'forms.getValues()',
-    forms.getValues(),
-    forms.getValues('details.0')
-  );
+  console.log('forms.getValues()', forms.getValues());
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -193,6 +191,10 @@ const GridShippingInstruction = () => {
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
+      setTimeout(() => {
+        setSelectedRow(0);
+        gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      }, 400);
     },
     []
   );
@@ -218,7 +220,7 @@ const GridShippingInstruction = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...filterShippingInstruction,
+        ...filterEstimasiBiayaHeader,
         tglDari: selectedDate,
         tglSampai: selectedDate2
       },
@@ -309,7 +311,7 @@ const GridShippingInstruction = () => {
     setIsAllSelected(!isAllSelected);
   };
 
-  const columns = useMemo((): Column<ShippingInstruction>[] => {
+  const columns = useMemo((): Column<EstimasiBiayaHeader>[] => {
     return [
       {
         key: 'nomor',
@@ -329,7 +331,7 @@ const GridShippingInstruction = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    ...filterShippingInstruction
+                    ...filterEstimasiBiayaHeader
                   }
                 }),
                   setInputValue('');
@@ -371,7 +373,7 @@ const GridShippingInstruction = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: ShippingInstruction }) => (
+        renderCell: ({ row }: { row: EstimasiBiayaHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -386,7 +388,7 @@ const GridShippingInstruction = () => {
         name: 'nobukti',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -522,294 +524,8 @@ const GridShippingInstruction = () => {
         }
       },
       {
-        key: 'voyberangkat',
-        name: 'voyberangkat',
-        resizable: true,
-        draggable: true,
-        width: 250,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('voyberangkat')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'voyberangkat'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                VOY BERANGKAT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'voyberangkat' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'voyberangkat' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="voyberangkat"
-                value={filters.filters.voyberangkat || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('voyberangkat', value)
-                }
-                onClear={() => handleClearFilter('voyberangkat')}
-                inputRef={(el) => {
-                  inputColRefs.current['voyberangkat'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.voyberangkat || '';
-          const cellValue = props.row.voyberangkat || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'pelayaran',
-        name: 'pelayaran',
-        resizable: true,
-        draggable: true,
-        width: 250,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('pelayaran_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'pelayaran_text'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                PELAYARAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'pelayaran_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'pelayaran_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="pelayaran_text"
-                value={filters.filters.pelayaran_text || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('pelayaran_text', value)
-                }
-                onClear={() => handleClearFilter('pelayaran_text')}
-                inputRef={(el) => {
-                  inputColRefs.current['pelayaran'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.pelayaran_text || '';
-          const cellValue = props.row.pelayaran_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      {
-        key: 'kapal_nama',
-        name: 'kapal_nama',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('kapal_text')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'kapal_text' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                KAPAL
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'kapal_text' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'kapal_text' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterInput
-                colKey="kapal_nama"
-                value={filters.filters.kapal_text || ''}
-                onChange={(value) =>
-                  handleFilterInputChange('kapal_text', value)
-                }
-                onClear={() => handleClearFilter('kapal_text')}
-                inputRef={(el) => {
-                  inputColRefs.current['kapal_nama'] = el;
-                }}
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const columnFilter = filters.filters.kapal_text || '';
-          const cellValue = props.row.kapal_nama || '';
-          return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-      },
-      // {
-      //   key: 'closing',
-      //   name: 'closing',
-      //   headerCellClass: 'column-headers',
-      //   resizable: true,
-      //   draggable: true,
-      //   width: 150,
-      //   renderHeaderCell: () => (
-      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-      //       <div
-      //         className="headers-cell h-[50%] px-8"
-      //         onClick={() => handleSort('closing')}
-      //         onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
-      //       >
-      //         <p className="text-sm font-normal">CLOSING</p>
-      //         <div className="ml-2">
-      //           {filters.sortBy === 'closing' &&
-      //           filters.sortDirection === 'asc' ? (
-      //             <FaSortUp className="font-bold" />
-      //           ) : filters.sortBy === 'closing' &&
-      //             filters.sortDirection === 'desc' ? (
-      //             <FaSortDown className="font-bold" />
-      //           ) : (
-      //             <FaSort className="text-zinc-400" />
-      //           )}
-      //         </div>
-      //       </div>
-
-      //       <div className="relative h-[50%] w-full px-1">
-      //         <FilterInput
-      //           colKey="closing"
-      //           value={filters.filters.closing || ''}
-      //           onChange={(value) =>
-      //             handleFilterInputChange('closing', value)
-      //           }
-      //           onClear={() => handleClearFilter('closing')}
-      //           inputRef={(el) => {
-      //             inputColRefs.current['closing'] = el;
-      //           }}
-      //         />
-      //       </div>
-      //     </div>
-      //   ),
-      //   renderCell: (props: any) => {
-      //     const columnFilter = filters.filters.closing || '';
-      //     const cellValue = props.row.closing || '';
-      //     return (
-      //       <TooltipProvider delayDuration={0}>
-      //         <Tooltip>
-      //           <TooltipTrigger asChild>
-      //             <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-      //               {highlightText(cellValue, filters.search, columnFilter)}
-      //             </div>
-      //           </TooltipTrigger>
-      //           <TooltipContent
-      //             side="right"
-      //             className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-      //           >
-      //             <p>{cellValue}</p>
-      //           </TooltipContent>
-      //         </Tooltip>
-      //       </TooltipProvider>
-      //     );
-      //   }
-      // },
-      {
-        key: 'tglberangkat',
-        name: 'tglberangkat',
+        key: 'jenisorder',
+        name: 'jenisorder',
         resizable: true,
         draggable: true,
         width: 150,
@@ -818,25 +534,25 @@ const GridShippingInstruction = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('tglberangkat')}
+              onClick={() => handleSort('jenisorder_text')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tglberangkat'
+                  filters.sortBy === 'jenisorder_text'
                     ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
-                TGL BERANGKAT
+                JENIS ORDER
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'tglberangkat' &&
+                {filters.sortBy === 'jenisorder_text' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tglberangkat' &&
+                ) : filters.sortBy === 'jenisorder_text' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -846,22 +562,22 @@ const GridShippingInstruction = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="tglberangkat"
-                value={filters.filters.tglberangkat || ''}
+                colKey="jenisorder"
+                value={filters.filters.jenisorder_text || ''}
                 onChange={(value) =>
-                  handleFilterInputChange('tglberangkat', value)
+                  handleFilterInputChange('jenisorder_text', value)
                 }
-                onClear={() => handleClearFilter('tglberangkat')}
+                onClear={() => handleClearFilter('jenisorder_text')}
                 inputRef={(el) => {
-                  inputColRefs.current['tglberangkat'] = el;
+                  inputColRefs.current['jenisorder_text'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.tglberangkat || '';
-          const cellValue = props.row.tglberangkat || '';
+          const columnFilter = filters.filters.jenisorder_text || '';
+          const cellValue = props.row.jenisorder_nama || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -882,35 +598,35 @@ const GridShippingInstruction = () => {
         }
       },
       {
-        key: 'tujuankapal_nama',
-        name: 'tujuankapal_nama',
-        headerCellClass: 'column-headers',
+        key: 'orderan_nobukti',
+        name: 'orderan_nobukti',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 200,
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('tujuankapal_text')}
+              onClick={() => handleSort('orderan_nobukti')}
               onContextMenu={(event) =>
                 setContextMenu(handleContextMenu(event))
               }
             >
               <p
                 className={`text-sm ${
-                  filters.sortBy === 'tujuankapal_text'
+                  filters.sortBy === 'orderan_nobukti'
                     ? 'font-bold'
                     : 'font-normal'
                 }`}
               >
-                TUJUAN KAPAL
+                NO BUKTI ORDERAN
               </p>
               <div className="ml-2">
-                {filters.sortBy === 'tujuankapal_text' &&
+                {filters.sortBy === 'orderan_nobukti' &&
                 filters.sortDirection === 'asc' ? (
                   <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tujuankapal_text' &&
+                ) : filters.sortBy === 'orderan_nobukti' &&
                   filters.sortDirection === 'desc' ? (
                   <FaSortDown className="font-bold" />
                 ) : (
@@ -918,25 +634,463 @@ const GridShippingInstruction = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="tujuankapal_nama"
-                value={filters.filters.tujuankapal_text || ''}
+                colKey="orderan_nobukti"
+                value={filters.filters.orderan_nobukti || ''}
                 onChange={(value) =>
-                  handleFilterInputChange('tujuankapal_text', value)
+                  handleFilterInputChange('orderan_nobukti', value)
                 }
-                onClear={() => handleClearFilter('tujuankapal_text')}
+                onClear={() => handleClearFilter('orderan_nobukti')}
                 inputRef={(el) => {
-                  inputColRefs.current['tujuankapal_nama'] = el;
+                  inputColRefs.current['orderan_nobukti'] = el;
                 }}
               />
             </div>
           </div>
         ),
         renderCell: (props: any) => {
-          const columnFilter = filters.filters.tujuankapal_text || '';
-          const cellValue = props.row.tujuankapal_nama || '';
+          const columnFilter = filters.filters.orderan_nobukti || '';
+          const cellValue = props.row.orderan_nobukti || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'nominal',
+        name: 'nominal',
+        headerCellClass: 'column-headers',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('nominal')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p className="text-sm font-normal">nominal</p>
+              <div className="ml-2">
+                {filters.sortBy === 'nominal' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'nominal' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="nominal"
+                value={filters.filters.nominal || ''}
+                onChange={(value) => handleFilterInputChange('nominal', value)}
+                onClear={() => handleClearFilter('nominal')}
+                inputRef={(el) => {
+                  inputColRefs.current['nominal'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.nominal || '';
+          const cellValue =
+            props.row.nominal != null && props.row.nominal !== ''
+              ? formatCurrency(props.row.nominal)
+              : '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center justify-end p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'shipper',
+        name: 'shipper',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('shipper_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'shipper_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                shipper
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'shipper_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'shipper_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="shipper_text"
+                value={filters.filters.shipper_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('shipper_text', value)
+                }
+                onClear={() => handleClearFilter('shipper_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['shipper'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.shipper_text || '';
+          const cellValue = props.row.shipper_nama || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'statusppn',
+        name: 'statusppn',
+        resizable: true,
+        draggable: true,
+        width: 100,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusppn_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusppn_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                status ppn
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusppn_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusppn_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+                onChange={(value) =>
+                  handleFilterInputChange('statusppn_text', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.statusppn_memo
+            ? JSON.parse(props.row.statusppn_memo)
+            : null;
+          if (memoData) {
+            return (
+              <div className="flex h-full w-full items-center justify-center py-1">
+                <div
+                  className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                  style={{
+                    backgroundColor: memoData.WARNA,
+                    color: memoData.WARNATULISAN,
+                    padding: '2px 6px',
+                    borderRadius: '2px',
+                    textAlign: 'left',
+                    fontWeight: '600'
+                  }}
+                >
+                  <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                </div>
+              </div>
+            );
+          }
+          return <div className="text-xs text-gray-500"></div>;
+        }
+      },
+      {
+        key: 'asuransi',
+        name: 'asuransi',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('asuransi_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'asuransi_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                asuransi
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'asuransi_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'asuransi_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="asuransi_text"
+                value={filters.filters.asuransi_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('asuransi_text', value)
+                }
+                onClear={() => handleClearFilter('asuransi_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['asuransi'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.asuransi_text || '';
+          const cellValue = props.row.asuransi_nama || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'comodity',
+        name: 'comodity',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('comodity_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'comodity_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                comodity
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'comodity_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'comodity_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="comodity_text"
+                value={filters.filters.comodity_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('comodity_text', value)
+                }
+                onClear={() => handleClearFilter('comodity_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['comodity'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.comodity_text || '';
+          const cellValue = props.row.comodity_nama || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'consignee',
+        name: 'consignee',
+        resizable: true,
+        draggable: true,
+        width: 250,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('consignee_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'consignee_text'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                consignee
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'consignee_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'consignee_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="consignee_text"
+                value={filters.filters.consignee_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('consignee_text', value)
+                }
+                onClear={() => handleClearFilter('consignee_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['consignee'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.consignee_text || '';
+          const cellValue = props.row.consignee_nama || '';
           return (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
@@ -1204,7 +1358,7 @@ const GridShippingInstruction = () => {
   const handleEdit = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      const result = await checkValidationShippingInstructionFn({
+      const result = await checkValidationEstimasiBiayaFn({
         aksi: 'EDIT',
         value: rowData.id
       });
@@ -1226,7 +1380,7 @@ const GridShippingInstruction = () => {
     try {
       for (const id of idsToDelete) {
         // Hapus data satu per satu
-        await deleteShippingInstruction(id as unknown as string);
+        await deleteEstimasiBiayaHeader(id as unknown as string);
       }
 
       setRows(
@@ -1273,7 +1427,7 @@ const GridShippingInstruction = () => {
         if (selectedRow !== null) {
           const rowData = rows[selectedRow];
 
-          const result = await checkValidationShippingInstructionFn({
+          const result = await checkValidationEstimasiBiayaFn({
             aksi: 'DELETE',
             value: rowData.id
           });
@@ -1293,7 +1447,7 @@ const GridShippingInstruction = () => {
         const checkedRowsArray = Array.from(checkedRows);
         const validationPromises = checkedRowsArray.map(async (id) => {
           try {
-            const response = await checkValidationShippingInstructionFn({
+            const response = await checkValidationEstimasiBiayaFn({
               aksi: 'DELETE',
               value: id
             });
@@ -1398,9 +1552,9 @@ const GridShippingInstruction = () => {
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
 
-      const response = await getShippingInstructionByIdFn(rowId);
+      const response = await getEstimasiBiayaHeaderByIdFn(rowId);
 
-      if (response.data === null || response.data.length === 0) {
+      if (response.data.header.length === 0) {
         alert({
           title: 'DATA TIDAK TERSEDIA!',
           variant: 'danger',
@@ -1409,33 +1563,26 @@ const GridShippingInstruction = () => {
         return;
       }
 
-      const { header, detail } = response.data;
-      const reportRows = header.map((row: any) => ({
-        ...row,
-        judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
-        usercetak: user.username,
-        tglcetak,
-        judul: `EKSPEDISI MUATAN KAPAL LAUT`,
-        judul2: `SHIPPING INSTRUCTION`,
-        cabang: user.cabang,
-        pelabuhan: user.pelabuhan
-      }));
+      // const reportRows = response.data.map((row: any) => ({
+      //   ...row,
+      //   judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
+      //   usercetak: user.username,
+      //   tglcetak,
+      //   judul: `ESTIMASI BIAYA`
+      // }));
 
-      const merged = detail.flatMap((item: any) =>
-        (item.rincian || []).map((rincian: any) => ({
+      const header = response.data.header[0];
+      const mergedHeaderWithDetailBiaya = response.data.detailbiaya.map(
+        (item: any) => ({
+          ...header,
+          header_nominal: header.nominal,
+          judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
+          usercetak: user.username,
+          tglcetak,
+          judul: `ESTIMASI BIAYA`,
           ...item,
-          rincian_id: rincian.id,
-          rincian_comodity: rincian.comodity,
-          rincian_keterangan: rincian.keterangan,
-          rincian_nocontainer: rincian.nocontainer,
-          rincian_noseal: rincian.noseal,
-          rincian_orderan_muatan: rincian.orderanmuatan_nobukti,
-          rincian_shipper_nama: rincian.shipper_nama,
-          rincian_shippinginstructiondetail_id:
-            rincian.shippinginstructiondetail_id,
-          rincian_shippinginstructiondetail_nobukti:
-            rincian.shippinginstructiondetail_nobukti
-        }))
+          detailbiaya_nominal: item.nominal
+        })
       );
 
       sessionStorage.setItem('dataId', rowId as unknown as string);
@@ -1464,11 +1611,11 @@ const GridShippingInstruction = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanShippingInstruction.mrt');
+          report.loadFile('/reports/LaporanEstimasiBiaya.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({
-            data: reportRows,
-            detail: merged
+            data: mergedHeaderWithDetailBiaya,
+            detail: response.data.detailinvoice
           });
 
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1488,7 +1635,7 @@ const GridShippingInstruction = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/shippinginstruction', '_blank');
+              window.open('/reports/estimasibiayaheader', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1534,45 +1681,40 @@ const GridShippingInstruction = () => {
   //     )}:${pad(now.getSeconds())}`;
 
   //     const { page, limit, ...filtersWithoutLimit } = filters;
-  //     const response = await getShippingInstructionByIdFn(rowId);
+  //     const response = await getEstimasiBiayaHeaderByIdFn(rowId);
 
-  //     if (response.data === null || response.data.length === 0) {
+  //     if (response.data.header.length === 0) {
   //       alert({
   //         title: 'DATA TIDAK TERSEDIA!',
   //         variant: 'danger',
   //         submitText: 'OK'
   //       });
   //     } else {
-  //       const { header, detail } = response.data;
+  //       // const reportRows = response.data.header.map((row: any) => ({
+  //       //   ...row,
+  //       //   judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
+  //       //   usercetak: user.username,
+  //       //   tglcetak,
+  //       //   judul: `ESTIMASI BIAYA`,
+  //       // }));
+  //       // console.log('reportRows', reportRows);
 
-  //       const reportRows = header.map((row: any) => ({
-  //         ...row,
+  //       const header = response.data.header[0]
+  //       const mergedHeaderWithDetailBiaya = response.data.detailbiaya.map((item:any) => ({
+  //         ...header,
+  //         header_nominal: header.nominal,
   //         judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
   //         usercetak: user.username,
   //         tglcetak,
-  //         judul: `EKSPEDISI MUATAN KAPAL LAUT`,
-  //         judul2: `SHIPPING INSTRUCTION`,
-  //         cabang: user.cabang,
-  //         pelabuhan: user.pelabuhan
+  //         judul: `ESTIMASI BIAYA`,
+  //         ...item,
+  //         detailbiaya_nominal: item.nominal
   //       }));
 
-  //       const merged = detail.flatMap((item: any) =>
-  //         (item.rincian || []).map((rincian: any) => ({
-  //           ...item,
-  //           rincian_id: rincian.id,
-  //           rincian_comodity: rincian.comodity,
-  //           rincian_keterangan: rincian.keterangan,
-  //           rincian_nocontainer: rincian.nocontainer,
-  //           rincian_noseal: rincian.noseal,
-  //           rincian_orderan_muatan: rincian.orderanmuatan_nobukti,
-  //           rincian_shipper_nama: rincian.shipper_nama,
-  //           rincian_shippinginstructiondetail_id: rincian.shippinginstructiondetail_id,
-  //           rincian_shippinginstructiondetail_nobukti: rincian.shippinginstructiondetail_nobukti
-  //         }))
-  //       );
+  //       console.log('mergedRows', mergedHeaderWithDetailBiaya);
 
-  //       dispatch(setReportData(reportRows));
-  //       dispatch(setDetailDataReport(merged));
+  //       dispatch(setReportData(mergedHeaderWithDetailBiaya));
+  //       dispatch(setDetailDataReport(response.data.detailinvoice));
   //       window.open('/reports/designer', '_blank');
   //     }
   //   } catch (error) {
@@ -1606,7 +1748,7 @@ const GridShippingInstruction = () => {
         // setRows([]);
         if (mode !== 'delete') {
           const response = await api2.get(
-            `/redis/get/shippinginstructionheader-allItems`
+            `/redis/get/estimasibiayaheader-allItems`
           );
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
@@ -1636,7 +1778,7 @@ const GridShippingInstruction = () => {
   };
 
   const onSubmit = async (
-    values: shippingInstructionHeaderInput,
+    values: estimasiBiayaHeaderInput,
     keepOpenModal = false
   ) => {
     clearError();
@@ -1645,7 +1787,7 @@ const GridShippingInstruction = () => {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteShippingInstruction(selectedRowId as unknown as string, {
+          await deleteEstimasiBiayaHeader(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1668,16 +1810,16 @@ const GridShippingInstruction = () => {
       }
 
       if (mode === 'add') {
-        const newOrder = await createShippingInstruction(
+        const newOrder = await createEstimasiBiayaHeader(
           {
             ...values,
-            details: values.details.map((detail: any) => ({
+            detailsbiaya: values.detailsbiaya.map((detail: any) => ({
               ...detail,
-              id: 0, //TAMBAHKAN id setiap detail jadi 0
-              detailsrincian: detail.detailsrincian.map((rincian: any) => ({
-                ...rincian,
-                id: 0 //TAMBAHKAN id setiap rincian jadi 0
-              }))
+              id: 0
+            })),
+            detailsinvoice: values.detailsinvoice.map((detail: any) => ({
+              ...detail,
+              id: 0
             })),
             ...filters // Kirim filter ke body/payload
           },
@@ -1693,14 +1835,14 @@ const GridShippingInstruction = () => {
       }
 
       if (selectedRowId && mode === 'edit') {
-        await updateShippingInstruction(
+        await updateEstimasiBiayaHeader(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('shippinginstruction');
+        queryClient.invalidateQueries('estimasibiaya');
       }
     } catch (error) {
       console.error(error);
@@ -1725,7 +1867,7 @@ const GridShippingInstruction = () => {
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridShippingInstruction',
+        'GridEstimasiBiayaHeader',
         [...columnsOrder],
         newWidthMap
       );
@@ -1746,7 +1888,7 @@ const GridShippingInstruction = () => {
 
       saveGridConfig(
         user.id,
-        'GridShippingInstruction',
+        'GridEstimasiBiayaHeader',
         [...newOrder],
         columnsWidth
       );
@@ -1810,7 +1952,7 @@ const GridShippingInstruction = () => {
     );
   }
 
-  function handleCellClick(args: { row: ShippingInstruction }) {
+  function handleCellClick(args: { row: EstimasiBiayaHeader }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
@@ -1820,12 +1962,12 @@ const GridShippingInstruction = () => {
     }
   }
 
-  function getRowClass(row: ShippingInstruction) {
+  function getRowClass(row: EstimasiBiayaHeader) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: ShippingInstruction) {
+  function rowKeyGetter(row: EstimasiBiayaHeader) {
     return row.id;
   }
 
@@ -1844,8 +1986,7 @@ const GridShippingInstruction = () => {
   }
 
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingShippingInstructionHeader || !hasMore || rows.length === 0)
-      return;
+    if (isLoadingEstimasiBiayaHeader || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1873,7 +2014,7 @@ const GridShippingInstruction = () => {
   }
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<ShippingInstruction>,
+    args: CellKeyDownArgs<EstimasiBiayaHeader>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1925,7 +2066,7 @@ const GridShippingInstruction = () => {
   useEffect(() => {
     loadGridConfig(
       user.id,
-      'GridShippingInstruction',
+      'GridEstimasiBiayaHeader',
       columns,
       setColumnsOrder,
       setColumnsWidth
@@ -1979,10 +2120,9 @@ const GridShippingInstruction = () => {
   }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
 
   useEffect(() => {
-    if (!allShippingInstructionHeader || isFetchingManually || isDataUpdated)
-      return;
+    if (!allEstimasiBiayaHeader || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allShippingInstructionHeader.data || [];
+    const newRows = allEstimasiBiayaHeader.data || [];
 
     setRows((prevRows) => {
       if (currentPage === 1 || filters !== prevFilters) {
@@ -1999,15 +2139,15 @@ const GridShippingInstruction = () => {
       return prevRows;
     });
 
-    if (allShippingInstructionHeader.pagination.totalPages) {
-      setTotalPages(allShippingInstructionHeader.pagination.totalPages);
+    if (allEstimasiBiayaHeader?.pagination?.totalPages) {
+      setTotalPages(allEstimasiBiayaHeader.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setIsFirstLoad(false);
     setPrevFilters(filters);
-  }, [allShippingInstructionHeader, currentPage, filters, isDataUpdated]);
+  }, [allEstimasiBiayaHeader, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
@@ -2070,15 +2210,26 @@ const GridShippingInstruction = () => {
       forms.setValue('id', Number(rowData?.id));
       forms.setValue('nobukti', rowData?.nobukti);
       forms.setValue('tglbukti', rowData?.tglbukti);
-      forms.setValue('schedule_id', Number(rowData?.schedule_id));
-      forms.setValue('voyberangkat', rowData?.voyberangkat);
-      forms.setValue('kapal_id', Number(rowData?.kapal_id));
-      forms.setValue('kapal_nama', rowData?.kapal_nama);
-      forms.setValue('tglberangkat', rowData?.tglberangkat);
-      forms.setValue('tujuankapal_id', Number(rowData?.tujuankapal_id));
-      forms.setValue('tujuankapal_nama', rowData?.tujuankapal_nama);
+      forms.setValue('jenisorder_id', Number(rowData?.jenisorder_id));
+      forms.setValue('jenisorder_nama', rowData?.jenisorder_nama);
+      // forms.setValue('orderan_id', Number(rowData?.orderan_id) ?? 0);
+      forms.setValue('orderan_nobukti', rowData?.orderan_nobukti);
+      forms.setValue(
+        'nominal',
+        rowData.nominal == null ? '' : formatCurrency(rowData?.nominal)
+      );
+      forms.setValue('shipper_id', Number(rowData?.shipper_id));
+      forms.setValue('shipper_nama', rowData?.shipper_nama);
+      forms.setValue('statusppn', Number(rowData?.statusppn));
+      forms.setValue('statusppn_nama', rowData?.statusppn_nama);
+      forms.setValue('asuransi_id', Number(rowData?.asuransi_id));
+      forms.setValue('asuransi_nama', rowData?.asuransi_nama);
+      forms.setValue('comodity_id', Number(rowData?.comodity_id));
+      forms.setValue('comodity_nama', rowData?.comodity_nama);
+      forms.setValue('consignee_id', Number(rowData?.consignee_id));
+      forms.setValue('consignee_nama', rowData?.consignee_nama);
     }
-  }, [forms, selectedRow, rows, mode]);
+  }, [forms, selectedRow, rows, mode, popOver]);
 
   useEffect(() => {
     columns.forEach((col) => {
@@ -2113,7 +2264,7 @@ const GridShippingInstruction = () => {
     if (isSubmitSuccessful) {
       // reset();
       // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('schedule_id'));
+      requestAnimationFrame(() => setFocus('tglbukti'));
     }
   }, [isSubmitSuccessful, setFocus]);
 
@@ -2180,7 +2331,7 @@ const GridShippingInstruction = () => {
           }}
         >
           <ActionButton
-            module="Type-Akuntansi"
+            module="ESTIMASI-BIAYA-HEADER"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onEdit={handleEdit}
@@ -2195,7 +2346,7 @@ const GridShippingInstruction = () => {
               }
             ]}
           />
-          {isLoadingShippingInstructionHeader ? <LoadRowsRenderer /> : null}
+          {isLoadingEstimasiBiayaHeader ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -2215,7 +2366,7 @@ const GridShippingInstruction = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridShippingInstruction',
+                    'GridEstimasiBiayaHeader',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -2231,7 +2382,7 @@ const GridShippingInstruction = () => {
           )}
         </div>
       </div>
-      <FormShippingInstruction
+      <FormEstimasiBiayaHeader
         mode={mode}
         forms={forms}
         popOver={popOver}
@@ -2246,4 +2397,4 @@ const GridShippingInstruction = () => {
   );
 };
 
-export default GridShippingInstruction;
+export default GridEstimasiBiayaHeader;

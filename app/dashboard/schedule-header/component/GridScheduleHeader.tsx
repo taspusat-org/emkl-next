@@ -134,10 +134,13 @@ const GridScheduleHeader = () => {
     data: allScheduleHeaderData,
     isLoading: isLoadingScheduleHeaderData,
     refetch
-  } = useGetScheduleHeader({
-    ...filters,
-    page: currentPage
-  });
+  } = useGetScheduleHeader(
+    {
+      ...filters,
+      page: currentPage
+    },
+    abortControllerRef.current?.signal
+  );
 
   const { mutateAsync: createSchedule, isLoading: isLoadingCreate } =
     useCreateSchedule();
@@ -1458,6 +1461,7 @@ const GridScheduleHeader = () => {
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
+    setIsFirstLoad(false);
     setPrevFilters(filters);
   }, [
     allScheduleHeaderData,

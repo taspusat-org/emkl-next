@@ -1,7 +1,7 @@
 'use client';
 
 import FilterGrid from './components/FilterGrid';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { getParameterFn } from '@/lib/apis/parameter.api';
@@ -19,7 +19,11 @@ import {
   JENISORDERANEXPORT,
   JENISORDERANIMPORT,
   JENISORDERBONGKARAN,
-  JENISORDERMUATAN
+  JENISORDERBONGKARANNAMA,
+  JENISORDEREKSPORTNAMA,
+  JENISORDERIMPORTNAMA,
+  JENISORDERMUATAN,
+  JENISORDERMUATANNAMA
 } from '@/constants/bookingorderan';
 import { getContainerFn } from '@/lib/apis/container.api';
 import { getShipperFn } from '@/lib/apis/shipper.api';
@@ -34,6 +38,7 @@ import { getEmklFn } from '@/lib/apis/emkl.api';
 import { getDaftarblFn } from '@/lib/apis/daftarbl.api';
 import { getAllTradoFn } from '@/lib/apis/trado.api';
 import { getAllGandenganFn } from '@/lib/apis/gandengan.api';
+import { setFieldLength } from '@/lib/store/field-length/fieldLengthSlice';
 
 interface ApiResponse {
   type: string;
@@ -42,17 +47,15 @@ interface ApiResponse {
 
 const Page = () => {
   const dispatch = useDispatch();
-
-  const [modegrid, setGrid] = useState<string | number | null>('');
-  // const [dataJenisOrderParameter, setDataJenisOrderParameter] = useState<JenisOrderanPararmeter[]>([]);
-  const { selectedJenisOrderan, onReload } = useSelector(
-    (state: RootState) => state.filter
-  );
+  const [modegrid, setModeGrid] = useState<string>('');
+  const { selectedJenisOrderan, selectedJenisOrderanNama, onReload } =
+    useSelector((state: RootState) => state.filter);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const fieldLengthResult = await fieldLength('bookingorderanheader');
+        dispatch(setFieldLength(fieldLengthResult.data));
 
         const [
           jenisOrderParameterLookup,
@@ -348,29 +351,31 @@ const Page = () => {
   // }
   // }, [onReload, selectedJenisOrderan])
 
-  return (
-    // <PageContainer scrollable>
-    //   <Tabs defaultValue="overview" className="space-y-4">
-    //     <TabsContent value="overview" className="space-y-4">
-    //       <FilterGrid />
-    //       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
-    //         <div className="col-span-10 h-[500px]">
-    //           {/* {modegrid == "MUATAN" ? <GridHitungModal /> : modegrid == "IMPORT" ? <GridHitungModalImport /> : modegrid == "EXPORT" ? <GridHitungModal /> : <GridHitungModal />} */}
-    //           <GridBookingMuatan />
-    //         </div>
-    //       </div>
-    //     </TabsContent>
-    //   </Tabs>
-    // </PageContainer>
+  useEffect(() => {
+    if (onReload) {
+      setModeGrid(selectedJenisOrderanNama);
+    }
+  }, [onReload, selectedJenisOrderanNama]);
 
+  return (
     <PageContainer scrollable>
       <div className="grid h-fit grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-7">
         <div className="col-span-10 border">
           <FilterGrid />
         </div>
         <div className="col-span-10 h-[500px]">
-          {/* <GridBookingMuatan /> */}
-          {renderedGrid()}
+          {/* {renderedGrid()} */}
+          {modegrid == JENISORDERMUATANNAMA ? (
+            <GridBookingMuatan />
+          ) : modegrid == JENISORDERBONGKARANNAMA ? (
+            <></>
+          ) : modegrid == JENISORDERIMPORTNAMA ? (
+            <></>
+          ) : modegrid == JENISORDEREKSPORTNAMA ? (
+            <></>
+          ) : (
+            <GridBookingMuatan />
+          )}
         </div>
       </div>
     </PageContainer>

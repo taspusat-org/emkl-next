@@ -12,45 +12,24 @@ import {
   setSelectedDate,
   setSelectedDate2
 } from '@/lib/store/filterSlice/filterSlice';
+import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
-  const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
-  const { selectedDate, selectedDate2, onReload } = useSelector(
-    (state: any) => state.filter
-  );
-
-  const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate(newValue)); // Dispatch to Redux
-  };
-
-  const handleDateChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate2(newValue)); // Dispatch to Redux
-  };
-
-  const handleCalendarSelect1 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate(String(value)));
-      setPopOverTglDari(false); // Menutup popover setelah memilih tanggal
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
-
-  const handleCalendarSelect2 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate2(String(value)));
-      setPopOverTgl(false);
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
+  const { onReload } = useSelector((state: any) => state.filter);
+  const [triggerValidation, setTriggerValidation] = useState(false);
 
   const onSubmit = () => {
-    dispatch(setOnReload(true));
+    setTriggerValidation(true);
+  };
+
+  const handleValidationResult = (isValid: boolean) => {
+    if (triggerValidation) {
+      if (isValid) {
+        dispatch(setOnReload(true));
+      }
+      setTriggerValidation(false);
+    }
   };
 
   useEffect(() => {
@@ -83,35 +62,12 @@ const FilterGrid = () => {
           }}
         />
         <div className="bg-white p-4">
-          <div className="flex w-full flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              periode:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-            </label>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate}
-                showCalendar
-                onChange={handleDateChange1}
-                onSelect={handleCalendarSelect1}
-              />
-            </div>
+          <PeriodeValidation
+            label="periode"
+            onValidationChange={handleValidationResult}
+            triggerValidation={triggerValidation}
+          />
 
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold text-black">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate2}
-                showCalendar
-                onChange={handleDateChange2}
-                onSelect={handleCalendarSelect2}
-              />
-            </div>
-          </div>
           <Button
             variant="default"
             className="mt-2 flex flex-row items-center justify-center"

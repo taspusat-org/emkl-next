@@ -91,7 +91,7 @@ export const useGetMarketingHeader = (
 export const useGetMarketingOrderan = (
   id?: number,
   activeTab?: string,
-  tabFromValues?: string,
+  tabFormValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -115,7 +115,7 @@ export const useGetMarketingOrderan = (
       enabled:
         !!id ||
         activeTab === 'marketingorderan' ||
-        tabFromValues === 'formMarketingOrderan'
+        tabFormValues === 'formMarketingOrderan'
     }
   );
 };
@@ -123,7 +123,7 @@ export const useGetMarketingOrderan = (
 export const useGetMarketingBiaya = (
   id?: number,
   activeTab?: string,
-  tabFromValues?: string,
+  tabFormValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -145,7 +145,7 @@ export const useGetMarketingBiaya = (
       enabled:
         !!id ||
         activeTab === 'marketingbiaya' ||
-        tabFromValues === 'formMarketingBiaya'
+        tabFormValues === 'formMarketingBiaya'
     }
   );
 };
@@ -153,7 +153,7 @@ export const useGetMarketingBiaya = (
 export const useGetMarketingManager = (
   id?: number,
   activeTab?: string,
-  tabFromValues?: string,
+  tabFormValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -179,7 +179,7 @@ export const useGetMarketingManager = (
       enabled:
         !!id ||
         activeTab === 'marketingmanager' ||
-        tabFromValues === 'formMarketingManager'
+        tabFormValues === 'formMarketingManager'
     }
   );
 };
@@ -187,7 +187,7 @@ export const useGetMarketingManager = (
 export const useGetMarketingProsesFee = (
   id?: number,
   activeTab?: string,
-  tabFromValues?: string,
+  tabFormValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -209,7 +209,7 @@ export const useGetMarketingProsesFee = (
       enabled:
         !!id ||
         activeTab === 'marketingprosesfee' ||
-        tabFromValues === 'formMarketingProsesFee'
+        tabFormValues === 'formMarketingProsesFee'
     }
   );
 };
@@ -262,7 +262,9 @@ export const useCreateMarketing = () => {
 
       if (errorResponse !== undefined) {
         // Menangani error berdasarkan path
-        const errorFields = errorResponse.message || [];
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
 
         if (errorResponse.statusCode === 400) {
           // Iterasi error message dan set error di form
@@ -303,7 +305,10 @@ export const useCreateMarketingDetail = () => {
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        const errorFields = errorResponse.message || [];
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
+
         if (errorResponse.statusCode === 400) {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
@@ -344,7 +349,9 @@ export const useUpdateMarketing = () => {
       const errorResponse = error.response?.data as IErrorResponse;
 
       if (errorResponse !== undefined) {
-        const errorFields = errorResponse.message || [];
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
 
         if (errorResponse.statusCode === 400) {
           // Iterasi error message dan set error di form

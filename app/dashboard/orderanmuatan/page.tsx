@@ -28,10 +28,10 @@ import {
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
 import {
-  JENISORDERANEXPORT,
-  JENISORDERANIMPORT,
-  JENISORDERBONGKARAN,
-  JENISORDERMUATAN
+  JENISORDERBONGKARANNAMA,
+  JENISORDEREKSPORTNAMA,
+  JENISORDERIMPORTNAMA,
+  JENISORDERMUATANNAMA
 } from '@/constants/orderan';
 
 interface ApiResponse {
@@ -41,10 +41,10 @@ interface ApiResponse {
 
 const Page = () => {
   const dispatch = useDispatch();
-
-  const [modegrid, setGrid] = useState<string | number | null>('');
-  const { selectedJenisOrderan, selectedJenisOrderanNama, onReload } =
-    useSelector((state: RootState) => state.filter);
+  const [modegrid, setModeGrid] = useState<string>('');
+  const { selectedJenisOrderanNama, onReload } = useSelector(
+    (state: RootState) => state.filter
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -314,26 +314,11 @@ const Page = () => {
     fetchData();
   }, [dispatch]);
 
-  // console.log(
-  //   'selectedJenisOrderan di page',
-  //   selectedJenisOrderan,
-  //   selectedJenisOrderanNama
-  // );
-
-  const renderedGrid = () => {
-    switch (selectedJenisOrderan) {
-      case JENISORDERMUATAN:
-        return <GridOrderanMuatan />;
-      case JENISORDERBONGKARAN:
-        return <></>;
-      case JENISORDERANIMPORT:
-        return <></>;
-      case JENISORDERANEXPORT:
-        return <></>;
-      default:
-        return <GridOrderanMuatan />;
+  useEffect(() => {
+    if (onReload) {
+      setModeGrid(selectedJenisOrderanNama);
     }
-  };
+  }, [onReload, selectedJenisOrderanNama]);
 
   return (
     <PageContainer scrollable>
@@ -341,7 +326,19 @@ const Page = () => {
         <div className="col-span-10 border">
           <FilterGrid />
         </div>
-        <div className="col-span-10 h-[500px]">{renderedGrid()}</div>
+        <div className="col-span-10 h-[500px]">
+          {modegrid == JENISORDERMUATANNAMA ? (
+            <GridOrderanMuatan />
+          ) : modegrid == JENISORDERBONGKARANNAMA ? (
+            <></>
+          ) : modegrid == JENISORDERIMPORTNAMA ? (
+            <></>
+          ) : modegrid == JENISORDEREKSPORTNAMA ? (
+            <></>
+          ) : (
+            <GridOrderanMuatan />
+          )}
+        </div>
       </div>
     </PageContainer>
   );

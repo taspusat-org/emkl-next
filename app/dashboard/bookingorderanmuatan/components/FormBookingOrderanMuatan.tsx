@@ -38,6 +38,7 @@ const FormBookingMuatan = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const todayDate = new Date();
   const dispatch = useDispatch();
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
@@ -48,6 +49,11 @@ const FormBookingMuatan = ({
   const [kapal, setKapal] = useState<string>('');
   const [tujuanKapal, setTujuanKapal] = useState<string>('');
   const { openForm } = useLainnyaDialog();
+
+  const fmt = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
 
   const lookupPropsStatusTradoLuar = [
     {
@@ -500,6 +506,7 @@ const FormBookingMuatan = ({
   useEffect(() => {
     if (mode === 'add') {
       setReloadInformation(false);
+      forms.setValue('tglbukti', fmt(todayDate));
     }
   }, [popOver, mode]);
 

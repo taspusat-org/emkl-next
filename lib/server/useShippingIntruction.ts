@@ -40,9 +40,30 @@ export const useGetAllShippingInstructionHeader = (
   } = {},
   signal?: AbortSignal
 ) => {
+  const dispatch = useDispatch();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   return useQuery(
     ['shippinginstruction', filters],
-    async () => await getAllShippingInstructionHeaderFn(filters, signal),
+    async () => {
+      // Only trigger processing if the page is 1
+      if (filters.page === 1) {
+        dispatch(setProcessing());
+      }
+
+      try {
+        const data = await getAllShippingInstructionHeaderFn(filters, signal);
+        return data;
+      } catch (error) {
+        // Show error toast and dispatch processed
+        dispatch(setProcessed());
+        throw error;
+      } finally {
+        // Regardless of success or failure, we dispatch setProcessed after the query finishes
+        dispatch(setProcessed());
+      }
+    },
     {
       enabled: !signal?.aborted
     }
