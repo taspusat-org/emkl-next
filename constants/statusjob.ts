@@ -4,9 +4,9 @@ export const JENISORDERANIMPORT = 3 as const;
 export const JENISORDERANEKSPORT = 4 as const;
 
 export const JENISORDERMUATANNAMA = 'MUATAN' as const;
-// const JENISORDERBONGKARANNAMA = 'BONGKARAN';
-// const JENISORDERANIMPORTNAMA = 'IMPORT';
-// const JENISORDERANEKSPORTNAMA = 'EKSPORT';
+export const JENISORDERBONGKARANNAMA = 'BONGKARAN' as const;
+export const JENISORDERANIMPORTNAMA = 'IMPORT' as const;
+export const JENISORDERANEKSPORTNAMA = 'EKSPORT' as const;
 
 export const statusJobMasukGudang = 211 as const;
 export const statusJobTurunDepo = 212 as const;

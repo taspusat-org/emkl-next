@@ -64,6 +64,7 @@ const FormShippingInstruction = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const todayDate = new Date();
   const [dataGridKey, setDataGridKey] = useState(0);
   const [daftarBlValue, setDaftarBlValue] = useState(0);
   const [scheduleValue, setScheduleValue] = useState(0);
@@ -94,6 +95,10 @@ const FormShippingInstruction = ({
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const detailData = useSelector((state: RootState) => state.header.detailData);
+  const fmt = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
 
   const [filters, setFilters] = useState<Filter>({
     page: 1,
@@ -1331,6 +1336,7 @@ const FormShippingInstruction = ({
       setDaftarBlValue(0);
       setRowsDetailRincian([]);
       setReloadForm(false);
+      forms.setValue('tglbukti', fmt(todayDate));
     } else {
       setReloadForm(true);
     }

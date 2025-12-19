@@ -6,10 +6,7 @@ import { IoMdRefresh } from 'react-icons/io';
 import { Button } from '@/components/ui/button';
 import React, { useEffect, useState } from 'react';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
+import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import {
   setOnReload,
   setSelectedDate,
@@ -19,8 +16,9 @@ import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [triggerValidation, setTriggerValidation] = useState(false);
   const { onReload } = useSelector((state: any) => state.filter);
+  const [triggerValidation, setTriggerValidation] = useState(false);
+  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
 
   const onSubmit = () => {
     setTriggerValidation(true);
@@ -85,15 +83,6 @@ const FilterGrid = () => {
       </div>
     </div>
   );
-};
-
-// Fungsi untuk mengonversi string dd-mm-yyyy menjadi objek Date
-const parseDateFromDDMMYYYY = (dateString: string): Date | undefined => {
-  const parts = dateString.split('-');
-  if (parts.length !== 3) return undefined;
-  const [day, month, year] = parts.map(Number);
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return undefined;
-  return new Date(year, month - 1, day); // Menggunakan month - 1 karena JavaScript Date menganggap bulan dimulai dari 0
 };
 
 export default FilterGrid;

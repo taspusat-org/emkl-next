@@ -1281,13 +1281,13 @@ const FormBlHeader = ({
     setEditingRowId(0);
     setEditingRowDetailRincianId(0);
     fetchAllShippingHeader();
-    forms.setValue('tglbukti', fmt(todayDate));
 
     if (mode === 'add') {
       setRows([]);
       setScheduleValue(0);
       setRowsDetailRincian([]);
       setReloadForm(false);
+      forms.setValue('tglbukti', fmt(todayDate));
     } else {
       setReloadForm(true);
     }

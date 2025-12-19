@@ -34,6 +34,7 @@ const FormSchedule = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const todayDate = new Date();
   const [dataGridKey, setDataGridKey] = useState(0);
   const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
@@ -49,6 +50,11 @@ const FormSchedule = ({
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const headerData = useSelector((state: RootState) => state.header.headerData);
+  const fmt = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
+
   const {
     data: allDataDetail,
     isLoading: isLoadingData,
@@ -1098,6 +1104,12 @@ const FormSchedule = ({
       ]);
     }
   }, [forms, forms.getValues().details]);
+
+  useEffect(() => {
+    if (mode === 'add') {
+      forms.setValue('tglbukti', fmt(todayDate));
+    }
+  }, [popOver, mode]);
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>

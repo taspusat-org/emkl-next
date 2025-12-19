@@ -2,7 +2,6 @@ import { AxiosError } from 'axios';
 import { useDispatch } from 'react-redux';
 import { useToast } from '@/hooks/use-toast';
 import { useAlert } from '../store/client/useAlert';
-import { IErrorResponse } from '../types/blheader.type';
 import { useFormError } from '../hooks/formErrorContext';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import {
@@ -10,15 +9,16 @@ import {
   setProcessing
 } from '../store/loadingSlice/loadingSlice';
 import {
-  deleteBiayaExtraHeaderFn,
-  getAllBiayaExtraHeaderFn,
-  getBiayaExtraBongkaranDetailFn,
-  getBiayaExtraMuatanDetailFn,
-  storeBiayaExtraHeaderFn,
-  updateBiayaExtraHeaderFn
-} from '../apis/biayaextraheader.api';
+  deleteEstimasiBiayaHeaderFn,
+  getAllEstimasiBiayaHeaderFn,
+  getEstimasiBiayaDetailBiayaFn,
+  getEstimasiBiayaDetailInvoiceFn,
+  storeEstimasiBiayaHeaderFn,
+  updateEstimasiBiayaHeaderFn
+} from '../apis/estimasibiayaheader.api';
+import { IErrorResponse } from '../types/estimasibiayaheader.type';
 
-export const useGetAllBiayaExtraHeader = (
+export const useGetAllEstimasiBiayaHeader = (
   filters: {
     page?: number;
     limit?: number;
@@ -26,11 +26,16 @@ export const useGetAllBiayaExtraHeader = (
     sortBy?: string;
     sortDirection?: string;
     filters?: {
-      tglbukti?: string;
       nobukti?: string;
+      tglbukti?: string;
       jenisorder_text?: string;
-      biayaemkl_text?: string;
-      keterangan?: string;
+      orderan_nobukti?: string;
+      nominal?: string;
+      shipper_text?: string;
+      statusppn_text?: string;
+      asuransi_text?: string;
+      comodity_text?: string;
+      consignee_text?: string;
       modifiedby?: string;
       created_at?: string;
       updated_at?: string;
@@ -43,7 +48,7 @@ export const useGetAllBiayaExtraHeader = (
   const dispatch = useDispatch();
 
   return useQuery(
-    ['biayaextraheader', filters],
+    ['estimasibiaya', filters],
     async () => {
       // Only trigger processing if the page is 1
       if (filters.page === 1) {
@@ -51,7 +56,7 @@ export const useGetAllBiayaExtraHeader = (
       }
 
       try {
-        const data = await getAllBiayaExtraHeaderFn(filters, signal);
+        const data = await getAllEstimasiBiayaHeaderFn(filters, signal);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -68,8 +73,10 @@ export const useGetAllBiayaExtraHeader = (
   );
 };
 
-export const useGetBiayaExtraMuatanDetail = (
+export const useGetEstimasiBiayaDetailBiaya = (
   id?: number,
+  activeTab?: string,
+  tabFormValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -78,28 +85,33 @@ export const useGetBiayaExtraMuatanDetail = (
     sortDirection?: string;
     filters?: {
       nobukti?: string;
-      orderanmuatan_nobukti?: string;
-      estimasi?: string;
+      biayaemkl_text?: string;
       nominal?: string;
-      statustagih_text?: string;
-      nominaltagih?: string;
-      keterangan?: string;
-      groupbiayaextra_text?: string;
+      nilaiasuransi?: string;
+      nominaldisc?: string;
+      nominalsebelumdisc?: string;
+      nominaltradoluar?: string;
     };
   } = {},
   signal?: AbortSignal
 ) => {
   return useQuery(
-    ['biayaextraheader', id, filters],
-    async () => await getBiayaExtraMuatanDetailFn(id!, filters),
+    ['estimasibiaya', id, 'detail-biaya', filters],
+    async () => await getEstimasiBiayaDetailBiayaFn(id!, filters),
     {
-      enabled: !!id || !signal?.aborted // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      enabled:
+        !!id ||
+        !signal?.aborted ||
+        activeTab === 'detailbiaya' ||
+        tabFormValues === 'detailbiaya' // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
   );
 };
 
-export const useGetBiayaExtraBongkaranDetail = (
+export const useGetEstimasiBiayaDetailInvoice = (
   id?: number,
+  activeTab?: string,
+  tabFormValues?: string,
   filters: {
     page?: number;
     limit?: number;
@@ -108,40 +120,40 @@ export const useGetBiayaExtraBongkaranDetail = (
     sortDirection?: string;
     filters?: {
       nobukti?: string;
-      orderanmuatan_nobukti?: string;
-      estimasi?: string;
+      biayaemkl_text?: string;
+      link_text?: string;
       nominal?: string;
-      statustagih_text?: string;
-      nominaltagih?: string;
-      keterangan?: string;
-      groupbiayaextra_text?: string;
     };
   } = {},
   signal?: AbortSignal
 ) => {
   return useQuery(
-    ['biayaextraheader', id, filters],
-    async () => await getBiayaExtraBongkaranDetailFn(id!, filters),
+    ['estimasibiaya', id, 'detail-invoice', filters],
+    async () => await getEstimasiBiayaDetailInvoiceFn(id!, filters),
     {
-      enabled: !!id || !signal?.aborted // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+      enabled:
+        !!id ||
+        !signal?.aborted ||
+        activeTab === 'detailinvoice' ||
+        tabFormValues === 'detailinvoice' // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
   );
 };
 
-export const useCreateBiayaExtraHeader = () => {
+export const useCreateEstimasiBiayaHeader = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  return useMutation(storeBiayaExtraHeaderFn, {
+  return useMutation(storeEstimasiBiayaHeaderFn, {
     // before the mutation fn runs
     onMutate: () => {
       dispatch(setProcessing());
     },
     onSuccess: () => {
       // on success, invalidate + clear loading
-      void queryClient.invalidateQueries(['biayaextraheader']);
+      void queryClient.invalidateQueries(['estimasibiaya']);
       dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
@@ -172,18 +184,18 @@ export const useCreateBiayaExtraHeader = () => {
   });
 };
 
-export const useUpdateBiayaExtraHeader = () => {
+export const useUpdateEstimasiBiayaHeader = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  return useMutation(updateBiayaExtraHeaderFn, {
+  return useMutation(updateEstimasiBiayaHeaderFn, {
     onMutate: () => {
       dispatch(setProcessing());
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries('biayaextraheader');
+      void queryClient.invalidateQueries('estimasibiaya');
       dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
@@ -214,13 +226,13 @@ export const useUpdateBiayaExtraHeader = () => {
   });
 };
 
-export const useDeleteBiayaExtraHeader = () => {
+export const useDeleteEstimasiBiayaHeader = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation(deleteBiayaExtraHeaderFn, {
+  return useMutation(deleteEstimasiBiayaHeaderFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('biayaextraheader');
+      void queryClient.invalidateQueries('estimasibiaya');
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;

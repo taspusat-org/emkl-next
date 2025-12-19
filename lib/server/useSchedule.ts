@@ -33,7 +33,8 @@ export const useGetScheduleHeader = (
     sortDirection?: string;
     limit?: number;
     search?: string; // Kata kunci pencarian
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ) => {
   const dispatch = useDispatch();
   const { toast } = useToast();
@@ -47,7 +48,7 @@ export const useGetScheduleHeader = (
       }
 
       try {
-        const data = await getScheduleHeaderFn(filters);
+        const data = await getScheduleHeaderFn(filters, signal);
         return data;
       } catch (error) {
         // Show error toast and dispatch processed
@@ -63,12 +64,15 @@ export const useGetScheduleHeader = (
       }
     },
     {
-      onSettled: () => {
-        if (filters.page === 1) {
-          dispatch(setProcessed());
-        }
-      }
+      enabled: !signal?.aborted
     }
+    // {
+    //   onSettled: () => {
+    //     if (filters.page === 1) {
+    //       dispatch(setProcessed());
+    //     }
+    //   }
+    // }
   );
 };
 
@@ -129,7 +133,8 @@ export const useCreateSchedule = () => {
       const err = (error.response?.data as IErrorResponse) ?? {};
 
       if (err !== undefined) {
-        const errorFields = err.message || [];
+        const errorFields = Array.isArray(err.message) ? err.message : [];
+
         if (err.statusCode === 400) {
           // Iterasi error message dan set error di form
           errorFields?.forEach((err: { path: string[]; message: string }) => {
@@ -145,34 +150,49 @@ export const useCreateSchedule = () => {
         }
       }
       dispatch(setProcessed());
-    },
-    onSettled: () => {
-      dispatch(setProcessed());
     }
+    // onSettled: () => {
+    //   dispatch(setProcessed());
+    // }
   });
 };
 
 export const useUpdateSchedule = () => {
+  const { setError } = useFormError();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const dispatch = useDispatch();
 
   return useMutation(updateScheduleFn, {
+    onMutate: () => {
+      dispatch(setProcessing());
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries('schedule');
-      // toast({
-      //   title: 'Proses Berhasil.',
-      //   description: 'Data Berhasil Diubah.'
-      // });
+      dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
       if (errorResponse !== undefined) {
-        toast({
-          variant: 'destructive',
-          title: errorResponse.message ?? 'Gagal',
-          description: 'Terjadi masalah dengan permintaan Anda.'
-        });
+        const errorFields = Array.isArray(errorResponse.message)
+          ? errorResponse.message
+          : [];
+
+        if (errorResponse.statusCode === 400) {
+          // Iterasi error message dan set error di form
+          errorFields?.forEach((err: { path: string[]; message: string }) => {
+            const path = err.path[0]; // Ambil path error pertama (misalnya 'nama', 'akuntansi_id')
+            setError(path, err.message); // Update error di context
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: errorResponse.message ?? 'Gagal',
+            description: 'Terjadi masalah dengan permintaan Anda'
+          });
+        }
       }
+      dispatch(setProcessed());
     }
   });
 };

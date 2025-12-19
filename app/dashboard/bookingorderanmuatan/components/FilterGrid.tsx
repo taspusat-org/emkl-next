@@ -43,10 +43,6 @@ const FilterGrid = () => {
     }
   };
 
-  const [jenisOrderanNama, setJenisOrderanNama] = useState<string>('');
-  // const [dataJenisOrderParameter, setDataJenisOrderParameter] = useState<any[]>(
-  //   []
-  // );
   const lookUpJenisOrderan = [
     {
       columns: [{ key: 'subgrp', name: 'subgrp' }],
@@ -74,64 +70,6 @@ const FilterGrid = () => {
     dispatch(setSelectedDate(fmt(firstOfMonth)));
     dispatch(setSelectedDate2(fmt(lastOfMonth)));
   }, [dispatch]);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const [getJenisOrderParameter] = await Promise.all<ApiResponse>([
-  //         getParameterFn({
-  //           isLookUp: 'true',
-  //           filters: {
-  //             grp: 'JENIS ORDERAN'
-  //           }
-  //         })
-  //       ]);
-
-  //       if (getJenisOrderParameter) {
-  //         setDataJenisOrderParameter(getJenisOrderParameter.data ?? []);
-  //       }
-  //     } catch (err) {
-  //       console.error('Error fetching data:', err);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, [dispatch]);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const [getJenisOrderParameter] = await Promise.all<ApiResponse>([
-  //         getParameterFn({
-  //           isLookUp: 'true',
-  //           filters: {
-  //             grp: 'JENIS ORDERAN'
-  //           }
-  //         })
-  //       ]);
-
-  //       if (getJenisOrderParameter) {
-  //         setDataJenisOrderParameter(getJenisOrderParameter.data ?? []);
-  //       }
-  //     } catch (err) {
-  //       console.error('Error fetching data:', err);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, [dispatch]);
-
-  // useEffect(() => {
-  //   //
-
-  //   if (jenisOrderanNama || jenisOrderanNama != '') {
-  //     const formatData = dataJenisOrderParameter.filter(
-  //       (item: any) => item.subgrp == jenisOrderanNama
-  //     );
-
-  //     dispatch(setSelectedJenisOrderan(formatData[0]?.id));
-  //   }
-  // }, [jenisOrderanNama]);
 
   useEffect(() => {
     if (onReload) {
@@ -172,10 +110,8 @@ const FilterGrid = () => {
                   onSelectRow={(val) => {
                     dispatch(setSelectedJenisOrderan(Number(val.id)));
                     dispatch(setSelectedJenisOrderanNama(val.subgrp));
-                    setJenisOrderanNama(val.nama);
                   }}
                   onClear={() => {
-                    setJenisOrderanNama('');
                     dispatch(setSelectedJenisOrderan(null));
                     dispatch(setSelectedJenisOrderanNama(''));
                   }}

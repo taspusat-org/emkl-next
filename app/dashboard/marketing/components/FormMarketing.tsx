@@ -55,7 +55,7 @@ const FormMarketing = ({
   const gridRef = useRef<DataGridHandle>(null);
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const headerData = useSelector((state: RootState) => state.header.headerData);
-  const tabFromValues = useSelector((state: RootState) => state.tab.tab);
+  const tabFormValues = useSelector((state: RootState) => state.tab.tab);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const [dataGridKey, setDataGridKey] = useState(0);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
@@ -79,22 +79,22 @@ const FormMarketing = ({
     data: allDatamarketingOrderan,
     isLoading: isLoadingMarketingOrderan,
     refetch: refetchMarketingOrderan
-  } = useGetMarketingOrderan(headerData?.id ?? 0, '', tabFromValues);
+  } = useGetMarketingOrderan(headerData?.id ?? 0, '', tabFormValues);
   const {
     data: allDatamarketingBiaya,
     isLoading: isLoadingMarketingBiaya,
     refetch: refetchMarketingBiaya
-  } = useGetMarketingBiaya(headerData?.id ?? 0, '', tabFromValues);
+  } = useGetMarketingBiaya(headerData?.id ?? 0, '', tabFormValues);
   const {
     data: allDatamarketingManager,
     isLoading: isLoadingMarketingManager,
     refetch: refetchMarketingManager
-  } = useGetMarketingManager(headerData?.id ?? 0, '', tabFromValues);
+  } = useGetMarketingManager(headerData?.id ?? 0, '', tabFormValues);
   const {
     data: allDatamarketingProsesFee,
     isLoading: isLoadingMarketingProsesFee,
     refetch: refetchMarketingProsesFee
-  } = useGetMarketingProsesFee(headerData?.id ?? 0, '', tabFromValues);
+  } = useGetMarketingProsesFee(headerData?.id ?? 0, '', tabFormValues);
 
   const lookupPropsStatusAktif = [
     {
@@ -417,7 +417,7 @@ const FormMarketing = ({
   };
 
   const deleteRowMarketingOrderan = (index: number) => {
-    // if (tabFromValues === 'formMarketingOrderan') {
+    // if (tabFormValues === 'formMarketingOrderan') {
     setRowsMarketingOrderan(rowsMarketingOrderan.filter((_, i) => i !== index));
     // }
   };
@@ -445,7 +445,7 @@ const FormMarketing = ({
     field: string,
     value: string | number
   ) => {
-    // if (tabFromValues === 'formMarketingOrderan') {
+    // if (tabFormValues === 'formMarketingOrderan') {
     setRowsMarketingOrderan((prevRows) => {
       const updatedData = [...prevRows];
 
@@ -1588,7 +1588,7 @@ const FormMarketing = ({
   }
 
   useEffect(() => {
-    // if (allDatamarketingOrderan && tabFromValues == 'formMarketingOrderan') {
+    // if (allDatamarketingOrderan && tabFormValues == 'formMarketingOrderan') {
     //   if (allDatamarketingOrderan?.data?.length > 0 && mode !== 'add' && mode != '') {
     if (allDatamarketingOrderan) {
       if (allDatamarketingOrderan?.data?.length > 0 && mode !== 'add') {
@@ -1630,10 +1630,10 @@ const FormMarketing = ({
       }
     }
   }, [allDatamarketingOrderan, headerData?.id, mode]);
-  // }, [allDatamarketingOrderan, headerData?.id, mode, tabFromValues, hasValueMarketingOrderan]);
+  // }, [allDatamarketingOrderan, headerData?.id, mode, tabFormValues, hasValueMarketingOrderan]);
 
   useEffect(() => {
-    // if (allDatamarketingBiaya && tabFromValues == 'formMarketingBiaya') {
+    // if (allDatamarketingBiaya && tabFormValues == 'formMarketingBiaya') {
     //   if (allDatamarketingBiaya?.data?.length > 0 && mode !== 'add' && mode != '') {
     if (allDatamarketingBiaya) {
       if (allDatamarketingBiaya?.data?.length > 0 && mode !== 'add') {
@@ -1672,11 +1672,11 @@ const FormMarketing = ({
         // }
       }
     }
-    // }, [allDatamarketingBiaya, headerData?.id, mode, tabFromValues, hasValueMarketingBiaya]);
+    // }, [allDatamarketingBiaya, headerData?.id, mode, tabFormValues, hasValueMarketingBiaya]);
   }, [allDatamarketingBiaya, headerData?.id, mode]);
 
   useEffect(() => {
-    // if (allDatamarketingManager && tabFromValues == 'formMarketingManager') {
+    // if (allDatamarketingManager && tabFormValues == 'formMarketingManager') {
     //   if (allDatamarketingManager?.data?.length > 0 && mode !== 'add' && mode != '') {
     if (allDatamarketingManager) {
       if (allDatamarketingManager?.data?.length > 0 && mode !== 'add') {
@@ -1714,10 +1714,10 @@ const FormMarketing = ({
       }
     }
   }, [allDatamarketingManager, headerData?.id, mode]);
-  // }, [allDatamarketingManager, headerData?.id, mode, tabFromValues, hasValueMarketingManager]);
+  // }, [allDatamarketingManager, headerData?.id, mode, tabFormValues, hasValueMarketingManager]);
 
   useEffect(() => {
-    // if (allDatamarketingProsesFee && tabFromValues == 'formMarketingProsesFee') {
+    // if (allDatamarketingProsesFee && tabFormValues == 'formMarketingProsesFee') {
     //   if (allDatamarketingProsesFee?.data?.length > 0 && mode !== 'add' && mode != '') {
     if (allDatamarketingProsesFee) {
       if (allDatamarketingProsesFee?.data?.length > 0 && mode !== 'add') {
@@ -1761,7 +1761,7 @@ const FormMarketing = ({
         // }
       }
     }
-    // }, [allDatamarketingProsesFee, headerData?.id, mode, tabFromValues, hasValueMarketingProsesFee]);
+    // }, [allDatamarketingProsesFee, headerData?.id, mode, tabFormValues, hasValueMarketingProsesFee]);
   }, [allDatamarketingProsesFee, headerData?.id, mode]);
 
   useEffect(() => {
@@ -1823,25 +1823,25 @@ const FormMarketing = ({
   // );
 
   useEffect(() => {
-    if (tabFromValues == 'formMarketingOrderan') {
+    if (tabFormValues == 'formMarketingOrderan') {
       refetchMarketingOrderan();
     }
   }, [headerData?.id, refetchMarketingOrderan]);
 
   useEffect(() => {
-    if (tabFromValues == 'formMarketingBiaya') {
+    if (tabFormValues == 'formMarketingBiaya') {
       refetchMarketingBiaya();
     }
   }, [headerData?.id, refetchMarketingBiaya]);
 
   useEffect(() => {
-    if (tabFromValues == 'formMarketingManager') {
+    if (tabFormValues == 'formMarketingManager') {
       refetchMarketingManager();
     }
   }, [headerData?.id, refetchMarketingManager]);
 
   useEffect(() => {
-    if (tabFromValues == 'formMarketingProsesFee') {
+    if (tabFormValues == 'formMarketingProsesFee') {
       refetchMarketingProsesFee();
     }
   }, [headerData?.id, refetchMarketingProsesFee]);
@@ -2281,7 +2281,7 @@ const FormMarketing = ({
                     <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
                       <FormTabs mode={mode} forms={forms} />
 
-                      {tabFromValues === 'formMarketingOrderan' && (
+                      {tabFormValues === 'formMarketingOrderan' && (
                         <DataGrid
                           ref={gridRef}
                           columns={columnsMarketingOrderan as any[]}
@@ -2297,7 +2297,7 @@ const FormMarketing = ({
                         />
                       )}
 
-                      {tabFromValues === 'formMarketingBiaya' && (
+                      {tabFormValues === 'formMarketingBiaya' && (
                         <>
                           <DataGrid
                             ref={gridRef}
@@ -2333,7 +2333,7 @@ const FormMarketing = ({
                         </>
                       )}
 
-                      {tabFromValues === 'formMarketingManager' && (
+                      {tabFormValues === 'formMarketingManager' && (
                         <DataGrid
                           ref={gridRef}
                           columns={columnsMarketingManager as any[]}
@@ -2349,7 +2349,7 @@ const FormMarketing = ({
                         />
                       )}
 
-                      {tabFromValues === 'formMarketingProsesFee' && (
+                      {tabFormValues === 'formMarketingProsesFee' && (
                         <DataGrid
                           ref={gridRef}
                           columns={columnsMarketingProsesFee as any[]}

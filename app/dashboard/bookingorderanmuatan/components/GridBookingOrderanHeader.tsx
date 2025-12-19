@@ -4066,25 +4066,18 @@ const GridBookingMuatan = () => {
       setColumnsWidth
     );
     dispatch(setUrlApproval('bookingorderanheader/approvalBooking'));
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        tglDari: selectedDate,
-        tglSampai: selectedDate2,
-        jenisOrderan: String(selectedJenisOrderan)
-      }
-    }));
   }, []);
 
   useEffect(() => {
-    setFilters((prevFilters: Filter) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        jenisOrderan: String(selectedJenisOrderan)
-      }
-    }));
+    if (onReload) {
+      setFilters((prevFilters: Filter) => ({
+        ...prevFilters,
+        filters: {
+          ...filterBookingOrderanMuatan,
+          jenisOrderan: String(selectedJenisOrderan)
+        }
+      }));
+    }
   }, [selectedJenisOrderan, selectedJenisOrderanNama]);
 
   useEffect(() => {
