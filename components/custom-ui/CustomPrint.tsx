@@ -236,12 +236,14 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   }, [isOpen, isLoading, isPrinterCheckComplete]);
 
   useEffect(() => {
-    const readPaperSizeFromPDF = async () => {
+    const readPaperSizeFromDocument = async () => {
       try {
         const response = await fetch(docUrl);
         const blob = await response.blob();
         const arrayBuffer = await blob.arrayBuffer();
         const uint8Array = new Uint8Array(arrayBuffer);
+
+        // Decode sebagai latin1 untuk PDF
         const text = new TextDecoder('latin1').decode(uint8Array);
 
         const mediaBoxMatch = text.match(
@@ -260,19 +262,29 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           let selectedPaper = 'CUSTOM_A4';
           let selectedLayout: 'portrait' | 'landscape' = 'portrait';
 
-          if (pageHeight == 210.1 || pageHeight == 296.9) {
-            selectedPaper = 'CUSTOM_A4';
-          } else if (pageHeight == 279.4) {
+          console.log('📄 PageWidth:', pageWidth, 'PageHeight:', pageHeight);
+
+          if (pageWidth === 296.9 && pageHeight === 210.1) {
             selectedPaper = 'CUSTOM_LETTER';
-          } else if (pageHeight == 139.7) {
-            selectedPaper = 'CUSTOM_FAKTUR';
             selectedLayout = 'landscape';
+            console.log(
+              '✅ Detected A4 Landscape → Set to CUSTOM_LETTER Landscape'
+            );
+          }
+          // Cek ukuran kertas lainnya
+          else if (pageHeight === 210.1 || pageHeight === 296.9) {
+            selectedPaper = 'CUSTOM_A4';
+          } else if (pageHeight === 279.4) {
+            selectedPaper = 'CUSTOM_LETTER';
+          } else if (pageHeight === 139.7) {
+            selectedPaper = 'CUSTOM_FAKTUR';
           } else if (pageHeight >= 350 && pageHeight <= 360) {
             selectedPaper = 'CUSTOM_LEGAL';
           } else {
             selectedLayout = pageWidth > pageHeight ? 'landscape' : 'portrait';
           }
 
+          console.log('🎯 Final:', selectedPaper, selectedLayout);
           setPaperSize(selectedPaper);
           setLayout(selectedLayout);
         } else {
@@ -280,14 +292,14 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           setLayout('portrait');
         }
       } catch (err) {
-        console.error('âš  Gagal membaca ukuran kertas dari PDF:', err);
+        console.error('❌ Gagal membaca ukuran kertas dari dokumen:', err);
         setPaperSize('CUSTOM_A4');
         setLayout('portrait');
       }
     };
 
     if (isOpen && docUrl && isPrinterCheckComplete) {
-      readPaperSizeFromPDF();
+      readPaperSizeFromDocument();
     }
   }, [isOpen, docUrl, isPrinterCheckComplete]);
 
@@ -386,8 +398,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           monochrome: colorMode === 'bw',
           copies: 1,
           orientation: layout,
-          scale: defaultScale,
-          dpi: 300
+          scale: defaultScale
         }
       });
 
