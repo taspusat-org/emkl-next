@@ -21,6 +21,7 @@ import {
   statusJobMasukGudang,
   STATUSJOBMASUKGUDANGNAMA
 } from '@/constants/statusjob';
+import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
 
 interface ApiResponse {
   type: string;
@@ -29,13 +30,10 @@ interface ApiResponse {
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
-  const [jenisOrderanNama, setJenisOrderanNama] = useState<string>('');
+  const { onReload } = useSelector((state: any) => state.filter);
   const [statusJobNama, setStatusJobNama] = useState<string>('');
-  const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
-  const { selectedDate, selectedDate2, onReload } = useSelector(
-    (state: any) => state.filter
-  );
+  const [triggerValidation, setTriggerValidation] = useState(false);
+  const [jenisOrderanNama, setJenisOrderanNama] = useState<string>('');
 
   const lookUpJenisOrderan = [
     {
@@ -67,35 +65,17 @@ const FilterGrid = () => {
     }
   ];
 
-  const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate(newValue)); // Dispatch to Redux
-  };
-  const handleDateChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate2(newValue)); // Dispatch to Redux
-  };
-
-  const handleCalendarSelect1 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate(String(value)));
-      setPopOverTglDari(false);
-    } else {
-      setSelectedDate('');
-    }
-  };
-  const handleCalendarSelect2 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate2(String(value)));
-      setPopOverTgl(false); // Menutup popover setelah memilih tanggal
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
-
   const onSubmit = () => {
-    // dispatch(setProcessing());
-    dispatch(setOnReload(true));
+    setTriggerValidation(true);
+  };
+
+  const handleValidationResult = (isValid: boolean) => {
+    if (triggerValidation) {
+      if (isValid) {
+        dispatch(setOnReload(true));
+      }
+      setTriggerValidation(false);
+    }
   };
 
   useEffect(() => {
@@ -112,7 +92,7 @@ const FilterGrid = () => {
     dispatch(setSelectedDate(fmt(firstOfMonth)));
     dispatch(setSelectedDate2(fmt(lastOfMonth)));
 
-    // ✅ KUNCI: Set default jenis orderan dan status job
+    // ✅ Set default jenis orderan dan status job
     dispatch(setSelectedJenisOrderan(JENISORDERMUATAN));
     dispatch(setSelectedJenisOrderanNama(JENISORDERMUATANNAMA));
     dispatch(setSelectedJenisStatusJob(statusJobMasukGudang));
@@ -140,42 +120,14 @@ const FilterGrid = () => {
           }}
         />
         <div className="bg-white p-4">
-          <div className="flex flex-col justify-between lg:flex-row">
-            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
-              <label
-                htmlFor=""
-                className="w-full text-sm font-bold text-black lg:w-[20%]"
-              >
-                periode:
-                <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-              </label>
-              <div className="relative w-full lg:w-[60%]">
-                <InputDatePicker
-                  value={selectedDate}
-                  showCalendar
-                  onChange={handleDateChange1}
-                  onSelect={handleCalendarSelect1}
-                />
-              </div>
-            </div>
-
-            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
-              <div className="flex items-center justify-center lg:w-[20%] lg:justify-start">
-                <p className="text-center text-sm font-bold text-black">S/D</p>
-              </div>
-              <div className="relative w-full lg:w-[60%]">
-                <InputDatePicker
-                  value={selectedDate2}
-                  showCalendar
-                  onChange={handleDateChange2}
-                  onSelect={handleCalendarSelect2}
-                />
-              </div>
-            </div>
-          </div>
+          <PeriodeValidation
+            label="periode"
+            onValidationChange={handleValidationResult}
+            triggerValidation={triggerValidation}
+          />
 
           <div className="flex flex-col justify-between lg:flex-row">
-            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
+            <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
               <label
                 htmlFor=""
                 className="w-full text-sm font-bold text-black lg:w-[20%]"
@@ -206,10 +158,10 @@ const FilterGrid = () => {
               </div>
             </div>
 
-            <div className="mt-2 flex flex-col items-center justify-between lg:w-[49%] lg:flex-row">
+            <div className="mt-6 flex w-[50%] flex-col items-center justify-between lg:flex-row">
               <label
                 htmlFor=""
-                className="w-full text-sm font-bold text-black lg:w-[20%]"
+                className="ml-[108px] w-full text-sm font-bold text-black lg:w-[20%]"
               >
                 Jenis Status:
                 {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}

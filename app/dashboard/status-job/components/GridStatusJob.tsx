@@ -121,6 +121,7 @@ const GridStatusJob = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [inputValue, setInputValue] = useState('');
   const [moduleValue, setModuleValue] = useState('');
+  const [columnTitle, setcolumnTitle] = useState('MASUK GUDANG');
   const [dataGridKey, setDataGridKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -426,8 +427,8 @@ const GridStatusJob = () => {
                   filters.sortBy === 'tglstatus' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                {selectedJenisStatusJobNama
-                  ? `TANGGAL ${selectedJenisStatusJobNama}`
+                {columnTitle
+                  ? `TANGGAL ${columnTitle}`
                   : `TANGGAL ${STATUSJOBMASUKGUDANGNAMA}`}
               </p>
               <div className="ml-2">
@@ -481,7 +482,7 @@ const GridStatusJob = () => {
         }
       }
     ];
-  }, [filters, rows, checkedRows, selectedJenisStatusJob]);
+  }, [filters, rows, checkedRows, columnTitle]);
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
@@ -1208,6 +1209,46 @@ const GridStatusJob = () => {
     }
   }
 
+  const fetchPermission = async () => {
+    const res = await getPermissionFn(String(id)); // GET ACOS
+    const data = await getParameterApprovalFn({
+      // GET DATA PARAMETER WITH ROLE
+      filters: {
+        grp: 'DATA STATUS JOB',
+        subgrp: `ORDERAN${selectedJenisOrderanNama}`
+      }
+    });
+
+    const relevantPermissions = res.abilities.filter((permission: any) => {
+      // FILTERED ACOS BY SUBJECT EQUAL TO selectedOrderanNama Value
+      const formattedSubject = permission.subject?.replace(/-/g, ' ');
+      return (
+        formattedSubject?.toUpperCase() ===
+        `ORDERAN${selectedJenisOrderanNama?.toUpperCase()}`
+      );
+    });
+
+    if (selectedJenisOrderan && selectedJenisStatusJob) {
+      const filteredPermission = data.data.filter(
+        (item: any) =>
+          item.text === selectedJenisStatusJobNama &&
+          relevantPermissions.some(
+            (p: any) =>
+              p.action.includes(`${selectedJenisStatusJobNama} -> YA`) &&
+              Number(p.id) === Number(item.role_ya)
+          )
+      );
+
+      if (filteredPermission && filteredPermission.length > 0) {
+        setModuleValue('STATUS-JOB');
+      } else {
+        setModuleValue('');
+      }
+    } else {
+      setModuleValue('');
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -1225,49 +1266,7 @@ const GridStatusJob = () => {
       setColumnsOrder,
       setColumnsWidth
     );
-
-    const fetchPermission = async () => {
-      const res = await getPermissionFn(String(id)); // GET ACOS
-      const data = await getParameterApprovalFn({
-        // GET DATA PARAMETER WITH ROLE
-        filters: {
-          grp: 'DATA STATUS JOB',
-          subgrp: `ORDERAN${selectedJenisOrderanNama}`
-        }
-      });
-
-      const relevantPermissions = res.abilities.filter((permission: any) => {
-        // FILTERED ACOS BY SUBJECT EQUAL TO selectedOrderanNama Value
-        const formattedSubject = permission.subject?.replace(/-/g, ' ');
-        return (
-          formattedSubject?.toUpperCase() ===
-          `ORDERAN${selectedJenisOrderanNama?.toUpperCase()}`
-        );
-      });
-
-      if (selectedJenisOrderan && selectedJenisStatusJob) {
-        const filteredPermission = data.data.filter(
-          (item: any) =>
-            item.text === selectedJenisStatusJobNama &&
-            relevantPermissions.some(
-              (p: any) =>
-                p.action.includes(`${selectedJenisStatusJobNama} -> YA`) &&
-                Number(p.id) === Number(item.role_ya)
-            )
-        );
-
-        if (filteredPermission && filteredPermission.length > 0) {
-          setModuleValue('STATUS-JOB');
-        } else {
-          setModuleValue('');
-        }
-      } else {
-        setModuleValue('');
-      }
-    };
-
-    fetchPermission();
-  }, [selectedJenisStatusJob, selectedJenisOrderan]);
+  }, []);
 
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
@@ -1280,6 +1279,7 @@ const GridStatusJob = () => {
 
   useEffect(() => {
     if (isFirstLoad) {
+      fetchPermission();
       if (
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai ||
@@ -1443,6 +1443,8 @@ const GridStatusJob = () => {
     if (onReload) {
       refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
       setPrevFilters(filters); // Simpan filters terbaru
+      setcolumnTitle(selectedJenisStatusJobNama);
+      fetchPermission();
     }
   }, [onReload]); // Dependency array termasuk filters dan ref
 

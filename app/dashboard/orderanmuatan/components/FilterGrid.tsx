@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import React, { useEffect, useState } from 'react';
 import LookUp from '@/components/custom-ui/LookUp';
 import { useDispatch, useSelector } from 'react-redux';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import {
   setOnReload,
   setSelectedDate,
@@ -13,19 +12,13 @@ import {
   setSelectedJenisOrderan,
   setSelectedJenisOrderanNama
 } from '@/lib/store/filterSlice/filterSlice';
-
-interface ApiResponse {
-  type: string;
-  data: any; // Define a more specific type for data if possible
-}
+import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
+import { JENISORDERMUATANNAMA } from '@/constants/orderan';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
-  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
-  const { selectedDate, selectedDate2, onReload } = useSelector(
-    (state: any) => state.filter
-  );
+  const { onReload } = useSelector((state: any) => state.filter);
+  const [triggerValidation, setTriggerValidation] = useState(false);
 
   const lookUpJenisOrderan = [
     {
@@ -42,35 +35,17 @@ const FilterGrid = () => {
     }
   ];
 
-  const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate(newValue)); // Dispatch to Redux
-  };
-  const handleDateChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate2(newValue)); // Dispatch to Redux
-  };
-
-  const handleCalendarSelect1 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate(String(value)));
-      setPopOverTglDari(false);
-    } else {
-      setSelectedDate('');
-    }
-  };
-  const handleCalendarSelect2 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate2(String(value)));
-      setPopOverTgl(false); // Menutup popover setelah memilih tanggal
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
-
   const onSubmit = () => {
-    // dispatch(setProcessing());
-    dispatch(setOnReload(true));
+    setTriggerValidation(true);
+  };
+
+  const handleValidationResult = (isValid: boolean) => {
+    if (triggerValidation) {
+      if (isValid) {
+        dispatch(setOnReload(true));
+      }
+      setTriggerValidation(false);
+    }
   };
 
   useEffect(() => {
@@ -104,35 +79,11 @@ const FilterGrid = () => {
           }}
         />
         <div className="bg-white p-4">
-          <div className="flex w-full flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              periode:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-            </label>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate}
-                showCalendar
-                onChange={handleDateChange1}
-                onSelect={handleCalendarSelect1}
-              />
-            </div>
-
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold text-black">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate2}
-                showCalendar
-                onChange={handleDateChange2}
-                onSelect={handleCalendarSelect2}
-              />
-            </div>
-          </div>
+          <PeriodeValidation
+            label="periode"
+            onValidationChange={handleValidationResult}
+            triggerValidation={triggerValidation}
+          />
 
           <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
             <label
@@ -150,15 +101,12 @@ const FilterGrid = () => {
                   onSelectRow={(val) => {
                     dispatch(setSelectedJenisOrderan(Number(val.id)));
                     dispatch(setSelectedJenisOrderanNama(val.nama));
-                    // setJenisOrderanNama(val.nama);
-                    // setJenisOrderan(val.id);
                   }}
                   onClear={() => {
-                    // setJenisOrderanNama('');
-                    // setJenisOrderan(0);
                     dispatch(setSelectedJenisOrderan(null));
                     dispatch(setSelectedJenisOrderanNama(''));
                   }}
+                  lookupNama={JENISORDERMUATANNAMA}
                 />
               ))}
             </div>

@@ -32,12 +32,17 @@ const FormPindahBuku = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const todayDate = new Date();
   const dispatch = useDispatch();
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const selectLookup = useSelector(
     (state: RootState) => state.selectLookup.selectLookup
   );
+  const fmt = (date: Date) =>
+    `${String(date.getDate()).padStart(2, '0')}-${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')}-${date.getFullYear()}`;
 
   const lookupPropsBankDari = [
     {
@@ -182,6 +187,13 @@ const FormPindahBuku = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [openName]); // Tambahkan popOverDate sebagai dependensi
+
+  useEffect(() => {
+    if (mode === 'add') {
+      forms.setValue('tglbukti', fmt(todayDate));
+      forms.setValue('tgljatuhtempo', fmt(todayDate));
+    }
+  }, [popOver, mode]);
 
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>

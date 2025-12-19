@@ -1688,31 +1688,7 @@ const GridBiayaExtraHeader = () => {
       setColumnsOrder,
       setColumnsWidth
     );
-
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        tglDari: selectedDate,
-        tglSampai: selectedDate2,
-        jenisOrderan: String(selectedJenisOrderan)
-      }
-    }));
   }, []);
-
-  useEffect(() => {
-    setFilters((prevFilters: Filter) => ({
-      ...prevFilters,
-      filters: {
-        ...filterBiayaExtraHeader,
-        jenisOrderan: String(selectedJenisOrderan)
-      }
-    }));
-    setSelectedRow(0);
-    setCurrentPage(1);
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-  }, [selectedJenisOrderan, selectedJenisOrderanNama]);
 
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
@@ -1740,6 +1716,22 @@ const GridBiayaExtraHeader = () => {
         }));
       }
     } else if (onReload) {
+      if (filters.filters.jenisOrderan !== String(selectedJenisOrderan)) {
+        setFilters((prevFilters: Filter) => ({
+          ...prevFilters,
+          filters: {
+            ...filterBiayaExtraHeader,
+            tglDari: selectedDate,
+            tglSampai: selectedDate2,
+            jenisOrderan: String(selectedJenisOrderan)
+          }
+        }));
+        setSelectedRow(0);
+        setCurrentPage(1);
+        setCheckedRows(new Set());
+        setIsAllSelected(false);
+      }
+
       // Jika onReload diklik, update filter tanggal
       if (
         selectedDate !== filters.filters.tglDari ||
@@ -1784,6 +1776,7 @@ const GridBiayaExtraHeader = () => {
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
+    setIsFirstLoad(false);
     setPrevFilters(filters);
   }, [
     allBiayaExtraHeader,
@@ -1908,6 +1901,14 @@ const GridBiayaExtraHeader = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
+
+  useEffect(() => {
+    if (onReload) {
+      // Memastikan refetch dilakukan saat filters berubah
+      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
+      setPrevFilters(filters); // Simpan filters terbaru
+    }
+  }, [onReload, refetch]);
 
   useEffect(() => {
     if (isSubmitSuccessful) {

@@ -1692,7 +1692,7 @@ export default function LookUp({
                       ) : null}
                     </div>
                   </FormControl>
-                  {name && forms && !inputValue ? (
+                  {name && forms ? (
                     <FormMessage />
                   ) : showError.status === true && label === showError.label ? (
                     <p className="text-[0.8rem] text-destructive">

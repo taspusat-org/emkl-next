@@ -11,6 +11,11 @@ import {
   updateBookingOrderanMuatanFn
 } from '../apis/bookingOrderanHeader.api';
 import { IErrorResponse } from '../types/bookingOrderanHeader.type';
+import { useDispatch } from 'react-redux';
+import {
+  setProcessed,
+  setProcessing
+} from '../store/loadingSlice/loadingSlice';
 
 export const useGetAllBookingOrderanHeader = (
   filters: {
@@ -31,9 +36,30 @@ export const useGetAllBookingOrderanHeader = (
   } = {},
   signal?: AbortSignal
 ) => {
+  const dispatch = useDispatch();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   return useQuery(
     ['bookingorderan', filters],
-    async () => await getAllBookingOrderanMuatanFn(filters, signal),
+    async () => {
+      // Only trigger processing if the page is 1
+      if (filters.page === 1) {
+        dispatch(setProcessing());
+      }
+
+      try {
+        const data = await getAllBookingOrderanMuatanFn(filters, signal);
+        return data;
+      } catch (error) {
+        // Show error toast and dispatch processed
+        dispatch(setProcessed());
+        throw error;
+      } finally {
+        // Regardless of success or failure, we dispatch setProcessed after the query finishes
+        dispatch(setProcessed());
+      }
+    },
     {
       enabled: !signal?.aborted
     }
@@ -43,11 +69,16 @@ export const useGetAllBookingOrderanHeader = (
 export const useCreateBookingOrderanHeader = () => {
   const { setError } = useFormError(); // Mengambil setError dari context
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
   const { toast } = useToast();
 
   return useMutation(storeBookingOrderanMuatanFn, {
+    onMutate: () => {
+      dispatch(setProcessing());
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries('bookingorderan');
+      dispatch(setProcessed());
     },
     onError: (error: AxiosError) => {
       const errorResponse = error.response?.data as IErrorResponse;
@@ -72,6 +103,7 @@ export const useCreateBookingOrderanHeader = () => {
           });
         }
       }
+      dispatch(setProcessed());
     }
   });
 };
