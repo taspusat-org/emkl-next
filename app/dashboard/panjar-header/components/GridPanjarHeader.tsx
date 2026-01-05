@@ -552,7 +552,7 @@ const GridPanjarHeader = () => {
                     : 'font-normal'
                 }`}
               >
-                JENIS ORDER
+                JENIS ORDERAN
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'jenisorder_text' &&

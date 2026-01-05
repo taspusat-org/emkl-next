@@ -671,7 +671,7 @@ const GridHutangDetail = ({
                     : 'font-normal'
                 }`}
               >
-                TANGGAL INVOICE EMKL
+                TGL INVOICE EMKL
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tglinvoiceemkl' &&
@@ -744,7 +744,7 @@ const GridHutangDetail = ({
                     : 'font-normal'
                 }`}
               >
-                NOMOR FAKTUR PAJAK EMKL
+                NO FAKTUR PAJAK EMKL
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'nofakturpajakemkl' &&

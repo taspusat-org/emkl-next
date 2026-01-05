@@ -605,7 +605,7 @@ const GridHutangHeader = () => {
                   filters.sortBy === 'tglbukti' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                Tanggal Bukti
+                Tgl Bukti
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tglbukti' &&
@@ -678,7 +678,7 @@ const GridHutangHeader = () => {
                     : 'font-normal'
                 }`}
               >
-                Tanggal Jatuh Tempo
+                Tgl Jatuh Tempo
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tgljatuhtempo' &&
