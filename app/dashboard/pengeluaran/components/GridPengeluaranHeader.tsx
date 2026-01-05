@@ -1274,7 +1274,7 @@ const GridPengeluaranHeader = () => {
                     : 'font-normal'
                 }`}
               >
-                Tanggal Jatuh Tempo
+                Tgl Jatuh Tempo
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'tgljatuhtempo' &&

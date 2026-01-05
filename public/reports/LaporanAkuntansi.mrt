@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "bc3b723d8dd099adebdd8545b09fc579",
+  "ReportGuid": "e288173b2d9303b2ef673f2ff62e6a78",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "/reports/LaporanAkuntansi.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1756371749000+0700)/",
+  "ReportChanged": "/Date(1766393383000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -81,9 +81,167 @@
             "NameInSource": "text",
             "Alias": "text",
             "Type": "System.String"
+          },
+          "9": {
+            "Name": "judullaporan",
+            "NameInSource": "judullaporan",
+            "Alias": "judullaporan",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "usercetak",
+            "NameInSource": "usercetak",
+            "Alias": "usercetak",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "tglcetak",
+            "NameInSource": "tglcetak",
+            "Alias": "tglcetak",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "judul",
+            "NameInSource": "judul",
+            "Alias": "judul",
+            "Type": "System.String"
           }
         },
         "NameInSource": "Data.data"
+      },
+      "1": {
+        "Ident": "StiDataTableSource",
+        "Name": "detail",
+        "Alias": "detail",
+        "Columns": {
+          "0": {
+            "Name": "id",
+            "NameInSource": "id",
+            "Alias": "id",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "pengeluaran_id",
+            "NameInSource": "pengeluaran_id",
+            "Alias": "pengeluaran_id",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "coadebet",
+            "NameInSource": "coadebet",
+            "Alias": "coadebet",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "nobukti",
+            "NameInSource": "nobukti",
+            "Alias": "nobukti",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "keterangan",
+            "NameInSource": "keterangan",
+            "Alias": "keterangan",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "nominal",
+            "NameInSource": "nominal",
+            "Alias": "nominal",
+            "Type": "System.Decimal"
+          },
+          "6": {
+            "Name": "dpp",
+            "NameInSource": "dpp",
+            "Alias": "dpp",
+            "Type": "System.Decimal"
+          },
+          "7": {
+            "Name": "transaksibiaya_nobukti",
+            "NameInSource": "transaksibiaya_nobukti",
+            "Alias": "transaksibiaya_nobukti",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "transaksilain_nobukti",
+            "NameInSource": "transaksilain_nobukti",
+            "Alias": "transaksilain_nobukti",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "noinvoiceemkl",
+            "NameInSource": "noinvoiceemkl",
+            "Alias": "noinvoiceemkl",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "tglinvoiceemkl",
+            "NameInSource": "tglinvoiceemkl",
+            "Alias": "tglinvoiceemkl",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "nofakturpajakemkl",
+            "NameInSource": "nofakturpajakemkl",
+            "Alias": "nofakturpajakemkl",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "perioderefund",
+            "NameInSource": "perioderefund",
+            "Alias": "perioderefund",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "pengeluaranemklheader_nobukti",
+            "NameInSource": "pengeluaranemklheader_nobukti",
+            "Alias": "pengeluaranemklheader_nobukti",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "penerimaanemklheader_nobukti",
+            "NameInSource": "penerimaanemklheader_nobukti",
+            "Alias": "penerimaanemklheader_nobukti",
+            "Type": "System.String"
+          },
+          "15": {
+            "Name": "coadebet_text",
+            "NameInSource": "coadebet_text",
+            "Alias": "coadebet_text",
+            "Type": "System.String"
+          },
+          "16": {
+            "Name": "info",
+            "NameInSource": "info",
+            "Alias": "info",
+            "Type": "System.String"
+          },
+          "17": {
+            "Name": "modifiedby",
+            "NameInSource": "modifiedby",
+            "Alias": "modifiedby",
+            "Type": "System.String"
+          },
+          "18": {
+            "Name": "created_at",
+            "NameInSource": "created_at",
+            "Alias": "created_at",
+            "Type": "System.String"
+          },
+          "19": {
+            "Name": "updated_at",
+            "NameInSource": "updated_at",
+            "Alias": "updated_at",
+            "Type": "System.String"
+          },
+          "20": {
+            "Name": "link",
+            "NameInSource": "link",
+            "Alias": "link",
+            "Type": "System.String"
+          }
+        },
+        "NameInSource": "Data.detail"
       }
     },
     "Relations": {
@@ -126,7 +284,6 @@
         "0": {
           "Ident": "StiPageFooterBand",
           "Name": "PageFooterBand1",
-          "PrintOn": "ExceptLastPage",
           "CanGrow": true,
           "ClientRectangle": "0,266.4,207.9,5",
           "ComponentPlacement": "pf.Page1",
@@ -162,7 +319,7 @@
               "Ident": "StiHorizontalLinePrimitive",
               "Name": "HorizontalLinePrimitive5",
               "Guid": "17beda2d1f61a7fc5234793f87796ee2",
-              "ClientRectangle": "2,0,206,0.254",
+              "ClientRectangle": "0,0,205,0.254",
               "ComponentPlacement": "pf.PageFooterBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -229,7 +386,7 @@
               "Ident": "StiText",
               "Name": "Text18",
               "Guid": "0c509b134cb3dd5499a90ee1185b1aa7",
-              "ClientRectangle": "86.9,14,121.2,3.9",
+              "ClientRectangle": "84.9,14,121.2,3.9",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -249,7 +406,7 @@
               "Ident": "StiText",
               "Name": "Text51",
               "Guid": "9bb95b7a50929a76dcc88c2c382d9ca4",
-              "ClientRectangle": "101.7,18.9,106.7,4.1",
+              "ClientRectangle": "99.7,18.9,106.7,4.1",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -378,7 +535,7 @@
               "Ident": "StiHorizontalLinePrimitive",
               "Name": "HorizontalLinePrimitive1",
               "Guid": "6d4900e0aa7d85aad2f9614254053e58",
-              "ClientRectangle": "0,29,208,0.254",
+              "ClientRectangle": "0,29,205,0.254",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -390,7 +547,7 @@
               "Ident": "StiHorizontalLinePrimitive",
               "Name": "HorizontalLinePrimitive3",
               "Guid": "5f8e6c0ae6a07d707eefd63ad7c9c01a",
-              "ClientRectangle": "0,37,208,0.254",
+              "ClientRectangle": "0,37,205,0.254",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -471,7 +628,7 @@
             "18": {
               "Ident": "StiStartPointPrimitive",
               "Name": "StartPointPrimitive9",
-              "ClientRectangle": "208,29,0,0",
+              "ClientRectangle": "205,29,0,0",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -481,7 +638,7 @@
             "19": {
               "Ident": "StiEndPointPrimitive",
               "Name": "EndPointPrimitive9",
-              "ClientRectangle": "208,37,0,0",
+              "ClientRectangle": "205,37,0,0",
               "ComponentPlacement": "h.ap.HeaderBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -650,7 +807,7 @@
               "Ident": "StiHorizontalLinePrimitive",
               "Name": "HorizontalLinePrimitive2",
               "Guid": "93c2ca5950544fb63e3722a304fcf9fd",
-              "ClientRectangle": "0,9.5,208,0.254",
+              "ClientRectangle": "0,9.5,205,0.254",
               "ComponentPlacement": "d.DataBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -711,7 +868,7 @@
             "10": {
               "Ident": "StiStartPointPrimitive",
               "Name": "StartPointPrimitive11",
-              "ClientRectangle": "208,-0.5,0,0",
+              "ClientRectangle": "205,-0.5,0,0",
               "ComponentPlacement": "d.DataBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -721,7 +878,7 @@
             "11": {
               "Ident": "StiEndPointPrimitive",
               "Name": "EndPointPrimitive11",
-              "ClientRectangle": "208,9.5,0,0",
+              "ClientRectangle": "205,9.5,0,0",
               "ComponentPlacement": "d.DataBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
@@ -807,7 +964,7 @@
           "Ident": "StiVerticalLinePrimitive",
           "Name": "VerticalLinePrimitive11",
           "Guid": "9b58e85936c50dfa3f01e86020e5fb8a",
-          "ClientRectangle": "208,48.5,0.254,10",
+          "ClientRectangle": "205,48.5,0.254,10",
           "ComponentPlacement": "p.Page1",
           "Interaction": {
             "Ident": "StiInteraction"
@@ -879,7 +1036,7 @@
           "Ident": "StiVerticalLinePrimitive",
           "Name": "VerticalLinePrimitive9",
           "Guid": "9085e9e423a50433873be4c3f4e40480",
-          "ClientRectangle": "208,33,0.254,8",
+          "ClientRectangle": "205,33,0.254,8",
           "ComponentPlacement": "p.Page1",
           "Interaction": {
             "Ident": "StiInteraction"
