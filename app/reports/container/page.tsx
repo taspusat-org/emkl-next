@@ -67,12 +67,14 @@ const ReportMenuPage: React.FC = () => {
       console.error('Error exporting container data:', error);
     }
   };
+
   const onPrint = () => {
     setIsPrintModalOpen(true);
   };
   const layoutPluginInstance = HeaderPdfViewer(
     handleExport, // Pass callback export dinamis
     onPrint,
+    pdfUrl,
     printPluginInstance, // Pass instance print
     zoomPluginInstance // Pass instance zoom
   );

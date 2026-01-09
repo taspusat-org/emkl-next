@@ -31,7 +31,8 @@ import {
   FaPlus,
   FaPrint,
   FaBars,
-  FaTimes
+  FaTimes,
+  FaShare
 } from 'react-icons/fa';
 
 import { MdFullscreen } from 'react-icons/md';
@@ -41,9 +42,47 @@ import { MdFullscreen } from 'react-icons/md';
 export const HeaderPdfViewer = (
   onExport: () => void,
   onPrint: () => void,
+  pdfUrl: string | null,
   printInstance: PrintPlugin,
   zoomInstance: ZoomPlugin
 ) => {
+  const handleSharePdf = async () => {
+    if (!pdfUrl) {
+      alert('PDF belum tersedia');
+      return;
+    }
+
+    try {
+      // Fetch PDF sebagai blob untuk di-share
+      const response = await fetch(pdfUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `laporan_${Date.now()}.pdf`, {
+        type: 'application/pdf'
+      });
+
+      // Cek apakah browser support Web Share API dengan file
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Share PDF Laporan',
+            text: 'Laporan Container'
+          });
+          console.log('PDF berhasil dishare');
+        } catch (err) {
+          console.error('Share error:', err);
+        }
+      }
+      // Fallback: copy URL ke clipboard
+      else {
+        await navigator.clipboard.writeText(pdfUrl);
+        alert('Link PDF berhasil disalin ke clipboard:\n' + pdfUrl);
+      }
+    } catch (error) {
+      console.error('Error sharing PDF:', error);
+      alert('Gagal membagikan PDF');
+    }
+  };
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F12') {
@@ -426,7 +465,7 @@ export const HeaderPdfViewer = (
             <div className="py-1">
               <button
                 onClick={() => {
-                  handleShare();
+                  handleSharePdf();
                 }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100"
               >
@@ -471,6 +510,16 @@ export const HeaderPdfViewer = (
               >
                 <FaFileExport className="text-orange-500" />
                 <span>Export</span>
+              </button>
+              <button
+                onClick={() => {
+                  handleSharePdf();
+                  setIsMenuOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100"
+              >
+                <FaShare className="text-purple-500" />
+                <span>Share</span>
               </button>
             </div>
           </div>
@@ -610,6 +659,13 @@ export const HeaderPdfViewer = (
                   >
                     <FaFileExport className="text-xs lg:text-sm" />
                     <span className="hidden text-sm lg:inline">Export</span>
+                  </button>
+                  <button
+                    onClick={handleSharePdf}
+                    className="flex flex-row items-center gap-1 rounded bg-purple-500 px-2 py-0.5 text-white transition-colors hover:bg-purple-700 lg:gap-2 lg:px-3 lg:py-1"
+                  >
+                    <FaShare className="text-xs lg:text-sm" />
+                    <span className="hidden text-sm lg:inline">Share</span>
                   </button>
                 </div>
 
