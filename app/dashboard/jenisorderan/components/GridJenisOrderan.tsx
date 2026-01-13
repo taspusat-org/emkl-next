@@ -1272,6 +1272,7 @@ const GridJenisOrderan = () => {
       setPopOver(true);
     }
   };
+
   const handleReport = async () => {
     try {
       dispatch(setProcessing());
@@ -1353,6 +1354,70 @@ const GridJenisOrderan = () => {
       dispatch(setProcessed());
     }
   };
+
+  // const handleReport = async () => {
+  //   const rowId = Array.from(checkedRows)[0];
+  //   const now = new Date();
+  //   const pad = (n: any) => n.toString().padStart(2, '0');
+  //   const tglcetak = `${pad(now.getDate())}-${pad(
+  //     now.getMonth() + 1
+  //   )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+  //     now.getMinutes()
+  //   )}:${pad(now.getSeconds())}`;
+  //   const { page, limit, ...filtersWithoutLimit } = filters;
+  //   dispatch(setProcessing()); // Show loading overlay when the request starts
+
+  //   try {
+  //     // const response = await getPengeluaranHeaderByIdFn(
+  //     //   rowId,
+  //     //   filtersWithoutLimit
+  //     // );
+
+  //     const response = await getJenisOrderanFn(filtersWithoutLimit);
+  //     const reportRows = response.data.map((row) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Container',
+  //       usercetak: user.username,
+  //       tglcetak: tglcetak,
+  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
+  //     }));
+
+  //     // const responseDetail = await getPengeluaranDetailFn(rowId);
+  //     // const totalNominal = responseDetail.data.reduce(
+  //     //   (sum: number, i: any) => sum + Number(i.nominal || 0),
+  //     //   0
+  //     // );
+  //     if (response.data === null || response.data.length === 0) {
+  //       alert({
+  //         title: 'DATA TIDAK TERSEDIA!',
+  //         variant: 'danger',
+  //         submitText: 'OK'
+  //       });
+  //     } else {
+  //       const reportRows = response.data.map((row: any) => ({
+  //         ...row,
+  //         judullaporan: 'Laporan Pengeluaran',
+  //         usercetak: user.username,
+  //         tglcetak,
+  //         // terbilang: numberToTerbilang(totalNominal),
+  //         judul: `Bukti Pengeluaran KAS EMKL`
+  //       }));
+
+  //       dispatch(setReportData(reportRows));
+  //       // dispatch(setDetailDataReport(responseDetail.data));
+  //       window.open('/reports/designer', '_blank');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error generating report:', error);
+  //     alert({
+  //       title: 'Terjadi kesalahan saat memuat data!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //   } finally {
+  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
+  //   }
+  // };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');

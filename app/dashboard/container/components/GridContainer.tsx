@@ -1499,7 +1499,7 @@ const GridContainer = () => {
   //         // terbilang: numberToTerbilang(totalNominal),
   //         judul: `Bukti Pengeluaran KAS EMKL`
   //       }));
-  //
+
   //       dispatch(setReportData(reportRows));
   //       // dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');
