@@ -229,7 +229,11 @@ const GridPanjarHeader = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterPanjarHeader,
+      filters: {
+        ...filterPanjarHeader,
+        tglDari: prev.filters.tglDari,
+        tglSampai: prev.filters.tglSampai
+      },
       search: searchValue,
       page: 1
     }));
@@ -254,7 +258,9 @@ const GridPanjarHeader = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...prev.filters
+        ...prev.filters,
+        tglDari: prev.filters.tglDari,
+        tglSampai: prev.filters.tglSampai
       },
       search: '',
       page: 1

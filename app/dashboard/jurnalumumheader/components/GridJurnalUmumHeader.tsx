@@ -263,7 +263,11 @@ const GridJurnalUmumHeader = () => {
       setCurrentPage(1);
       setFilters((prev) => ({
         ...prev,
-        filters: filterJurnalUmum,
+        filters: {
+          ...filterJurnalUmum,
+          tglDari: prev.filters.tglDari,
+          tglSampai: prev.filters.tglSampai
+        },
         search: searchValue,
         page: 1,
         isreload: false // Tambahkan ini
@@ -377,7 +381,9 @@ const GridJurnalUmumHeader = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...prev.filters
+        ...filterJurnalUmum,
+        tglDari: prev.filters.tglDari,
+        tglSampai: prev.filters.tglSampai
       },
       search: '',
       page: 1,
@@ -1954,7 +1960,7 @@ const GridJurnalUmumHeader = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className="dark:rdg-dark rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onSelectedCellChange={(args) => {
