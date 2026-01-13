@@ -1675,43 +1675,7 @@ const GridManagerMarketingHeader = () => {
       dispatch(setProcessed());
     }
   };
-  // const handleReport = async () => {
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   dispatch(setProcessing()); // Show loading overlay when the request starts
 
-  //   try {
-  //     const response =
-  //       await getPengembalianKasGantungReportFn(filtersWithoutLimit);
-
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'DATA TIDAK TERSEDIA!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //     } else {
-  //       const reportRows = response.data.map((row) => ({
-  //         ...row,
-  //         judullaporan: 'Laporan Pengembalian Kas Gantung',
-  //         usercetak: user.username,
-  //         tglcetak: new Date().toLocaleDateString(),
-  //         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //       }));
-  //
-  //       dispatch(setReportData(reportRows));
-  //       window.open('/reports/pengembaliankasgantung2', '_blank');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //     alert({
-  //       title: 'Terjadi kesalahan saat memuat data!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   } finally {
-  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
-  //   }
-  // };
   const handleReportBySelect = async () => {
     if (checkedRows.size === 0) {
       alert({
