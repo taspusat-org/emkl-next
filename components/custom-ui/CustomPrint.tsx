@@ -265,21 +265,21 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           console.log('📄 PageWidth:', pageWidth, 'PageHeight:', pageHeight);
 
           if (pageWidth === 296.9 && pageHeight === 210.1) {
-            selectedPaper = 'CUSTOM_LETTER';
+            selectedPaper = 'CUSTOM_A4';
             selectedLayout = 'landscape';
             console.log(
-              '✅ Detected A4 Landscape → Set to CUSTOM_LETTER Landscape'
+              '✅ Detected CUSTOM_A4 Landscape → Set to CUSTOM_A4 Landscape'
             );
           }
           // Cek ukuran kertas lainnya
           else if (pageHeight === 210.1 || pageHeight === 296.9) {
             selectedPaper = 'CUSTOM_A4';
           } else if (pageHeight === 279.4) {
-            selectedPaper = 'CUSTOM_LETTER';
+            selectedPaper = 'CUSTOM_A4';
           } else if (pageHeight === 139.7) {
             selectedPaper = 'CUSTOM_FAKTUR';
           } else if (pageHeight >= 350 && pageHeight <= 360) {
-            selectedPaper = 'CUSTOM_LEGAL';
+            selectedPaper = 'CUSTOM_A4';
           } else {
             selectedLayout = pageWidth > pageHeight ? 'landscape' : 'portrait';
           }

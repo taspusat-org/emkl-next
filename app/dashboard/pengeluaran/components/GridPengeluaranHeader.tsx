@@ -214,7 +214,9 @@ const GridPengeluaranHeader = () => {
     page: 1,
     limit: 30,
     filters: {
-      ...filterPengeluaran
+      ...filterPengeluaran,
+      tglDari: selectedDate,
+      tglSampai: selectedDate2
     },
     search: '',
     sortBy: 'nobukti',
@@ -355,7 +357,11 @@ const GridPengeluaranHeader = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterPengeluaran,
+      filters: {
+        ...filterPengeluaran,
+        tglDari: prev.filters.tglDari,
+        tglSampai: prev.filters.tglSampai
+      },
       search: searchValue,
       page: 1
     }));
@@ -433,15 +439,20 @@ const GridPengeluaranHeader = () => {
   };
 
   const handleClearInput = () => {
+    cancelPreviousRequest(abortControllerRef);
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...prev.filters
+        ...filterPengeluaran,
+        tglDari: prev.filters.tglDari,
+        tglSampai: prev.filters.tglSampai
       },
       search: '',
       page: 1
     }));
     setInputValue('');
+    setCurrentPage(1);
+    setRows([]);
   };
 
   const columns = useMemo((): Column<PengeluaranHeader>[] => {
@@ -2254,6 +2265,8 @@ const GridPengeluaranHeader = () => {
     selectedDate,
     selectedDate2,
     selectedBank,
+    filters.filters.tglDari,
+    filters.filters.tglSampai,
     filters,
     onReload,
     isFirstLoad

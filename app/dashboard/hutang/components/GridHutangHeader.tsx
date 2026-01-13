@@ -346,7 +346,11 @@ const GridHutangHeader = () => {
     setCurrentPage(1);
     setFilters((prev) => ({
       ...prev,
-      filters: filterHutang,
+      filters: {
+        ...filterHutang,
+        tglDari: prev.filters.tglDari,
+        tglSampai: prev.filters.tglSampai
+      },
       search: searchValue,
       page: 1
     }));
