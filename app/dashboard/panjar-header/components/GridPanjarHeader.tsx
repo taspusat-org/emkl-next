@@ -179,7 +179,6 @@ const GridPanjarHeader = () => {
     reset,
     formState: { isSubmitSuccessful }
   } = forms;
-  console.log('forms.getValues()', forms.getValues());
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -1365,7 +1364,7 @@ const GridPanjarHeader = () => {
       }
 
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/PanjarHeader-allItems`);
+        const response = await api2.get(`/redis/get/panjarheader-allItems`);
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
           setRows(response.data);
@@ -1684,22 +1683,6 @@ const GridPanjarHeader = () => {
   }, []);
 
   useEffect(() => {
-    if (onReload) {
-      setFilters((prevFilters: Filter) => ({
-        ...prevFilters,
-        filters: {
-          ...filterPanjarHeader,
-          jenisOrderan: String(selectedJenisOrderan)
-        }
-      }));
-      setSelectedRow(0);
-      setCurrentPage(1);
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
-    }
-  }, [selectedJenisOrderan, selectedJenisOrderanNama]);
-
-  useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
@@ -1725,6 +1708,21 @@ const GridPanjarHeader = () => {
         }));
       }
     } else if (onReload) {
+      if (filters.filters.jenisOrderan !== String(selectedJenisOrderan)) {
+        setFilters((prevFilters: Filter) => ({
+          ...prevFilters,
+          filters: {
+            ...filterPanjarHeader,
+            tglDari: selectedDate,
+            tglSampai: selectedDate2,
+            jenisOrderan: String(selectedJenisOrderan)
+          }
+        }));
+        setSelectedRow(0);
+        setCurrentPage(1);
+        setCheckedRows(new Set());
+        setIsAllSelected(false);
+      }
       // Jika onReload diklik, update filter tanggal
       if (
         selectedDate !== filters.filters.tglDari ||

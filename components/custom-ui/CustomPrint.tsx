@@ -1,13 +1,7 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  getPrintersFn,
-  printFileFn,
-  PrinterInfo,
-  PrinterDefault
-} from '@/lib/apis/print.api';
-import { IoMdClose } from 'react-icons/io';
+import { getPrintersFn, printFileFn, PrinterInfo } from '@/lib/apis/print.api';
 import { FaPrint, FaTimes } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +13,7 @@ import {
   setProcessed
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { useDispatch } from 'react-redux';
+import { extractPaperSizeFromPDF } from '@/lib/utils/paperSizeUtils';
 
 interface CustomPrintModalProps {
   isOpen: boolean;
@@ -91,7 +86,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
-    // Hanya ambil printer jika modal benar-benar dibuka & pengecekan belum selesai
     if (isCheckingPrinters || isPrinterCheckComplete) return;
 
     const isMobile = isMobileDevice();
@@ -132,7 +126,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           });
           onClose();
           setIsPrinterCheckComplete(false);
-          // Reset printers agar modal tidak dirender
           setPrinters([]);
         } else {
           setIsPrinterCheckComplete(true);
@@ -236,70 +229,30 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   }, [isOpen, isLoading, isPrinterCheckComplete]);
 
   useEffect(() => {
-    const readPaperSizeFromDocument = async () => {
+    const detectPaperSizeFromDocument = async () => {
       try {
-        const response = await fetch(docUrl);
-        const blob = await response.blob();
-        const arrayBuffer = await blob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
+        console.log('🔍 Starting paper size detection for:', docUrl);
 
-        // Decode sebagai latin1 untuk PDF
-        const text = new TextDecoder('latin1').decode(uint8Array);
+        const result = await extractPaperSizeFromPDF(docUrl);
 
-        const mediaBoxMatch = text.match(
-          /\/MediaBox\s*\[\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\]/
-        );
-
-        if (mediaBoxMatch) {
-          const width =
-            parseFloat(mediaBoxMatch[3]) - parseFloat(mediaBoxMatch[1]);
-          const height =
-            parseFloat(mediaBoxMatch[4]) - parseFloat(mediaBoxMatch[2]);
-
-          let pageWidth = Math.round(width * 0.352778 * 10) / 10;
-          let pageHeight = Math.round(height * 0.352778 * 10) / 10;
-
-          let selectedPaper = 'CUSTOM_A4';
-          let selectedLayout: 'portrait' | 'landscape' = 'portrait';
-
-          console.log('📄 PageWidth:', pageWidth, 'PageHeight:', pageHeight);
-
-          if (pageWidth === 296.9 && pageHeight === 210.1) {
-            selectedPaper = 'CUSTOM_A4';
-            selectedLayout = 'landscape';
-            console.log(
-              '✅ Detected CUSTOM_A4 Landscape → Set to CUSTOM_A4 Landscape'
-            );
-          }
-          // Cek ukuran kertas lainnya
-          else if (pageHeight === 210.1 || pageHeight === 296.9) {
-            selectedPaper = 'CUSTOM_A4';
-          } else if (pageHeight === 279.4) {
-            selectedPaper = 'CUSTOM_A4';
-          } else if (pageHeight === 139.7) {
-            selectedPaper = 'CUSTOM_FAKTUR';
-          } else if (pageHeight >= 350 && pageHeight <= 360) {
-            selectedPaper = 'CUSTOM_A4';
-          } else {
-            selectedLayout = pageWidth > pageHeight ? 'landscape' : 'portrait';
-          }
-
-          console.log('🎯 Final:', selectedPaper, selectedLayout);
-          setPaperSize(selectedPaper);
-          setLayout(selectedLayout);
+        if (result) {
+          console.log('Paper size detected:', result);
+          setPaperSize(result.paperSize);
+          setLayout(result.layout);
         } else {
+          console.log('Could not detect paper size, using defaults');
           setPaperSize('CUSTOM_A4');
           setLayout('portrait');
         }
       } catch (err) {
-        console.error('❌ Gagal membaca ukuran kertas dari dokumen:', err);
+        console.error('Failed to detect paper size:', err);
         setPaperSize('CUSTOM_A4');
         setLayout('portrait');
       }
     };
 
     if (isOpen && docUrl && isPrinterCheckComplete) {
-      readPaperSizeFromDocument();
+      detectPaperSizeFromDocument();
     }
   }, [isOpen, docUrl, isPrinterCheckComplete]);
 
@@ -415,7 +368,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) {
-      // Reset semua state printer-related ketika modal ditutup
       setPrinters([]);
       setIsPrinterCheckComplete(false);
       setDestination('');
@@ -423,7 +375,8 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   }, [isOpen]);
 
   if (!isOpen) return null;
-  if (!isPrinterCheckComplete) return null; // atau true jika ingin spinner, tapi UI tidak diubah
+  if (!isPrinterCheckComplete) return null;
+
   const modalContent = (
     <>
       <div
@@ -499,7 +452,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
                   -- Pilih Printer --
                 </option>
                 {loadingPrinters ? (
-                  <option disabled>Loading printersâ€¦</option>
+                  <option disabled>Loading printers…</option>
                 ) : printers.filter((p) => p.status === 'Online').length ===
                   0 ? (
                   <option disabled>Tidak ada printer online</option>

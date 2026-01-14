@@ -12,6 +12,7 @@ import {
 import {
   deletePanjarHeaderFn,
   getAllPanjarHeaderFn,
+  getPanjarBongkaranDetailFn,
   getPanjarMuatanDetailFn,
   storePanjarHeaderFn,
   updatePanjarHeaderFn
@@ -98,6 +99,33 @@ export const useGetPanjarMuatanDetail = (
   return useQuery(
     ['panjarheader', id, filters],
     async () => await getPanjarMuatanDetailFn(id!, filters),
+    {
+      enabled: !!id || !signal?.aborted // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
+    }
+  );
+};
+
+export const useGetPanjarBongkaranDetail = (
+  id?: number,
+  filters: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: string;
+    filters?: {
+      nobukti?: string;
+      orderanmuatan_nobukti?: string;
+      estimasi?: string;
+      nominal?: string;
+      keterangan?: string;
+    };
+  } = {},
+  signal?: AbortSignal
+) => {
+  return useQuery(
+    ['panjarheader', id, filters],
+    async () => await getPanjarBongkaranDetailFn(id!, filters),
     {
       enabled: !!id || !signal?.aborted // Hanya aktifkan query jika tab aktif adalah "pengalamankerja"
     }
