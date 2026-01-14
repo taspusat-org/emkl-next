@@ -62,6 +62,18 @@ export const getPanjarMuatanDetailFn = async (
   return response.data;
 };
 
+export const getPanjarBongkaranDetailFn = async (
+  id: number,
+  filters: GetParams = {}
+): Promise<IAllPanjarBongkaranDetail> => {
+  const queryParams = buildQueryParams(filters);
+  const response = await api2.get(`/panjarbongkarandetail/${id}`, {
+    params: queryParams
+  });
+
+  return response.data;
+};
+
 export const storePanjarHeaderFn = async (fields: panjarHeaderInput) => {
   const response = await api2.post(`/panjarheader`, fields);
   return response.data;
