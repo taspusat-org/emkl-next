@@ -65,7 +65,7 @@ const GridPenerimaanDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterPenerimaanDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',
@@ -177,7 +177,7 @@ const GridPenerimaanDetail = ({
       ...prev,
       filters: {
         ...filterPenerimaanDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -200,7 +200,7 @@ const GridPenerimaanDetail = ({
       ...prev,
       filters: {
         ...prev.filters,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -248,7 +248,7 @@ const GridPenerimaanDetail = ({
                   search: '',
                   filters: {
                     ...filterPenerimaanDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -1244,12 +1244,12 @@ const GridPenerimaanDetail = ({
     loadGridConfig(user.id, 'GridPenerimaanDetail');
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
         filters: {
           ...filterPenerimaanDetail, // <--- semua filter dikosongkan dulu
-          nobukti: nobukti ?? headerData.nobukti // <--- kecuali nobukti tetap diisi
+          nobukti: nobukti ?? headerData?.nobukti // <--- kecuali nobukti tetap diisi
         }
       }));
     } else {
@@ -1261,7 +1261,7 @@ const GridPenerimaanDetail = ({
         }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -1310,10 +1310,10 @@ const GridPenerimaanDetail = ({
     });
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
       }));
     } else {
       setFilters((prev) => ({
@@ -1321,7 +1321,7 @@ const GridPenerimaanDetail = ({
         filters: { ...prev.filters, nobukti: '' }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
     if (filters !== prevFilters) {

@@ -52,7 +52,7 @@ const GridPengeluaranEmklDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterPengeluaranEmklDetail,
-      nobukti: nobukti ?? headerData.nobukti ?? ''
+      nobukti: nobukti ?? headerData?.nobukti ?? ''
     },
     search: '',
     sortBy: 'nobukti',
@@ -108,7 +108,7 @@ const GridPengeluaranEmklDetail = ({
       filters: {
         ...prev.filters,
         [colKey]: value,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -171,7 +171,7 @@ const GridPengeluaranEmklDetail = ({
       ...prev,
       filters: {
         ...filterPengeluaranEmklDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -193,7 +193,7 @@ const GridPengeluaranEmklDetail = ({
       ...prev,
       filters: {
         ...prev.filters,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -240,7 +240,7 @@ const GridPengeluaranEmklDetail = ({
                   search: '',
                   filters: {
                     ...filterPengeluaranEmklDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -1113,9 +1113,9 @@ const GridPengeluaranEmklDetail = ({
   useEffect(() => {
     setFilters((prev) => ({
       ...prev,
-      filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+      filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
     }));
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {

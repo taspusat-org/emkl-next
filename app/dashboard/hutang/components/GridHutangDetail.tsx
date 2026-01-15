@@ -90,7 +90,7 @@ const GridHutangDetail = ({
       ...prev,
       filters: {
         ...filterHutangDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -213,7 +213,7 @@ const GridHutangDetail = ({
                   search: '',
                   filters: {
                     ...filterHutangDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -1217,7 +1217,7 @@ const GridHutangDetail = ({
       ...prev,
       filters: {
         ...prev.filters,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -1258,10 +1258,10 @@ const GridHutangDetail = ({
     loadGridConfig(user.id, 'GridHutangDetail');
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
       }));
     } else {
       setFilters((prev) => ({

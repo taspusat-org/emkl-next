@@ -29,13 +29,13 @@ export function GridTabs() {
       <TabsContent value="jurnalumumdetail" className="h-full">
         <GridJurnalUmumDetail
           activeTab={activeTab}
-          nobukti={headerData.nobukti}
+          nobukti={headerData?.nobukti}
         />
       </TabsContent>
       <TabsContent value="penerimaandetail" className="h-full">
         <GridPenerimaanDetail
           activeTab={activeTab}
-          nobukti={headerData.nobukti}
+          nobukti={headerData?.nobukti}
         />
       </TabsContent>
     </Tabs>
