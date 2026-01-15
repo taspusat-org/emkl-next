@@ -38,7 +38,7 @@ export function GridTabs() {
       <TabsContent value="pengeluaranemkldetail" className="h-full">
         <GridPengeluaranEmklDetail
           activeTab={activeTab}
-          nobukti={headerData.nobukti}
+          nobukti={headerData?.nobukti}
         />
       </TabsContent>
       <TabsContent value="jurnalumumdetail" className="h-full">

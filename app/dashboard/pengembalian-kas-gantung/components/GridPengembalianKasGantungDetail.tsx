@@ -64,7 +64,7 @@ const GridPengembalianKasGantungDetail = ({
   const [filters, setFilters] = useState<Filter>({
     filters: {
       ...filterPengembalianKasGantungDetail,
-      nobukti: headerData.nobukti
+      nobukti: headerData?.nobukti
     },
     search: '',
     sortBy: 'nobukti',
@@ -172,7 +172,7 @@ const GridPengembalianKasGantungDetail = ({
       ...prev,
       filters: {
         ...filterPengembalianKasGantungDetail,
-        nobukti: headerData.nobukti
+        nobukti: headerData?.nobukti
       },
       search: searchValue
     }));
@@ -242,7 +242,7 @@ const GridPengembalianKasGantungDetail = ({
                   search: '',
                   filters: {
                     ...filterPengembalianKasGantungDetail,
-                    nobukti: headerData.nobukti
+                    nobukti: headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -944,9 +944,9 @@ const GridPengembalianKasGantungDetail = ({
   useEffect(() => {
     setFilters((prev) => ({
       ...prev,
-      filters: { ...prev.filters, nobukti: headerData.nobukti }
+      filters: { ...prev.filters, nobukti: headerData?.nobukti }
     }));
-  }, [headerData.nobukti]);
+  }, [headerData?.nobukti]);
   useEffect(() => {
     if (detail && detail.data.length > 0) {
       const formattedRows = detail.data.map((item: any) => ({
@@ -965,10 +965,10 @@ const GridPengembalianKasGantungDetail = ({
       }));
 
       setRows(formattedRows);
-    } else if (!headerData.nobukti || detail?.data.length === 0) {
+    } else if (!headerData?.nobukti || detail?.data.length === 0) {
       setRows([]);
     }
-  }, [detail, headerData.nobukti]);
+  }, [detail, headerData?.nobukti]);
 
   async function handleKeyDown(
     args: CellKeyDownArgs<IPengembalianKasGantungDetail>,
@@ -993,12 +993,12 @@ const GridPengembalianKasGantungDetail = ({
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
   useEffect(() => {
-    if (headerData.nobukti) {
+    if (headerData?.nobukti) {
       setFilters((prev) => ({
         ...prev,
         filters: {
           ...filterPengembalianKasGantungDetail, // <--- semua filter dikosongkan dulu
-          nobukti: headerData.nobukti // <--- kecuali nobukti tetap diisi
+          nobukti: headerData?.nobukti // <--- kecuali nobukti tetap diisi
         }
       }));
     } else {
@@ -1010,7 +1010,7 @@ const GridPengembalianKasGantungDetail = ({
         }
       }));
     }
-  }, [headerData.nobukti]);
+  }, [headerData?.nobukti]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();

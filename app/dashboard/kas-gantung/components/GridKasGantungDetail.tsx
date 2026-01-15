@@ -148,7 +148,7 @@ const GridKasGantungDetail = ({
       ...prev,
       filters: {
         ...filterkasgantungDetail,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: searchValue
     }));
@@ -215,7 +215,7 @@ const GridKasGantungDetail = ({
                   search: '',
                   filters: {
                     ...filterkasgantungDetail,
-                    nobukti: nobukti ?? headerData.nobukti
+                    nobukti: nobukti ?? headerData?.nobukti
                   }
                 }),
                   setInputValue('');
@@ -840,7 +840,7 @@ const GridKasGantungDetail = ({
       ...prev,
       filters: {
         ...prev.filters,
-        nobukti: nobukti ?? headerData.nobukti
+        nobukti: nobukti ?? headerData?.nobukti
       },
       search: ''
     }));
@@ -880,10 +880,10 @@ const GridKasGantungDetail = ({
     loadGridConfig(user.id, 'GridKasGantungDetail');
   }, []);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, nobukti: nobukti ?? headerData.nobukti }
+        filters: { ...prev.filters, nobukti: nobukti ?? headerData?.nobukti }
       }));
     } else {
       setFilters((prev) => ({
@@ -891,7 +891,7 @@ const GridKasGantungDetail = ({
         filters: { ...prev.filters, nobukti: '' }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
@@ -943,12 +943,12 @@ const GridKasGantungDetail = ({
     }
   }, [filters, refetch]);
   useEffect(() => {
-    if (headerData.nobukti || nobukti) {
+    if (headerData?.nobukti || nobukti) {
       setFilters((prev) => ({
         ...prev,
         filters: {
           ...filterkasgantungDetail, // <--- semua filter dikosongkan dulu
-          nobukti: nobukti ?? headerData.nobukti // <--- kecuali nobukti tetap diisi
+          nobukti: nobukti ?? headerData?.nobukti // <--- kecuali nobukti tetap diisi
         }
       }));
     } else {
@@ -960,7 +960,7 @@ const GridKasGantungDetail = ({
         }
       }));
     }
-  }, [headerData.nobukti, nobukti]);
+  }, [headerData?.nobukti, nobukti]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
