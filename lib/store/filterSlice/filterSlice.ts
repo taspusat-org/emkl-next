@@ -15,6 +15,8 @@ interface FilterState {
   selectedJenisOrderanNama: string;
   selectedJenisStatusJob: number | null;
   selectedJenisStatusJobNama: string;
+  selectedBiayaEmkl: number | null;
+  selectedBiayaEmklNama: string;
   onReload: boolean; // Add the new onReload property here
 }
 
@@ -33,6 +35,8 @@ const initialState: FilterState = {
   selectedJenisOrderanNama: '',
   selectedJenisStatusJob: null,
   selectedJenisStatusJobNama: '',
+  selectedBiayaEmkl: null,
+  selectedBiayaEmklNama: '',
   onReload: false // Initialize the onReload with default value false
 };
 
@@ -82,6 +86,12 @@ const filterSlice = createSlice({
     setSelectedJenisStatusJobNama(state, action: PayloadAction<string>) {
       state.selectedJenisStatusJobNama = action.payload;
     },
+    setSelectedBiayaEmkl(state, action: PayloadAction<number | null>) {
+      state.selectedBiayaEmkl = action.payload;
+    },
+    setSelectedBiayaEmklNama(state, action: PayloadAction<string>) {
+      state.selectedBiayaEmklNama = action.payload;
+    },
     setOnReload(state, action: PayloadAction<boolean>) {
       state.onReload = action.payload; // Handle the onReload state
     },
@@ -98,6 +108,8 @@ const filterSlice = createSlice({
       state.selectedJenisOrderanNama = '';
       state.selectedJenisStatusJob = null;
       state.selectedJenisStatusJobNama = '';
+      state.selectedBiayaEmkl = null;
+      state.selectedBiayaEmklNama = '';
       state.onReload = false; // Reset onReload when clearing filters
     },
     clearOnReload(state) {
@@ -121,6 +133,8 @@ export const {
   setSelectedJenisOrderanNama,
   setSelectedJenisStatusJob,
   setSelectedJenisStatusJobNama,
+  setSelectedBiayaEmkl,
+  setSelectedBiayaEmklNama,
   setOnReload,
   clearFilter,
   clearOnReload

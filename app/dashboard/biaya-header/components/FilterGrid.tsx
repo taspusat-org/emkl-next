@@ -9,23 +9,24 @@ import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import {
   setOnReload,
+  setSelectedBiayaEmkl,
+  setSelectedBiayaEmklNama,
   setSelectedDate,
   setSelectedDate2,
   setSelectedJenisOrderan,
   setSelectedJenisOrderanNama
 } from '@/lib/store/filterSlice/filterSlice';
-import LookUp from '@/components/custom-ui/LookUp';
-import { JENISORDERMUATANNAMA } from '@/constants/biayaextraheader';
 import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
-import { RootState } from '@/lib/store/store';
+import LookUp from '@/components/custom-ui/LookUp';
+import {
+  BIAYAEMKLDEFAULT,
+  JENISORDERMUATANNAMA
+} from '@/constants/biayaheader';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
   const { onReload } = useSelector((state: any) => state.filter);
   const [triggerValidation, setTriggerValidation] = useState(false);
-  const { selectedJenisOrderanNama } = useSelector(
-    (state: RootState) => state.filter
-  );
 
   const lookUpJenisOrderan = [
     {
@@ -37,6 +38,20 @@ const FilterGrid = () => {
       singleColumn: true,
       pageSize: 20,
       postData: 'nama',
+      dataToPost: 'id'
+    }
+  ];
+
+  const lookUpBiayaEmkl = [
+    {
+      columns: [{ key: 'keterangan', name: 'NAMA' }],
+      labelLookup: 'BIAYA EMKL LOOKUP',
+      selectedRequired: false,
+      endpoint: 'biayaemkl',
+      label: 'BIAYA EMKL FILTER GRID',
+      singleColumn: true,
+      pageSize: 20,
+      postData: 'keterangan',
       dataToPost: 'id'
     }
   ];
@@ -90,32 +105,62 @@ const FilterGrid = () => {
             triggerValidation={triggerValidation}
           />
 
-          <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
-              Jenis Orderan:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-            </label>
-            <div className="relative w-full text-black lg:w-[60%]">
-              {lookUpJenisOrderan.map((props, index) => (
-                <LookUp
-                  key={index}
-                  {...props}
-                  onSelectRow={(val) => {
-                    dispatch(setSelectedJenisOrderan(Number(val.id)));
-                    dispatch(setSelectedJenisOrderanNama(val.nama));
-                  }}
-                  onClear={() => {
-                    dispatch(setSelectedJenisOrderan(null));
-                    dispatch(setSelectedJenisOrderanNama(''));
-                  }}
-                  lookupNama={
-                    JENISORDERMUATANNAMA || String(selectedJenisOrderanNama)
-                  }
-                />
-              ))}
+          <div className="flex flex-col justify-between lg:flex-row">
+            <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
+              <label
+                htmlFor=""
+                className="w-full text-sm font-bold text-black lg:w-[20%]"
+              >
+                Jenis Orderan:
+                {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
+              </label>
+              <div className="relative w-full text-black lg:w-[60%]">
+                {lookUpJenisOrderan.map((props, index) => (
+                  <LookUp
+                    key={index}
+                    {...props}
+                    onSelectRow={(val) => {
+                      dispatch(setSelectedJenisOrderan(Number(val.id)));
+                      dispatch(setSelectedJenisOrderanNama(val.nama));
+                    }}
+                    onClear={() => {
+                      dispatch(setSelectedJenisOrderan(null));
+                      dispatch(setSelectedJenisOrderanNama(''));
+                    }}
+                    lookupNama={JENISORDERMUATANNAMA}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 flex w-[50%] flex-col items-center justify-between lg:flex-row">
+              <label
+                htmlFor=""
+                className="ml-[108px] w-full text-sm font-bold text-black lg:w-[20%]"
+              >
+                Jenis Biaya Emkl:
+                {/* <span style={{ color: 'red', marginLeft: '4px' }}>*</span> */}
+              </label>
+              <div className="relative w-full text-black lg:w-[60%]">
+                {lookUpBiayaEmkl.map((props, index) => (
+                  <LookUp
+                    key={index}
+                    {...props}
+                    onSelectRow={(val) => {
+                      dispatch(setSelectedBiayaEmkl(Number(val.id)));
+                      dispatch(setSelectedBiayaEmklNama(val.keterangan));
+                    }}
+                    onClear={() => {
+                      dispatch(setSelectedBiayaEmkl(null));
+                      dispatch(setSelectedBiayaEmklNama(''));
+                    }}
+                    // lookupNama={
+                    //   // statusJobNama ? statusJobNama : STATUSJOBMASUKGUDANGNAMA
+                    //   BIAYAEMKLDEFAULT
+                    // }
+                  />
+                ))}
+              </div>
             </div>
           </div>
 

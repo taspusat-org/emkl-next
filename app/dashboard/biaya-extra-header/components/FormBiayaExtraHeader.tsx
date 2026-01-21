@@ -161,7 +161,7 @@ const FormBiayaExtraHeader = ({
       orderanmuatan_id: 0,
       orderanmuatan_nobukti: '',
       estimasi: '',
-      nominal: '',
+      // nominal: '',
       statustagih: 0,
       statustagih_nama: '',
       nominaltagih: '',
@@ -389,54 +389,54 @@ const FormBiayaExtraHeader = ({
           );
         }
       },
-      {
-        key: 'nominal',
-        name: 'nominal',
-        headerCellClass: 'column-headers',
-        resizable: true,
-        draggable: true,
-        cellClass: 'form-input',
-        width: 150,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>nominal</p> */}
-              <p className={`text-sm`}>nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const rowIdx = props.rowIdx;
-          let raw = props.row.nominal ?? ''; // Nilai nominal awal
+      // {
+      //   key: 'nominal',
+      //   name: 'nominal',
+      //   headerCellClass: 'column-headers',
+      //   resizable: true,
+      //   draggable: true,
+      //   cellClass: 'form-input',
+      //   width: 150,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div className="headers-cell h-[50%] px-8">
+      //         {/* <p className={`text-sm font-normal`}>nominal</p> */}
+      //         <p className={`text-sm`}>nominal</p>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1"></div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const rowIdx = props.rowIdx;
+      //     let raw = props.row.nominal ?? ''; // Nilai nominal awal
 
-          // if (typeof raw === 'number') {
-          //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
-          //   raw = raw.toString(); // Mengonversi nominal menjadi string
-          // }
-          // if (!raw.includes(',')) {
-          //   // Jika raw tidak mengandung tanda koma, format sebagai currency
-          //   raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
-          // }
+      //     // if (typeof raw === 'number') {
+      //     //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
+      //     //   raw = raw.toString(); // Mengonversi nominal menjadi string
+      //     // }
+      //     // if (!raw.includes(',')) {
+      //     //   // Jika raw tidak mengandung tanda koma, format sebagai currency
+      //     //   raw = formatCurrency(parseFloat(raw)); // Gunakan formatCurrency jika belum ada koma
+      //     // }
 
-          return (
-            <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-              {props.row.isAddRow ? (
-                <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
-                  {formatCurrency(totalNominal)}
-                </div>
-              ) : (
-                <InputCurrency
-                  value={String(raw)}
-                  onValueChange={(value) =>
-                    handleInputChange(rowIdx, 'nominal', value)
-                  }
-                />
-              )}
-            </div>
-          );
-        }
-      },
+      //     return (
+      //       <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+      //         {props.row.isAddRow ? (
+      //           <div className="flex h-full w-full cursor-pointer items-center justify-end text-sm font-bold">
+      //             {formatCurrency(totalNominal)}
+      //           </div>
+      //         ) : (
+      //           <InputCurrency
+      //             value={String(raw)}
+      //             onValueChange={(value) =>
+      //               handleInputChange(rowIdx, 'nominal', value)
+      //             }
+      //           />
+      //         )}
+      //       </div>
+      //     );
+      //   }
+      // },
       {
         key: 'statustagih',
         name: 'statustagih',
@@ -744,7 +744,7 @@ const FormBiayaExtraHeader = ({
           orderanmuatan_id: item.orderanmuatan_id ?? 0,
           orderanmuatan_nobukti: item.orderanmuatan_nobukti ?? '',
           estimasi: formatCurrency(item.estimasi) ?? '',
-          nominal: formatCurrency(item.nominal) ?? '',
+          // nominal: formatCurrency(item.nominal) ?? '',
           statustagih: Number(item.statustagih) ?? '',
           statustagih_nama: item.statustagih_nama ?? '',
           nominaltagih: formatCurrency(item.nominaltagih) ?? '',
@@ -768,7 +768,7 @@ const FormBiayaExtraHeader = ({
             orderanmuatan_id: 0,
             orderanmuatan_nobukti: '',
             estimasi: '',
-            nominal: '',
+            // nominal: '',
             statustagih: 0,
             statustagih_nama: '',
             nominaltagih: '',

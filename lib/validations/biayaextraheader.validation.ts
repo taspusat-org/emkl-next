@@ -15,9 +15,9 @@ export const biayaExtraDetailSchema = z.object({
     .string({ message: dynamicRequiredMessage('ESTIMASI') })
     .nonempty({ message: dynamicRequiredMessage('ESTIMASI') }),
 
-  nominal: z
-    .string({ message: dynamicRequiredMessage('NOMINAL') })
-    .nonempty({ message: dynamicRequiredMessage('NOMINAL') }),
+  // nominal: z
+  //   .string({ message: dynamicRequiredMessage('NOMINAL') })
+  //   .nonempty({ message: dynamicRequiredMessage('NOMINAL') }),
 
   statustagih: z
     .number({

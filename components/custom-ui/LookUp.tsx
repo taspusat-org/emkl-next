@@ -772,6 +772,7 @@ export default function LookUp({
     lookupValue?.(value);
     onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
     dispatch(clearOpenName());
+    setTimeout(() => setClicked(false), 1000);
   }
   function onSelectedCellChange(args: { row: Row }) {
     if (forInput) return; // don't change selection when used as input picker

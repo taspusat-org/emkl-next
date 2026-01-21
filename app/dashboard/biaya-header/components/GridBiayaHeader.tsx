@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
-import { useSearchParams } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
@@ -25,17 +24,13 @@ import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import {
-  setProcessed,
-  setProcessing
-} from '@/lib/store/loadingSlice/loadingSlice';
-import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
 import {
-  BiayaExtraHeader,
-  filterBiayaExtraHeader
-} from '@/lib/types/biayaextraheader.type';
+  setProcessed,
+  setProcessing
+} from '@/lib/store/loadingSlice/loadingSlice';
 import {
   setDetailDataReport,
   setReportData
@@ -47,6 +42,7 @@ import DataGrid, {
 } from 'react-data-grid';
 import {
   cancelPreviousRequest,
+  formatCurrency,
   handleContextMenu,
   loadGridConfig,
   resetGridConfig,
@@ -58,25 +54,28 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { BiayaHeader, filterBiayaHeader } from '@/lib/types/biayaheader.type';
 import {
-  biayaExtraHeaderInput,
-  biayaExtraHeaderSchema
-} from '@/lib/validations/biayaextraheader.validation';
-import FormBiayaExtraMuatan from './FormBiayaExtraHeader';
+  biayaHeaderInput,
+  biayaHeaderSchema
+} from '@/lib/validations/biayaheader.validation';
 import {
-  useCreateBiayaExtraHeader,
-  useDeleteBiayaExtraHeader,
-  useGetAllBiayaExtraHeader,
-  useUpdateBiayaExtraHeader
-} from '@/lib/server/useBiayaExtraHeader';
+  useCreateBiayaHeader,
+  useDeleteBiayaHeader,
+  useGetAllBiayaHeader,
+  useUpdateBiayaHeader
+} from '@/lib/server/useBiayaHeader';
 import {
-  checkValidationBiayaExtraHeaderFn,
-  getBiayaExtraHeaderByIdFn
-} from '@/lib/apis/biayaextraheader.api';
+  checkValidationBiayaFn,
+  getBiayaHeaderByIdFn
+} from '@/lib/apis/biayaheader.api';
+import FormBiayaHeader from './FormBiayaHeader';
 import {
   JENISORDERMUATAN,
   JENISORDERMUATANNAMA
-} from '@/constants/biayaextraheader';
+} from '@/constants/biayaheader';
+import JsxParser from 'react-jsx-parser';
 
 interface Filter {
   page: number;
@@ -84,23 +83,22 @@ interface Filter {
   search: string;
   sortBy: string;
   sortDirection: 'asc' | 'desc';
-  filters: typeof filterBiayaExtraHeader;
+  filters: typeof filterBiayaHeader;
 }
 
-const GridBiayaExtraHeader = () => {
-  let filtersJenisOrderan;
-  let filtersJenisOrderanNama;
+const GridBiayaHeader = () => {
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
-  const searchParams = useSearchParams();
   const { user } = useSelector((state: RootState) => state.auth);
   const {
     selectedDate,
     selectedDate2,
     selectedJenisOrderan,
     selectedJenisOrderanNama,
+    selectedBiayaEmkl,
+    selectedBiayaEmklNama,
     onReload
   } = useSelector((state: RootState) => state.filter);
   const gridRef = useRef<DataGridHandle>(null);
@@ -113,11 +111,11 @@ const GridBiayaExtraHeader = () => {
   const colTimersRef = useRef<
     Map<keyof Filter['filters'], ReturnType<typeof setTimeout>>
   >(new Map());
-  const [rows, setRows] = useState<BiayaExtraHeader[]>([]);
+  const [rows, setRows] = useState<BiayaHeader[]>([]);
   const [mode, setMode] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
-  const [totalPages, setTotalPages] = useState(1);
   const [inputValue, setInputValue] = useState('');
+  const [totalPages, setTotalPages] = useState(1);
   const [dataGridKey, setDataGridKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -144,7 +142,7 @@ const GridBiayaExtraHeader = () => {
     sortBy: 'nobukti',
     sortDirection: 'asc',
     filters: {
-      ...filterBiayaExtraHeader,
+      ...filterBiayaHeader,
       tglDari: selectedDate,
       tglSampai: selectedDate2,
       jenisOrderan: String(selectedJenisOrderan)
@@ -153,26 +151,27 @@ const GridBiayaExtraHeader = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
   const {
-    data: allBiayaExtraHeader,
-    isLoading: isLoadingBiayaExtraHeader,
+    data: allBiayaHeader,
+    isLoading: isLoadingBiayaHeader,
     refetch
-  } = useGetAllBiayaExtraHeader(
+  } = useGetAllBiayaHeader(
     { ...filters, page: currentPage },
     abortControllerRef.current?.signal
   );
 
-  const { mutateAsync: createBiayaExtraHeader, isLoading: isLoadingCreate } =
-    useCreateBiayaExtraHeader();
-  const { mutateAsync: updateBiayaExtraHeader, isLoading: isLoadingUpdate } =
-    useUpdateBiayaExtraHeader();
-  const { mutateAsync: deleteBiayaExtraHeader, isLoading: isLoadingDelete } =
-    useDeleteBiayaExtraHeader();
+  const { mutateAsync: createBiayaHeader, isLoading: isLoadingCreate } =
+    useCreateBiayaHeader();
+  const { mutateAsync: updateBiayaHeader, isLoading: isLoadingUpdate } =
+    useUpdateBiayaHeader();
+  const { mutateAsync: deleteBiayaHeader, isLoading: isLoadingDelete } =
+    useDeleteBiayaHeader();
 
-  const forms = useForm<biayaExtraHeaderInput>({
-    resolver: zodResolver(biayaExtraHeaderSchema),
+  const forms = useForm<biayaHeaderInput>({
+    resolver: mode === 'delete' ? undefined : zodResolver(biayaHeaderSchema),
     mode: 'onSubmit',
     defaultValues: {
-      nobukti: ''
+      nobukti: '',
+      details: []
     }
   });
 
@@ -206,7 +205,7 @@ const GridBiayaExtraHeader = () => {
       setTimeout(() => {
         setSelectedRow(0);
         gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
-      }, 250);
+      }, 400);
     },
     []
   );
@@ -232,7 +231,7 @@ const GridBiayaExtraHeader = () => {
     setFilters((prev) => ({
       ...prev,
       filters: {
-        ...filterBiayaExtraHeader,
+        ...filterBiayaHeader,
         tglDari: selectedDate,
         tglSampai: selectedDate2,
         jenisOrderan: String(selectedJenisOrderan)
@@ -324,7 +323,7 @@ const GridBiayaExtraHeader = () => {
     setIsAllSelected(!isAllSelected);
   };
 
-  const columns = useMemo((): Column<BiayaExtraHeader>[] => {
+  const columns = useMemo((): Column<BiayaHeader>[] => {
     return [
       {
         key: 'nomor',
@@ -344,7 +343,7 @@ const GridBiayaExtraHeader = () => {
                   ...filters,
                   search: '',
                   filters: {
-                    ...filterBiayaExtraHeader
+                    ...filterBiayaHeader
                   }
                 }),
                   setInputValue('');
@@ -386,7 +385,7 @@ const GridBiayaExtraHeader = () => {
             </div>
           </div>
         ),
-        renderCell: ({ row }: { row: BiayaExtraHeader }) => (
+        renderCell: ({ row }: { row: BiayaHeader }) => (
           <div className="flex h-full items-center justify-center">
             <Checkbox
               checked={checkedRows.has(row.id)}
@@ -537,12 +536,12 @@ const GridBiayaExtraHeader = () => {
         }
       },
       {
-        key: 'jenisorder_nama',
-        name: 'jenisorder_nama',
-        headerCellClass: 'column-headers',
+        key: 'jenisorder',
+        name: 'jenisorder',
         resizable: true,
         draggable: true,
         width: 150,
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -573,17 +572,16 @@ const GridBiayaExtraHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="jenisorder_nama"
+                colKey="jenisorder"
                 value={filters.filters.jenisorder_text || ''}
                 onChange={(value) =>
                   handleFilterInputChange('jenisorder_text', value)
                 }
                 onClear={() => handleClearFilter('jenisorder_text')}
                 inputRef={(el) => {
-                  inputColRefs.current['jenisorder_nama'] = el;
+                  inputColRefs.current['jenisorder_text'] = el;
                 }}
               />
             </div>
@@ -612,12 +610,12 @@ const GridBiayaExtraHeader = () => {
         }
       },
       {
-        key: 'biayaemkl_nama',
-        name: 'biayaemkl_nama',
-        headerCellClass: 'column-headers',
+        key: 'biayaemkl',
+        name: 'biayaemkl',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 150,
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -648,17 +646,16 @@ const GridBiayaExtraHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
-                colKey="biayaemkl_nama"
+                colKey="biayaemkl"
                 value={filters.filters.biayaemkl_text || ''}
                 onChange={(value) =>
                   handleFilterInputChange('biayaemkl_text', value)
                 }
                 onClear={() => handleClearFilter('biayaemkl_text')}
                 inputRef={(el) => {
-                  inputColRefs.current['biayaemkl_nama'] = el;
+                  inputColRefs.current['biayaemkl_text'] = el;
                 }}
               />
             </div>
@@ -691,7 +688,7 @@ const GridBiayaExtraHeader = () => {
         name: 'keterangan',
         resizable: true,
         draggable: true,
-        width: 250,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -745,6 +742,303 @@ const GridBiayaExtraHeader = () => {
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
                     {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'noinvoice',
+        name: 'noinvoice',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('noinvoice')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'noinvoice' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                no invoice
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'noinvoice' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'noinvoice' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="noinvoice"
+                value={filters.filters.noinvoice || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('noinvoice', value)
+                }
+                onClear={() => handleClearFilter('noinvoice')}
+                inputRef={(el) => {
+                  inputColRefs.current['noinvoice'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.noinvoice || '';
+          const cellValue = props.row.noinvoice || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'relasi',
+        name: 'relasi',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('relasi_text')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'relasi_text' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                RELASI
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'relasi_text' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'relasi_text' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="relasi"
+                value={filters.filters.relasi_text || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('relasi_text', value)
+                }
+                onClear={() => handleClearFilter('relasi_text')}
+                inputRef={(el) => {
+                  inputColRefs.current['relasi_text'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.relasi_text || '';
+          const cellValue = props.row.relasi_nama || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'dibayarke',
+        name: 'dibayarke',
+        resizable: true,
+        draggable: true,
+        width: 150,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('dibayarke')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'dibayarke' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                DIBAYAR KE
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'dibayarke' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'dibayarke' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="dibayarke"
+                value={filters.filters.dibayarke || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('dibayarke', value)
+                }
+                onClear={() => handleClearFilter('dibayarke')}
+                inputRef={(el) => {
+                  inputColRefs.current['dibayarke'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.dibayarke || '';
+          const cellValue = props.row.dibayarke || '';
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="right"
+                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                >
+                  <p>{cellValue}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+      },
+      {
+        key: 'biayaextra_nobukti',
+        name: 'biayaextra_nobukti',
+        resizable: true,
+        draggable: true,
+        width: 200,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('biayaextra_nobukti')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'biayaextra_nobukti'
+                    ? 'font-bold'
+                    : 'font-normal'
+                }`}
+              >
+                NO BUKTI BIAYA EXTRA
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'biayaextra_nobukti' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'biayaextra_nobukti' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterInput
+                colKey="biayaextra_nobukti"
+                value={filters.filters.biayaextra_nobukti || ''}
+                onChange={(value) =>
+                  handleFilterInputChange('biayaextra_nobukti', value)
+                }
+                onClear={() => handleClearFilter('biayaextra_nobukti')}
+                inputRef={(el) => {
+                  inputColRefs.current['biayaextra_nobukti'] = el;
+                }}
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const columnFilter = filters.filters.biayaextra_nobukti || '';
+          const cellValue = props.row.biayaextra_nobukti || '';
+          const HighlightWrapper = () => {
+            return highlightText(cellValue, filters.search, columnFilter);
+          };
+          return (
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    <JsxParser
+                      components={{ HighlightWrapper }}
+                      jsx={props.row.link}
+                      renderInWrapper={false}
+                    />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
@@ -1006,7 +1300,7 @@ const GridBiayaExtraHeader = () => {
   const handleEdit = async () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
-      const result = await checkValidationBiayaExtraHeaderFn({
+      const result = await checkValidationBiayaFn({
         aksi: 'EDIT',
         value: rowData.id
       });
@@ -1028,7 +1322,7 @@ const GridBiayaExtraHeader = () => {
     try {
       for (const id of idsToDelete) {
         // Hapus data satu per satu
-        await deleteBiayaExtraHeader(id as unknown as string);
+        await deleteBiayaHeader(id as unknown as string);
       }
 
       setRows(
@@ -1075,7 +1369,7 @@ const GridBiayaExtraHeader = () => {
         if (selectedRow !== null) {
           const rowData = rows[selectedRow];
 
-          const result = await checkValidationBiayaExtraHeaderFn({
+          const result = await checkValidationBiayaFn({
             aksi: 'DELETE',
             value: rowData.id
           });
@@ -1095,7 +1389,7 @@ const GridBiayaExtraHeader = () => {
         const checkedRowsArray = Array.from(checkedRows);
         const validationPromises = checkedRowsArray.map(async (id) => {
           try {
-            const response = await checkValidationBiayaExtraHeaderFn({
+            const response = await checkValidationBiayaFn({
               aksi: 'DELETE',
               value: id
             });
@@ -1200,9 +1494,9 @@ const GridBiayaExtraHeader = () => {
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
 
-      const response = await getBiayaExtraHeaderByIdFn(rowId);
+      const response = await getBiayaHeaderByIdFn(rowId);
 
-      if (response.data === null || response.data.length === 0) {
+      if (response.data.length === 0) {
         alert({
           title: 'DATA TIDAK TERSEDIA!',
           variant: 'danger',
@@ -1213,11 +1507,15 @@ const GridBiayaExtraHeader = () => {
 
       const reportRows = response.data.map((row: any) => ({
         ...row,
+        detail_biayaextra_nobukti: row.detail_biayaextra_nobukti
+          ? row.detail_biayaextra_nobukti
+          : row.biayaextra_nobuktistring,
         judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
         usercetak: user.username,
         tglcetak,
-        judul: `LAPORAN BIAYA EXTRA`
+        judul: `LAPORAN BIAYA`
       }));
+      console.log('reportRows', reportRows);
 
       sessionStorage.setItem('dataId', rowId as unknown as string);
       // Dynamically import Stimulsoft and generate the PDF report
@@ -1245,11 +1543,11 @@ const GridBiayaExtraHeader = () => {
           const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
           // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanBiayaExtra.mrt');
+          report.loadFile('/reports/LaporanBiayaHeader.mrt');
           report.dictionary.dataSources.clear();
           dataSet.readJson({
             data: reportRows
-            // detail: merged
+            // detail: response.data.detailinvoice
           });
 
           report.regData(dataSet.dataSetName, '', dataSet);
@@ -1269,7 +1567,7 @@ const GridBiayaExtraHeader = () => {
               sessionStorage.setItem('pdfUrl', pdfUrl);
 
               // Navigate to the report page
-              window.open('/reports/biayaextraheader', '_blank');
+              window.open('/reports/biayaheader', '_blank');
             }, Stimulsoft.Report.StiExportFormat.Pdf);
           });
         })
@@ -1314,9 +1612,9 @@ const GridBiayaExtraHeader = () => {
   //     )}:${pad(now.getSeconds())}`;
 
   //     const { page, limit, ...filtersWithoutLimit } = filters;
-  //     const response = await getBiayaExtraHeaderByIdFn(rowId);
+  //     const response = await getBiayaHeaderByIdFn(rowId);
 
-  //     if (response.data === null || response.data.length === 0) {
+  //     if (response.data.length === 0) {
   //       alert({
   //         title: 'DATA TIDAK TERSEDIA!',
   //         variant: 'danger',
@@ -1325,14 +1623,16 @@ const GridBiayaExtraHeader = () => {
   //     } else {
   //       const reportRows = response.data.map((row: any) => ({
   //         ...row,
+  //         detail_biayaextra_nobukti: row.detail_biayaextra_nobukti ? row.detail_biayaextra_nobukti : row.biayaextra_nobuktistring,
   //         judullaporan: 'PT. TRANSPORINDO AGUNG SEJAHTERA',
   //         usercetak: user.username,
   //         tglcetak,
-  //         judul: `LAPORAN BIAYA EXTRA`,
+  //         judul: `LAPORAN BIAYA`,
   //       }));
+  //       console.log('reportRows', reportRows);
 
   //       dispatch(setReportData(reportRows));
-  //       // dispatch(setDetailDataReport(merged));
+  //       // dispatch(setDetailDataReport(response.data.detailinvoice));
   //       window.open('/reports/designer', '_blank');
   //     }
   //   } catch (error) {
@@ -1354,7 +1654,6 @@ const GridBiayaExtraHeader = () => {
   ) => {
     dispatch(setClearLookup(true));
     clearError();
-    setIsFetchingManually(true);
 
     try {
       if (keepOpenModal) {
@@ -1363,46 +1662,45 @@ const GridBiayaExtraHeader = () => {
       } else {
         forms.reset();
         setPopOver(false);
-      }
 
-      if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/biayaextraheader-allItems`);
-        // Set the rows only if the data has changed
-        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-          setRows(response.data);
-          setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
-          setSelectedRow(indexOnPage);
-          setTimeout(() => {
-            gridRef?.current?.selectCell({
-              rowIdx: indexOnPage,
-              idx: 1
-            });
-          }, 200);
+        // setRows([]);
+        if (mode !== 'delete') {
+          const response = await api2.get(`/redis/get/biayaheader-allItems`);
+          // Set the rows only if the data has changed
+          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+            setRows(response.data);
+            setIsDataUpdated(true);
+            setCurrentPage(pageNumber);
+            setFetchedPages(new Set([pageNumber]));
+            setSelectedRow(indexOnPage);
+            setTimeout(() => {
+              gridRef?.current?.selectCell({
+                rowIdx: indexOnPage,
+                idx: 1
+              });
+            }, 200);
+          }
         }
-      }
 
-      setIsDataUpdated(false);
-      setIsFetchingManually(false);
+        setIsDataUpdated(false);
+      }
     } catch (error) {
       console.error('Error during onSuccess:', error);
-      setIsFetchingManually(false);
+      setIsDataUpdated(false);
+    } finally {
+      // dispatch(setClearLookup(false));
       setIsDataUpdated(false);
     }
   };
 
-  const onSubmit = async (
-    values: biayaExtraHeaderInput,
-    keepOpenModal = false
-  ) => {
+  const onSubmit = async (values: biayaHeaderInput, keepOpenModal = false) => {
     clearError();
     const selectedRowId = rows[selectedRow]?.id;
     try {
       dispatch(setProcessing());
       if (mode === 'delete') {
         if (selectedRowId) {
-          await deleteBiayaExtraHeader(selectedRowId as unknown as string, {
+          await deleteBiayaHeader(selectedRowId as unknown as string, {
             onSuccess: () => {
               setPopOver(false);
               setRows((prevRows) =>
@@ -1425,14 +1723,14 @@ const GridBiayaExtraHeader = () => {
       }
 
       if (mode === 'add') {
-        const newOrder = await createBiayaExtraHeader(
+        const newOrder = await createBiayaHeader(
           {
             ...values,
             details: values.details.map((detail: any) => ({
               ...detail,
               id: 0
             })),
-            ...filters
+            ...filters // Kirim filter ke body/payload
           },
           {
             onSuccess: (data) =>
@@ -1446,14 +1744,14 @@ const GridBiayaExtraHeader = () => {
       }
 
       if (selectedRowId && mode === 'edit') {
-        await updateBiayaExtraHeader(
+        await updateBiayaHeader(
           {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
           { onSuccess: (data) => onSuccess(data.dataIndex, data.pageNumber) }
         );
-        queryClient.invalidateQueries('biayaextraheader');
+        queryClient.invalidateQueries('biayaheader');
       }
     } catch (error) {
       console.error(error);
@@ -1478,7 +1776,7 @@ const GridBiayaExtraHeader = () => {
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
         user.id,
-        'GridBiayaExtraHeader',
+        'GridBiayaHeader',
         [...columnsOrder],
         newWidthMap
       );
@@ -1497,12 +1795,7 @@ const GridBiayaExtraHeader = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(
-        user.id,
-        'GridBiayaExtraHeader',
-        [...newOrder],
-        columnsWidth
-      );
+      saveGridConfig(user.id, 'GridBiayaHeader', [...newOrder], columnsWidth);
       return newOrder;
     });
   };
@@ -1563,7 +1856,7 @@ const GridBiayaExtraHeader = () => {
     );
   }
 
-  function handleCellClick(args: { row: BiayaExtraHeader }) {
+  function handleCellClick(args: { row: BiayaHeader }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     const foundRow = rows.find((r) => r.id === clickedRow?.id);
@@ -1573,12 +1866,12 @@ const GridBiayaExtraHeader = () => {
     }
   }
 
-  function getRowClass(row: BiayaExtraHeader) {
+  function getRowClass(row: BiayaHeader) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
-  function rowKeyGetter(row: BiayaExtraHeader) {
+  function rowKeyGetter(row: BiayaHeader) {
     return row.id;
   }
 
@@ -1597,7 +1890,7 @@ const GridBiayaExtraHeader = () => {
   }
 
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingBiayaExtraHeader || !hasMore || rows.length === 0) return;
+    if (isLoadingBiayaHeader || !hasMore || rows.length === 0) return;
 
     const findUnfetchedPage = (pageOffset: number) => {
       let page = currentPage + pageOffset;
@@ -1625,7 +1918,7 @@ const GridBiayaExtraHeader = () => {
   }
 
   async function handleKeyDown(
-    args: CellKeyDownArgs<BiayaExtraHeader>,
+    args: CellKeyDownArgs<BiayaHeader>,
     event: React.KeyboardEvent
   ) {
     const visibleRowCount = 10;
@@ -1686,30 +1979,11 @@ const GridBiayaExtraHeader = () => {
     setIsFirstLoad(true);
     loadGridConfig(
       user.id,
-      'GridBiayaExtraHeader',
+      'GridBiayaHeader',
       columns,
       setColumnsOrder,
       setColumnsWidth
     );
-
-    const rawNobukti = searchParams.get('biayaextra_nobukti');
-    setFilters((prevFilters: Filter) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        nobukti: rawNobukti ?? '',
-        tglDari: selectedDate,
-        tglSampai: selectedDate2,
-        jenisOrderan: String(selectedJenisOrderan)
-      }
-    }));
-
-    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
-    setTimeout(() => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('biayaextra_nobukti');
-      window.history.replaceState({}, '', url.toString());
-    }, 1000); // Delay 1 detik (1000 ms)
   }, []);
 
   useEffect(() => {
@@ -1725,7 +1999,8 @@ const GridBiayaExtraHeader = () => {
     if (isFirstLoad) {
       if (
         selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
+        selectedDate2 !== filters.filters.tglSampai ||
+        filters.filters.jenisOrderan !== String(selectedJenisOrderan)
       ) {
         setFilters((prevFilters) => ({
           ...prevFilters,
@@ -1738,6 +2013,7 @@ const GridBiayaExtraHeader = () => {
         }));
       }
     } else if (onReload) {
+      // Jika onReload diklik, update filter tanggal
       if (
         selectedDate !== filters.filters.tglDari ||
         selectedDate2 !== filters.filters.tglSampai ||
@@ -1747,16 +2023,16 @@ const GridBiayaExtraHeader = () => {
           setFilters((prevFilters: Filter) => ({
             ...prevFilters,
             filters: {
-              ...filterBiayaExtraHeader,
+              ...filterBiayaHeader,
               tglDari: selectedDate,
               tglSampai: selectedDate2,
               jenisOrderan: String(selectedJenisOrderan)
             }
           }));
-          setSelectedRow(0);
-          setCurrentPage(1);
-          setCheckedRows(new Set());
-          setIsAllSelected(false);
+          // setSelectedRow(0);
+          // setCurrentPage(1);
+          // setCheckedRows(new Set());
+          // setIsAllSelected(false);
         } else {
           setFilters((prevFilters) => ({
             ...prevFilters,
@@ -1780,9 +2056,9 @@ const GridBiayaExtraHeader = () => {
   ]);
 
   useEffect(() => {
-    if (!allBiayaExtraHeader || isFetchingManually || isDataUpdated) return;
+    if (!allBiayaHeader || isFetchingManually || isDataUpdated) return;
 
-    const newRows = allBiayaExtraHeader.data || [];
+    const newRows = allBiayaHeader.data || [];
 
     setRows((prevRows) => {
       if (currentPage === 1 || filters !== prevFilters) {
@@ -1799,21 +2075,15 @@ const GridBiayaExtraHeader = () => {
       return prevRows;
     });
 
-    if (allBiayaExtraHeader.pagination.totalPages) {
-      setTotalPages(allBiayaExtraHeader.pagination.totalPages);
+    if (allBiayaHeader?.pagination?.totalPages) {
+      setTotalPages(allBiayaHeader.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setIsFirstLoad(false);
     setPrevFilters(filters);
-  }, [
-    allBiayaExtraHeader,
-    currentPage,
-    filters,
-    isFetchingManually,
-    isDataUpdated
-  ]);
+  }, [allBiayaHeader, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
@@ -1881,13 +2151,33 @@ const GridBiayaExtraHeader = () => {
       forms.setValue('biayaemkl_id', Number(rowData?.biayaemkl_id));
       forms.setValue('biayaemkl_nama', rowData?.biayaemkl_nama);
       forms.setValue('keterangan', rowData?.keterangan);
+      forms.setValue('noinvoice', rowData?.noinvoice);
+      forms.setValue('relasi_id', Number(rowData?.relasi_id));
+      forms.setValue('relasi_nama', rowData?.relasi_nama);
+      forms.setValue('dibayarke', rowData?.dibayarke);
+      forms.setValue(
+        'biayaextra_id',
+        rowData.biayaextra_id ? Number(rowData?.biayaextra_id) : 0
+      );
+      forms.setValue('biayaextra_nobukti', rowData?.biayaextra_nobukti);
     } else {
+      let filtersJenisOrderan;
+      let filtersJenisOrderanNama;
+      let filtersJenisBiayaEmkl;
+      let filtersJenisBiayaEmklNama;
       if (selectedJenisOrderan || selectedJenisOrderanNama) {
         filtersJenisOrderan = selectedJenisOrderan;
         filtersJenisOrderanNama = selectedJenisOrderanNama;
       } else {
         filtersJenisOrderan = JENISORDERMUATAN;
         filtersJenisOrderanNama = JENISORDERMUATANNAMA;
+      }
+      if (selectedBiayaEmkl || selectedBiayaEmklNama) {
+        filtersJenisBiayaEmkl = selectedBiayaEmkl;
+        filtersJenisBiayaEmklNama = selectedBiayaEmklNama;
+      } else {
+        filtersJenisBiayaEmkl = 0;
+        filtersJenisBiayaEmklNama = '';
       }
       forms.setValue('jenisorder_id', Number(filtersJenisOrderan));
       forms.setValue('jenisorder_nama', filtersJenisOrderanNama);
@@ -2010,7 +2300,7 @@ const GridBiayaExtraHeader = () => {
           }}
         >
           <ActionButton
-            module="BIAYA-EXTRA-HEADER"
+            module="BIAYA-HEADER"
             onAdd={handleAdd}
             checkedRows={checkedRows}
             onEdit={handleEdit}
@@ -2025,7 +2315,7 @@ const GridBiayaExtraHeader = () => {
               }
             ]}
           />
-          {isLoadingBiayaExtraHeader ? <LoadRowsRenderer /> : null}
+          {isLoadingBiayaHeader ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
@@ -2045,7 +2335,7 @@ const GridBiayaExtraHeader = () => {
                 onClick={() => {
                   resetGridConfig(
                     user.id,
-                    'GridBiayaExtraHeader',
+                    'GridBiayaHeader',
                     columns,
                     setColumnsOrder,
                     setColumnsWidth
@@ -2061,7 +2351,7 @@ const GridBiayaExtraHeader = () => {
           )}
         </div>
       </div>
-      <FormBiayaExtraMuatan
+      <FormBiayaHeader
         mode={mode}
         forms={forms}
         popOver={popOver}
@@ -2076,4 +2366,4 @@ const GridBiayaExtraHeader = () => {
   );
 };
 
-export default GridBiayaExtraHeader;
+export default GridBiayaHeader;
