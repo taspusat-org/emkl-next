@@ -77,6 +77,21 @@ export const getBiayaExtraBongkaranDetailFn = async (
   return response.data;
 };
 
+export const getBiayaExtraDetailByIdFn = async (id: any, jenisOrderan: any) => {
+  try {
+    const response = await api2.get(
+      `/biayaextraheader/findOneDetail/${id}?jenisOrderan=${jenisOrderan}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error(
+      'Error to get data biaya extra detail by id in api fe',
+      error
+    );
+    throw new Error('Error to get data biaya extra detail by id in api fe');
+  }
+};
+
 export const storeBiayaExtraHeaderFn = async (
   fields: biayaExtraHeaderInput
 ) => {

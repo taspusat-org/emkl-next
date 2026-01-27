@@ -270,3 +270,11 @@ export const resetGridConfig = (
     saveGridConfig(userId, gridName, defaultColumnsOrder, defaultColumnsWidth);
   }
 };
+
+export const todayDate = () => {
+  const todayDate = new Date();
+
+  return `${String(todayDate.getDate()).padStart(2, '0')}-${String(
+    todayDate.getMonth() + 1
+  ).padStart(2, '0')}-${todayDate.getFullYear()}`;
+};

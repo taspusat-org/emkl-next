@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
 import { Button } from '@/components/ui/button';
 import { api2 } from '@/lib/utils/AxiosInstance';
+import { useSearchParams } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAlert } from '@/lib/store/client/useAlert';
@@ -93,6 +94,7 @@ const GridBiayaExtraHeader = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
+  const searchParams = useSearchParams();
   const { user } = useSelector((state: RootState) => state.auth);
   const {
     selectedDate,
@@ -1382,6 +1384,7 @@ const GridBiayaExtraHeader = () => {
       }
 
       setIsDataUpdated(false);
+      setIsFetchingManually(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1688,6 +1691,25 @@ const GridBiayaExtraHeader = () => {
       setColumnsOrder,
       setColumnsWidth
     );
+
+    const rawNobukti = searchParams.get('biayaextra_nobukti');
+    setFilters((prevFilters: Filter) => ({
+      ...prevFilters,
+      filters: {
+        ...prevFilters.filters,
+        nobukti: rawNobukti ?? '',
+        tglDari: selectedDate,
+        tglSampai: selectedDate2,
+        jenisOrderan: String(selectedJenisOrderan)
+      }
+    }));
+
+    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
+    setTimeout(() => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('biayaextra_nobukti');
+      window.history.replaceState({}, '', url.toString());
+    }, 1000); // Delay 1 detik (1000 ms)
   }, []);
 
   useEffect(() => {
@@ -1716,39 +1738,46 @@ const GridBiayaExtraHeader = () => {
         }));
       }
     } else if (onReload) {
-      if (filters.filters.jenisOrderan !== String(selectedJenisOrderan)) {
-        setFilters((prevFilters: Filter) => ({
-          ...prevFilters,
-          filters: {
-            ...filterBiayaExtraHeader,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            jenisOrderan: String(selectedJenisOrderan)
-          }
-        }));
-        setSelectedRow(0);
-        setCurrentPage(1);
-        setCheckedRows(new Set());
-        setIsAllSelected(false);
-      }
-
-      // Jika onReload diklik, update filter tanggal
       if (
         selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
+        selectedDate2 !== filters.filters.tglSampai ||
+        filters.filters.jenisOrderan !== String(selectedJenisOrderan)
       ) {
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            jenisOrderan: String(selectedJenisOrderan)
-          }
-        }));
+        if (filters.filters.jenisOrderan !== String(selectedJenisOrderan)) {
+          setFilters((prevFilters: Filter) => ({
+            ...prevFilters,
+            filters: {
+              ...filterBiayaExtraHeader,
+              tglDari: selectedDate,
+              tglSampai: selectedDate2,
+              jenisOrderan: String(selectedJenisOrderan)
+            }
+          }));
+          setSelectedRow(0);
+          setCurrentPage(1);
+          setCheckedRows(new Set());
+          setIsAllSelected(false);
+        } else {
+          setFilters((prevFilters) => ({
+            ...prevFilters,
+            filters: {
+              ...prevFilters.filters,
+              tglDari: selectedDate,
+              tglSampai: selectedDate2,
+              jenisOrderan: String(selectedJenisOrderan)
+            }
+          }));
+        }
       }
     }
-  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
+  }, [
+    selectedDate,
+    selectedDate2,
+    selectedJenisOrderan,
+    filters,
+    onReload,
+    isFirstLoad
+  ]);
 
   useEffect(() => {
     if (!allBiayaExtraHeader || isFetchingManually || isDataUpdated) return;
