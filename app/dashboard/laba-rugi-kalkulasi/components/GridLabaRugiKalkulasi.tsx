@@ -69,6 +69,7 @@ import {
   useGetAllLabaRugiKalkulasi,
   useUpdateLabaRugiKalkulasi
 } from '@/lib/server/useLabaRugiKalkulasi';
+import SettingColumns from '@/components/custom-ui/SettingColumns';
 
 interface Filter {
   page: number;
@@ -141,7 +142,8 @@ const GridLabaRugiKalkulasi = () => {
     useDeleteLabaRugiKalkulasi();
 
   const forms = useForm<labaRugiKalkulasiInput>({
-    resolver: zodResolver(labaRugiKalkulasiSchema),
+    resolver:
+      mode === 'delete' ? undefined : zodResolver(labaRugiKalkulasiSchema),
     mode: 'onSubmit',
     defaultValues: {
       periode: ''
@@ -345,7 +347,12 @@ const GridLabaRugiKalkulasi = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            ></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -1605,9 +1612,13 @@ const GridLabaRugiKalkulasi = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -2515,38 +2526,55 @@ const GridLabaRugiKalkulasi = () => {
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
         <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
+          className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-blue-500 px-2"
           style={{
             background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
           }}
         >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs text-zinc-600">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center ">
+            <SettingColumns
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridLabaRugiKalkulasi"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
             />
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
           </div>
         </div>
 
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
@@ -2590,6 +2618,18 @@ const GridLabaRugiKalkulasi = () => {
             ]}
           />
           {isLoadingLabaRugiKalkulasi ? <LoadRowsRenderer /> : null}
+          {/* {contextMenu && (
+            <SettingColumns 
+              defaultColumns={columns} 
+              saveColumns={finalColumns} 
+              userId={user.id} 
+              gridName='GridLabaRugiKalkulasi'
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              isOpen={true}
+              contextMenu={contextMenu}
+            />
+          )} */}
           {contextMenu && (
             <div
               ref={contextMenuRef}
