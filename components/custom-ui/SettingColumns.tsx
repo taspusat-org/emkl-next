@@ -1,13 +1,13 @@
 import { Button } from '../ui/button';
 import { useTheme } from 'next-themes';
 import 'react-nestable/dist/styles/index.css';
+import { IoSettingsSharp } from 'react-icons/io5';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PopoverAnchor } from '@radix-ui/react-popover';
 import React, { useEffect, useRef, useState } from 'react';
 import { resetGridConfig, saveGridConfig } from '@/lib/utils';
 import Nestable, { Item as NestableItem } from 'react-nestable';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 interface SettingColumnsProps {
   defaultColumns: any;
@@ -72,6 +72,41 @@ export default function SettingColumns({
 
       return updated;
     });
+  };
+
+  const stopAutoScroll = () => {
+    window.removeEventListener('mousemove', handleDragMouseMove);
+  };
+
+  const applyDynamicTransformFix = () => {
+    // 1. Ambil wrapper popover Radix (yang punya transform translate)
+    const popperWrapper = document.querySelector(
+      '[data-radix-popper-content-wrapper]'
+    ) as HTMLElement;
+
+    // 2. Ambil drag-layer react-nestable (selalu di body)
+    const dragLayer = document.querySelector(
+      '.nestable-drag-layer'
+    ) as HTMLElement;
+
+    if (!popperWrapper || !dragLayer) return;
+
+    // 3. Ambil nilai transform popover (biasanya matrix)
+    const transform = window.getComputedStyle(popperWrapper).transform;
+
+    if (transform === 'none') return;
+
+    // 4. Parse matrix -> ambil translateX dan translateY
+    const values = transform.match(/matrix.*\((.+)\)/);
+
+    if (!values) return;
+
+    const parts = values[1].split(', ');
+    const translateX = parseFloat(parts[4]);
+    const translateY = parseFloat(parts[5]);
+
+    // 5. Pasang kompensasi ke drag-layer
+    dragLayer.style.transform = `translate(${-translateX}px, ${-translateY}px)`;
   };
 
   const handleDragMouseMove = (e: MouseEvent) => {
@@ -267,23 +302,18 @@ export default function SettingColumns({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          type="button"
-          variant="default"
-          // className="bg-blue-700 hover:bg-slate-600"
           className={`${
-            isDark
-              ? 'bg-gray-600 hover:bg-slate-500'
-              : 'bg-blue-700 hover:bg-slate-600'
-          }`}
+            isDark ? 'text-white' : 'text-gray-600'
+          } bg-transparent text-2xl hover:bg-transparent`}
         >
-          SETTING COLUMNS
+          <IoSettingsSharp />
         </Button>
       </PopoverTrigger>
 
       <PopoverContent
         id="popover-content"
-        className="mr-1 mt-8 h-fit w-[full] rounded-md rounded-t-sm border border-b border-border bg-background-input p-2 shadow-lg"
-        side="left"
+        className="mr-7 h-fit w-[full] rounded-md rounded-t-sm border border-b border-border bg-background-input p-2 shadow-lg"
+        side="bottom"
         align="start"
         sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
         avoidCollisions={true}
@@ -313,9 +343,22 @@ export default function SettingColumns({
                 disableDrag={(item) => item.item.draggable}
                 onDragStart={() => {
                   window.addEventListener('mousemove', handleDragMouseMove);
+                  window.addEventListener('blur', stopAutoScroll);
+
+                  setTimeout(() => {
+                    applyDynamicTransformFix();
+                  }, 0);
                 }}
                 onDragEnd={() => {
                   window.removeEventListener('mousemove', handleDragMouseMove);
+                  window.removeEventListener('blur', stopAutoScroll);
+
+                  const dragLayer = document.querySelector(
+                    '.nestable-drag-layer'
+                  ) as HTMLElement;
+                  if (dragLayer) {
+                    dragLayer.style.transform = 'none'; // ✅ balikin normal
+                  }
                 }}
               />
               {renderItemNotDraggable()}
@@ -324,9 +367,9 @@ export default function SettingColumns({
               <Button
                 variant="save"
                 onClick={() => {
-                  // setOpen(false)
+                  setOpen(false);
                   handleSave();
-                  // setCheckedRows(new Set());
+                  setCheckedRows(new Set());
                 }}
               >
                 Save

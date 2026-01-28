@@ -623,7 +623,7 @@ const GridLabaRugiKalkulasi = () => {
         key: 'biayakantorpusat',
         name: 'biayakantorpusat',
         resizable: true,
-        draggable: true,
+        draggable: false,
         width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
