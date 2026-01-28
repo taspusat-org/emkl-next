@@ -79,34 +79,34 @@ export default function SettingColumns({
   };
 
   const applyDynamicTransformFix = () => {
-    // 1. Ambil wrapper popover Radix (yang punya transform translate)
     const popperWrapper = document.querySelector(
       '[data-radix-popper-content-wrapper]'
     ) as HTMLElement;
 
-    // 2. Ambil drag-layer react-nestable (selalu di body)
     const dragLayer = document.querySelector(
       '.nestable-drag-layer'
     ) as HTMLElement;
 
-    if (!popperWrapper || !dragLayer) return;
+    const scrollContainer = scrollRef.current;
 
-    // 3. Ambil nilai transform popover (biasanya matrix)
+    if (!popperWrapper || !dragLayer || !scrollContainer) return;
+
     const transform = window.getComputedStyle(popperWrapper).transform;
-
     if (transform === 'none') return;
 
-    // 4. Parse matrix -> ambil translateX dan translateY
-    const values = transform.match(/matrix.*\((.+)\)/);
+    const match = transform.match(/matrix.*\((.+)\)/);
+    if (!match) return;
 
-    if (!values) return;
-
-    const parts = values[1].split(', ');
+    const parts = match[1].split(', ');
     const translateX = parseFloat(parts[4]);
     const translateY = parseFloat(parts[5]);
 
-    // 5. Pasang kompensasi ke drag-layer
-    dragLayer.style.transform = `translate(${-translateX}px, ${-translateY}px)`;
+    // ✅ Tambahkan kompensasi scrollTop
+    const scrollY = scrollContainer.scrollTop;
+
+    dragLayer.style.transform = `translate(${-translateX}px, ${
+      -translateY + scrollY
+    }px)`;
   };
 
   const handleDragMouseMove = (e: MouseEvent) => {
