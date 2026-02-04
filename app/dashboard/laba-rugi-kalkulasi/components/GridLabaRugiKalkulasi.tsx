@@ -70,6 +70,7 @@ import {
   useUpdateLabaRugiKalkulasi
 } from '@/lib/server/useLabaRugiKalkulasi';
 import SettingColumns from '@/components/custom-ui/SettingColumns';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
 
 interface Filter {
   page: number;
@@ -2558,7 +2559,7 @@ const GridLabaRugiKalkulasi = () => {
             </div>
           </div>
           <div className="flex flex-row items-center ">
-            <SettingColumns
+            <DraggableColumn
               defaultColumns={columns}
               saveColumns={finalColumns}
               userId={user.id}
