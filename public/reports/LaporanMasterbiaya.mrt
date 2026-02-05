@@ -1025,7 +1025,7 @@
           "DataSourceName": "data"
         }
       },
-      "PaperSize": "A4",
+      "PaperSize": "LETTER",
       "Watermark": {
         "TextBrush": "solid:50,0,0,0"
       },
