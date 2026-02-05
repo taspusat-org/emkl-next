@@ -215,9 +215,8 @@ const GridPengeluaranEmklHeader = () => {
     Map<keyof Filter['filters'], ReturnType<typeof setTimeout>>
   >(new Map());
   const router = useRouter();
-  const { selectedDate, selectedDate2, onReload } = useSelector(
-    (state: RootState) => state.filter
-  );
+  const { selectedDate, selectedDate2, onReload, selectedPengeluaranEmkl } =
+    useSelector((state: RootState) => state.filter);
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
@@ -2321,6 +2320,7 @@ const GridPengeluaranEmklHeader = () => {
       forms.setValue('bank_nama', '');
       forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
       forms.setValue('tgljatuhtempo', formatDateToDDMMYYYY(currentDate));
+      forms.setValue('format', selectedPengeluaranEmkl);
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {

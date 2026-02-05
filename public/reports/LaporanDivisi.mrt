@@ -939,9 +939,8 @@
           "EndCap": ";;;"
         }
       },
-      "PaperSize": "A4",
-      "PageWidth": 210.1,
-      "PageHeight": 296.9,
+      "PageWidth": 215.9,
+"PageHeight": 279.4,
       "Watermark": {
         "TextBrush": "solid:50,0,0,0"
       },

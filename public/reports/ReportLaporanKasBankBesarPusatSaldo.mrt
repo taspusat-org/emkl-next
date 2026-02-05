@@ -2119,8 +2119,6 @@
           "EndCap": ";;;"
         }
       },
-      "PaperSize": "A4",
-      "Orientation": "Landscape",
       "PageWidth": 296.9,
       "PageHeight": 210.1,
       "Watermark": {

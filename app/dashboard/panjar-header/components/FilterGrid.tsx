@@ -34,7 +34,9 @@ const FilterGrid = () => {
     }
   ];
 
-  const { onReload } = useSelector((state: any) => state.filter);
+  const { onReload, selectedJenisOrderanNama } = useSelector(
+    (state: any) => state.filter
+  );
   const [triggerValidation, setTriggerValidation] = useState(false);
 
   const onSubmit = () => {
