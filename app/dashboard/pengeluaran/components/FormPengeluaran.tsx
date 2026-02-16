@@ -94,7 +94,7 @@ const FormPengeluaran = ({
   } = useGetPengeluaranDetail({
     filters: { nobukti: headerData?.nobukti ?? {} }
   });
-
+  console.log(forms.getValues());
   const [rows, setRows] = useState<
     (PengeluaranDetail | (Partial<PengeluaranDetail> & { isNew: boolean }))[]
   >([]);
@@ -111,7 +111,7 @@ const FormPengeluaran = ({
       coadebet: '',
       coadebet_text: '',
       keterangan: '',
-      nominal: '',
+      nominal: '0',
       dpp: '',
       noinvoiceemkl: '',
       nofakturpajakemkl: '',
@@ -135,8 +135,8 @@ const FormPengeluaran = ({
         coadebet: '',
         coadebet_text: '',
         keterangan: '',
-        nominal: '',
-        dpp: '',
+        nominal: '0',
+        dpp: '0',
         noinvoiceemkl: '',
         tglinvoiceemkl: '',
         nofakturpajakemkl: '',
@@ -152,8 +152,8 @@ const FormPengeluaran = ({
         coadebet: '',
         coadebet_text: '',
         keterangan: '',
-        nominal: '',
-        dpp: '',
+        nominal: '0',
+        dpp: '0',
         noinvoiceemkl: '',
         tglinvoiceemkl: '',
         nofakturpajakemkl: '',
@@ -246,9 +246,9 @@ const FormPengeluaran = ({
       const updated = [...prev];
       const current = updated[rowIdx];
 
-      if (!value || value.trim() === '') {
-        current.nominal = '';
-        current.dpp = '';
+      if (!value || value.trim() === '' || value.trim() === '0') {
+        current.nominal = '0';
+        current.dpp = '0';
         current.disableNominal = false;
         current.disableDpp = false;
         return updated;
@@ -257,9 +257,10 @@ const FormPengeluaran = ({
       const parsedValue = parseCurrency(value);
       current.nominal = value;
       current.dpp = '0';
-
-      current.disableNominal = false;
-      current.disableDpp = true;
+      if (Number(value) > 0 || Number(value) < 0) {
+        current.disableDpp = true;
+        current.disableNominal = false;
+      }
 
       return updated;
     });
@@ -269,23 +270,25 @@ const FormPengeluaran = ({
     setRows((prev) => {
       const updated = [...prev];
       const current = updated[rowIdx];
+      const parsedDpp = parseCurrency(value);
 
-      if (!value || value.trim() === '') {
-        current.dpp = '';
-        current.nominal = '';
+      if (!value || value.trim() === '' || value.trim() === '0') {
+        current.dpp = '0';
+        current.nominal = '0';
         current.disableNominal = false;
         current.disableDpp = false;
         return updated;
       }
 
-      const parsedDpp = parseCurrency(value);
       current.dpp = value;
 
       const nominalValue = parsedDpp * PERSENTASE;
       current.nominal = formatCurrency(nominalValue);
 
-      current.disableNominal = true;
-      current.disableDpp = false;
+      if (Number(value) > 0 || Number(value) < 0) {
+        current.disableNominal = true;
+        current.disableDpp = false;
+      }
 
       return updated;
     });
@@ -407,7 +410,6 @@ const FormPengeluaran = ({
                     );
                   }}
                   disabled={mode === 'view' || mode === 'delete'}
-                  overflow={false}
                 />
               ))}
             </div>
@@ -466,7 +468,7 @@ const FormPengeluaran = ({
         name: 'nominal',
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          let raw = props.row.nominal ?? ''; // Nilai nominal awal
+          let raw = props.row.nominal ?? '0'; // Nilai nominal awal
 
           // Cek jika raw belum diformat dengan tanda koma, kemudian format
           if (typeof raw === 'number') {
@@ -500,7 +502,7 @@ const FormPengeluaran = ({
                               (Number(parseCurrency(props.row.dpp)) > 0 &&
                                 mode === 'edit')
                             }
-                            value={String(props.row.nominal ?? '')}
+                            value={String(props.row.nominal ?? '0')}
                             onValueChange={(value) => {
                               field.onChange(value);
                               handleNominalChange(rowIdx, value);
@@ -566,7 +568,7 @@ const FormPengeluaran = ({
                                 mode === 'edit' &&
                                 props.row.dpp <= 0)
                             }
-                            value={String(props.row.dpp ?? '')}
+                            value={String(props.row.dpp ?? '0')}
                             onValueChange={(value) => {
                               handleDppChange(rowIdx, value);
                             }}
@@ -1053,8 +1055,8 @@ const FormPengeluaran = ({
         coadebet: val.coadebet ?? '',
         coadebet_text: val.coadebet_text ?? '',
         keterangan: val.keterangan ?? '',
-        nominal: val.sisa ?? '',
-        dpp: val.dpp ?? '',
+        nominal: val.sisa ?? '0',
+        dpp: val.dpp ?? '0',
         noinvoiceemkl: val.noinvoiceemkl ?? '',
         tglinvoiceemkl: val.tglinvoiceemkl ?? '',
         nofakturpajakemkl: val.nofakturpajakemkl ?? '',
@@ -1084,8 +1086,8 @@ const FormPengeluaran = ({
           coadebet: item.coadebet ?? '',
           coadebet_text: item.coadebet_text ?? '',
           keterangan: item.keterangan ?? '',
-          nominal: item.nominal ?? '',
-          dpp: item.dpp ?? '',
+          nominal: item.nominal ?? '0',
+          dpp: item.dpp ?? '0',
           noinvoiceemkl: item.noinvoiceemkl ?? '',
           tglinvoiceemkl: item.tglinvoiceemkl ?? '',
           nofakturpajakemkl: item.nofakturpajakemkl ?? '',
@@ -1108,8 +1110,8 @@ const FormPengeluaran = ({
             coadebet: '',
             coadebet_text: '',
             keterangan: '',
-            nominal: '',
-            dpp: '',
+            nominal: '0',
+            dpp: '0',
             noinvoiceemkl: '',
             tglinvoiceemkl: '',
             nofakturpajakemkl: '',
@@ -1150,8 +1152,8 @@ const FormPengeluaran = ({
             coadebet: coadebet ? String(coadebet) : '',
             coadebet_text: coadebet_text ? String(coadebet_text) : '',
             keterangan: keterangan ? String(keterangan) : '',
-            nominal: nominal ? String(nominal) : '',
-            dpp: dpp ? String(dpp) : '',
+            nominal: nominal ? String(nominal) : '0',
+            dpp: dpp ? String(dpp) : '0',
             noinvoiceemkl: noinvoiceemkl ? String(noinvoiceemkl) : '',
             tglinvoiceemkl: tglinvoiceemkl ? String(tglinvoiceemkl) : '',
             nofakturpajakemkl: nofakturpajakemkl
