@@ -12,7 +12,10 @@ export const hutangDetailSchema = z.object({
   nominal: z
     .string()
     .trim()
-    .nonempty({ message: dynamicRequiredMessage('NOMINAL') }),
+    .nonempty({ message: dynamicRequiredMessage('NOMINAL') })
+    .refine((val) => Number(val) !== 0, {
+      message: 'Nominal wajib di isi'
+    }),
   dpp: z.string().nullable(),
   noinvoiceemkl: z.string().nullable(),
   tglinvoiceemkl: z.string().nullable(),

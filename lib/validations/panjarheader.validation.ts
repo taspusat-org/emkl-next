@@ -12,12 +12,20 @@ export const PanjarDetailSchema = z.object({
     .nonempty({ message: dynamicRequiredMessage('ORDERAN MUATAN') }),
 
   estimasi: z
-    .string({ message: dynamicRequiredMessage('ESTIMASI') })
-    .nonempty({ message: dynamicRequiredMessage('ESTIMASI') }),
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('ESTIMASI') })
+    .refine((val) => Number(val) !== 0, {
+      message: 'Estimasi wajib di isi'
+    }),
 
   nominal: z
-    .string({ message: dynamicRequiredMessage('NOMINAL') })
-    .nonempty({ message: dynamicRequiredMessage('NOMINAL') }),
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('NOMINAL') })
+    .refine((val) => Number(val) !== 0, {
+      message: 'Nominal wajib di isi'
+    }),
 
   keterangan: z.string().nullable().optional()
 });

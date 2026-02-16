@@ -127,8 +127,8 @@ const FormPanjarHeader = ({
       panjar_id: 0,
       orderanmuatan_id: 0,
       orderanmuatan_nobukti: '',
-      estimasi: '',
-      nominal: '',
+      estimasi: '0',
+      nominal: '0',
       keterangan: '',
       isNew: true
     };
@@ -305,7 +305,7 @@ const FormPanjarHeader = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 200,
         renderHeaderCell: () => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>estimasi</p>
@@ -313,7 +313,7 @@ const FormPanjarHeader = ({
         ),
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          let raw = props.row.estimasi ?? ''; // Nilai estimasi awal
+          let raw = props.row.estimasi ?? '0'; // Nilai estimasi awal
 
           // if (typeof raw === 'number') {
           //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
@@ -331,12 +331,27 @@ const FormPanjarHeader = ({
                   {formatCurrency(totalNominal)}
                 </div>
               ) : (
-                <InputCurrency
-                  readOnly={mode === 'view' || mode === 'delete'}
-                  value={String(raw)}
-                  onValueChange={(value) =>
-                    handleInputChange(rowIdx, 'estimasi', value)
-                  }
+                <FormField
+                  name={`details.${rowIdx}.estimasi`}
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                      <div className="flex w-full flex-col">
+                        <FormControl>
+                          <InputCurrency
+                            {...field}
+                            readOnly={mode === 'view' || mode === 'delete'}
+                            value={String(raw ?? '0')}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              handleInputChange(rowIdx, 'estimasi', value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
                 />
               )}
             </div>
@@ -349,7 +364,7 @@ const FormPanjarHeader = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        width: 150,
+        width: 200,
 
         renderHeaderCell: () => (
           <div className="flex h-[100%] w-full flex-col justify-center">
@@ -358,7 +373,7 @@ const FormPanjarHeader = ({
         ),
         renderCell: (props: any) => {
           const rowIdx = props.rowIdx;
-          let raw = props.row.nominal ?? ''; // Nilai nominal awal
+          let raw = props.row.nominal ?? '0'; // Nilai nominal awal
 
           // if (typeof raw === 'number') {
           //   // Cek jika raw belum diformat dengan tanda koma, kemudian format
@@ -376,12 +391,27 @@ const FormPanjarHeader = ({
                   {formatCurrency(totalNominal)}
                 </div>
               ) : (
-                <InputCurrency
-                  readOnly={mode === 'view' || mode === 'delete'}
-                  value={String(raw)}
-                  onValueChange={(value) =>
-                    handleInputChange(rowIdx, 'nominal', value)
-                  }
+                <FormField
+                  name={`details.${rowIdx}.nominal`}
+                  control={forms.control}
+                  render={({ field }) => (
+                    <FormItem className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
+                      <div className="flex w-full flex-col">
+                        <FormControl>
+                          <InputCurrency
+                            {...field}
+                            readOnly={mode === 'view' || mode === 'delete'}
+                            value={String(raw ?? '0')}
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              handleInputChange(rowIdx, 'nominal', value);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
                 />
               )}
             </div>
@@ -548,8 +578,8 @@ const FormPanjarHeader = ({
           panjar_id: Number(item.panjar_id),
           orderanmuatan_id: item.orderanmuatan_id ?? 0,
           orderanmuatan_nobukti: item.orderanmuatan_nobukti ?? '',
-          estimasi: formatCurrency(item.estimasi) ?? '',
-          nominal: formatCurrency(item.nominal) ?? '',
+          estimasi: formatCurrency(item.estimasi) ?? '0',
+          nominal: formatCurrency(item.nominal) ?? '0',
           keterangan: item.keterangan ?? '',
           isNew: false
         }));
@@ -567,8 +597,8 @@ const FormPanjarHeader = ({
             panjar_id: 0,
             orderanmuatan_id: 0,
             orderanmuatan_nobukti: '',
-            estimasi: '',
-            nominal: '',
+            estimasi: '0',
+            nominal: '0',
             keterangan: '',
             isNew: true
           },

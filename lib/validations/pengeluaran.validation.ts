@@ -1,11 +1,17 @@
 import { z } from 'zod';
-
+import { dynamicRequiredMessage } from '../utils';
 export const pengeluaranDetailSchema = z.object({
   id: z.coerce.number().optional(),
   coadebet: z.string().nullable(),
   coadebet_text: z.string().nullable(),
   keterangan: z.string().nullable(),
-  nominal: z.string().nullable(),
+  nominal: z
+    .string()
+    .trim()
+    .nonempty({ message: dynamicRequiredMessage('NOMINAL') })
+    .refine((val) => Number(val) !== 0, {
+      message: 'Nominal wajib di isi'
+    }),
   dpp: z.string().nullable(),
 
   transaksibiaya_nobukti: z.string().nullable(),
