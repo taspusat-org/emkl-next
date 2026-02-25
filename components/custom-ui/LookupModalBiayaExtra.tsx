@@ -5,6 +5,7 @@ import React, {
   useMemo,
   useCallback
 } from 'react';
+import { useTheme } from 'next-themes';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -85,6 +86,8 @@ export default function LookUpModalBiayaExtra({
   rowIdx,
   onSelectRow
 }: LookUpProps) {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
   const [isDisable, setIsDisable] = useState<boolean>(false);
@@ -710,10 +713,8 @@ export default function LookUpModalBiayaExtra({
         <DialogTitle hidden={true}>Title</DialogTitle>
 
         <DialogContent className="flex h-full min-w-full flex-col overflow-hidden bg-black bg-opacity-50 p-10">
-          <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              {labelLookup || label}
-            </h2>
+          <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+            <h2 className="text-sm font-semibold">{labelLookup || label}</h2>
             <div
               className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
               onClick={() => {
@@ -731,8 +732,8 @@ export default function LookUpModalBiayaExtra({
               collapse === true ? 'w-full' : 'w-[100%]'
             } flex-grow overflow-hidden transition-all duration-300`}
           >
-            <div className="h-full min-w-full border border-blue-500 bg-white p-6">
-              <div className="my-4 h-[500px] w-full rounded-sm border border-blue-500">
+            <div className="h-full min-w-full border border-border bg-background p-6">
+              <div className="h-[500px] w-full rounded-sm border border-border">
                 <DataGrid
                   ref={gridRef}
                   columns={columnsBiayaExtra}
@@ -742,7 +743,8 @@ export default function LookUpModalBiayaExtra({
                   rowClass={getRowClass}
                   rowHeight={50}
                   headerRowHeight={35}
-                  className="rdg-light h-[450px]"
+                  className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+                  enableVirtualization={false}
                   onCellKeyDown={handleKeyDown}
                   renderers={{
                     noRowsFallback: <EmptyRowsRenderer />
@@ -762,7 +764,7 @@ export default function LookUpModalBiayaExtra({
               </div>
             </div>
           </div>
-          <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+          <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
             <Button
               type="button"
               variant="save"
@@ -776,14 +778,13 @@ export default function LookUpModalBiayaExtra({
 
             <Button
               type="button"
-              variant="secondary"
-              className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+              variant="cancel"
               onClick={() => {
                 setOpen(false);
                 dispatch(clearOpenNameModal()); // Clear openNameModal ketika input dibersihkan
               }}
             >
-              <IoMdClose /> <p className="text-center text-white">Cancel</p>
+              <p>Cancel</p>
             </Button>
           </div>
         </DialogContent>

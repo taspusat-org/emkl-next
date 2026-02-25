@@ -267,7 +267,7 @@ export default function SignInViewPage() {
 
   return (
     <div
-      className="relative flex max-h-screen min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-[#e9ecef]"
+      className="relative flex max-h-screen min-h-screen w-full flex-col items-center justify-center overflow-hidden bg-background-header"
       style={{
         maxHeight: '100vh', // Full screen height
         width: '100%' // Full width
@@ -276,7 +276,7 @@ export default function SignInViewPage() {
       <div className="flex w-full items-end justify-center">
         <div className="mb-5 flex flex-col items-center gap-2">
           <Image src={IcTasSmall} alt="icon tas" width={150} height={150} />
-          <p className="text-header text-lg font-semibold tracking-wider text-zinc-900">
+          <p className="text-header text-lg font-semibold tracking-wider">
             PT. TRANSPORINDO AGUNG SEJAHTERA
           </p>
           <p className="text-header text-base font-semibold tracking-wider text-red-500">
@@ -286,14 +286,9 @@ export default function SignInViewPage() {
       </div>
 
       <div className="3xl:w-[25%] mb-5 h-fit w-[95%] lg:h-fit lg:w-[40%] xl:w-[35%] 2xl:w-[27%]">
-        <div className="flex h-full w-full flex-col items-center justify-between bg-[#fff] shadow-xl">
-          <div
-            className="w-full border border-blue-500 px-3 py-1"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          >
-            <h2 className="text-base text-gray-600 ">LOGIN</h2>
+        <div className="flex h-full w-full flex-col items-center justify-between bg-background-card shadow-xl">
+          <div className="w-full border border-border bg-background-form-header px-3 py-1">
+            <h2 className="text-primary-text text-base">LOGIN</h2>
           </div>
 
           <div className="flex h-full w-full flex-row items-center justify-between px-4">
@@ -312,12 +307,12 @@ export default function SignInViewPage() {
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             Username
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
-                              <div className="flex flex-1 flex-row rounded-[3px] border border-zinc-300 bg-white focus-within:border-blue-500 focus-within:bg-[#ffffee]">
+                              <div className="flex flex-1 flex-row rounded-[3px] border border-input-border bg-background-input focus-within:border-input-border-focus focus-within:bg-background-input-focus">
                                 <Input
                                   {...field}
                                   autoFocus
@@ -341,17 +336,17 @@ export default function SignInViewPage() {
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             Password
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
                             <FormControl>
-                              <div className="flex flex-1 flex-row rounded-[3px] border border-zinc-300 bg-white focus-within:border-blue-500 focus-within:bg-[#ffffee]">
+                              <div className="flex flex-1 flex-row rounded-[3px] border border-input-border bg-background-input focus-within:border-input-border-focus focus-within:bg-background-input-focus">
                                 <input
                                   {...field}
                                   value={field.value ?? ''}
                                   type={showPassword ? 'text' : 'password'}
-                                  className="h-9 w-full rounded-[5px] border-none bg-white p-0 pl-2 text-sm text-zinc-900 focus:bg-[#ffffee] focus:outline-none focus:ring-0 focus-visible:ring-0"
+                                  className="h-9 w-full rounded-[5px] border-none bg-background-input p-0 pl-2 text-sm focus:bg-background-input-focus focus:outline-none focus:ring-0 focus-visible:ring-0"
                                 />
                                 <div
                                   onClick={() => setShowPassword(!showPassword)}
@@ -388,7 +383,7 @@ export default function SignInViewPage() {
         </div>
       </div>
       {pageLoadTime ? (
-        <p className="mt-1 text-gray-600">
+        <p className="text-primary-text mt-1">
           Halaman ini dimuat dalam{' '}
           <span className="font-semibold">
             {(pageLoadTime / 1000).toFixed(2)}
@@ -396,12 +391,12 @@ export default function SignInViewPage() {
           detik
         </p>
       ) : (
-        <p className="mt-1 text-gray-600">
+        <p className="text-primary-text mt-1">
           Halaman ini dimuat dalam <span className="font-semibold">0.2</span>{' '}
           detik
         </p>
       )}
-      <p className="text-zinc-900">
+      <p className="text-primary-text">
         Copyright &#169; {new Date().getFullYear()}
       </p>
     </div>

@@ -21,6 +21,10 @@ import {
   useGetLogtrailHeader
 } from '@/lib/server/useLogtrail';
 import { Filter } from '@/lib/apis/logtrail.api';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 
 interface Row {
   [key: string]: any;
@@ -30,6 +34,8 @@ interface InputColRefs {
 }
 
 const GridDetail = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const idDetail = useSelector((state: RootState) => state.logtrail.detail);
 
   const [filters, setFilters] = useState<Filter>({
@@ -61,35 +67,6 @@ const GridDetail = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const dispatch = useDispatch();
 
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text !== null && text !== undefined ? String(text) : ''; // Pastikan 0 tidak dianggap falsy
-    if (!textValue) return '';
-
-    if (!search.trim() && !columnFilter.trim()) return textValue;
-
-    const combinedSearch = search + columnFilter;
-
-    // Regex untuk mencari setiap huruf dari combinedSearch dan mengganti dengan elemen <span> dengan background yellow dan font-size 12px
-    const regex = new RegExp(`(${combinedSearch})`, 'gi');
-
-    // Ganti semua kecocokan dengan elemen JSX
-    const highlightedText = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-xs"
-        dangerouslySetInnerHTML={{ __html: highlightedText }}
-      />
-    );
-  }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
     setInputValue(searchValue);
@@ -283,27 +260,6 @@ const GridDetail = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
@@ -341,14 +297,9 @@ const GridDetail = () => {
   }, [logtrail, currentPage, filters, isFetchingManually]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <p className="text-sm font-bold text-zinc-600">Detail</p>
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <p className="text-sm font-bold">Detail</p>
         </div>
         <DataGrid
           ref={gridRef}
@@ -359,7 +310,8 @@ const GridDetail = () => {
           onCellClick={handleCellClick}
           headerRowHeight={40}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
           renderers={{

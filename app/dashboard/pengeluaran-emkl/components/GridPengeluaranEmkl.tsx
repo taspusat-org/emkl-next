@@ -68,6 +68,17 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 
 interface Filter {
   page: number;
@@ -83,6 +94,8 @@ const GridPengeluaranEmkl = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { clearError } = useFormError();
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const { user } = useSelector((state: RootState) => state.auth);
   const gridRef = useRef<DataGridHandle>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -103,6 +116,7 @@ const GridPengeluaranEmkl = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [isFetchingManually, setIsFetchingManually] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
@@ -289,6 +303,15 @@ const GridPengeluaranEmkl = () => {
     setIsAllSelected(!isAllSelected);
   };
 
+  const handleFilterRows = (val: string) => {
+    setIsFilteringRows(true);
+    // setLocalSelectedValue(val);
+    // onChange?.(val);
+    setTimeout(() => {
+      setIsFilteringRows(false);
+    }, 1000);
+  };
+
   const columns = useMemo((): Column<PengeluaranEmkl>[] => {
     return [
       {
@@ -340,7 +363,12 @@ const GridPengeluaranEmkl = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            ></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -506,7 +534,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coadebet',
-        name: 'coadebet',
+        name: 'coa debet',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -581,7 +609,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coakredit',
-        name: 'coakredit',
+        name: 'coa kredit',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -656,7 +684,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coabankdebet',
-        name: 'coabankdebet',
+        name: 'coa bank debet',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -731,7 +759,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coabankkredit',
-        name: 'coabankkredit',
+        name: 'coa bank kredit',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -806,7 +834,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coahutangdebet',
-        name: 'coahutangdebet',
+        name: 'coa hutang debet',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -881,7 +909,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coahutangkredit',
-        name: 'coahutangkredit',
+        name: 'coa hutang kredit',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -956,7 +984,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'coaproses',
-        name: 'coaproses',
+        name: 'coa proses',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1031,7 +1059,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'nilaiprosespenerimaan',
-        name: 'nilaiprosespenerimaan',
+        name: 'nilai proses penerimaan',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1107,7 +1135,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'nilaiprosespengeluaran',
-        name: 'nilaiprosespengeluaran',
+        name: 'nilai proses pengeluaran',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1183,7 +1211,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'nilaiproseshutang',
-        name: 'nilaiproseshutang',
+        name: 'nilai proses hutang',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1259,7 +1287,7 @@ const GridPengeluaranEmkl = () => {
       },
       {
         key: 'statuspenarikan',
-        name: 'statuspenarikan',
+        name: 'status penarikan',
         resizable: true,
         draggable: true,
         width: 150,
@@ -1702,9 +1730,13 @@ const GridPengeluaranEmkl = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -2496,40 +2528,86 @@ const GridPengeluaranEmkl = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
-              }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
-            />
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <div>
+              <Select
+                defaultValue="ALL ROWS"
+                onValueChange={handleFilterRows}
+                disabled={isFilteringRows}
               >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
+                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="ALL ROWS"
+                    >
+                      <p className="text-sm font-normal">ALL ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="CHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">CHECKED ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="UNCHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridPengeluaranEmkl"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            />
           </div>
         </div>
 
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
@@ -2538,7 +2616,8 @@ const GridPengeluaranEmkl = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
@@ -2550,12 +2629,7 @@ const GridPengeluaranEmkl = () => {
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton
             module="PENGELUARAN-EMKL"
             onAdd={handleAdd}
@@ -2563,6 +2637,10 @@ const GridPengeluaranEmkl = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
+            rowsLength={rows.length}
+            totalItems={
+              allPengeluaranEmkl ? allPengeluaranEmkl.pagination.totalItems : 0
+            }
             customActions={[
               {
                 label: 'Print',
@@ -2576,11 +2654,11 @@ const GridPengeluaranEmkl = () => {
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

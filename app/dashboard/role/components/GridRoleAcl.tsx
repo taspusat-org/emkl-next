@@ -16,6 +16,8 @@ import { useGetRoleAcl, useUpdateRoleAcl } from '@/lib/server/useRole';
 import { RoleAclInput, roleAclSchema } from '@/lib/validations/role.validation';
 import FormRoleAclTable from './FormRoleAclTable';
 import { FaPen, FaPlus } from 'react-icons/fa';
+import { useTheme } from 'next-themes';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 
 interface Row {
   id: number;
@@ -25,6 +27,8 @@ interface Row {
 }
 
 const GridRoleAcl = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const roleaclDetail = useSelector((state: RootState) => state.roleacl.value);
 
   const {
@@ -132,16 +136,6 @@ const GridRoleAcl = () => {
     setPopOverTable(true);
     setPopOver(false);
   };
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
 
   useEffect(() => {
     if (roleaclDetail?.id) {
@@ -178,14 +172,9 @@ const GridRoleAcl = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <p className="font-bold text-zinc-600">Detail</p>
+      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <p className="font-bold">Detail</p>
         </div>
         <DataGrid
           columns={columns}
@@ -196,14 +185,10 @@ const GridRoleAcl = () => {
           onCellClick={handleCellClick}
           rowClass={getRowClass}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-          className="rdg-light fill-grid text-xs"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid text-xs`}
+          enableVirtualization={false}
         />
-        <div
-          className="border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton module="ROLE-ACL" onEdit={handleEdit} />
           {/* <ActionButton module="ROLE" onEdit={handleEdit} /> */}
         </div>

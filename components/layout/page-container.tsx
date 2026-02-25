@@ -11,7 +11,7 @@ export default function PageContainer({
   return (
     <>
       {scrollable ? (
-        <ScrollArea className="h-full bg-[#f4f6f9]">
+        <ScrollArea className="h-full bg-background">
           <div className="h-full px-4 pb-16 pt-4 md:px-6">{children}</div>
         </ScrollArea>
       ) : (

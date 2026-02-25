@@ -43,6 +43,8 @@ import {
 } from '@/lib/types/biayaheader.type';
 import JsxParser from 'react-jsx-parser';
 import { highlightText } from '@/components/custom-ui/HighlightText';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { useTheme } from 'next-themes';
 
 interface Filter {
   page: number;
@@ -54,6 +56,8 @@ interface Filter {
 }
 
 const GridBiayaMuatanDetail = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const { user } = useSelector((state: RootState) => state.auth);
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const { selectedJenisOrderan, selectedJenisOrderanNama } = useSelector(
@@ -68,10 +72,8 @@ const GridBiayaMuatanDetail = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rows, setRows] = useState<BiayaMuatanDetail[]>([]);
   const [inputValue, setInputValue] = useState<string>('');
-  const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -131,8 +133,6 @@ const GridBiayaMuatanDetail = () => {
         filters: { ...prev.filters, [colKey]: value },
         page: 1
       }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
       setSelectedRow(0);
@@ -156,8 +156,6 @@ const GridBiayaMuatanDetail = () => {
       filters: { ...prev.filters, [colKey]: '' },
       page: 1
     }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
     setRows([]);
     setCurrentPage(1);
   }, []);
@@ -204,67 +202,6 @@ const GridBiayaMuatanDetail = () => {
     setRows([]);
   };
 
-  // function highlightText(
-  //   text: string | number | null | undefined,
-  //   search: string,
-  //   columnFilter: string = ''
-  // ) {
-  //   const textValue = text != null ? String(text) : '';
-  //   if (!textValue) return '';
-
-  //   // Priority: columnFilter over search
-  //   const searchTerm = columnFilter?.trim() || search?.trim() || '';
-
-  //   if (!searchTerm) {
-  //     return textValue;
-  //   }
-
-  //   const escapeRegExp = (s: string) =>
-  //     s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-  //   // Create regex for continuous string match
-  //   const escapedTerm = escapeRegExp(searchTerm);
-  //   const regex = new RegExp(`(${escapedTerm})`, 'gi');
-
-  //   // Replace all occurrences
-  //   const highlighted = textValue.replace(
-  //     regex,
-  //     (match) =>
-  //       `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
-  //   );
-
-  //   return (
-  //     <span
-  //       className="text-sm"
-  //       dangerouslySetInnerHTML={{ __html: highlighted }}
-  //     />
-  //   );
-  // }
-
-  const handleRowSelect = (rowId: number) => {
-    setCheckedRows((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
-      } else {
-        updated.add(rowId);
-      }
-
-      setIsAllSelected(updated.size === rows.length);
-      return updated;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setCheckedRows(new Set());
-    } else {
-      const allIds = rows.map((row) => Number(row.id));
-      setCheckedRows(new Set(allIds));
-    }
-    setIsAllSelected(!isAllSelected);
-  };
-
   const columns = useMemo((): Column<BiayaMuatanDetail>[] => {
     return [
       {
@@ -306,36 +243,8 @@ const GridBiayaMuatanDetail = () => {
         }
       },
       {
-        key: 'select',
-        name: '',
-        width: 50,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
-            <div className="flex h-[50%] w-full items-center justify-center">
-              <Checkbox
-                checked={isAllSelected}
-                onCheckedChange={() => handleSelectAll()}
-                id="header-checkbox"
-                className="mb-2"
-              />
-            </div>
-          </div>
-        ),
-        renderCell: ({ row }: { row: BiayaMuatanDetail }) => (
-          <div className="flex h-full items-center justify-center">
-            <Checkbox
-              checked={checkedRows.has(Number(row.id))}
-              onCheckedChange={() => handleRowSelect(Number(row.id))}
-              id={`row-checkbox-${row.id}`}
-            />
-          </div>
-        )
-      },
-      {
         key: 'nobukti',
-        name: 'nobukti',
+        name: 'no bukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -406,7 +315,7 @@ const GridBiayaMuatanDetail = () => {
       },
       {
         key: 'orderanmuatan_nobukti',
-        name: 'orderanmuatan_nobukti',
+        name: 'orderan muatan nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -710,7 +619,7 @@ const GridBiayaMuatanDetail = () => {
       },
       {
         key: 'biayaextra_nobukti',
-        name: 'biayaextra_nobukti',
+        name: 'biaya extra nobukti',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -804,9 +713,13 @@ const GridBiayaMuatanDetail = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -953,37 +866,47 @@ const GridBiayaMuatanDetail = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridBiayaExtraMuatanDetail"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
             />
-
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
           </div>
         </div>
         <DataGrid
@@ -997,7 +920,8 @@ const GridBiayaMuatanDetail = () => {
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-          className="rdg-light fill-grid text-xs"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           rowKeyGetter={rowKeyGetter}
           rowClass={getRowClass}
           onCellClick={handleCellClick}
@@ -1005,22 +929,17 @@ const GridBiayaMuatanDetail = () => {
             handleCellClick({ row: args.row });
           }}
         />
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           {isLoading ? <LoadRowsRenderer /> : null}
 
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

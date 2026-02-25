@@ -39,7 +39,14 @@ import {
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import { clearOpenName } from '@/lib/store/lookupSlice/lookupSlice';
 import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
-import { formatDateToDDMMYYYY } from '@/lib/utils';
+import {
+  cancelPreviousRequest,
+  formatDateToDDMMYYYY,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 import FormPenerimaan from './FormPenerimaan';
 import {
   useCreatePenerimaan,
@@ -71,6 +78,19 @@ import {
 } from '@/components/ui/tooltip';
 import FilterInput from '@/components/custom-ui/FilterInput';
 import { debounce } from 'lodash';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 interface Filter {
   page: number;
   limit: number;
@@ -80,11 +100,10 @@ interface Filter {
   sortDirection: 'asc' | 'desc';
 }
 
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
 const GridPenerimaanHeader = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -189,14 +208,6 @@ const GridPenerimaanHeader = () => {
   );
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
-  const cancelPreviousRequest = () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    // Buat AbortController baru untuk request berikutnya
-    abortControllerRef.current = new AbortController();
-  };
-
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setInputValue('');
@@ -215,13 +226,13 @@ const GridPenerimaanHeader = () => {
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
-      cancelPreviousRequest();
+      cancelPreviousRequest(abortControllerRef);
       debouncedFilterUpdate(colKey, value);
     },
     []
   );
   const handleClearFilter = useCallback((colKey: string) => {
-    cancelPreviousRequest();
+    cancelPreviousRequest(abortControllerRef);
     debouncedFilterUpdate.cancel(); // Cancel pending updates
     setFilters((prev) => ({
       ...prev,
@@ -238,7 +249,7 @@ const GridPenerimaanHeader = () => {
     const searchValue = e.target.value;
     // Langsung update input value tanpa debounce
     setInputValue(searchValue);
-    cancelPreviousRequest();
+    cancelPreviousRequest(abortControllerRef);
     // Menunggu beberapa waktu sebelum update filter
     if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
 
@@ -268,42 +279,6 @@ const GridPenerimaanHeader = () => {
       setRows([]);
     }, 300); // Mengatur debounce hanya untuk update filter
   };
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
-
-    // Priority: columnFilter over search
-    const searchTerm = columnFilter?.trim() || search?.trim() || '';
-
-    if (!searchTerm) {
-      return textValue;
-    }
-
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    // Create regex for continuous string match
-    const escapedTerm = escapeRegExp(searchTerm);
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-
-    // Replace all occurrences
-    const highlighted = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
 
   useEffect(() => {
     return () => {
@@ -356,6 +331,16 @@ const GridPenerimaanHeader = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
+  const handleFilterRows = (val: string) => {
+    setIsFilteringRows(true);
+    // setLocalSelectedValue(val);
+    // onChange?.(val);
+    setTimeout(() => {
+      setIsFilteringRows(false);
+    }, 1000);
+  };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -374,8 +359,6 @@ const GridPenerimaanHeader = () => {
         key: 'nomor',
         name: 'NO',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -414,10 +397,17 @@ const GridPenerimaanHeader = () => {
         key: 'select',
         name: '',
         width: 50,
+        resizable: true,
+        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            ></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -451,7 +441,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nobukti')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -527,7 +519,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tglbukti')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -596,7 +590,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('bank_id')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -662,7 +658,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('noresi')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -730,7 +728,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coakasmasuk_nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -802,7 +802,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('relasi_nama')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -872,7 +874,9 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
               onClick={() => handleSort('alatbayar_nama')}
             >
               <p
@@ -945,7 +949,9 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
               onClick={() => handleSort('nowarkat')}
             >
               <p
@@ -1014,7 +1020,9 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
               onClick={() => handleSort('diterimadari')}
             >
               <p
@@ -1087,7 +1095,9 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
               onClick={() => handleSort('tgllunas')}
             >
               <p
@@ -1156,7 +1166,9 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
               onClick={() => handleSort('postingdari')}
             >
               <p
@@ -1227,7 +1239,9 @@ const GridPenerimaanHeader = () => {
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
               onClick={() => handleSort('modifiedby')}
             >
               <p
@@ -1299,7 +1313,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1372,7 +1388,9 @@ const GridPenerimaanHeader = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1911,26 +1929,6 @@ const GridPenerimaanHeader = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-  const handleResequence = () => {
-    router.push('/dashboard/resequence');
-  };
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setMode('');
@@ -1949,112 +1947,7 @@ const GridPenerimaanHeader = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridPenerimaanHeader',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -2066,9 +1959,13 @@ const GridPenerimaanHeader = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -2084,7 +1981,13 @@ const GridPenerimaanHeader = () => {
 
   useEffect(() => {
     setIsFirstLoad(true);
-    loadGridConfig(user.id, 'GridPenerimaanHeader');
+    loadGridConfig(
+      user.id,
+      'GridPenerimaanHeader',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
 
     const rawNobukti = searchParams.get('penerimaan_nobukti');
 
@@ -2305,40 +2208,86 @@ const GridPenerimaanHeader = () => {
   }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
-              }}
-              className="overflow m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
-            />
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <div>
+              <Select
+                defaultValue="ALL ROWS"
+                onValueChange={handleFilterRows}
+                disabled={isFilteringRows}
               >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
+                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="ALL ROWS"
+                    >
+                      <p className="text-sm font-normal">ALL ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="CHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">CHECKED ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="UNCHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridPenerimaanHeader"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            />
           </div>
         </div>
 
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
@@ -2347,7 +2296,8 @@ const GridPenerimaanHeader = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
@@ -2356,12 +2306,7 @@ const GridPenerimaanHeader = () => {
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
-        <div
-          className="mt-1 flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton
             module="KAS-GANTUNG"
             onAdd={handleAdd}
@@ -2369,6 +2314,8 @@ const GridPenerimaanHeader = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            rowsLength={rows.length}
+            totalItems={allData ? allData.pagination.totalItems : 0}
             customActions={[
               {
                 label: 'Print',
@@ -2382,18 +2329,32 @@ const GridPenerimaanHeader = () => {
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',
                 zIndex: 1000
               }}
             >
-              <Button variant="default" onClick={resetGridConfig}>
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridPenerimaanHeader',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
                 Reset
               </Button>
             </div>

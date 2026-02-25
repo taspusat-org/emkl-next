@@ -76,6 +76,17 @@ import {
   JENISORDERMUATAN,
   JENISORDERMUATANNAMA
 } from '@/constants/biayaextraheader';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 
 interface Filter {
   page: number;
@@ -102,6 +113,8 @@ const GridPanjarHeader = () => {
     onReload
   } = useSelector((state: RootState) => state.filter);
   const gridRef = useRef<DataGridHandle>(null);
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const inputRef = useRef<HTMLInputElement | null>(null);
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -124,6 +137,7 @@ const GridPanjarHeader = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [isFetchingManually, setIsFetchingManually] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
@@ -322,6 +336,15 @@ const GridPanjarHeader = () => {
     setIsAllSelected(!isAllSelected);
   };
 
+  const handleFilterRows = (val: string) => {
+    setIsFilteringRows(true);
+    // setLocalSelectedValue(val);
+    // onChange?.(val);
+    setTimeout(() => {
+      setIsFilteringRows(false);
+    }, 1000);
+  };
+
   const columns = useMemo((): Column<PanjarHeader>[] => {
     return [
       {
@@ -373,7 +396,12 @@ const GridPanjarHeader = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            ></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -396,7 +424,7 @@ const GridPanjarHeader = () => {
       },
       {
         key: 'nobukti',
-        name: 'nobukti',
+        name: 'no bukti',
         resizable: true,
         draggable: true,
         width: 200,
@@ -466,7 +494,7 @@ const GridPanjarHeader = () => {
       },
       {
         key: 'tglbukti',
-        name: 'tglbukti',
+        name: 'tgl bukti',
         resizable: true,
         draggable: true,
         width: 150,
@@ -536,7 +564,7 @@ const GridPanjarHeader = () => {
       },
       {
         key: 'jenisorder_nama',
-        name: 'jenisorder_nama',
+        name: 'jenis order',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -611,7 +639,7 @@ const GridPanjarHeader = () => {
       },
       {
         key: 'biayaemkl_nama',
-        name: 'biayaemkl_nama',
+        name: 'biaya emkl',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -980,9 +1008,13 @@ const GridPanjarHeader = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -1509,49 +1541,6 @@ const GridPanjarHeader = () => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
 
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
-
-    if (!search.trim() && !columnFilter.trim()) {
-      return textValue;
-    }
-
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
-
-    // 1. Fungsi untuk escape regex‐meta chars
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    const pattern = combined // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
-
-    const regex = new RegExp(`(${pattern})`, 'gi'); // 3. Build regex-nya
-
-    // 4. Replace dengan <span>
-    const highlighted = textValue.replace(
-      regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
-
   function handleCellClick(args: { row: PanjarHeader }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -1909,40 +1898,86 @@ const GridPanjarHeader = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
-              }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
-            />
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <div>
+              <Select
+                defaultValue="ALL ROWS"
+                onValueChange={handleFilterRows}
+                disabled={isFilteringRows}
               >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
+                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="ALL ROWS"
+                    >
+                      <p className="text-sm font-normal">ALL ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="CHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">CHECKED ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="UNCHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridPanjarHeader"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            />
           </div>
         </div>
 
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
@@ -1951,7 +1986,8 @@ const GridPanjarHeader = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
@@ -1963,12 +1999,7 @@ const GridPanjarHeader = () => {
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton
             module="BIAYA-EXTRA-HEADER"
             onAdd={handleAdd}
@@ -1976,6 +2007,10 @@ const GridPanjarHeader = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
+            rowsLength={rows.length}
+            totalItems={
+              allPanjarHeader ? allPanjarHeader.pagination.totalItems : 0
+            }
             customActions={[
               {
                 label: 'Print',
@@ -1989,11 +2024,11 @@ const GridPanjarHeader = () => {
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

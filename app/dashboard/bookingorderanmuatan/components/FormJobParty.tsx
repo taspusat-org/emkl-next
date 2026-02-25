@@ -1,19 +1,23 @@
-import { FaSave, FaTimes } from 'react-icons/fa';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { useSelector } from 'react-redux';
 import { useDispatch } from 'react-redux';
-import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import { RootState } from '@/lib/store/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import LookUp from '@/components/custom-ui/LookUp';
+import { IoMdClose, IoMdRefresh } from 'react-icons/io';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import InputNumeric from '@/components/custom-ui/InputNumeric';
+import InputCurrency from '@/components/custom-ui/InputCurrency';
 import DataGrid, { Column, DataGridHandle } from 'react-data-grid';
+import InputDatePicker from '@/components/custom-ui/InputDatePicker';
+import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   setClearLookup,
   setSubmitClicked
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -22,13 +26,10 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import {
   JENISORDERMUATAN,
   JENISORDERMUATANNAMA
 } from '@/constants/bookingorderan';
-import InputCurrency from '@/components/custom-ui/InputCurrency';
-import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
 
 const FormJobParty = ({
   forms,
@@ -39,9 +40,11 @@ const FormJobParty = ({
   // popOver,
   onSubmit,
   isLoadingCreate // mode,
-  // isLoadingDelete
-} // isLoadingUpdate,
+  // isLoadingUpdate,
+} // isLoadingDelete
 : any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const dispatch = useDispatch();
   const gridRef = useRef<DataGridHandle>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -197,25 +200,12 @@ const FormJobParty = ({
     });
   };
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
   const columns = useMemo((): Column<any>[] => {
     return [
       {
         key: 'nomor',
         name: 'NO',
         width: 50,
-        resizable: true,
-        draggable: true,
         cellClass: 'form-input',
         colSpan: (args) => {
           if (args.type === 'ROW' && args.row.isAddRow) {
@@ -226,14 +216,8 @@ const FormJobParty = ({
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm">No.</p>
-            </div>
-
-            {/* <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div> */}
+          <div className="flex h-full flex-col items-center justify-center gap-1">
+            <p className="text-sm">No.</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -253,11 +237,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>NO CONTAINER</p>
-            </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>NO CONTAINER</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -294,11 +275,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>NO SEAL</p>
-            </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>NO SEAL</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -331,11 +309,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 400,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>SCHEDULE ID</p>
-            </div>
-            {/* <div className="relative h-[50%] w-full px-1"></div> */}
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>SCHEDULE ID</p>
           </div>
         ),
         renderCell: (props: any) => (
@@ -430,10 +405,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>KAPAL</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>KAPAL</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -463,10 +436,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>PELAYARAN</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>PELAYARAN</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -496,10 +467,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>VOY BERANGKAT</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>VOY BERANGKAT</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -530,10 +499,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>tglberangkat</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>tglberangkat</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -564,10 +531,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>KODE SHIPPER</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>KODE SHIPPER</p>
           </div>
         ),
         renderCell: (props: any) => (
@@ -615,10 +580,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>HARGA TRUCKING</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>HARGA TRUCKING</p>
           </div>
         ),
         renderCell: (props: any) => (
@@ -687,10 +650,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>TRUCKING</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>TRUCKING</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -716,10 +677,8 @@ const FormJobParty = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>LOKASI STUFFING</p>
-            </div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>LOKASI STUFFING</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -919,11 +878,9 @@ const FormJobParty = ({
       }
     >
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            {`add ${modeText}`}
-          </h2>
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">{`add ${modeText}`}</h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
             onClick={() => {
@@ -936,8 +893,8 @@ const FormJobParty = ({
           </div>
         </div>
 
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="min-h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -950,7 +907,7 @@ const FormJobParty = ({
                       <div>
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          className="font-semibold lg:w-[30%]"
                         >
                           MARKETING
                         </FormLabel>
@@ -980,7 +937,7 @@ const FormJobParty = ({
                       <div>
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          className="font-semibold lg:w-[30%]"
                         >
                           CONTAINER
                         </FormLabel>
@@ -1013,7 +970,7 @@ const FormJobParty = ({
                       <div>
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          className="font-semibold lg:w-[30%]"
                         >
                           TUJUAN/PORT
                         </FormLabel>
@@ -1043,7 +1000,7 @@ const FormJobParty = ({
                       <div>
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                          className="font-semibold lg:w-[30%]"
                         >
                           SHIPPER
                         </FormLabel>
@@ -1077,7 +1034,7 @@ const FormJobParty = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                          <FormLabel className="font-semibold lg:w-[30%]">
                             PARTY
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -1102,7 +1059,7 @@ const FormJobParty = ({
                         <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
                           <FormLabel
                             required={true}
-                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                            className="font-semibold lg:w-[30%]"
                           >
                             TANGGAL
                           </FormLabel>
@@ -1132,7 +1089,7 @@ const FormJobParty = ({
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                           <FormLabel
                             required={true}
-                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                            className="font-semibold lg:w-[30%]"
                           >
                             EST MUAT
                           </FormLabel>
@@ -1158,7 +1115,7 @@ const FormJobParty = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                          <FormLabel className="font-semibold lg:w-[30%]">
                             ASAL MUATAN
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -1196,14 +1153,8 @@ const FormJobParty = ({
 
                   {reloadForm && (
                     <div className="h-[400px] min-h-[400px]">
-                      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-                        <div
-                          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-                          style={{
-                            background:
-                              'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                          }}
-                        ></div>
+                      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+                        <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2"></div>
 
                         <DataGrid
                           key={dataGridKey}
@@ -1214,19 +1165,16 @@ const FormJobParty = ({
                             resizable: true
                           }}
                           rows={rows}
-                          headerRowHeight={70}
+                          headerRowHeight={40}
                           rowHeight={55}
                           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                          className="rdg-light fill-grid text-sm"
+                          className={`${
+                            isDark ? 'rdg-dark' : 'rdg-light'
+                          } fill-grid`}
+                          enableVirtualization={false}
                         />
 
-                        <div
-                          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-                          style={{
-                            background:
-                              'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                          }}
-                        ></div>
+                        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
                       </div>
                     </div>
                   )}
@@ -1236,7 +1184,7 @@ const FormJobParty = ({
           </div>
         </div>
 
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

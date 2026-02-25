@@ -142,7 +142,7 @@ const SidebarProvider = React.forwardRef<
               } as React.CSSProperties
             }
             className={cn(
-              'group/sidebar-wrapper flex min-h-svh w-full uppercase text-sidebar-foreground has-[[data-variant=inset]]:bg-sidebar',
+              'group/sidebar-wrapper flex min-h-svh w-full uppercase has-[[data-variant=inset]]:bg-sidebar',
               className
             )}
             ref={ref}
@@ -214,6 +214,8 @@ const Sidebar = React.forwardRef<
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE
             }}
             side={side}
+            // TAMBAHKAN BARIS INI UNTUK MEMATIKAN AUTO FOCUS:
+            onOpenAutoFocus={(e) => e.preventDefault()}
           >
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>

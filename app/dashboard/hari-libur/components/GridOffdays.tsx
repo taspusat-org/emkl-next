@@ -1,5 +1,12 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { debounce } from 'lodash';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import 'react-data-grid/lib/styles.scss';
 import DataGrid, {
   CellClickArgs,
@@ -41,6 +48,23 @@ import {
 } from '@/lib/validations/offday.validation';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import {
+  cancelPreviousRequest,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
+import FilterOptions from '@/components/custom-ui/FilterOptions';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
+import IcClose from '@/public/image/x.svg';
+
 export interface Row {
   id: number;
   tgl: string;
@@ -68,12 +92,19 @@ interface Filter {
 }
 
 const GridOffdays = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
+  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [dataGridKey, setDataGridKey] = useState(0);
+  const contextMenuRef = useRef<HTMLDivElement | null>(null);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [inputValue, setInputValue] = useState<string>('');
   const [popOver, setPopOver] = useState<boolean>(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const dispatch = useDispatch();
   const { mutate: createOffdays, isLoading: isLoadingCreate } =
     useCreateOffdays();
@@ -94,7 +125,15 @@ const GridOffdays = () => {
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
+  const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [deleteMode, setDeleteMode] = useState<boolean>(false);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
+    {}
+  );
   const forms = useForm<OffdayInput>({
     resolver: zodResolver(offdaysSchema),
     mode: 'onSubmit',
@@ -157,35 +196,15 @@ const GridOffdays = () => {
   };
 
   const gridRef = useRef<DataGridHandle>(null);
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text !== null && text !== undefined ? String(text) : ''; // Pastikan 0 tidak dianggap falsy
-    if (!textValue) return '';
 
-    if (!search.trim() && !columnFilter.trim()) return textValue;
-
-    const combinedSearch = search + columnFilter;
-
-    // Regex untuk mencari setiap huruf dari combinedSearch dan mengganti dengan elemen <span> dengan background yellow dan font-size 12px
-    const regex = new RegExp(`(${combinedSearch})`, 'gi');
-
-    // Ganti semua kecocokan dengan elemen JSX
-    const highlightedText = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-xs"
-        dangerouslySetInnerHTML={{ __html: highlightedText }}
-      />
-    );
-  }
+  const handleFilterRows = (val: string) => {
+    setIsFilteringRows(true);
+    // setLocalSelectedValue(val);
+    // onChange?.(val);
+    setTimeout(() => {
+      setIsFilteringRows(false);
+    }, 1000);
+  };
 
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
@@ -209,6 +228,42 @@ const GridOffdays = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
+  const debouncedFilterUpdate = useRef(
+    debounce((colKey: string, value: string) => {
+      setFilters((prev) => ({
+        ...prev,
+        filters: { ...prev.filters, [colKey]: value },
+        page: 1
+      }));
+      setCheckedRows(new Set());
+      setIsAllSelected(false);
+      setRows([]);
+      setCurrentPage(1);
+      setSelectedRow(0);
+    }, 300) // Bisa dikurangi jadi 250-300ms
+  ).current;
+
+  const handleFilterInputChange = useCallback(
+    (colKey: string, value: string) => {
+      cancelPreviousRequest(abortControllerRef);
+      debouncedFilterUpdate(colKey, value);
+    },
+    []
+  );
+
+  const handleClearInput = () => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters
+      },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = e.target.value;
     setInputValue(searchValue);
@@ -260,7 +315,6 @@ const GridOffdays = () => {
         key: 'nomor',
         name: 'NO',
         width: 50,
-        resizable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -306,10 +360,17 @@ const GridOffdays = () => {
         key: 'select',
         name: '',
         width: 50,
+        resizable: true,
+        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            ></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -335,12 +396,16 @@ const GridOffdays = () => {
         name: 'Tanggal',
         headerCellClass: 'column-headers',
         resizable: true,
+        draggable: true,
         width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tgl')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -397,11 +462,15 @@ const GridOffdays = () => {
         name: 'KETERANGAN',
         width: 250,
         resizable: true,
+        draggable: true,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -462,43 +531,29 @@ const GridOffdays = () => {
         key: 'statusaktif',
         name: 'STATUS AKTIF',
         resizable: true,
+        draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]">
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
               <p className="text-sm font-normal">Status Aktif</p>
             </div>
             <div className="relative h-[50%] w-full px-1">
-              <Select
-                defaultValue=""
-                onValueChange={(value: any) => {
-                  handleColumnFilterChange('text', value);
-                }}
-              >
-                <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer rounded-none border border-gray-300 p-1 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem className="text=xs cursor-pointer" value="">
-                      <p className="text-sm font-normal">all</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="AKTIF"
-                    >
-                      <p className="text-sm font-normal">AKTIF</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="TIDAK AKTIF"
-                    >
-                      <p className="text-sm font-normal">TIDAK AKTIF</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleFilterInputChange('statusfinalbonus_text', value)
+                } // Menangani perubahan nilai di parent
+              />
             </div>
           </div>
         ),
@@ -533,12 +588,16 @@ const GridOffdays = () => {
         name: 'MODIFIED BY',
         headerCellClass: 'column-headers',
         resizable: true,
+        draggable: true,
         width: 150,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -600,12 +659,16 @@ const GridOffdays = () => {
         width: 150,
         name: 'Created At',
         resizable: true,
+        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -666,6 +729,7 @@ const GridOffdays = () => {
         key: 'updated_at',
         name: 'Updated At',
         resizable: true,
+        draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
 
@@ -674,6 +738,9 @@ const GridOffdays = () => {
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -733,9 +800,61 @@ const GridOffdays = () => {
     ];
   }, [filters, rows, checkedRows]);
 
-  const [columnsOrder, setColumnsOrder] = useState((): readonly number[] =>
-    columns.map((_, index) => index)
-  );
+  const orderedColumns = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
+      // Mapping dan filter untuk menghindari undefined
+      return columnsOrder
+        .map((orderIndex) => filteredColumns[orderIndex])
+        .filter((col) => col !== undefined);
+    }
+    return columns;
+  }, [columns, columnsOrder]);
+
+  const finalColumns = useMemo(() => {
+    return orderedColumns.map((col) => ({
+      ...col,
+      width: columnsWidth[col.key] ?? col.width
+    }));
+  }, [orderedColumns, columnsWidth]);
+
+  const onColumnResize = (index: number, width: number) => {
+    const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
+
+    const newWidthMap = { ...columnsWidth, [columnKey]: width }; // 2) Update state width seketika (biar kolom langsung responsif)
+    setColumnsWidth(newWidthMap);
+
+    if (resizeDebounceTimeout.current) {
+      // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
+      clearTimeout(resizeDebounceTimeout.current);
+    }
+
+    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
+    //    saveGridConfig akan dipanggil
+    resizeDebounceTimeout.current = setTimeout(() => {
+      saveGridConfig(user.id, 'GridOffDays', [...columnsOrder], newWidthMap);
+    }, 300);
+  };
+
+  const onColumnsReorder = (sourceKey: string, targetKey: string) => {
+    setColumnsOrder((prevOrder) => {
+      const sourceIndex = prevOrder.findIndex(
+        (index) => columns[index].key === sourceKey
+      );
+      const targetIndex = prevOrder.findIndex(
+        (index) => columns[index].key === targetKey
+      );
+
+      const newOrder = [...prevOrder];
+      newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
+
+      saveGridConfig(user.id, 'GridOffDays', [...newOrder], columnsWidth);
+      return newOrder;
+    });
+  };
 
   function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
     return currentTarget.scrollTop <= 10;
@@ -785,6 +904,16 @@ const GridOffdays = () => {
       setSelectedRow(rowIndex);
     }
   }
+
+  const handleClickOutside = (event: MouseEvent) => {
+    if (
+      contextMenuRef.current &&
+      !contextMenuRef.current.contains(event.target as Node)
+    ) {
+      setContextMenu(null);
+    }
+  };
+
   async function handleKeyDown(
     args: CellKeyDownArgs<Row>,
     event: React.KeyboardEvent
@@ -916,20 +1045,6 @@ const GridOffdays = () => {
     }
   };
 
-  function onColumnsReorder(sourceKey: string, targetKey: string) {
-    setColumnsOrder((columnsOrder) => {
-      const sourceColumnOrderIndex = columnsOrder.findIndex(
-        (index) => columns[index].key === sourceKey
-      );
-      const targetColumnOrderIndex = columnsOrder.findIndex(
-        (index) => columns[index].key === targetKey
-      );
-      const sourceColumnOrder = columnsOrder[sourceColumnOrderIndex];
-      const newColumnsOrder = columnsOrder.toSpliced(sourceColumnOrderIndex, 1);
-      newColumnsOrder.splice(targetColumnOrderIndex, 0, sourceColumnOrder);
-      return newColumnsOrder;
-    });
-  }
   const handleEdit = () => {
     if (selectedRow !== null) {
       const rowData = rows[selectedRow];
@@ -963,24 +1078,6 @@ const GridOffdays = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleClose = () => {
     setPopOver(false);
     setEditMode(false);
@@ -998,6 +1095,33 @@ const GridOffdays = () => {
       console.error('Error syncing ACOS:', error);
     }
   };
+
+  useEffect(() => {
+    loadGridConfig(
+      user.id,
+      'GridOffDays',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
+  }, []);
+
+  useEffect(() => {
+    if (gridRef.current && dataGridKey) {
+      setTimeout(() => {
+        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
+        setIsFirstLoad(false);
+      }, 0);
+    }
+  }, [dataGridKey]);
+
+  useEffect(() => {
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   useEffect(() => {
     if (!offdays || isDataUpdated) return;
 
@@ -1056,29 +1180,87 @@ const GridOffdays = () => {
   }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => {
-              handleInputChange(e);
-            }}
-            className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-            placeholder="Type to search..."
-          />
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <div>
+              <Select
+                defaultValue="ALL ROWS"
+                onValueChange={handleFilterRows}
+                disabled={isFilteringRows}
+              >
+                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="ALL ROWS"
+                    >
+                      <p className="text-sm font-normal">ALL ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="CHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">CHECKED ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="UNCHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridOffDays"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            />
+          </div>
         </div>
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
-          columns={columns}
+          columns={finalColumns}
           rows={rows}
           rowKeyGetter={rowKeyGetter}
           onScroll={handleScroll}
@@ -1086,7 +1268,9 @@ const GridOffdays = () => {
           onCellClick={handleCellClick}
           rowHeight={30}
           headerRowHeight={70}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
+          onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
           renderers={{
@@ -1094,18 +1278,49 @@ const GridOffdays = () => {
           }}
         />
 
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton
             onAdd={handleAdd}
             onDelete={handleDelete}
             onEdit={handleEdit}
+            rowsLength={rows.length}
+            totalItems={offdays ? offdays.pagination.totalItems : 0}
           />
           {isLoadingError ? <LoadRowsRenderer /> : null}
+          {contextMenu && (
+            <div
+              ref={contextMenuRef}
+              className="bg-background-input"
+              style={{
+                position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
+                top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
+                left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
+                // backgroundColor: 'white',
+                boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
+                padding: '8px',
+                borderRadius: '4px',
+                zIndex: 1000
+              }}
+            >
+              <Button
+                variant="default"
+                onClick={() => {
+                  resetGridConfig(
+                    user.id,
+                    'GridOffDays',
+                    columns,
+                    setColumnsOrder,
+                    setColumnsWidth
+                  );
+                  setContextMenu(null);
+                  setDataGridKey((prevKey) => prevKey + 1);
+                  gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+                }}
+              >
+                Reset
+              </Button>
+            </div>
+          )}
         </div>
       </div>
       <FormOffdays

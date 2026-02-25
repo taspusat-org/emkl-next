@@ -85,16 +85,11 @@ const Page = () => {
 
   return (
     <PageContainer scrollable>
-      <div className="flex h-fit  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <p className="font-bold text-zinc-500">UBAH PASSWORD</p>
+      <div className="flex h-fit  w-full flex-col rounded-sm border border-border bg-background-grid-header">
+        <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <p className="font-bold">UBAH PASSWORD</p>
         </div>
-        <div className="px-4 py-4">
+        <div className="bg-background-header px-4 py-4">
           <Form {...forms}>
             <form
               onSubmit={forms.handleSubmit(onSubmit)}
@@ -107,18 +102,18 @@ const Page = () => {
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[10%]">
+                        <FormLabel className="font-semibold lg:w-[10%]">
                           Password
                         </FormLabel>
                         <div className="flex flex-col lg:w-[90%]">
                           <FormControl>
-                            <div className="flex flex-1 flex-row rounded-md border border-zinc-300 px-2 focus-within:border-blue-500 focus-within:bg-[#ffffee]">
+                            <div className="flex flex-1 flex-row rounded-md border border-input-border bg-background-input px-2 focus-within:border-input-border-focus focus-within:bg-background-input-focus">
                               <input
                                 {...field}
                                 autoFocus
                                 value={field.value ?? ''}
                                 type={showPassword ? 'text' : 'password'}
-                                className="h-9 w-full border-none bg-transparent p-0 text-sm text-zinc-600 focus:border-0 focus:outline-none focus:ring-0 focus-visible:ring-0"
+                                className="h-9 w-full border-none bg-background-input p-0 text-sm text-input-text focus:border-0 focus:bg-background-input-focus focus:outline-none focus:ring-0 focus-visible:ring-0"
                               />
                               <div
                                 onClick={() => setShowPassword(!showPassword)}

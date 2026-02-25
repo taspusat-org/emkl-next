@@ -20,17 +20,25 @@ import { UserAclInput, userAclSchema } from '@/lib/validations/user.validation';
 import { useGetUserAcl, useUpdateUserAcl } from '@/lib/server/useUser';
 import { Button } from '@/components/ui/button';
 import { ImSpinner2 } from 'react-icons/im';
+import { useTheme } from 'next-themes';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import {
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 interface Row {
   id: number;
   class: string;
   method: string;
   nama: string;
 }
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
+
 const GridUserAcl = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const userAclDetail = useSelector((state: RootState) => state.user.value);
   const {
     data: useracl,
@@ -77,7 +85,7 @@ const GridUserAcl = () => {
         renderHeaderCell: () => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
-            onContextMenu={handleContextMenu}
+            onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
           >
             <p className="text-sm font-normal">CLASS</p>
           </div>
@@ -100,7 +108,7 @@ const GridUserAcl = () => {
         renderHeaderCell: () => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
-            onContextMenu={handleContextMenu}
+            onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
           >
             <p className="text-sm font-normal">METHOD</p>
           </div>
@@ -176,122 +184,6 @@ const GridUserAcl = () => {
     setPopOver(true);
   };
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridUserAcl',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   function handleCellClick(args: CellClickArgs<Row>) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -309,9 +201,13 @@ const GridUserAcl = () => {
   };
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -326,7 +222,13 @@ const GridUserAcl = () => {
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridUserAcl');
+    loadGridConfig(
+      user.id,
+      'GridUserAcl',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
@@ -367,16 +269,9 @@ const GridUserAcl = () => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col border border-blue-500 bg-white">
+      <div className="flex h-[100%] w-full flex-col border border-border bg-background">
         <DataGrid
           key={dataGridKey}
           ref={gridRef}
@@ -389,33 +284,43 @@ const GridUserAcl = () => {
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-          className="rdg-light fill-grid text-xs"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid text-xs`}
+          enableVirtualization={false}
         />
         {contextMenu && (
           <div
             ref={contextMenuRef}
+            className="bg-background-input"
             style={{
               position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
               top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
               left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-              backgroundColor: 'white',
               boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
               padding: '8px',
               borderRadius: '4px',
               zIndex: 1000
             }}
           >
-            <Button variant="default" onClick={resetGridConfig}>
+            <Button
+              variant="default"
+              onClick={() => {
+                resetGridConfig(
+                  user.id,
+                  'GridUserAcl',
+                  columns,
+                  setColumnsOrder,
+                  setColumnsWidth
+                );
+                setContextMenu(null);
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            >
               Reset
             </Button>
           </div>
         )}
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton module="USER-ACL" onEdit={handleEdit} />
           {isLoadingUserAcl ? <LoadRowsRenderer /> : null}
         </div>

@@ -103,11 +103,9 @@ const FormCabang = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Cabang Form</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Form Cabang
-          </h2>
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">Form Cabang</h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
             onClick={() => {
@@ -118,8 +116,8 @@ const FormCabang = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form onSubmit={onSubmit} className="flex h-full flex-col gap-6">
                 <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
@@ -130,7 +128,7 @@ const FormCabang = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           Kode Cabang
                         </FormLabel>
@@ -155,7 +153,7 @@ const FormCabang = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           Nama Cabang
                         </FormLabel>
@@ -178,7 +176,7 @@ const FormCabang = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           Keterangan
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -197,7 +195,7 @@ const FormCabang = ({
                   />
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
+                      <FormLabel className="text-sm font-semibold">
                         Status Aktif
                       </FormLabel>
                     </div>
@@ -217,7 +215,7 @@ const FormCabang = ({
                   </div>
                   <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <div className="w-full lg:w-[15%]">
-                      <FormLabel className="text-sm font-semibold text-gray-700">
+                      <FormLabel className="text-sm font-semibold">
                         Cabang HR
                       </FormLabel>
                     </div>
@@ -240,7 +238,7 @@ const FormCabang = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

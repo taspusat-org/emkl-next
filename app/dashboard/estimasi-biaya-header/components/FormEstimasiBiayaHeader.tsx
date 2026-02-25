@@ -1,4 +1,5 @@
 import { FormTabs } from './FormTabs';
+import { useTheme } from 'next-themes';
 import { IoMdClose } from 'react-icons/io';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
@@ -48,6 +49,8 @@ const FormEstimasiBiayaHeader = ({
   isLoadingDelete
 }: any) => {
   const todayDate = new Date();
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [dataGridKey, setDataGridKey] = useState(0);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
@@ -427,10 +430,8 @@ const FormEstimasiBiayaHeader = ({
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm">No.</p>
-            </div>
+          <div className="flex h-full flex-col items-center justify-center gap-1">
+            <p className="text-sm">No.</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -450,11 +451,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 300,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>BIAYA EMKL</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>BIAYA EMKL</p>
           </div>
         ),
         renderCell: (props: any) => (
@@ -507,11 +505,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 300,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>LINK</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>LINK</p>
           </div>
         ),
         renderCell: (props: any) => (
@@ -551,12 +546,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>nominal</p> */}
-              <p className={`text-sm`}>nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>nominal</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -590,12 +581,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>nilaiasuransi</p> */}
-              <p className={`text-sm`}>nilai asuransi</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>nilai asuransi</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -629,12 +616,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>nominaldisc</p> */}
-              <p className={`text-sm`}>nominal disc</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>nominal disc</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -668,12 +651,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>nominalsebelumdisc</p> */}
-              <p className={`text-sm`}>nominal sebelum disc</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>nominal sebelum disc</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -707,12 +686,8 @@ const FormEstimasiBiayaHeader = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>nominaltradoluar</p> */}
-              <p className={`text-sm`}>nominal trado luar</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>nominal trado luar</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -852,10 +827,8 @@ const FormEstimasiBiayaHeader = ({
           },
           headerCellClass: 'column-headers',
           renderHeaderCell: () => (
-            <div className="flex h-full flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] items-center justify-center text-center">
-                <p className="text-sm">No.</p>
-              </div>
+            <div className="flex h-full flex-col items-center justify-center gap-1">
+              <p className="text-sm">No.</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -875,11 +848,8 @@ const FormEstimasiBiayaHeader = ({
           cellClass: 'form-input',
           width: 300,
           renderHeaderCell: () => (
-            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] px-8">
-                <p className={`text-sm`}>BIAYA EMKL</p>
-              </div>
-              <div className="relative h-[50%] w-full px-1"></div>
+            <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+              <p className={`text-sm`}>BIAYA EMKL</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -950,11 +920,8 @@ const FormEstimasiBiayaHeader = ({
           cellClass: 'form-input',
           width: 300,
           renderHeaderCell: () => (
-            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] px-8">
-                <p className={`text-sm`}>LINK</p>
-              </div>
-              <div className="relative h-[50%] w-full px-1"></div>
+            <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+              <p className={`text-sm`}>LINK</p>
             </div>
           ),
           renderCell: (props: any) => (
@@ -1000,12 +967,8 @@ const FormEstimasiBiayaHeader = ({
           cellClass: 'form-input',
           width: 200,
           renderHeaderCell: () => (
-            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] px-8">
-                {/* <p className={`text-sm font-normal`}>nominal</p> */}
-                <p className={`text-sm`}>nominal</p>
-              </div>
-              <div className="relative h-[50%] w-full px-1"></div>
+            <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+              <p className={`text-sm`}>nominal</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -1238,9 +1201,9 @@ const FormEstimasiBiayaHeader = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Estimasi Biaya'
               : mode === 'edit'
@@ -1259,8 +1222,8 @@ const FormEstimasiBiayaHeader = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="min-h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -1273,7 +1236,7 @@ const FormEstimasiBiayaHeader = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           NO BUKTI
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -1299,7 +1262,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           TGL BUKTI
                         </FormLabel>
@@ -1328,7 +1291,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           JENIS ORDER
                         </FormLabel>
@@ -1360,7 +1323,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           NO BUKTI ORDERAN
                         </FormLabel>
@@ -1395,7 +1358,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           NOMINAL
                         </FormLabel>
@@ -1422,7 +1385,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           SHIPPER
                         </FormLabel>
@@ -1454,7 +1417,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           STATUS PPN
                         </FormLabel>
@@ -1486,7 +1449,7 @@ const FormEstimasiBiayaHeader = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           ASURANSI
                         </FormLabel>
@@ -1518,7 +1481,7 @@ const FormEstimasiBiayaHeader = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           COMODITY
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -1550,7 +1513,7 @@ const FormEstimasiBiayaHeader = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           CONSIGNEE
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -1578,7 +1541,7 @@ const FormEstimasiBiayaHeader = ({
                   />
 
                   <div className="h-[500px] min-h-[500px]">
-                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-100 bg-white">
+                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
                       <FormTabs mode={mode} forms={forms} />
 
                       {tabFormValues === 'detailbiaya' && (
@@ -1591,10 +1554,13 @@ const FormEstimasiBiayaHeader = ({
                             resizable: true
                           }}
                           rows={rows}
-                          headerRowHeight={70}
+                          headerRowHeight={40}
                           rowHeight={55}
                           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                          className="rdg-light fill-grid text-sm"
+                          className={`${
+                            isDark ? 'rdg-dark' : 'rdg-light'
+                          } fill-grid`}
+                          enableVirtualization={false}
                         />
                       )}
 
@@ -1608,10 +1574,13 @@ const FormEstimasiBiayaHeader = ({
                             resizable: true
                           }}
                           rows={rowsDetailInvoice}
-                          headerRowHeight={70}
+                          headerRowHeight={40}
                           rowHeight={55}
                           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                          className="rdg-light fill-grid text-sm"
+                          className={`${
+                            isDark ? 'rdg-dark' : 'rdg-light'
+                          } fill-grid`}
+                          enableVirtualization={false}
                         />
                       )}
                     </div>
@@ -1621,7 +1590,7 @@ const FormEstimasiBiayaHeader = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

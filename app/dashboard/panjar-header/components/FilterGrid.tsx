@@ -74,14 +74,9 @@ const FilterGrid = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[30px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        />
-        <div className="bg-white p-4">
+      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-border bg-background-grid-header">
+        <div className="flex h-[30px] w-full flex-row items-center rounded-t-sm border-b border-border px-2" />
+        <div className="bg-background-header p-4">
           <PeriodeValidation
             label="periode"
             onValidationChange={handleValidationResult}
@@ -89,14 +84,11 @@ const FilterGrid = () => {
           />
 
           <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
+            <label htmlFor="" className="w-full text-sm font-bold lg:w-[20%]">
               Jenis Orderan:
               <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
             </label>
-            <div className="relative w-full text-black lg:w-[60%]">
+            <div className="relative w-full lg:w-[60%]">
               {lookUpJenisOrderan.map((props, index) => (
                 <LookUp
                   key={index}

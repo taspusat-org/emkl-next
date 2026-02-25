@@ -173,17 +173,13 @@ const InputMonthPicker: React.FC<MonthInputProps> = ({
 
   return (
     <div
-      className={`relative flex flex-row items-center rounded-sm border border-zinc-300 focus-within:border-blue-500 ${className}`}
+      className={`relative flex flex-row items-center rounded-sm border border-input-border focus-within:border-input-border-focus ${className}`}
     >
       <InputMask
         mask={monthYearMask}
         {...rest}
-        className={`h-9 w-full rounded-sm px-3 text-sm focus:bg-[#ffffee] focus:outline-none focus:ring-0 
-          ${
-            disabled
-              ? 'cursor-not-allowed bg-gray-100 text-gray-500'
-              : 'text-zinc-900'
-          }
+        className={`focus:background-input-focus text-primary-text h-9 w-full rounded-sm bg-background-input px-3 text-sm focus:bg-background-input-focus focus:outline-none focus:ring-0
+          ${disabled ? 'cursor-not-allowed bg-gray-100 text-gray-500' : ''}
         `}
         onChange={handleChange}
         maskPlaceholder="MM-YYYY"
@@ -251,14 +247,14 @@ const InputMonthPicker: React.FC<MonthInputProps> = ({
                 ${
                   disabled
                     ? 'cursor-not-allowed bg-gray-200 text-gray-400'
-                    : 'cursor-pointer border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#abcbfd]'
+                    : 'text-primary-text hover:text-primary-text cursor-pointer border-input-border bg-background-grid-header hover:bg-background-input-focus'
                 }`}
             >
-              <FaCalendarAlt className="h-4 w-4 text-[#0e2d5f]" />
+              <FaCalendarAlt className="text-primary-text h-4 w-4" />
             </button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-[200px] max-w-xs border border-blue-500 bg-white"
+            className="w-[200px] max-w-xs border border-border bg-background-header"
             sideOffset={0}
             alignOffset={30}
             side="bottom"

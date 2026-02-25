@@ -2,6 +2,19 @@ import { FaTimes } from 'react-icons/fa';
 import React, { useCallback, useEffect, useState, memo } from 'react';
 import { Input } from '../ui/input';
 
+export const shouldAllowSelectCell = (): boolean => {
+  const activeElement = document.activeElement;
+
+  // Cek apakah yang fokus adalah input atau textarea
+  if (
+    activeElement instanceof HTMLInputElement ||
+    activeElement instanceof HTMLTextAreaElement
+  ) {
+    return false;
+  }
+
+  return true;
+};
 const FilterInput = memo(
   ({
     colKey,
@@ -52,7 +65,7 @@ const FilterInput = memo(
         />
         {localValue && (
           <button
-            className="absolute right-2 top-2 text-xs text-gray-500"
+            className="text-primary-text absolute right-2 top-2 text-xs"
             onClick={onClear}
             type="button"
           >

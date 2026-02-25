@@ -69,8 +69,17 @@ import {
   useGetAllLabaRugiKalkulasi,
   useUpdateLabaRugiKalkulasi
 } from '@/lib/server/useLabaRugiKalkulasi';
-import SettingColumns from '@/components/custom-ui/SettingColumns';
 import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 
 interface Filter {
   page: number;
@@ -82,6 +91,8 @@ interface Filter {
 }
 
 const GridLabaRugiKalkulasi = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -106,6 +117,7 @@ const GridLabaRugiKalkulasi = () => {
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [isFetchingManually, setIsFetchingManually] = useState(false);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
@@ -292,6 +304,15 @@ const GridLabaRugiKalkulasi = () => {
     setIsAllSelected(!isAllSelected);
   };
 
+  const handleFilterRows = (val: string) => {
+    setIsFilteringRows(true);
+    // setLocalSelectedValue(val);
+    // onChange?.(val);
+    setTimeout(() => {
+      setIsFilteringRows(false);
+    }, 1000);
+  };
+
   // const handleContextMenu = (event: React.MouseEvent) => {
   //   event.preventDefault();
   //   setContextMenu({ x: event.clientX, y: event.clientY });
@@ -454,7 +475,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'estkomisimarketing',
-        name: 'estkomisimarketing',
+        name: 'est komisi marketing',
         resizable: true,
         draggable: true,
         width: 200,
@@ -544,7 +565,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'komisimarketing',
-        name: 'komisimarketing',
+        name: 'komisi marketing',
         resizable: true,
         draggable: true,
         width: 200,
@@ -622,7 +643,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'biayakantorpusat',
-        name: 'biayakantorpusat',
+        name: 'biaya kantor pusat',
         resizable: true,
         draggable: false,
         width: 200,
@@ -700,7 +721,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'biayatour',
-        name: 'biayatour',
+        name: 'biaya tour',
         resizable: true,
         draggable: true,
         width: 200,
@@ -775,7 +796,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'gajidireksi',
-        name: 'gajidireksi',
+        name: 'gaji direksi',
         resizable: true,
         draggable: true,
         width: 200,
@@ -850,7 +871,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'estkomisikacab',
-        name: 'estkomisikacab',
+        name: 'est komisi kacab',
         resizable: true,
         draggable: true,
         width: 200,
@@ -927,7 +948,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'biayabonustriwulan',
-        name: 'biayabonustriwulan',
+        name: 'biaya bonus triwulan',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1005,7 +1026,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'estkomisimarketing2',
-        name: 'estkomisimarketing2',
+        name: 'est komisi marketing 2',
         resizable: true,
         draggable: true,
         width: 200,
@@ -1083,7 +1104,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'estkomisikacabcabang1',
-        name: 'estkomisikacabcabang1',
+        name: 'est komisi kacab cabang 1',
         resizable: true,
         draggable: true,
         width: 250,
@@ -1161,7 +1182,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'estkomisikacabcabang2',
-        name: 'estkomisikacabcabang2',
+        name: 'est komisi kacab cabang 2',
         resizable: true,
         draggable: true,
         width: 250,
@@ -1239,7 +1260,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'statusfinalkomisimarketing',
-        name: 'statusfinalkomisimarketing',
+        name: 'status final komisi marketing',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1315,7 +1336,7 @@ const GridLabaRugiKalkulasi = () => {
       },
       {
         key: 'statusfinalbonustriwulan',
-        name: 'statusfinalbonustriwulan',
+        name: 'status final bonus triwulan',
         resizable: true,
         draggable: true,
         width: 150,
@@ -2157,49 +2178,6 @@ const GridLabaRugiKalkulasi = () => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
 
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
-
-    if (!search.trim() && !columnFilter.trim()) {
-      return textValue;
-    }
-
-    const combined = search + columnFilter;
-    if (!combined) {
-      return textValue;
-    }
-
-    // 1. Fungsi untuk escape regex‐meta chars
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    const pattern = combined // 2. Pecah jadi tiap karakter, escape, lalu join dengan '|'
-      .split('')
-      .map((ch) => escapeRegExp(ch))
-      .join('|');
-
-    const regex = new RegExp(`(${pattern})`, 'gi'); // 3. Build regex-nya
-
-    // 4. Replace dengan <span>
-    const highlighted = textValue.replace(
-      regex,
-      (m) =>
-        `<span style="background-color: yellow; font-size: 13px">${m}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
-
   function handleCellClick(args: { row: LabaRugiKalkulasi }) {
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
@@ -2525,15 +2503,10 @@ const GridLabaRugiKalkulasi = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
           <div className="flex flex-row items-center">
-            <label htmlFor="" className="text-xs text-zinc-600">
+            <label htmlFor="" className="text-xs">
               SEARCH :
             </label>
             <div className="relative flex w-[200px] flex-row items-center">
@@ -2543,7 +2516,7 @@ const GridLabaRugiKalkulasi = () => {
                 onChange={(e) => {
                   handleInputChange(e);
                 }}
-                className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+                className="m-2 h-[28px] w-[200px] rounded-sm"
                 placeholder="Type to search..."
               />
               {(filters.search !== '' || inputValue !== '') && (
@@ -2558,7 +2531,41 @@ const GridLabaRugiKalkulasi = () => {
               )}
             </div>
           </div>
-          <div className="flex flex-row items-center ">
+          <div className="flex flex-row items-center">
+            <div>
+              <Select
+                defaultValue="ALL ROWS"
+                onValueChange={handleFilterRows}
+                disabled={isFilteringRows}
+              >
+                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="ALL ROWS"
+                    >
+                      <p className="text-sm font-normal">ALL ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="CHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">CHECKED ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="UNCHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
             <DraggableColumn
               defaultColumns={columns}
               saveColumns={finalColumns}
@@ -2584,7 +2591,8 @@ const GridLabaRugiKalkulasi = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
@@ -2596,12 +2604,7 @@ const GridLabaRugiKalkulasi = () => {
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton
             module="LABA-RUGI-KALKULASI"
             onAdd={handleAdd}
@@ -2609,6 +2612,12 @@ const GridLabaRugiKalkulasi = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
+            rowsLength={rows.length}
+            totalItems={
+              allLabaRugiKalkulasi
+                ? allLabaRugiKalkulasi.pagination.totalItems
+                : 0
+            }
             customActions={[
               {
                 label: 'Print',
@@ -2619,26 +2628,15 @@ const GridLabaRugiKalkulasi = () => {
             ]}
           />
           {isLoadingLabaRugiKalkulasi ? <LoadRowsRenderer /> : null}
-          {/* {contextMenu && (
-            <SettingColumns 
-              defaultColumns={columns} 
-              saveColumns={finalColumns} 
-              userId={user.id} 
-              gridName='GridLabaRugiKalkulasi'
-              setColumnsOrder={setColumnsOrder}
-              setColumnsWidth={setColumnsWidth}
-              isOpen={true}
-              contextMenu={contextMenu}
-            />
-          )} */}
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
+                // backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

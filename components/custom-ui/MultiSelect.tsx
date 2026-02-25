@@ -207,7 +207,7 @@ export const MultiSelect = React.forwardRef<
             {...props}
             onClick={handleTogglePopover}
             className={cn(
-              'flex h-auto min-h-10 w-full items-center justify-between rounded-md border border-zinc-200 bg-inherit p-0 hover:bg-inherit',
+              'flex h-auto min-h-10 w-full items-center justify-between rounded-md border border-input-border bg-background-input p-0 hover:bg-background-input-focus',
               className
             )}
           >
@@ -286,7 +286,7 @@ export const MultiSelect = React.forwardRef<
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="absolute top-1 w-[200px] p-0"
+          className="absolute top-1 w-[200px] bg-background-input p-0"
           align="start"
           onEscapeKeyDown={() => setIsPopoverOpen(false)}
         >
@@ -333,7 +333,7 @@ export const MultiSelect = React.forwardRef<
                   )}
                   <CommandItem
                     onSelect={() => setIsPopoverOpen(false)}
-                    className="max-w-full flex-1 cursor-pointer justify-center"
+                    className="max-w-full flex-1 cursor-pointer justify-center bg-background"
                   >
                     Close
                   </CommandItem>

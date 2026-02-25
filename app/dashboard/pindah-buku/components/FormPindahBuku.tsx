@@ -198,9 +198,9 @@ const FormPindahBuku = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Pindah Buku'
               : mode === 'edit'
@@ -219,8 +219,8 @@ const FormPindahBuku = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -234,7 +234,7 @@ const FormPindahBuku = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                          <FormLabel className="font-semibold lg:w-[30%]">
                             NO BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -259,7 +259,7 @@ const FormPindahBuku = ({
                         <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
                           <FormLabel
                             required={true}
-                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                            className="font-semibold lg:w-[30%]"
                           >
                             TGL BUKTI
                           </FormLabel>
@@ -287,7 +287,7 @@ const FormPindahBuku = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         BANK DARI
                       </FormLabel>
@@ -315,7 +315,7 @@ const FormPindahBuku = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         BANK KE
                       </FormLabel>
@@ -343,7 +343,7 @@ const FormPindahBuku = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         ALAT BAYAR
                       </FormLabel>
@@ -375,7 +375,7 @@ const FormPindahBuku = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           NO WARKAT
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -403,7 +403,7 @@ const FormPindahBuku = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           TGL JATUH TEMPO
                         </FormLabel>
@@ -436,7 +436,7 @@ const FormPindahBuku = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           NOMINAL
                         </FormLabel>
@@ -463,7 +463,7 @@ const FormPindahBuku = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           KETERANGAN
                         </FormLabel>
@@ -486,7 +486,7 @@ const FormPindahBuku = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"
