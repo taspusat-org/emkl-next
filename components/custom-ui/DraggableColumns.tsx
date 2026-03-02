@@ -209,7 +209,6 @@ export default function DraggableColumn({
     }
 
     const finalColumns = mergeColumnsBySavedOrder(defaultColumns, saveColumns);
-    console.log('finalColumns', finalColumns);
 
     const draggable = finalColumns.filter((item: any) => {
       return item.draggable === true;
@@ -242,6 +241,10 @@ export default function DraggableColumn({
       delay: 100,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
+
+      chosenClass: 'drag-chosen',
+      ghostClass: 'drag-ghost',
+      dragClass: 'dragging',
 
       // scroll: true,
       // scrollSensitivity: 60,
@@ -293,40 +296,41 @@ export default function DraggableColumn({
   }, [itemDraggable]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          className={`${
-            isDark ? 'text-white' : 'text-gray-600'
-          } bg-transparent text-2xl hover:bg-transparent`}
-        >
-          <IoSettingsSharp />
-        </Button>
-      </PopoverTrigger>
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            className={`${
+              isDark ? 'text-white' : 'text-gray-600'
+            } bg-transparent text-2xl hover:bg-transparent`}
+          >
+            <IoSettingsSharp />
+          </Button>
+        </PopoverTrigger>
 
-      <PopoverContent
-        id="popover-content-dragcolumn"
-        className="mr-7 h-fit rounded-md border border-border bg-background-input p-2 shadow-lg"
-        side="bottom"
-        align="start"
-        sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
-        avoidCollisions={true}
-        style={{
-          width: popoverWidth
-        }}
-        onEscapeKeyDown={() => {
-          setOpen(false);
-          setPopoverWidth('auto');
-          setCheckedRows(new Set());
-        }}
-      >
-        {open && (
-          <div className="flex h-[300px] flex-col">
-            <div
-              // ref={scrollRef}
-              className="flex h-full flex-col gap-2 overflow-y-scroll"
-            >
-              {/* <ReactSortable
+        <PopoverContent
+          id="popover-content-dragcolumn"
+          className="mr-7 h-fit rounded-md border border-border bg-background-input p-2 shadow-lg"
+          side="bottom"
+          align="start"
+          sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
+          avoidCollisions={true}
+          style={{
+            width: popoverWidth
+          }}
+          onEscapeKeyDown={() => {
+            setOpen(false);
+            setPopoverWidth('auto');
+            setCheckedRows(new Set());
+          }}
+        >
+          {open && (
+            <div className="flex h-[300px] flex-col">
+              <div
+                // ref={scrollRef}
+                className="flex h-full flex-col gap-2 overflow-y-scroll"
+              >
+                {/* <ReactSortable
                 list={itemDraggable}
                 setList={(newList) => {
                   setItemDraggable(
@@ -373,54 +377,61 @@ export default function DraggableColumn({
                 ))}
               </ReactSortable> */}
 
-              <div ref={sortableRef} className="flex flex-col">
-                {renderItem()}
+                <div ref={sortableRef} className="flex flex-col">
+                  {renderItem()}
+                </div>
+
+                {renderItemNotDraggable()}
               </div>
 
-              {renderItemNotDraggable()}
+              <div className="mt-4 flex flex-row gap-2">
+                <Button
+                  variant="save"
+                  onClick={() => {
+                    setOpen(false);
+                    handleSave();
+                  }}
+                >
+                  Save
+                </Button>
+
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setOpen(false);
+
+                    resetGridConfig(
+                      userId,
+                      gridName,
+                      defaultColumns,
+                      setColumnsOrder,
+                      setColumnsWidth
+                    );
+
+                    onReset();
+                  }}
+                >
+                  RESET
+                </Button>
+
+                <Button variant="cancel" onClick={() => setOpen(false)}>
+                  CANCEL
+                </Button>
+              </div>
             </div>
+          )}
+        </PopoverContent>
+      </Popover>
 
-            <div className="mt-4 flex flex-row gap-2">
-              <Button
-                variant="save"
-                onClick={() => {
-                  setOpen(false);
-                  handleSave();
-                }}
-              >
-                Save
-              </Button>
-
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setOpen(false);
-
-                  resetGridConfig(
-                    userId,
-                    gridName,
-                    defaultColumns,
-                    setColumnsOrder,
-                    setColumnsWidth
-                  );
-
-                  onReset();
-                }}
-              >
-                RESET
-              </Button>
-
-              <Button
-                variant="default"
-                className="bg-zinc-200 text-zinc-600 hover:bg-zinc-300"
-                onClick={() => setOpen(false)}
-              >
-                CANCEL
-              </Button>
-            </div>
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
+      <style jsx global>{`
+        .drag-ghost {
+          background: #ffe48d;
+          opacity: 0.4;
+        }
+        .dragging {
+          background: #ffe48d;
+        }
+      `}</style>
+    </>
   );
 }

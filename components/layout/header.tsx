@@ -17,30 +17,40 @@ export default function Header({ ip, currentDateTime }: Props) {
   const { isMobile } = useSidebar();
   return (
     <div>
-      <header className="mb-6 flex h-12 shrink-0 items-center justify-between gap-2 border border-x-0 border-t-0 bg-white transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-        <div className="flex items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1 text-black" />
+      <header className="flex h-12 shrink-0 items-center justify-between gap-2 border border-x-0 border-t-0 bg-background-header py-6 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 ">
+        <div className="flex items-center gap-2 px-2 sm:px-4">
+          <SidebarTrigger className="text-primary-text ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <div className="flex flex-row items-center gap-2">
-            <Image src={IcTasSmall} width={25} height={25} alt="icon-tas" />
-            <p className="text-sm font-bold text-black">TAS EMKL SYSTEM</p>
+            <Image
+              src={IcTasSmall}
+              width={25}
+              height={25}
+              alt="icon-tas"
+              className="hidden sm:block"
+            />
+            <p className="text-primary-text text-[10px] font-bold sm:text-sm">
+              TAS EMKL SYSTEM
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-4">
-          <div className="flex flex-row gap-2">
-            <p className="text-[10px] text-zinc-900 lg:text-sm">
+        <div className="flex items-center gap-1 px-2 sm:gap-2 sm:px-4">
+          <div className="hidden flex-row gap-2 lg:flex">
+            <p className="text-primary-text text-[10px] lg:text-sm">
               Your IP Address: ({ip})
             </p>
-            <p className="text-[10px] text-zinc-900 lg:text-sm">
+            <p className="text-primary-text text-[10px] lg:text-sm">
               {currentDateTime}
             </p>
           </div>
+          <ThemeToggle />
+
           {isMobile ? null : <UserNav />}
         </div>
       </header>
 
-      <div className="mt-6 bg-[#f4f6f9] pl-6">
+      <div className="bg-background pl-6 pt-6">
         <Breadcrumbs />
       </div>
     </div>

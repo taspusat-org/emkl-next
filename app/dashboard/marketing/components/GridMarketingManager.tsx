@@ -35,6 +35,9 @@ import {
   resetGridConfig,
   saveGridConfig
 } from '@/lib/utils';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
 
 interface GridProps {
   activeTab: string; // Menerima props activeTab
@@ -50,6 +53,8 @@ interface Filter {
 }
 
 const GridMarketingManager = ({ activeTab }: GridProps) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const { user } = useSelector((state: RootState) => state.auth);
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const gridRef = useRef<DataGridHandle>(null);
@@ -62,8 +67,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
   const [inputValue, setInputValue] = useState<string>('');
   const [rows, setRows] = useState<MarketingManager[]>([]);
   const [selectedRow, setSelectedRow] = useState<number>(0);
-  const [isAllSelected, setIsAllSelected] = useState(false);
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
@@ -112,8 +115,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       }
     }, 200);
 
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
     setSelectedRow(0);
     setRows([]);
   };
@@ -127,8 +128,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
         filters: { ...prev.filters, [colKey]: value },
         page: 1
       }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
       setRows([]);
     }, 300) // Bisa dikurangi jadi 250-300ms
   ).current;
@@ -149,8 +148,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       filters: { ...prev.filters, [colKey]: '' },
       page: 1
     }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
     setRows([]);
   }, []);
 
@@ -165,43 +162,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
     }));
     setInputValue('');
   };
-
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
-
-    // Priority: columnFilter over search
-    const searchTerm = columnFilter?.trim() || search?.trim() || '';
-
-    if (!searchTerm) {
-      return textValue;
-    }
-
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    // Create regex for continuous string match
-    const escapedTerm = escapeRegExp(searchTerm);
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-
-    // Replace all occurrences
-    const highlighted = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
 
   const handleSort = (column: string) => {
     cancelPreviousRequest(abortControllerRef);
@@ -230,30 +190,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
     }, 250);
     setSelectedRow(0);
     setRows([]);
-  };
-
-  const handleRowSelect = (rowId: number) => {
-    setCheckedRows((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
-      } else {
-        updated.add(rowId);
-      }
-
-      setIsAllSelected(updated.size === rows.length);
-      return updated;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setCheckedRows(new Set());
-    } else {
-      const allIds = rows.map((row) => Number(row.id));
-      setCheckedRows(new Set(allIds));
-    }
-    setIsAllSelected(!isAllSelected);
   };
 
   const columns = useMemo((): Column<MarketingManager>[] => {
@@ -302,36 +238,6 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
             </div>
           );
         }
-      },
-      {
-        key: 'select',
-        name: '',
-        width: 50,
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
-            <div className="flex h-[50%] w-full items-center justify-center">
-              <Checkbox
-                checked={isAllSelected}
-                onCheckedChange={() => handleSelectAll()}
-                id="header-checkbox"
-                className="mb-2"
-              />
-            </div>
-          </div>
-        ),
-        renderCell: ({ row }: { row: MarketingManager }) => (
-          <div className="flex h-full items-center justify-center">
-            <Checkbox
-              checked={checkedRows.has(Number(row.id))}
-              onCheckedChange={() => handleRowSelect(Number(row.id))}
-              id={`row-checkbox-${row.id}`}
-            />
-          </div>
-        )
       },
       {
         key: 'marketing',
@@ -410,7 +316,7 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       },
       {
         key: 'managermarketing',
-        name: 'managermarketing',
+        name: 'manager marketing',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -485,7 +391,7 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       },
       {
         key: 'tglapproval',
-        name: 'tglapproval',
+        name: 'tgl approval',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -557,7 +463,7 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       },
       {
         key: 'statusapproval',
-        name: 'statusapproval',
+        name: 'status approval',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -634,7 +540,7 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       },
       {
         key: 'userapproval',
-        name: 'userapproval',
+        name: 'user approval',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -709,7 +615,7 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
       },
       {
         key: 'statusaktif',
-        name: 'statusaktif',
+        name: 'status aktif',
         headerCellClass: 'column-headers',
         resizable: true,
         draggable: true,
@@ -780,13 +686,17 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
         }
       }
     ];
-  }, [filters, rows, checkedRows, filters.filters]);
+  }, [filters, rows, filters.filters]);
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -938,37 +848,47 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridMarketingManager"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
             />
-
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
           </div>
         </div>
         <DataGrid
@@ -982,7 +902,8 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-          className="rdg-light fill-grid text-xs"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           rowKeyGetter={rowKeyGetter}
           rowClass={getRowClass}
           onCellClick={handleCellClick}
@@ -991,22 +912,17 @@ const GridMarketingManager = ({ activeTab }: GridProps) => {
           }}
         />
 
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           {isLoadingMarketingManager ? <LoadRowsRenderer /> : null}
 
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

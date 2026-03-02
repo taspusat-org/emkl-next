@@ -55,6 +55,7 @@ import {
 import { MdAddBox } from 'react-icons/md';
 import LookUpModal from '@/components/custom-ui/LookUpModal';
 import LookUpModalPengeluaran from '@/components/custom-ui/LookUpModalPengeluaran';
+import { useTheme } from 'next-themes';
 const FormPengeluaran = ({
   popOver,
   setPopOver,
@@ -67,6 +68,8 @@ const FormPengeluaran = ({
   submitSuccessful,
   isLoadingDelete
 }: any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [popOverTglSampai, setPopOverTglSampai] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
@@ -1181,9 +1184,9 @@ const FormPengeluaran = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Pengeluaran'
               : mode === 'edit'
@@ -1202,8 +1205,8 @@ const FormPengeluaran = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="min-h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -1217,7 +1220,7 @@ const FormPengeluaran = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]">
+                          <FormLabel className="font-semibold lg:w-[30%]">
                             NO BUKTI
                           </FormLabel>
                           <div className="flex flex-col lg:w-[70%]">
@@ -1242,7 +1245,7 @@ const FormPengeluaran = ({
                         <FormItem className="flex w-full flex-col justify-between lg:ml-4 lg:flex-row lg:items-center">
                           <FormLabel
                             required={true}
-                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                            className="font-semibold lg:w-[30%]"
                           >
                             TGL BUKTI
                           </FormLabel>
@@ -1278,7 +1281,7 @@ const FormPengeluaran = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         RELASI
                       </FormLabel>
@@ -1304,7 +1307,7 @@ const FormPengeluaran = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           KETERANGAN
                         </FormLabel>
@@ -1326,7 +1329,7 @@ const FormPengeluaran = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         BANK
                       </FormLabel>
@@ -1353,7 +1356,7 @@ const FormPengeluaran = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         COA KREDIT
                       </FormLabel>
@@ -1377,7 +1380,7 @@ const FormPengeluaran = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           DIBAYAR KE
                         </FormLabel>
@@ -1399,7 +1402,7 @@ const FormPengeluaran = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         ALAT BAYAR
                       </FormLabel>
@@ -1425,7 +1428,7 @@ const FormPengeluaran = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           no WARKAT
                         </FormLabel>
@@ -1450,7 +1453,7 @@ const FormPengeluaran = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           TANGGAL JATUH TEMPO
                         </FormLabel>
@@ -1475,7 +1478,7 @@ const FormPengeluaran = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         DAFTAR BANK
                       </FormLabel>
@@ -1496,14 +1499,8 @@ const FormPengeluaran = ({
                   </div>
 
                   <div className="h-[600px] min-h-[600px]">
-                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-                      <div
-                        className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                        }}
-                      >
+                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+                      <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
                         {mode !== 'view' && mode !== 'delete' && (
                           <>
                             <Button
@@ -1573,7 +1570,10 @@ const FormPengeluaran = ({
                         headerRowHeight={30}
                         rowHeight={60}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                        className="rdg-light fill-grid text-sm"
+                        className={`${
+                          isDark ? 'rdg-dark' : 'rdg-light'
+                        } fill-grid text-sm`}
+                        enableVirtualization={false}
                       />
                       {/* <div
                         className="flex flex-row border border-b-0 border-l-0 border-blue-500 p-2"
@@ -1592,13 +1592,7 @@ const FormPengeluaran = ({
                         </div>
                       </div> */}
 
-                      <div
-                        className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                        }}
-                      ></div>
+                      <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
                     </div>
                   </div>
                 </div>
@@ -1606,7 +1600,7 @@ const FormPengeluaran = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

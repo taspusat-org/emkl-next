@@ -11,7 +11,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       <textarea
         readOnly={readOnly}
         className={cn(
-          'flex h-20 w-full rounded-sm border border-zinc-300 bg-transparent px-3 py-1 text-xs font-normal uppercase text-zinc-900 shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:bg-[#ffffee] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+          'text-primary-text flex h-20 w-full rounded-sm border border-input-border bg-transparent px-3 py-1 text-xs font-normal uppercase shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus:border-input-border focus:bg-background-input-focus focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
           readOnly ? 'text-zinc-400' : '',
           'tracking-normal', // Add this class for normal letter spacing
           className,

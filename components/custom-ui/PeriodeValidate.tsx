@@ -116,10 +116,7 @@ const PeriodeValidation: React.FC<PeriodeValidationProps> = ({
 
   return (
     <div className="flex w-full flex-col items-center justify-between lg:flex-row">
-      <label
-        htmlFor=""
-        className="w-full text-sm font-bold text-black lg:w-[20%]"
-      >
+      <label htmlFor="" className="w-full text-sm font-bold lg:w-[20%]">
         {label}:<span style={{ color: 'red', marginLeft: '4px' }}>*</span>
       </label>
 
@@ -133,7 +130,7 @@ const PeriodeValidation: React.FC<PeriodeValidationProps> = ({
       </div>
 
       <div className="flex w-[20%] items-center justify-center">
-        <p className="text-center text-sm font-bold text-black">S/D</p>
+        <p className="text-center text-sm font-bold">S/D</p>
       </div>
 
       <div className="relative w-full lg:w-[30%]">

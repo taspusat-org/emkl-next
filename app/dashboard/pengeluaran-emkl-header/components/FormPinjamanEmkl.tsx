@@ -25,7 +25,12 @@ import { FaTimes, FaTrashAlt } from 'react-icons/fa';
 import { formatCurrency, parseCurrency } from '@/lib/utils';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import { KASBANK } from '@/constants/pengeluaranemkl';
+import { useTheme } from 'next-themes';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+
 const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [rows, setRows] = useState<
     (
@@ -295,16 +300,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
       }
     ];
   }, [rows]);
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
+
   useEffect(() => {
     if (allData || popOver) {
       if (allData && (allData.data?.length ?? 0) > 0 && mode !== 'add') {
@@ -357,7 +353,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+            <FormLabel className="font-semibold lg:w-[15%]">
               KETERANGAN
             </FormLabel>
             <div className="flex flex-col lg:w-[85%]">
@@ -379,10 +375,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel
-              required={true}
-              className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-            >
+            <FormLabel required={true} className="font-semibold lg:w-[15%]">
               TGL JATUH TEMPO
             </FormLabel>
             <div className="flex flex-col lg:w-[85%]">
@@ -402,9 +395,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
       />
       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
         <div className="w-full lg:w-[15%]">
-          <FormLabel className="text-sm font-semibold text-gray-700">
-            KARYAWAN
-          </FormLabel>
+          <FormLabel className="text-sm font-semibold">KARYAWAN</FormLabel>
         </div>
         <div className="w-full lg:w-[85%]">
           {lookUpPropsKaryawan.map((props, index) => (
@@ -426,9 +417,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-              NOWARKAT
-            </FormLabel>
+            <FormLabel className="font-semibold lg:w-[15%]">NOWARKAT</FormLabel>
             <div className="flex flex-col lg:w-[85%]">
               <FormControl>
                 <Input
@@ -445,9 +434,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
       />
       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
         <div className="w-full lg:w-[15%]">
-          <FormLabel className="text-sm font-semibold text-gray-700">
-            JENIS POSTING
-          </FormLabel>
+          <FormLabel className="text-sm font-semibold">JENIS POSTING</FormLabel>
         </div>
         <div className="w-full lg:w-[85%]">
           {lookUpPropsJenisPosting.map((props, index) => (
@@ -465,7 +452,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         </div>
       </div>
       <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
-        <p className="text-sm text-black">
+        <p className="text-sm">
           {forms.getValues('jenisposting') === KASBANK
             ? 'POSTING PENGELUARAN'
             : 'POSTING HUTANG'}
@@ -476,7 +463,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
             <div className="flex w-full flex-col gap-3">
               <div className="flex w-full flex-col lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel className="text-sm font-semibold text-gray-700">
+                  <FormLabel className="text-sm font-semibold">
                     KAS/BANK
                   </FormLabel>
                 </div>
@@ -504,7 +491,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
                   control={forms.control}
                   render={({ field }) => (
                     <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                      <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                      <FormLabel className="font-semibold lg:w-[15%]">
                         NO BUKTI KAS/BANK KELUAR
                       </FormLabel>
                       <div className="flex flex-col lg:w-[35%]">
@@ -530,7 +517,7 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NO BUKTI HUTANG
                     </FormLabel>
                     <div className="flex flex-col lg:w-[35%]">
@@ -552,13 +539,8 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         </div>
       </div>
       <div className="h-[400px] min-h-[400px]">
-        <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-          <div
-            className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+        <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+          <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2"></div>
 
           <DataGrid
             ref={gridRef}
@@ -567,14 +549,10 @@ const FormPinjamanEmkl = ({ forms, mode, popOver }: any) => {
             headerRowHeight={70}
             rowHeight={40}
             renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-            className="rdg-light fill-grid text-sm"
+            className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid text-sm`}
+            enableVirtualization={false}
           />
-          <div
-            className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+          <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
         </div>
       </div>
     </div>

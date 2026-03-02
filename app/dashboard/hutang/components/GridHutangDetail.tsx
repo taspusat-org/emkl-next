@@ -22,7 +22,13 @@ import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
 import { HutangDetail, filterHutangDetail } from '@/lib/types/hutang.type';
 import { useGetHutangDetail } from '@/lib/server/useHutang';
-import { formatCurrency } from '@/lib/utils';
+import {
+  formatCurrency,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 import { FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import Image from 'next/image';
@@ -39,6 +45,8 @@ import FilterInput from '@/components/custom-ui/FilterInput';
 import JsxParser from 'react-jsx-parser';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { LoadRowsRenderer } from '@/components/LoadRows';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { useTheme } from 'next-themes';
 
 interface Filter {
   search: string;
@@ -51,10 +59,6 @@ interface GridProps {
   activeTab: string;
 }
 
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
 const GridHutangDetail = ({
   activeTab,
   nobukti
@@ -62,6 +66,8 @@ const GridHutangDetail = ({
   activeTab: string;
   nobukti?: string;
 }) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [filters, setFilters] = useState<Filter>({
     filters: {
@@ -196,8 +202,6 @@ const GridHutangDetail = ({
         key: 'nomor',
         name: 'NO',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -246,7 +250,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[48%] px-8"
               onClick={() => handleSort('nobukti')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -269,7 +275,7 @@ const GridHutangDetail = ({
             </div>
           </div>
         ),
-        name: 'nobukti',
+        name: 'no bukti',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
           const value = props.row.nobukti; // atau dari props.row
@@ -311,7 +317,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('coa')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -379,7 +387,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -450,7 +460,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nominal')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -520,7 +532,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('dpp')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -589,7 +603,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('noinvoiceemkl')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -628,7 +644,7 @@ const GridHutangDetail = ({
             </div>
           </div>
         ),
-        name: 'noinvoiceemkl',
+        name: 'no invoice emkl',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.noinvoiceemkl || '';
           const cellValue = props.row.noinvoiceemkl || '';
@@ -662,7 +678,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('tglinvoiceemkl')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -701,7 +719,7 @@ const GridHutangDetail = ({
             </div>
           </div>
         ),
-        name: 'tglinvoiceemkl',
+        name: 'tgl invoice emkl',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.tglinvoiceemkl || '';
           const cellValue = props.row.tglinvoiceemkl || '';
@@ -735,7 +753,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nofakturpajakemkl')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -774,7 +794,7 @@ const GridHutangDetail = ({
             </div>
           </div>
         ),
-        name: 'nofakturpajakemkl',
+        name: 'no faktur pajak emkl',
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nofakturpajakemkl || '';
           const cellValue = props.row.nofakturpajakemkl || '';
@@ -808,7 +828,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -879,7 +901,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -950,7 +974,9 @@ const GridHutangDetail = ({
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -1074,109 +1100,6 @@ const GridHutangDetail = ({
     setPopOver(true);
   };
 
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridHutangDetail',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
   const handleColumnFilterChange = (
     colKey: keyof Filter['filters'],
     value: string
@@ -1224,10 +1147,6 @@ const GridHutangDetail = ({
     setInputValue('');
   };
 
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -1238,10 +1157,14 @@ const GridHutangDetail = ({
   };
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
-        .filter((col): col is Column<HutangDetail> => !!col);
+        .map((orderIndex) => filteredColumns[orderIndex])
+        .filter((col) => col !== undefined);
     }
     return columns;
   }, [columns, columnsOrder]);
@@ -1255,7 +1178,13 @@ const GridHutangDetail = ({
   }, [orderedColumns, columnsWidth]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridHutangDetail');
+    loadGridConfig(
+      user.id,
+      'GridHutangDetail',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   useEffect(() => {
     if (headerData?.nobukti || nobukti) {
@@ -1332,37 +1261,47 @@ const GridHutangDetail = ({
   }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridHutangDetail"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
             />
-
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
           </div>
         </div>
         <DataGrid
@@ -1381,33 +1320,43 @@ const GridHutangDetail = ({
           onCellKeyDown={handleKeyDown}
           rowHeight={30}
           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-          className="rdg-light fill-grid text-xs"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
         />
         {contextMenu && (
           <div
             ref={contextMenuRef}
+            className="bg-background-input"
             style={{
               position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
               top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
               left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-              backgroundColor: 'white',
               boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
               padding: '8px',
               borderRadius: '4px',
               zIndex: 1000
             }}
           >
-            <Button variant="default" onClick={resetGridConfig}>
+            <Button
+              variant="default"
+              onClick={() => {
+                resetGridConfig(
+                  user.id,
+                  'GridHutangDetail',
+                  columns,
+                  setColumnsOrder,
+                  setColumnsWidth
+                );
+                setContextMenu(null);
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            >
               Reset
             </Button>
           </div>
         )}
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           {isLoading ? <LoadRowsRenderer /> : null}
         </div>
       </div>

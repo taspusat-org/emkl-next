@@ -40,6 +40,8 @@ import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useGetRoleAcl } from '@/lib/server/useRole';
 import { FaSave, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { useTheme } from 'next-themes';
 
 interface Row {
   id: number;
@@ -69,6 +71,8 @@ const FormRoleAcl = ({
   isLoadingCreate,
   isLoadingUpdate
 }: any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const gridRef = useRef<DataGridHandle>(null); // Create a ref for DataGrid
   const [rows, setRows] = useState<Row[]>([]);
   const [selectedRow, setSelectedRow] = useState<number>(0);
@@ -546,14 +550,6 @@ const FormRoleAcl = ({
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div style={{ textAlign: 'center', gridColumn: '1/-1' }}>
-        NO ROWS DATA FOUND
-      </div>
-    );
-  }
-
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
@@ -611,11 +607,9 @@ const FormRoleAcl = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-            Role ACL Form
-          </h2>
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">Role ACL Form</h2>
           <div
             className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
             onClick={() => {
@@ -626,8 +620,8 @@ const FormRoleAcl = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form onSubmit={onSubmit} className="flex h-full flex-col gap-6">
                 <div className="grid grid-cols-1 gap-2">
@@ -636,7 +630,7 @@ const FormRoleAcl = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200">
+                        <FormLabel className="font-semibold">
                           Nama Role
                         </FormLabel>
                         <FormControl>
@@ -653,15 +647,9 @@ const FormRoleAcl = ({
                   />
                 </div>
 
-                <div className="flex h-[500px]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-                  <div
-                    className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-                    style={{
-                      background:
-                        'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                    }}
-                  >
-                    <p className="font-bold text-zinc-500">ACOS</p>
+                <div className="flex h-[500px]  w-full flex-col rounded-sm border border-border bg-background">
+                  <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
+                    <p className="font-bold">ACOS</p>
                   </div>
                   <DataGrid
                     key={Array.from(selectedRows).join('-')} // Buat key unik dari selectedRows
@@ -672,7 +660,8 @@ const FormRoleAcl = ({
                     rowClass={getRowClass}
                     onCellClick={handleCellClick}
                     headerRowHeight={70}
-                    className="rdg-light fill-grid"
+                    className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+                    enableVirtualization={false}
                     onScroll={handleScroll}
                     onCellKeyDown={handleKeyDown}
                     renderers={{
@@ -684,7 +673,7 @@ const FormRoleAcl = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             onClick={onSubmit}

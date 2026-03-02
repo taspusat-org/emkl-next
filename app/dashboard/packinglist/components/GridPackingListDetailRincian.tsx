@@ -20,7 +20,14 @@ import { RootState } from '@/lib/store/store';
 import ActionButton from '@/components/custom-ui/ActionButton';
 import { ImSpinner2 } from 'react-icons/im';
 import { Button } from '@/components/ui/button';
-import { cancelPreviousRequest, formatCurrency } from '@/lib/utils';
+import {
+  cancelPreviousRequest,
+  formatCurrency,
+  handleContextMenu,
+  loadGridConfig,
+  resetGridConfig,
+  saveGridConfig
+} from '@/lib/utils';
 import {
   filterJurnalUmumDetail,
   JurnalUmumDetail
@@ -52,6 +59,10 @@ import {
   useGetPackingListDetailRincian
 } from '@/lib/server/usePackingList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { useTheme } from 'next-themes';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { LoadRowsRenderer } from '@/components/LoadRows';
 
 interface GridProps {
   activeTab: string; // Menerima props activeTab
@@ -81,17 +92,9 @@ interface TabConfig {
   rows: any[];
 }
 
-function EmptyRowsRenderer() {
-  return (
-    <div
-      className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-      style={{ textAlign: 'center', gridColumn: '1/-1' }}
-    >
-      <p className="text-gray-400">NO ROWS DATA FOUND</p>
-    </div>
-  );
-}
 const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [activeTab, setActiveTab] = useState('penerima'); // Track tab aktif
   const detailData = useSelector((state: RootState) => state.header.detailData);
 
@@ -255,8 +258,6 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
         key: 'nomor',
         name: 'NO',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -305,7 +306,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[48%] px-8"
               onClick={() => handleSort('nobukti')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -366,7 +369,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('keterangan')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -437,7 +442,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('banyak')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -506,7 +513,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('berat')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -575,7 +584,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('modifiedby')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -646,7 +657,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('created_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -717,7 +730,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('updated_at')}
-              onContextMenu={handleContextMenu}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
             >
               <p
                 className={`text-sm ${
@@ -836,116 +851,6 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
     });
   };
 
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
-  const saveGridConfig = async (
-    userId: string, // userId sebagai identifier
-    gridName: string,
-    columnsOrder: number[],
-    columnsWidth: { [key: string]: number }
-  ) => {
-    try {
-      const response = await fetch('/api/savegrid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userId,
-          gridName,
-          config: { columnsOrder, columnsWidth }
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save grid configuration');
-      }
-    } catch (error) {
-      console.error('Failed to save grid configuration:', error);
-    }
-  };
-  const resetGridConfig = () => {
-    // Nilai default untuk columnsOrder dan columnsWidth
-    const defaultColumnsOrder = columns.map((_, index) => index);
-    const defaultColumnsWidth = columns.reduce(
-      (acc, column) => {
-        acc[column.key] = typeof column.width === 'number' ? column.width : 0;
-        return acc;
-      },
-      {} as { [key: string]: number }
-    );
-
-    // Set state kembali ke nilai default
-    setColumnsOrder(defaultColumnsOrder);
-    setColumnsWidth(defaultColumnsWidth);
-    setContextMenu(null);
-    setDataGridKey((prevKey) => prevKey + 1);
-
-    gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
-
-    // Simpan konfigurasi reset ke server (atau backend)
-    if (user.id) {
-      saveGridConfig(
-        user.id,
-        'GridPackingListDetail',
-        defaultColumnsOrder,
-        defaultColumnsWidth
-      );
-    }
-  };
-
-  const loadGridConfig = async (userId: string, gridName: string) => {
-    try {
-      const response = await fetch(
-        `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-      );
-      if (!response.ok) {
-        throw new Error('Failed to load grid configuration');
-      }
-
-      const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-      setColumnsOrder(
-        columnsOrder && columnsOrder.length
-          ? columnsOrder
-          : columns.map((_, index) => index)
-      );
-      setColumnsWidth(
-        columnsWidth && Object.keys(columnsWidth).length
-          ? columnsWidth
-          : columns.reduce(
-              (acc, column) => ({
-                ...acc,
-                [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-              }),
-              {}
-            )
-      );
-    } catch (error) {
-      console.error('Failed to load grid configuration:', error);
-
-      // If configuration is not available or error occurs, fallback to original column widths
-      setColumnsOrder(columns.map((_, index) => index));
-
-      setColumnsWidth(
-        columns.reduce(
-          (acc, column) => {
-            // Use the original column width instead of '1fr' when configuration is missing or error occurs
-            acc[column.key] =
-              typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-            return acc;
-          },
-          {} as { [key: string]: number }
-        )
-      );
-    }
-  };
-
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -958,10 +863,6 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
     setInputValue('');
   };
 
-  const handleContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    setContextMenu({ x: event.clientX, y: event.clientY });
-  };
   const handleClickOutside = (event: MouseEvent) => {
     if (
       contextMenuRef.current &&
@@ -972,9 +873,13 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
   };
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -1063,7 +968,13 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
   }, [nobukti, detailData?.nobukti, detailData?.id]);
 
   useEffect(() => {
-    loadGridConfig(user.id, 'GridPackingListDetail');
+    loadGridConfig(
+      user.id,
+      'GridPackingListDetail',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
   }, []);
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
@@ -1113,14 +1024,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
   console.log('filters', filters);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center border-b border-border bg-background-grid-header px-2">
+          <label htmlFor="" className="text-xs">
             SEARCH :
           </label>
           <div className="relative flex w-[200px] flex-row items-center">
@@ -1130,10 +1036,9 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
               onChange={(e) => {
                 handleInputChange(e);
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+              className="m-2 h-[28px] w-[200px] rounded-sm"
               placeholder="Type to search..."
             />
-
             {(filters.search !== '' || inputValue !== '') && (
               <Button
                 type="button"
@@ -1165,12 +1070,7 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
           }}
           className="h-full w-full"
         >
-          <TabsList
-            className="flex w-full flex-row flex-wrap justify-start gap-1 rounded-t-sm border border-blue-500"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          >
+          <TabsList className="flex w-full flex-row flex-wrap justify-start gap-1 rounded-t-sm border border-border bg-background-form-header">
             {tabsConfig.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value}>
                 {tab.label}
@@ -1181,7 +1081,7 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
           {tabsConfig.map((tab) => (
             <TabsContent key={tab.value} value={tab.value} className="h-full">
               <div className="h-[200px] min-h-[200px]">
-                <div className="flex h-full w-full flex-col rounded-sm border border-blue-500 bg-white">
+                <div className="flex h-full w-full flex-col rounded-sm border border-border bg-white">
                   <DataGrid
                     key={dataGridKey}
                     ref={gridRef}
@@ -1192,7 +1092,8 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
                     headerRowHeight={70}
                     rowHeight={30}
                     onCellClick={handleCellClick}
-                    className="rdg-light fill-grid text-sm"
+                    className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+                    enableVirtualization={false}
                     renderers={{
                       noRowsFallback: <EmptyRowsRenderer />
                     }}
@@ -1205,29 +1106,38 @@ const GridPackingListDetailRincian = ({ nobukti }: { nobukti?: string }) => {
         {contextMenu && (
           <div
             ref={contextMenuRef}
+            className="bg-background-input"
             style={{
               position: 'fixed',
               top: contextMenu.y,
               left: contextMenu.x,
-              backgroundColor: 'white',
               boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
               padding: '8px',
               borderRadius: '4px',
               zIndex: 1000
             }}
           >
-            <Button variant="default" onClick={resetGridConfig}>
+            <Button
+              variant="default"
+              onClick={() => {
+                resetGridConfig(
+                  user.id,
+                  'GridPackingListDetail',
+                  columns,
+                  setColumnsOrder,
+                  setColumnsWidth
+                );
+                setContextMenu(null);
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            >
               Reset
             </Button>
           </div>
         )}
         {/* Footer */}
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           {isLoading ? <LoadRowsRenderer /> : null}
         </div>
       </div>

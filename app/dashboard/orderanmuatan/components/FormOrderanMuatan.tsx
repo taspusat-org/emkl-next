@@ -496,9 +496,9 @@ const FormOrderanMuatan = ({
   return (
     <Dialog open={popOver && !openForm} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Orderan Muatan'
               : mode === 'edit'
@@ -535,7 +535,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             NO BUKTI
                           </FormLabel>
                           <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -561,7 +561,7 @@ const FormOrderanMuatan = ({
                         <FormItem className="w-full lg:flex-row lg:items-center">
                           <FormLabel
                             required={true}
-                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                            className="font-semibold lg:w-[15%]"
                           >
                             TGL BUKTI
                           </FormLabel>
@@ -588,7 +588,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           JENIS ORDERAN
                         </FormLabel>
@@ -612,7 +612,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           CONTAINER
                         </FormLabel>
@@ -643,7 +643,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           SHIPPER
                         </FormLabel>
@@ -674,7 +674,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           TUJUAN KAPAL
                         </FormLabel>
@@ -705,7 +705,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           MARKETING
                         </FormLabel>
@@ -739,7 +739,7 @@ const FormOrderanMuatan = ({
                         <FormItem className="w-full lg:flex-row lg:items-center">
                           <FormLabel
                             required={true}
-                            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                            className="font-semibold lg:w-[15%]"
                           >
                             keterangan
                           </FormLabel>
@@ -760,7 +760,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           SCHEDULE
                         </FormLabel>
                       </div>
@@ -801,7 +801,7 @@ const FormOrderanMuatan = ({
                         </div>
                         <div className="mt-4 grid grid-cols-2 gap-3">
                           <div>
-                            <FormLabel className="text-sm font-semibold text-gray-700">
+                            <FormLabel className="text-sm font-semibold">
                               Closing
                             </FormLabel>
                             <InputDateTimePicker
@@ -812,13 +812,13 @@ const FormOrderanMuatan = ({
                             />
                           </div>
                           <div>
-                            <FormLabel className="text-sm font-semibold text-gray-700">
+                            <FormLabel className="text-sm font-semibold">
                               Pelayaran
                             </FormLabel>
                             <Input value={pelayaran} disabled={true} />
                           </div>
                           <div>
-                            <FormLabel className="text-sm font-semibold text-gray-700">
+                            <FormLabel className="text-sm font-semibold">
                               Tgl Berangkat
                             </FormLabel>
                             <InputDatePicker
@@ -827,13 +827,13 @@ const FormOrderanMuatan = ({
                             />
                           </div>
                           <div>
-                            <FormLabel className="text-sm font-semibold text-gray-700">
+                            <FormLabel className="text-sm font-semibold">
                               Kapal
                             </FormLabel>
                             <Input value={kapal} disabled={true} />
                           </div>
                           <div>
-                            <FormLabel className="text-sm font-semibold text-gray-700">
+                            <FormLabel className="text-sm font-semibold">
                               Tujuan Kapal
                             </FormLabel>
                             <Input value={tujuanKapal} disabled={true} />
@@ -846,7 +846,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           CONTAINER PELAYARAN
                         </FormLabel>
                       </div>
@@ -884,7 +884,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           JENIS MUATAN
                         </FormLabel>
@@ -915,7 +915,7 @@ const FormOrderanMuatan = ({
                       <div className="w-full lg:w-[full]">
                         <FormLabel
                           required={true}
-                          className="text-sm font-semibold text-gray-700"
+                          className="text-sm font-semibold"
                         >
                           SANDAR KAPAL
                         </FormLabel>
@@ -944,7 +944,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS TRADO LUAR
                         </FormLabel>
                       </div>
@@ -974,7 +974,7 @@ const FormOrderanMuatan = ({
                     STATUSDATAPENDUKUNGTIDAK ? (
                       <div className="w-full lg:flex-row lg:items-center">
                         <div className="w-full lg:w-[full]">
-                          <FormLabel className="text-sm font-semibold text-gray-700">
+                          <FormLabel className="text-sm font-semibold">
                             no polisi
                           </FormLabel>
                         </div>
@@ -1005,7 +1005,7 @@ const FormOrderanMuatan = ({
                         control={forms.control}
                         render={({ field }) => (
                           <FormItem className="w-full lg:flex-row lg:items-center">
-                            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                            <FormLabel className="font-semibold lg:w-[15%]">
                               no polisi
                             </FormLabel>
                             <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1030,7 +1030,7 @@ const FormOrderanMuatan = ({
                     STATUSDATAPENDUKUNGTIDAK ? (
                       <div className="w-full lg:flex-row lg:items-center">
                         <div className="w-full lg:w-[full]">
-                          <FormLabel className="text-sm font-semibold text-gray-700">
+                          <FormLabel className="text-sm font-semibold">
                             GANDENGAN
                           </FormLabel>
                         </div>
@@ -1061,7 +1061,7 @@ const FormOrderanMuatan = ({
                         control={forms.control}
                         render={({ field }) => (
                           <FormItem className="w-full lg:flex-row lg:items-center">
-                            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                            <FormLabel className="font-semibold lg:w-[15%]">
                               gandengan
                             </FormLabel>
                             <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1087,7 +1087,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             no sp
                           </FormLabel>
                           <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1112,7 +1112,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             no container
                           </FormLabel>
                           <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1135,7 +1135,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             no seal
                           </FormLabel>
                           <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1155,7 +1155,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           LOKASI STUFFING
                         </FormLabel>
                       </div>
@@ -1189,7 +1189,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[full]">
+                          <FormLabel className="font-semibold lg:w-[full]">
                             NOMINAL STUFFING
                           </FormLabel>
                           <div className="flex flex-col lg:w-[90%]">
@@ -1210,7 +1210,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           EMKL LAIN
                         </FormLabel>
                       </div>
@@ -1241,7 +1241,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             asal muatan
                           </FormLabel>
                           <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1261,7 +1261,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           DAFTAR BL
                         </FormLabel>
                       </div>
@@ -1292,7 +1292,7 @@ const FormOrderanMuatan = ({
                       control={forms.control}
                       render={({ field }) => (
                         <FormItem className="w-full lg:flex-row lg:items-center">
-                          <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                          <FormLabel className="font-semibold lg:w-[15%]">
                             comodity
                           </FormLabel>
                           <div className="mt-2 flex flex-col lg:w-[90%]">
@@ -1312,7 +1312,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS PISAH BL
                         </FormLabel>
                       </div>
@@ -1340,7 +1340,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS JOB PTD
                         </FormLabel>
                       </div>
@@ -1368,7 +1368,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS TRANSIT
                         </FormLabel>
                       </div>
@@ -1396,7 +1396,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS STUFFING DEPO
                         </FormLabel>
                       </div>
@@ -1424,7 +1424,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS OPEN DOOR
                         </FormLabel>
                       </div>
@@ -1452,7 +1452,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS BATAL MUAT
                         </FormLabel>
                       </div>
@@ -1480,7 +1480,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS SOC
                         </FormLabel>
                       </div>
@@ -1508,7 +1508,7 @@ const FormOrderanMuatan = ({
 
                     <div className="w-full lg:flex-row lg:items-center">
                       <div className="w-full lg:w-[full]">
-                        <FormLabel className="text-sm font-semibold text-gray-700">
+                        <FormLabel className="text-sm font-semibold">
                           STATUS PENGURUSAN DOOR EKSPEDISI LAIN
                         </FormLabel>
                       </div>
@@ -1550,7 +1550,7 @@ const FormOrderanMuatan = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

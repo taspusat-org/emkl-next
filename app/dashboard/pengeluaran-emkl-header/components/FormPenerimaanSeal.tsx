@@ -36,9 +36,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { IoMdClose } from 'react-icons/io';
+import { useTheme } from 'next-themes';
 
 const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
   const { alert } = useAlert();
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const [rows, setRows] = useState<
     (
@@ -546,7 +549,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+            <FormLabel className="font-semibold lg:w-[15%]">
               KETERANGAN
             </FormLabel>
             <div className="flex flex-col lg:w-[85%]">
@@ -566,9 +569,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
 
       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
         <div className="w-full lg:w-[15%]">
-          <FormLabel className="text-sm font-semibold text-gray-700">
-            JENIS SEAL
-          </FormLabel>
+          <FormLabel className="text-sm font-semibold">JENIS SEAL</FormLabel>
         </div>
         <div className="w-full lg:w-[85%]">
           {lookUpPropsJenisseal.map((props, index) => (
@@ -587,9 +588,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
 
       <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
         <div className="w-full lg:w-[15%]">
-          <FormLabel className="text-sm font-semibold text-gray-700">
-            JENIS POSTING
-          </FormLabel>
+          <FormLabel className="text-sm font-semibold">JENIS POSTING</FormLabel>
         </div>
         <div className="w-full lg:w-[85%]">
           {lookUpPropsJenisPosting.map((props, index) => (
@@ -607,7 +606,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         </div>
       </div>
       <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
-        <p className="text-sm text-black">
+        <p className="text-sm">
           {forms.getValues('jenisposting') === KASBANK
             ? 'POSTING PENGELUARAN'
             : 'POSTING HUTANG'}
@@ -618,7 +617,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
             <div className="flex w-full flex-col gap-3">
               <div className="flex w-full flex-col lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel className="text-sm font-semibold text-gray-700">
+                  <FormLabel className="text-sm font-semibold">
                     KAS / BANK
                   </FormLabel>
                 </div>
@@ -646,7 +645,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   control={forms.control}
                   render={({ field }) => (
                     <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                      <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                      <FormLabel className="font-semibold lg:w-[15%]">
                         NO BUKTI KAS/BANK KELUAR
                       </FormLabel>
                       <div className="flex flex-col lg:w-[35%]">
@@ -673,7 +672,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                     <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
                       <FormLabel
                         required={true}
-                        className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                        className="font-semibold lg:w-[15%]"
                       >
                         TANGGAL JATUH TEMPO
                       </FormLabel>
@@ -697,7 +696,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
               </div>
               <div className="flex w-full flex-col lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel className="text-sm font-semibold text-gray-700">
+                  <FormLabel className="text-sm font-semibold">
                     Alat Bayar
                   </FormLabel>
                 </div>
@@ -724,7 +723,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                   control={forms.control}
                   render={({ field }) => (
                     <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                      <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                      <FormLabel className="font-semibold lg:w-[15%]">
                         NOMOR WARKAT
                       </FormLabel>
                       <div className="flex flex-col lg:w-[35%]">
@@ -750,7 +749,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NO BUKTI HUTANG
                     </FormLabel>
                     <div className="flex flex-col lg:w-[35%]">
@@ -772,13 +771,8 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
         </div>
       </div>
       <div className="h-[400px] min-h-[400px]">
-        <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-          <div
-            className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-blue-500 px-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          >
+        <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+          <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
             {mode !== 'view' && mode !== 'delete' && (
               <Button
                 type="button"
@@ -799,14 +793,10 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
             headerRowHeight={70}
             rowHeight={40}
             renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-            className="rdg-light fill-grid text-sm"
+            className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid text-sm`}
+            enableVirtualization={false}
           />
-          <div
-            className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+          <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
         </div>
       </div>
 
@@ -834,18 +824,18 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
           <DialogContent
             className={`fixed left-[50%] top-[50%] z-50 flex w-full max-w-lg 
               -translate-x-1/2 -translate-y-1/2 flex-col rounded-sm 
-              border border-blue-500 bg-white px-1 py-1 shadow-2xl duration-200
+              border border-border  shadow-2xl duration-200
               ${showEntryModal ? 'scale-100 opacity-100' : 'scale-0 opacity-0'}
             `}
             style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 10%)',
+              // background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 10%)',
               overflowY: 'hidden',
               isolation: 'isolate',
               pointerEvents: 'auto'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
+            <div className="flex items-center justify-between bg-background-grid-header px-2 py-2">
               <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                 ENTRY BANYAK
               </h2>
@@ -859,7 +849,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
             </div>
 
             {/* Dialog Content */}
-            <div className="flex flex-col border border-blue-500 border-b-[#dddddd] bg-white px-2 py-4">
+            <div className="flex flex-col border border-border bg-background px-2 py-4">
               <div className="grid gap-4 ">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="kode" className="text-left text-sm ">
@@ -957,7 +947,7 @@ const FormPenerimaanSeal = ({ forms, mode, popOver }: any) => {
             </div>
 
             {/* Dialog Footer */}
-            <div className="flex flex-col-reverse items-center justify-start gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] px-2 py-2 sm:flex-row">
+            <div className="flex flex-col-reverse items-center justify-start gap-4 border-x border-b border-border border-t-[#dddddd] bg-background-grid-header px-2 py-2 sm:flex-row">
               <Button
                 type="button"
                 className="flex w-fit items-center gap-1 text-sm"

@@ -35,6 +35,10 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import ActionButton from '@/components/custom-ui/ActionButton';
 
 interface Filter {
   page: number;
@@ -47,7 +51,7 @@ interface Filter {
 
 const GridScheduleKapal = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-
+  const { theme, resolvedTheme } = useTheme();
   const [hasMore, setHasMore] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [inputValue, setInputValue] = useState('');
@@ -55,11 +59,10 @@ const GridScheduleKapal = () => {
   const [dataGridKey, setDataGridKey] = useState(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [rows, setRows] = useState<IScheduleKapal[]>([]);
-  const [isAllSelected, setIsAllSelected] = useState(false);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
-  const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const [filters, setFilters] = useState<Filter>({
@@ -96,8 +99,6 @@ const GridScheduleKapal = () => {
         filters: { ...prev.filters, [colKey]: value },
         page: 1
       }));
-      setCheckedRows(new Set());
-      setIsAllSelected(false);
       setRows([]);
       setCurrentPage(1);
       setSelectedRow(0);
@@ -123,8 +124,6 @@ const GridScheduleKapal = () => {
       search: searchValue,
       page: 1
     }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
@@ -135,8 +134,6 @@ const GridScheduleKapal = () => {
       }
     }, 200);
 
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
     setSelectedRow(0);
     setCurrentPage(1);
     setRows([]);
@@ -151,8 +148,6 @@ const GridScheduleKapal = () => {
       filters: { ...prev.filters, [colKey]: '' },
       page: 1
     }));
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
     setRows([]);
     setCurrentPage(1);
   }, []);
@@ -167,67 +162,6 @@ const GridScheduleKapal = () => {
       page: 1
     }));
     setInputValue('');
-  };
-
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
-
-    // Priority: columnFilter over search
-    const searchTerm = columnFilter?.trim() || search?.trim() || '';
-
-    if (!searchTerm) {
-      return textValue;
-    }
-
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    // Create regex for continuous string match
-    const escapedTerm = escapeRegExp(searchTerm);
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-
-    // Replace all occurrences
-    const highlighted = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
-
-  const handleRowSelect = (rowId: number) => {
-    setCheckedRows((prev) => {
-      const updated = new Set(prev);
-      if (updated.has(rowId)) {
-        updated.delete(rowId);
-      } else {
-        updated.add(rowId);
-      }
-
-      setIsAllSelected(updated.size === rows.length);
-      return updated;
-    });
-  };
-
-  const handleSelectAll = () => {
-    if (isAllSelected) {
-      setCheckedRows(new Set());
-    } else {
-      const allIds = rows.map((row) => row.id);
-      setCheckedRows(new Set(allIds));
-    }
-    setIsAllSelected(!isAllSelected);
   };
 
   const handleSort = (column: string) => {
@@ -276,8 +210,6 @@ const GridScheduleKapal = () => {
         key: 'nomor',
         name: 'NO',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -311,34 +243,6 @@ const GridScheduleKapal = () => {
             </div>
           );
         }
-      },
-      {
-        key: 'select',
-        name: '',
-        width: 50,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
-            <div className="flex h-[50%] w-full items-center justify-center">
-              <Checkbox
-                checked={isAllSelected}
-                onCheckedChange={() => handleSelectAll()}
-                id="header-checkbox"
-                className="mb-2"
-              />
-            </div>
-          </div>
-        ),
-        renderCell: ({ row }: { row: IScheduleKapal }) => (
-          <div className="flex h-full items-center justify-center">
-            <Checkbox
-              checked={checkedRows.has(row.id)}
-              onCheckedChange={() => handleRowSelect(row.id)}
-              id={`row-checkbox-${row.id}`}
-            />
-          </div>
-        )
       },
       {
         key: 'keterangan',
@@ -414,7 +318,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'voyberangkat',
-        name: 'voyberangkat',
+        name: 'voy berangkat',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -646,7 +550,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'tujuankapal',
-        name: 'tujuankapal',
+        name: 'tujuan kapal',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -723,7 +627,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'asalkapal',
-        name: 'asalkapal',
+        name: 'asal kapal',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -800,7 +704,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'tglberangkat',
-        name: 'tglberangkat',
+        name: 'tgl berangkat',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -879,7 +783,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'tgltiba',
-        name: 'tgltiba',
+        name: 'tgl tiba',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -953,7 +857,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'tglclosing',
-        name: 'tglclosing',
+        name: 'tgl closing',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1029,7 +933,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'jenisorderan_text',
-        name: 'jenisorderan',
+        name: 'jenis orderan',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1108,7 +1012,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'statusberangkatkapal',
-        name: 'statusberangkatkapal',
+        name: 'status berangkat kapal',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1187,7 +1091,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'statustibakapal',
-        name: 'statustibakapal',
+        name: 'status tiba kapal',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1266,7 +1170,7 @@ const GridScheduleKapal = () => {
       },
       {
         key: 'batasmuatankapal',
-        name: 'batasmuatankapal',
+        name: 'batas muatan kapal',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -1635,13 +1539,17 @@ const GridScheduleKapal = () => {
         }
       }
     ];
-  }, [filters, rows, checkedRows]);
+  }, [filters, rows]);
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -1736,7 +1644,6 @@ const GridScheduleKapal = () => {
 
       if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
         setCurrentPage(nextPage);
-        setIsAllSelected(false);
       }
     }
 
@@ -1790,11 +1697,6 @@ const GridScheduleKapal = () => {
         const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
         return newRow;
       });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
     }
   }
 
@@ -1916,42 +1818,52 @@ const GridScheduleKapal = () => {
 
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            {' '}
-            SEARCH :{' '}
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridScheduleKapal"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
               }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
             />
-
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
-              >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
           </div>
         </div>
 
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
@@ -1960,7 +1872,8 @@ const GridScheduleKapal = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
@@ -1972,21 +1885,23 @@ const GridScheduleKapal = () => {
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
+          <ActionButton
+            module="TRADO"
+            rowsLength={rows.length}
+            totalItems={
+              allScheduleKapal ? allScheduleKapal.pagination.totalItems : 0
+            }
+          />
           {isLoadingScheduleKapal ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

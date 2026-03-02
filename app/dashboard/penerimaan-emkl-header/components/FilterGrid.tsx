@@ -99,14 +99,11 @@ const FilterGrid = () => {
             triggerValidation={triggerValidation}
           />
           <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
-            <label
-              htmlFor=""
-              className="w-full text-sm font-bold text-black lg:w-[20%]"
-            >
+            <label htmlFor="" className="w-full text-sm font-bold lg:w-[20%]">
               Penerimaan Emkl:
               <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
             </label>
-            <div className="relative w-full text-black lg:w-[60%]">
+            <div className="relative w-full lg:w-[60%]">
               {lookUpPropsPenerimaanEmkl.map((props, index) => (
                 <LookUp
                   key={index}
