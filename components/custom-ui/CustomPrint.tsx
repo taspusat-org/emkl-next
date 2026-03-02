@@ -358,7 +358,13 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
       localStorage.setItem('lastPrinter', destination);
       onClose();
     } catch (err) {
+      onClose();
       console.error('Gagal mengirim dokumen ke printer:', err);
+      alert({
+        title: 'Gagal mengirim dokumen ke printer. Silahkan hubungi Tim IT',
+        variant: 'danger',
+        submitText: 'OK'
+      });
     } finally {
       setIsLoading(false);
     }
