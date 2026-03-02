@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FormTabs } from './FormTabs';
+import { useTheme } from 'next-themes';
 import { IoMdClose } from 'react-icons/io';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ import {
 import { formatCurrency, parseCurrency } from '@/lib/utils';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
 
 const FormMarketing = ({
   popOver,
@@ -52,6 +54,8 @@ const FormMarketing = ({
   let hasValueMarketingProsesFee: any;
 
   const dispatch = useDispatch();
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const gridRef = useRef<DataGridHandle>(null);
   const formRef = useRef<HTMLFormElement | null>(null); // Ref untuk form
   const headerData = useSelector((state: RootState) => state.header.headerData);
@@ -597,14 +601,8 @@ const FormMarketing = ({
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm">No.</p>
-            </div>
-
-            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
+          <div className="flex h-full flex-col items-center justify-center gap-1">
+            <p className="text-sm">No.</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -624,11 +622,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>NAMA</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>NAMA</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -665,11 +660,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>KETERANGAN</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>KETERANGAN</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -706,11 +698,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>SINGKATAN</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>SINGKATAN</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -747,11 +736,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>STATUS AKTIF</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>STATUS AKTIF</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -857,14 +843,8 @@ const FormMarketing = ({
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm">No.</p>
-            </div>
-
-            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
+          <div className="flex h-full flex-col items-center justify-center gap-1">
+            <p className="text-sm">No.</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -884,11 +864,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>JENIS BIAYA MARKETING</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>JENIS BIAYA MARKETING</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -940,12 +917,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 150,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              {/* <p className={`text-sm font-normal`}>Nominal</p> */}
-              <p className={`text-sm`}>Nominal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>Nominal</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -986,11 +959,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>STATUS AKTIF</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>STATUS AKTIF</p>
           </div>
         ),
         renderCell: (props: any) => (
@@ -1092,14 +1062,8 @@ const FormMarketing = ({
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center">
-              <p className="text-sm">No.</p>
-            </div>
-
-            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
+          <div className="flex h-full flex-col items-center justify-center gap-1">
+            <p className="text-sm">No.</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -1119,11 +1083,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>MANAGER MARKETING</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>MANAGER MARKETING</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -1173,11 +1134,8 @@ const FormMarketing = ({
         cellClass: 'form-input',
         width: 200,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm`}>STATUS AKTIF</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm`}>STATUS AKTIF</p>
           </div>
         ),
         renderCell: (props: any) => {
@@ -1284,14 +1242,8 @@ const FormMarketing = ({
             return undefined; // For other rows, no column spanning
           },
           renderHeaderCell: () => (
-            <div className="flex h-full flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] items-center justify-center text-center">
-                <p className="text-sm">No.</p>
-              </div>
-
-              <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-                <FaTimes className="bg-red-500 text-white" />
-              </div>
+            <div className="flex h-full flex-col items-center justify-center gap-1">
+              <p className="text-sm">No.</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -1311,11 +1263,8 @@ const FormMarketing = ({
           cellClass: 'form-input',
           width: 200,
           renderHeaderCell: () => (
-            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] px-8">
-                <p className={`text-sm`}>JENIS PROSES FEE</p>
-              </div>
-              <div className="relative h-[50%] w-full px-1"></div>
+            <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+              <p className={`text-sm`}>JENIS PROSES FEE</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -1363,13 +1312,10 @@ const FormMarketing = ({
           resizable: true,
           draggable: true,
           cellClass: 'form-input',
-          width: 200,
+          width: 250,
           renderHeaderCell: () => (
-            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] px-8">
-                <p className={`text-sm`}>STATUS POTONG BIAYA KANTOR</p>
-              </div>
-              <div className="relative h-[50%] w-full px-1"></div>
+            <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+              <p className={`text-sm`}>STATUS POTONG BIAYA KANTOR</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -1421,11 +1367,8 @@ const FormMarketing = ({
           cellClass: 'form-input',
           width: 200,
           renderHeaderCell: () => (
-            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-              <div className="headers-cell h-[50%] px-8">
-                <p className={`text-sm`}>STATUS AKTIF</p>
-              </div>
-              <div className="relative h-[50%] w-full px-1"></div>
+            <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+              <p className={`text-sm`}>STATUS AKTIF</p>
             </div>
           ),
           renderCell: (props: any) => {
@@ -1468,17 +1411,6 @@ const FormMarketing = ({
         }
       ];
     }, [rowsMarketingProsesFee, checkedRows]);
-
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1919,9 +1851,9 @@ const FormMarketing = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Marketing'
               : mode === 'edit'
@@ -1940,8 +1872,8 @@ const FormMarketing = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="min-h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -1956,7 +1888,7 @@ const FormMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           NAMA
                         </FormLabel>
@@ -1982,7 +1914,7 @@ const FormMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           KODE MARKETING
                         </FormLabel>
@@ -2008,7 +1940,7 @@ const FormMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           KETERANGAN
                         </FormLabel>
@@ -2031,7 +1963,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Aktif
                       </FormLabel>
@@ -2062,7 +1994,7 @@ const FormMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           EMAIL
                         </FormLabel>
@@ -2085,7 +2017,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Karyawan
                       </FormLabel>
@@ -2115,7 +2047,7 @@ const FormMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           TGL MASUK
                         </FormLabel>
@@ -2141,7 +2073,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Target
                       </FormLabel>
@@ -2168,7 +2100,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Bagi Fee
                       </FormLabel>
@@ -2195,7 +2127,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Fee Manager
                       </FormLabel>
@@ -2222,7 +2154,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Marketing Group
                       </FormLabel>
@@ -2254,7 +2186,7 @@ const FormMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Pra Fee
                       </FormLabel>
@@ -2278,7 +2210,7 @@ const FormMarketing = ({
                   </div>
 
                   <div className="h-[500px] min-h-[500px]">
-                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
+                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
                       <FormTabs mode={mode} forms={forms} />
 
                       {tabFormValues === 'formMarketingOrderan' && (
@@ -2290,10 +2222,13 @@ const FormMarketing = ({
                             resizable: true
                           }}
                           rows={rowsMarketingOrderan}
-                          headerRowHeight={70}
+                          headerRowHeight={40}
                           rowHeight={55}
                           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                          className="rdg-light fill-grid text-sm"
+                          className={`${
+                            isDark ? 'rdg-dark' : 'rdg-light'
+                          } fill-grid`}
+                          enableVirtualization={false}
                         />
                       )}
 
@@ -2307,12 +2242,15 @@ const FormMarketing = ({
                               resizable: true
                             }}
                             rows={rowsMarketingBiaya}
-                            headerRowHeight={70}
+                            headerRowHeight={40}
                             rowHeight={55}
                             renderers={{
                               noRowsFallback: <EmptyRowsRenderer />
                             }}
-                            className="rdg-light fill-grid text-sm"
+                            className={`${
+                              isDark ? 'rdg-dark' : 'rdg-light'
+                            } fill-grid`}
+                            enableVirtualization={false}
                           />
                           {/* <div
                             className="flex flex-row border border-b-0 border-l-0 border-blue-500 p-2"
@@ -2342,10 +2280,13 @@ const FormMarketing = ({
                             resizable: true
                           }}
                           rows={rowsMarketingManager}
-                          headerRowHeight={70}
+                          headerRowHeight={40}
                           rowHeight={55}
                           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                          className="rdg-light fill-grid text-sm"
+                          className={`${
+                            isDark ? 'rdg-dark' : 'rdg-light'
+                          } fill-grid`}
+                          enableVirtualization={false}
                         />
                       )}
 
@@ -2358,10 +2299,13 @@ const FormMarketing = ({
                             resizable: true
                           }}
                           rows={rowsMarketingProsesFee}
-                          headerRowHeight={70}
+                          headerRowHeight={40}
                           rowHeight={55}
                           renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                          className="rdg-light fill-grid text-sm"
+                          className={`${
+                            isDark ? 'rdg-dark' : 'rdg-light'
+                          } fill-grid`}
+                          enableVirtualization={false}
                         />
                       )}
                     </div>
@@ -2371,7 +2315,7 @@ const FormMarketing = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

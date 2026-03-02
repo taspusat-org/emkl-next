@@ -1,3 +1,4 @@
+import { useTheme } from 'next-themes';
 import { FaSave, FaTimes, FaTrashAlt } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { RootState } from '@/lib/store/store';
@@ -45,6 +46,8 @@ const FormBiayaLainLainDetailMuatan = ({
   errorNominal,
   setErrorNominal
 }: any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [dataGridKey, setDataGridKey] = useState(0);
   const [editingRowId, setEditingRowId] = useState(0); // Menyimpan ID baris yang sedang diedit
   const [editableValues, setEditableValues] = useState<Map<number, string>>(
@@ -1034,13 +1037,8 @@ const FormBiayaLainLainDetailMuatan = ({
   return (
     <div className="flex h-[100%] flex-col gap-2 lg:gap-3">
       <div className="h-[400px] min-h-[400px]">
-        <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-          <div
-            className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+        <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+          <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2"></div>
 
           <DataGrid
             key={dataGridKey}
@@ -1054,14 +1052,10 @@ const FormBiayaLainLainDetailMuatan = ({
             headerRowHeight={40}
             rowHeight={55}
             renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-            className="rdg-light fill-grid text-sm"
+            className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+            enableVirtualization={false}
           />
-          <div
-            className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+          <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
         </div>
       </div>
     </div>

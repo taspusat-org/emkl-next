@@ -6,11 +6,25 @@
   font-family: Arial, Helvetica, sans-serif;
   font-size: unset;
 }
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 218, 27%, 94%;
+    --background-card: 0, 0%, 100%;
+    --background-input: 0, 0%, 100%;
+    --background-input-disabled: 240, 6%, 96%;
+    --background-grid-header: 217, 100%, 95.29%;
+    --background-input-focus: 60, 69%, 94%;
     --foreground: 20 51% 4%;
+    --primary-text: 216.92, 19.12%, 26.67%;
+    --button-text: 217, 74%, 21%;
+    --background-header: 216, 29%, 97%;
+    --background-form-header: 216.77, 100%, 93.92%;
+    --background-form-footer: 218, 27%, 94%;
+    --input-border: 240, 6%, 84%, 1;
+    --border: 217, 96%, 81%, 0.92;
+    --input-border-focus: 214.39, 63.08%, 74.51%;
+    --input-text: 216.92, 19.12%, 26.67%;
+    --input-text-disabled: 240, 6%, 60%;
     --muted: 20 25% 86%;
     --muted-foreground: 20 7% 25%;
     --popover: 20 66% 98%;
@@ -21,7 +35,6 @@
     --tooltip-background-color: black;
     --tooltip-margin: 30px;
     --tooltip-arrow-size: 6px;
-    --border: 20 15% 94%;
     --input: 20 15% 94%;
     --primary-foreground: 0 0% 100%;
     --secondary: 20 12% 92%;
@@ -46,18 +59,34 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --selected-cell: 186 57% 93%;
   }
 
   .dark {
-    --background: 253 43% 3%;
+    --background: 0, 0%, 10%;
     --foreground: 253 31% 98%;
+    --background-input: 240, 3.8%, 15.49%;
+    --background-input-disabled: 240, 3.8%, 12%;
+    --background-grid-header: 222.86, 13.04%, 19.41%;
+    --background-input-focus: 240, 1.83%, 42.75%;
+    --background-header: 0, 0%, 26%;
+    --background-card: 0, 0%, 10%;
+    --primary-text: 220, 13.04%, 90.98%;
+    --button-text: 220, 13.04%, 90.98%;
+
+    --background-form-header: 0, 0%, 26%;
+    --background-form-footer: 0, 0%, 26%;
+    --border: 0, 0%, 100%, 0.29;
+    --input-border: 0, 0%, 100%, 0.29;
+    --input-border-focus: 240, 4.88%, 83.92%;
+    --input-text: 220, 13.04%, 90.98%;
+    --input-text-disabled: 0, 0%, 78%;
     --muted: 253 7% 13%;
     --muted-foreground: 253 13% 63%;
     --popover: 253 43% 3%;
     --popover-foreground: 253 31% 98%;
     --card: 253 43% 4%;
     --card-foreground: 253 31% 99%;
-    --border: 215 27.9% 16.9%;
     --input: 215 27.9% 16.9%;
     --primary: 253 91% 58%;
     --primary-foreground: 253 91% 98%;
@@ -81,6 +110,7 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 253 91% 58%%;
+    --selected-cell: 209 39% 35%;
   }
 }
 @font-face {
@@ -131,7 +161,6 @@
   @apply hidden;
 }
 .filter-input {
-  border: 1px solid #ccc;
   padding: 4px;
   font-size: 12px;
   width: 100%;
@@ -155,6 +184,7 @@ input {
 }
 .selected-row {
   background-color: #ffe48d !important;
+  color: black !important;
 }
 .text-header {
   font-family: 'Open Sans Condensed', sans-serif;
@@ -262,22 +292,18 @@ table {
   font-family: 'DejaVu', sans-serif;
   letter-spacing: 0.9px; /* Tambahkan jarak antar huruf */
 
-  border-right: 1px solid #9fc3fd;
-  border-bottom: 1px solid #9fc3fd;
+  border-right: 1px solid hsla(var(--border));
+  border-bottom: 1px solid hsla(var(--border));
 }
 .rdg > .rdg-row > .rdg-cell:last-child {
-  border-right: 1px solid #9fc3fd;
+  border-right: 1px solid hsla(var(--border));
 }
 .rdg-summary-row .rdg-cell {
-  border-top: 1px solid #9fc3fd; /* Border atas khusus untuk summary row */
+  border-top: 1px solid hsla(var(--border)); /* Border atas khusus untuk summary row */
 }
-.rnvodz57-0-0-beta-47::before {
-  grid-column: auto; /* Menonaktifkan grid-column dengan mengubahnya menjadi auto */
-  grid-row: 1 / -1; /* Tetap pertahankan grid-row */
-}
-.rdg-row-odd:not(:has(.form-input)) {
+/* .rdg-row-odd:not(:has(.form-input)) {
   background-color: #f0f0f0;
-}
+} */
 /* Menghilangkan border bawah pada baris terakhir */
 .rdg > .rdg-row:last-child .rdg-cell {
   border-bottom: none;
@@ -287,25 +313,46 @@ table {
   border-collapse: collapse;
 }
 .rdg-bottom-summary-row {
-  border-top: 1px solid #9fc3fd !important;
+  border-top: 1px solid hsla(var(--border)) !important;
 }
 .rdg-summary-row {
-  border-top: 1px solid #9fc3fd !important;
+  border-top: 1px solid hsla(var(--border)) !important;
 }
 .headers-cell {
   display: flex;
   width: 100%;
   flex-direction: row;
   justify-content: space-between;
-  border-bottom: 1px solid rgb(149 184 231 / var(--tw-border-opacity, 1));
+  border-bottom: 1px solid hsla(var(--border));
+  align-items: center;
+  padding: 0px 8px;
+  letter-spacing: 0.5px;
+  font-size: 6px;
+}
+.dark .headers-cell {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  border-bottom: 1px solid hsla(var(--border));
   align-items: center;
   padding: 0px 8px;
   letter-spacing: 0.5px;
   font-size: 6px;
 }
 .column-headers {
-  background-color: white;
+  /* Light mode */
+  background-color: #ffffff;
+  color: #111827;
   padding: 0 2px 0 0;
+}
+
+.dark .column-headers {
+  /* Dark mode */
+  background: linear-gradient(to bottom, #2b2f36 0%, #23262d 100%);
+
+  padding: 0 2px 0 0;
+  color: #ffffff;
 }
 .fill-grid {
   height: 100%;
@@ -313,6 +360,7 @@ table {
 
 .highlight {
   background-color: #e0f7fa; /* Contoh warna latar belakang untuk highlight */
+  color: black;
 }
 .filter-input:focus {
   background-color: #e0e0e0; /* Warna saat input difokuskan */
@@ -362,6 +410,10 @@ table {
 }
 .rdg-row .rdg-cell[tabindex='0'] {
   background-color: #e2f5f7; /* Warna untuk row yang dipilih */
+  color: black;
+}
+.s8wc6fl7-0-0-beta-47[tabindex='0'] {
+  color: black;
 }
 .highlight-row {
   background-color: red;
@@ -630,23 +682,22 @@ input[value='-YYYY'] {
 [data-radix-popper-content-wrapper] {
   z-index: 9999 !important;
 }
-.rpv-core__inner-page{
+.rpv-core__inner-page {
   background-color: #d4d4d7 !important;
 }
-.rpv-core__canvas-layer{
+.rpv-core__canvas-layer {
   background-color: #d4d4d7 !important;
 }
-.rpv-core__text-layer{
+.rpv-core__text-layer {
   background-color: #d4d4d7 !important;
 }
-.rpv-core__page-layer{
- display: none;
- height: 0px;
-
+.rpv-core__page-layer {
+  display: none;
+  height: 0px;
 }
 .rpv-core__inner-page {
-    margin-top: 0.5rem;
+  margin-top: 0.5rem;
 }
-.rpv-core__inner-pages{
+.rpv-core__inner-pages {
   background-color: #d4d4d7 !important;
 }

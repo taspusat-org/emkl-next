@@ -145,9 +145,9 @@ const FormLabaRugiKalkulasi = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Laba Rugi Kalkulasi'
               : mode === 'edit'
@@ -166,8 +166,8 @@ const FormLabaRugiKalkulasi = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-white pl-1 pr-2">
-          <div className="min-h-full bg-white px-3 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -180,7 +180,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           PERIODE
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -206,7 +206,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold lg:w-[15%]">
                           EST KOMISI MARKETING
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -230,7 +230,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           KOMISI MARKETING
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -254,7 +254,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           BIAYA KANTOR PUSAT
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -278,7 +278,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           BIAYA TOUR
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -302,7 +302,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           GAJI DIREKSI
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -326,7 +326,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           EST KOMISI KACAB
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -350,7 +350,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           BIAYA BONUS TRI WULAN
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -374,7 +374,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           EST KOMISI MARKETING 2
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -398,7 +398,7 @@ const FormLabaRugiKalkulasi = ({
                     control={forms.control}
                     render={({ field }) => (
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                        <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                        <FormLabel className="font-semibold  lg:w-[15%]">
                           EST KOMISI KACAB CABANG 1
                         </FormLabel>
                         <div className="flex flex-col lg:w-[85%]">
@@ -445,7 +445,7 @@ const FormLabaRugiKalkulasi = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         STATUS FINAL KOMISI MARKETING
                       </FormLabel>
@@ -474,7 +474,7 @@ const FormLabaRugiKalkulasi = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         STATUS FINAL BONUS TRI WULAN
                       </FormLabel>
@@ -503,7 +503,7 @@ const FormLabaRugiKalkulasi = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

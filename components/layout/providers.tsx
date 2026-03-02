@@ -12,12 +12,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      value={{ light: 'light', dark: 'dark' }}
+    >
       <LoadingOverlay
         isLoading={isLoading || false}
         isProcessing={isProcessing || false}
       />
-      {/* ✅ PERBAIKAN: Disable auto refetch untuk menghindari session call berulang */}
       <SessionProvider
         refetchInterval={0} // Tidak auto-refetch berdasarkan interval
         refetchOnWindowFocus={true} // ✅ KUNCI: Disable refetch saat window focus

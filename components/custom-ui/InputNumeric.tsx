@@ -4,47 +4,105 @@ import { cn } from '@/lib/utils';
 
 type NumericInputProps = {
   value?: string | number | null;
-  onValueChange?: (val: string | null) => void; // ← empty dikirim sebagai null
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onValueChange?: (val: string | null) => void;
   icon?: React.ReactNode;
   className?: string;
   autoFocus?: boolean;
   disabled?: boolean;
   readOnly?: boolean;
   placeholder?: string;
+  isDecimal?: boolean;
+  maxDecimalPlaces?: number;
 };
 
 const InputNumeric: React.FC<NumericInputProps> = ({
   value = '',
+  onChange,
   onValueChange,
   icon,
   className = '',
   autoFocus = false,
   readOnly = false,
   disabled = false,
-  placeholder = ''
+  placeholder = '',
+  isDecimal = false,
+  maxDecimalPlaces = 2
 }) => {
   const normalizeValue = (val: string | number | null | undefined) =>
     val == null ? '' : typeof val === 'number' ? String(val) : val;
 
   const [inputValue, setInputValue] = useState<string>(normalizeValue(value));
+
   useEffect(() => {
     const normalized = normalizeValue(value);
+    // Hanya update jika nilai external berubah dan berbeda dengan inputValue
     if (normalized !== inputValue) {
       setInputValue(normalized);
     }
-  }, [value, inputValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]); // Hanya depend pada value, bukan inputValue
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value;
-    const numeric = raw.replace(/\D+/g, ''); // hanya digit
-    if (numeric === '') {
-      setInputValue('');
-      onValueChange?.(null); // ← penting: JANGAN kirim '0'
-      return;
+    let cleanedValue: string;
+
+    if (isDecimal) {
+      // Allow digits and one decimal point
+      let cleaned = raw.replace(/[^\d.]/g, '');
+
+      // Ensure only one decimal point
+      const parts = cleaned.split('.');
+      if (parts.length > 2) {
+        cleaned = parts[0] + '.' + parts.slice(1).join('');
+      }
+
+      // Limit decimal places
+      if (parts.length === 2) {
+        cleaned = parts[0] + '.' + parts[1].slice(0, maxDecimalPlaces);
+      }
+
+      if (cleaned === '' || cleaned === '.') {
+        setInputValue('');
+
+        // Trigger both onChange and onValueChange
+        const syntheticEvent = {
+          ...e,
+          target: { ...e.target, value: '' }
+        } as React.ChangeEvent<HTMLInputElement>;
+        onChange?.(syntheticEvent);
+        onValueChange?.(null);
+        return;
+      }
+
+      cleanedValue = cleaned;
+    } else {
+      // Original behavior: only digits
+      const numeric = raw.replace(/\D+/g, '');
+      if (numeric === '') {
+        setInputValue('');
+
+        const syntheticEvent = {
+          ...e,
+          target: { ...e.target, value: '' }
+        } as React.ChangeEvent<HTMLInputElement>;
+        onChange?.(syntheticEvent);
+        onValueChange?.(null);
+        return;
+      }
+
+      cleanedValue = numeric;
     }
 
-    setInputValue(numeric);
-    onValueChange?.(numeric);
+    setInputValue(cleanedValue);
+
+    // Trigger both onChange (for React Hook Form) and onValueChange
+    const syntheticEvent = {
+      ...e,
+      target: { ...e.target, value: cleanedValue }
+    } as React.ChangeEvent<HTMLInputElement>;
+    onChange?.(syntheticEvent);
+    onValueChange?.(cleanedValue);
   };
 
   const inputStopPropagation = (e: React.KeyboardEvent) => {
@@ -54,7 +112,7 @@ const InputNumeric: React.FC<NumericInputProps> = ({
   return (
     <div className="relative w-full">
       <InputMask
-        mask="999999999999999999999999"
+        mask=""
         maskPlaceholder={null}
         maskChar={null}
         disabled={disabled}
@@ -65,15 +123,14 @@ const InputNumeric: React.FC<NumericInputProps> = ({
         onKeyDown={inputStopPropagation}
         onClick={(e: any) => e.stopPropagation()}
         placeholder={placeholder}
-        inputMode="numeric" // bantu keyboard numerik di mobile
-        pattern="[0-9]*"
+        inputMode={isDecimal ? 'decimal' : 'numeric'}
+        pattern={isDecimal ? '[0-9]*[.,]?[0-9]*' : '[0-9]*'}
         className={cn(
-          'flex h-9 w-full rounded-sm border border-zinc-300 bg-transparent px-3 py-1 text-xs font-normal uppercase text-zinc-900 shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus:border-blue-500 focus:bg-[#ffffee] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
-          readOnly ? 'text-zinc-700' : '',
-          'tracking-normal', // Add this class for normal letter spacing
-          className,
-          // Add the conditional class for disabled background color
-          disabled ? 'border-zinc-400 bg-gray-200' : '' // Set gray background for disabled state
+          `h-9 w-full rounded-sm border border-input-border bg-background-input px-1 py-1 text-right text-sm focus:border-input-border-focus focus:bg-background-input-focus focus:outline-none focus:ring-0 ${className} ${
+            readOnly || disabled
+              ? 'text-input-text-disabled'
+              : 'text-input-text'
+          }`
         )}
       />
       {icon && (

@@ -106,7 +106,7 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
 
   return (
     <Select value={localSelectedValue} onValueChange={handleChange}>
-      <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer overflow-hidden rounded-none border border-gray-300 p-1 text-xs font-thin">
+      <SelectTrigger className="filter-select z-[999999] mr-1 h-8 w-full cursor-pointer overflow-hidden rounded-none border border-input-border bg-background-input p-1 text-xs font-thin ">
         <SelectValue>{selectedLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent>

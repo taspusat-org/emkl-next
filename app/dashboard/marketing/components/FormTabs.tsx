@@ -37,12 +37,7 @@ export function FormTabs({ mode, forms }: FormTabsProps) {
       // className="h-full w-full"
       // className="mb-4"
     >
-      <TabsList
-        className="flex w-full flex-row flex-wrap justify-start gap-1 rounded-t-sm border border-blue-500"
-        style={{
-          background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-        }}
-      >
+      <TabsList className="flex w-full flex-row flex-wrap justify-start gap-1 rounded-t-sm border border-border bg-background-grid-header">
         <TabsTrigger value="formMarketingOrderan">
           Marketing Orderan
         </TabsTrigger>

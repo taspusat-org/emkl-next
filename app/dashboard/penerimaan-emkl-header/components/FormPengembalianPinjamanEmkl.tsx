@@ -41,7 +41,10 @@ import { IoMdRefresh } from 'react-icons/io';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { useGetPenerimaanEmklDetail } from '@/lib/server/usePenerimaanEmklHeader';
+import { useTheme } from 'next-themes';
 const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const headerData = useSelector((state: RootState) => state.header.headerData);
   const {
     data: detail,
@@ -737,7 +740,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+            <FormLabel className="font-semibold lg:w-[15%]">
               KETERANGAN
             </FormLabel>
             <div className="flex flex-col lg:w-[85%]">
@@ -759,10 +762,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel
-              required={true}
-              className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
-            >
+            <FormLabel required={true} className="font-semibold lg:w-[15%]">
               TGL JATUH TEMPO
             </FormLabel>
             <div className="flex flex-col lg:w-[85%]">
@@ -785,9 +785,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         control={forms.control}
         render={({ field }) => (
           <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-            <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
-              NOWARKAT
-            </FormLabel>
+            <FormLabel className="font-semibold lg:w-[15%]">NOWARKAT</FormLabel>
             <div className="flex flex-col lg:w-[85%]">
               <FormControl>
                 <Input
@@ -804,10 +802,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
       />
       <div className="flex w-full flex-row gap-4">
         <div className="flex w-full flex-row items-center">
-          <FormLabel
-            required={true}
-            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
-          >
+          <FormLabel required={true} className="font-semibold lg:w-[30%]">
             TGL DARI
           </FormLabel>
           <div className="flex flex-col lg:w-[70%]">
@@ -821,10 +816,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
           </div>
         </div>
         <div className="flex w-full flex-row items-center lg:ml-4">
-          <FormLabel
-            required={true}
-            className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
-          >
+          <FormLabel required={true} className="font-semibold lg:w-[30%]">
             SAMPAI TGL
           </FormLabel>
           <div className="flex flex-col lg:w-[70%]">
@@ -850,13 +842,13 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         </p>
       </Button>
       <div className="border-gray flex w-full flex-col gap-4 border border-gray-300 px-2 py-3">
-        <p className="text-sm text-black">POSTING PENERIMAAN</p>
+        <p className="text-sm">POSTING PENERIMAAN</p>
 
         <div className="flex flex-row lg:gap-3">
           <div className="flex w-full flex-col gap-3">
             <div className="flex w-full flex-col lg:flex-row lg:items-center">
               <div className="w-full lg:w-[15%]">
-                <FormLabel className="text-sm font-semibold text-gray-700">
+                <FormLabel className="text-sm font-semibold">
                   KAS/BANK
                 </FormLabel>
               </div>
@@ -882,7 +874,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NO BUKTI KAS/BANK MASUK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[35%]">
@@ -904,13 +896,8 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         </div>
       </div>
       <div className="h-[400px] min-h-[400px]">
-        <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-          <div
-            className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+        <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+          <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2"></div>
 
           <DataGrid
             ref={gridRef}
@@ -920,14 +907,10 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
             rowHeight={35}
             bottomSummaryRows={summaryRows}
             renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-            className="rdg-light fill-grid text-sm"
+            className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid text-sm`}
+            enableVirtualization={false}
           />
-          <div
-            className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-            style={{
-              background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-            }}
-          ></div>
+          <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
         </div>
       </div>
     </div>

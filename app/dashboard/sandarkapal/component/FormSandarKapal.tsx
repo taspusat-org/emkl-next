@@ -131,9 +131,9 @@ const FormSandarkapal = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Tambah Sandar Kapal'
               : mode === 'edit'
@@ -152,8 +152,8 @@ const FormSandarkapal = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -168,7 +168,7 @@ const FormSandarkapal = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           NAMA
                         </FormLabel>
@@ -194,7 +194,7 @@ const FormSandarkapal = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           Keterangan
                         </FormLabel>
@@ -216,7 +216,7 @@ const FormSandarkapal = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Aktif
                       </FormLabel>
@@ -241,7 +241,7 @@ const FormSandarkapal = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"
@@ -275,9 +275,7 @@ const FormSandarkapal = ({
                 loading={isLoadingCreate || isLoadingUpdate || isLoadingDelete}
               >
                 <FaSave />
-                <p className="text-center">
-                  {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
-                </p>
+                <p className="text-center">SAVE & ADD</p>
               </Button>
             </div>
           )}

@@ -21,6 +21,7 @@ import {
   JENISORDERMUATAN
 } from '@/constants/biayaheader';
 import GridBiayaMuatanDetail from './components/GridBiayaMuatanDetail';
+import { getBiayaemklFn } from '@/lib/apis/biayaemkl.api';
 
 interface ApiResponse {
   type: string;
@@ -39,30 +40,22 @@ const Page = () => {
         const result = await fieldLength('biayaheader');
         dispatch(setFieldLength(result.data));
 
-        // const [
-        //   jenisOrderaranLookup,
-        // ] = await Promise.all<ApiResponse>([
-        //   getJenisOrderanFn({ isLookUp: 'true' }),
-        // ]);
+        const [biayaEmklLookup] = await Promise.all<ApiResponse>([
+          getBiayaemklFn({ isLookUp: 'true' })
+        ]);
 
-        // if (jenisOrderaranLookup.type === 'local') {
-        //   dispatch(
-        //     setData({ key: 'JENIS ORDERAN', data: jenisOrderaranLookup.data })
-        //   );
-        //   dispatch(
-        //     setType({ key: 'JENIS ORDERAN', type: jenisOrderaranLookup.type })
-        //   );
+        if (biayaEmklLookup.type === 'local') {
+          dispatch(setData({ key: 'BIAYA EMKL', data: biayaEmklLookup.data }));
+          dispatch(setType({ key: 'BIAYA EMKL', type: biayaEmklLookup.type }));
 
-        //   const defaultValue =
-        //     jenisOrderaranLookup.data
-        //       .map((item: any) => item.default)
-        //       .find((val: any) => val !== null) || '';
+          const defaultValue =
+            biayaEmklLookup.data
+              .map((item: any) => item.default)
+              .find((val: any) => val !== null) || '';
 
-        //   // Dispatch the default data
-        //   dispatch(
-        //     setDefault({ key: 'JENIS ORDERAN', isdefault: defaultValue })
-        //   );
-        // }
+          // Dispatch the default data
+          dispatch(setDefault({ key: 'BIAYA EMKL', isdefault: defaultValue }));
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
       }

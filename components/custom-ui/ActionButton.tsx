@@ -60,6 +60,8 @@ interface BaseActionProps {
   disableView?: boolean;
   disableExport?: boolean;
   disableReport?: boolean;
+  rowsLength?: number;
+  totalItems?: number;
 }
 
 const ActionButton = ({
@@ -70,6 +72,8 @@ const ActionButton = ({
   onReport,
   onView,
   checkedRows,
+  rowsLength = 0,
+  totalItems = 0,
   module = '',
   customActions = [],
   dropdownMenus = [],
@@ -277,195 +281,207 @@ const ActionButton = ({
   }, [hasApprovalPermission, hasNonApprovalPermission]);
 
   return (
-    <div className="flex w-full flex-row gap-1 overflow-scroll lg:overflow-hidden">
-      {onAdd && (
-        <Button
-          onClick={onAdd}
-          disabled={disableAdd || !hasPermission(module, 'POST')}
-          variant="default"
-          className="bg-[#0f82e1] text-sm font-thin hover:bg-[#105892] disabled:opacity-50"
-        >
-          <FaPlus />
-          <p className="text-sm font-normal">Add</p>
-        </Button>
-      )}
+    <div className="flex w-full flex-col justify-between lg:flex-row">
+      <div className="flex w-full flex-row gap-1 overflow-scroll lg:overflow-hidden">
+        {onAdd && (
+          <Button
+            onClick={onAdd}
+            disabled={disableAdd || !hasPermission(module, 'POST')}
+            variant="default"
+            className="bg-[#0f82e1] text-sm font-thin hover:bg-[#105892] disabled:opacity-50"
+          >
+            <FaPlus />
+            <p className="text-sm font-normal">Add</p>
+          </Button>
+        )}
 
-      {onEdit && (
-        <Button
-          onClick={onEdit}
-          disabled={disableEdit || !hasPermission(module, 'PUT')}
-          variant="warning"
-          className="text-sm font-thin disabled:opacity-50"
-        >
-          <MdEdit /> <p className="text-center text-sm">Edit</p>
-        </Button>
-      )}
+        {onEdit && (
+          <Button
+            onClick={onEdit}
+            disabled={disableEdit || !hasPermission(module, 'PUT')}
+            variant="warning"
+            className="text-sm font-thin disabled:opacity-50"
+          >
+            <MdEdit /> <p className="text-center text-sm">Edit</p>
+          </Button>
+        )}
 
-      {onDelete && (
-        <Button
-          onClick={onDelete}
-          disabled={disableDelete || !hasPermission(module, 'DELETE')}
-          variant="destructive"
-          className="gap-1 text-sm font-thin disabled:opacity-50"
-        >
-          <MdDelete />
-          <p className="text-center text-sm">Delete</p>
-        </Button>
-      )}
+        {onDelete && (
+          <Button
+            onClick={onDelete}
+            disabled={disableDelete || !hasPermission(module, 'DELETE')}
+            variant="destructive"
+            className="gap-1 text-sm font-thin disabled:opacity-50"
+          >
+            <MdDelete />
+            <p className="text-center text-sm">Delete</p>
+          </Button>
+        )}
 
-      {onView && (
-        <Button
-          onClick={onView}
-          disabled={disableView}
-          variant="default"
-          className="gap-1 bg-orange-500 text-sm font-thin hover:bg-orange-700 disabled:opacity-50"
-        >
-          <BsEyeFill />
-          <p className="text-center text-sm">View</p>
-        </Button>
-      )}
+        {onView && (
+          <Button
+            onClick={onView}
+            disabled={disableView}
+            variant="default"
+            className="gap-1 bg-orange-500 text-sm font-thin hover:bg-orange-700 disabled:opacity-50"
+          >
+            <BsEyeFill />
+            <p className="text-center text-sm">View</p>
+          </Button>
+        )}
 
-      {onExport && (
-        <Button
-          onClick={onExport}
-          disabled={disableExport}
-          variant="default"
-          className="gap-1 bg-green-600 text-sm font-thin hover:bg-green-700 disabled:opacity-50"
-        >
-          <FaFileExport />
-          <p className="text-center text-sm">Export</p>
-        </Button>
-      )}
+        {onExport && (
+          <Button
+            onClick={onExport}
+            disabled={disableExport}
+            variant="default"
+            className="gap-1 bg-green-600 text-sm font-thin hover:bg-green-700 disabled:opacity-50"
+          >
+            <FaFileExport />
+            <p className="text-center text-sm">Export</p>
+          </Button>
+        )}
 
-      {onReport && (
-        <Button
-          onClick={onReport}
-          disabled={disableReport}
-          variant="default"
-          className="gap-1 bg-cyan-500 text-sm font-thin hover:bg-cyan-700 disabled:opacity-50"
-        >
-          <FaPrint />
-          <p className="text-center text-sm">Report</p>
-        </Button>
-      )}
+        {onReport && (
+          <Button
+            onClick={onReport}
+            disabled={disableReport}
+            variant="default"
+            className="gap-1 bg-cyan-500 text-sm font-thin hover:bg-cyan-700 disabled:opacity-50"
+          >
+            <FaPrint />
+            <p className="text-center text-sm">Report</p>
+          </Button>
+        )}
 
-      {customActions.map((action, idx) => (
-        <Button
-          key={idx}
-          onClick={action.onClick}
-          disabled={action.disabled ?? false}
-          variant={action.variant || 'default'}
-          className={`gap-1 text-sm font-thin ${action.className || ''} ${
-            action.disabled ? 'disabled:opacity-50' : ''
-          }`}
-        >
-          {action.icon} <p className="text-center text-sm">{action.label}</p>
-        </Button>
-      ))}
+        {customActions.map((action, idx) => (
+          <Button
+            key={idx}
+            onClick={action.onClick}
+            disabled={action.disabled ?? false}
+            variant={action.variant || 'default'}
+            className={`gap-1 text-sm font-thin ${action.className || ''} ${
+              action.disabled ? 'disabled:opacity-50' : ''
+            }`}
+          >
+            {action.icon} <p className="text-center text-sm">{action.label}</p>
+          </Button>
+        ))}
 
-      {dropdownMenus.length > 0 &&
-        dropdownMenus.map((menu, index) => (
+        {dropdownMenus.length > 0 &&
+          dropdownMenus.map((menu, index) => (
+            <DropdownMenu
+              key={index}
+              open={openMenu === index}
+              onOpenChange={() =>
+                setOpenMenu(openMenu === index ? null : index)
+              }
+            >
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="default"
+                  className={`w-fit gap-1 text-sm font-normal ${
+                    menu.className || ''
+                  }`}
+                >
+                  {menu.icon}
+                  {menu.label} <IoMdArrowDropup />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                className="flex flex-col gap-1 border border-blue-500"
+                side="top"
+              >
+                {menu.actions.map((action, actionIndex) => (
+                  <Button
+                    key={actionIndex}
+                    onClick={() => {
+                      action.onClick();
+                      handleDropdownClick(index);
+                    }}
+                    variant="default"
+                    className={`w-full p-2 text-left text-sm font-thin ${
+                      action.className || ''
+                    }`}
+                  >
+                    <p className="text-center text-sm font-normal">
+                      {action.label}
+                    </p>
+                  </Button>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ))}
+
+        {/* APPROVAL/NON APPROVAL Dropdown - Only show if has permission */}
+        {showApprovalDropdown && !isLoadingPermissions && (
           <DropdownMenu
-            key={index}
-            open={openMenu === index}
-            onOpenChange={() => setOpenMenu(openMenu === index ? null : index)}
+            open={openMenu === 999} // Use unique index for approval dropdown
+            onOpenChange={() => setOpenMenu(openMenu === 999 ? null : 999)}
           >
             <DropdownMenuTrigger asChild>
               <Button
                 variant="default"
-                className={`w-fit gap-1 text-sm font-normal ${
-                  menu.className || ''
-                }`}
+                className={`w-fit gap-1 bg-purple-700 text-sm font-normal hover:bg-purple-800`}
               >
-                {menu.icon}
-                {menu.label} <IoMdArrowDropup />
+                {approvalButtonLabel}
+                <IoMdArrowDropup />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               className="flex flex-col gap-1 border border-blue-500"
               side="top"
             >
-              {menu.actions.map((action, actionIndex) => (
-                <Button
-                  key={actionIndex}
-                  onClick={() => {
-                    action.onClick();
-                    handleDropdownClick(index);
-                  }}
-                  variant="default"
-                  className={`w-full p-2 text-left text-sm font-thin ${
-                    action.className || ''
-                  }`}
-                >
-                  <p className="text-center text-sm font-normal">
-                    {action.label}
-                  </p>
-                </Button>
-              ))}
+              {filteredApprovalData.length > 0 ? (
+                filteredApprovalData.map((item: any, index: number) => (
+                  <Button
+                    key={`approval-${index}`}
+                    onClick={() => {
+                      onClick(item.memo_nama);
+                      handleDropdownClick(999);
+                    }}
+                    variant="default"
+                    style={{
+                      backgroundColor: item?.warna,
+                      color: item.warna_tulisan
+                    }}
+                    className={`w-full p-2 text-left text-sm font-thin`}
+                  >
+                    <p className="text-center text-sm font-normal">
+                      {item.memo_nama}
+                    </p>
+                  </Button>
+                ))
+              ) : (
+                <div className="p-2 text-center text-sm text-gray-500">
+                  Tidak ada opsi tersedia
+                </div>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
-        ))}
+        )}
 
-      {/* APPROVAL/NON APPROVAL Dropdown - Only show if has permission */}
-      {showApprovalDropdown && !isLoadingPermissions && (
-        <DropdownMenu
-          open={openMenu === 999} // Use unique index for approval dropdown
-          onOpenChange={() => setOpenMenu(openMenu === 999 ? null : 999)}
-        >
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="default"
-              className={`w-fit gap-1 bg-purple-700 text-sm font-normal hover:bg-purple-800`}
-            >
-              {approvalButtonLabel}
-              <IoMdArrowDropup />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="flex flex-col gap-1 border border-blue-500"
-            side="top"
+        {hasDataLainnyaPermission && !isLoadingPermissions && (
+          <Button
+            key={`lainnya`}
+            variant="default"
+            className={`w-fit gap-1 bg-gray-500 text-sm font-normal hover:bg-gray-600`}
+            onClick={() => {
+              onClickLainnya('lainnya');
+            }}
           >
-            {filteredApprovalData.length > 0 ? (
-              filteredApprovalData.map((item: any, index: number) => (
-                <Button
-                  key={`approval-${index}`}
-                  onClick={() => {
-                    onClick(item.memo_nama);
-                    handleDropdownClick(999);
-                  }}
-                  variant="default"
-                  style={{
-                    backgroundColor: item?.warna,
-                    color: item.warna_tulisan
-                  }}
-                  className={`w-full p-2 text-left text-sm font-thin`}
-                >
-                  <p className="text-center text-sm font-normal">
-                    {item.memo_nama}
-                  </p>
-                </Button>
-              ))
-            ) : (
-              <div className="p-2 text-center text-sm text-gray-500">
-                Tidak ada opsi tersedia
-              </div>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-
-      {hasDataLainnyaPermission && !isLoadingPermissions && (
-        <Button
-          key={`lainnya`}
-          variant="default"
-          className={`w-fit gap-1 bg-gray-500 text-sm font-normal hover:bg-gray-600`}
-          onClick={() => {
-            onClickLainnya('lainnya');
-          }}
-        >
-          LAINNYA
-          <IoMdArrowDropup />
-        </Button>
+            LAINNYA
+            <IoMdArrowDropup />
+          </Button>
+        )}
+      </div>
+      {rowsLength > 0 && totalItems > 0 && (
+        <div className="flex h-fit w-[150px] items-center justify-center lg:h-full lg:justify-end">
+          <p className="text-primary-text text-xs">
+            View {rowsLength > 0 ? 1 : null} - {rowsLength} of{' '}
+            {totalItems ?? null}
+          </p>
+        </div>
       )}
     </div>
   );

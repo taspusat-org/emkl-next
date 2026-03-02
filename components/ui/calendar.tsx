@@ -5,8 +5,6 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@radix-ui/react-icons';
 import { DayPicker, DropdownProps } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
-import { useGetAllOffDays, useGetOffdays } from '@/lib/server/useOffdays';
-import { IOffdays } from '@/lib/types/offday.type';
 import {
   Select,
   SelectContent,
@@ -25,28 +23,22 @@ function Calendar({
   showOutsideDays = true,
   ...props
 }: CalendarProps) {
-  const { data } = useGetAllOffDays();
   const parseDate = (dateStr: string) => {
     const [day, month, year] = dateStr.split('-').map(Number);
     return new Date(year, month - 1, day); // month is 0-indexed in JavaScript's Date object
   };
 
-  const holidays =
-    data?.data.map((item: IOffdays) => ({
-      date: parseDate(item.tgl), // Use the parseDate function to handle the format correctly
-      keterangan: item.keterangan
-    })) || [];
-
-  const holidayDates = holidays.map((holiday) => holiday.date);
-  const isHolidayOrSunday = (date: Date) => {
-    // Check if the date is a holiday or Sunday
-    const isSunday = date.getDay() === 0; // Sunday is 0
-    const isHoliday = holidayDates.some(
-      (holidayDate) => holidayDate.getTime() === date.getTime()
-    );
-    return isSunday || isHoliday;
+  const formatDateToLocal = (date: Date) => {
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    } as const;
+    const [day, month, year] = date
+      .toLocaleDateString('id-ID', options)
+      .split('/');
+    return `${year}-${month}-${day}`;
   };
-
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -69,13 +61,13 @@ function Calendar({
         head_cell:
           'text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]',
         row: 'flex w-full mt-2 gap-x-[1px] flex-row justify-between',
-        cell: 'text-center text-sm p-0 bg-gradient-to-b from-[#eff5ff] to-[#e0ecff] relative border border-blue-500 [&:has([aria-selected])]:bg-yellow-500 focus-within:relative focus-within:z-20',
+        cell: 'text-center text-sm p-0 bg-background-grid-header relative border border-border [&:has([aria-selected])]:bg-yellow-500 focus-within:relative focus-within:z-20',
         day: cn(
           buttonVariants({ variant: 'ghost' }),
-          'h-7 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-blue-400 rounded-none font-bold text-sm'
+          'h-7 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-blue-400 rounded-none font-bold text-sm hover:text-primary-text'
         ),
         day_selected:
-          'bg-[#2694e8] text-white hover:bg-blue-400 hover:text-primary-foreground focus:bg-blue-400 focus:text-white',
+          'bg-[#2694e8] text-white hover:bg-blue-400 focus:bg-blue-400 focus:text-white border-border border',
         day_today: 'h-7 w-8 bg-[#ffef8f] border border-[#f9dd34] text-black',
         day_outside: 'opacity-50',
         day_disabled: 'text-muted-foreground opacity-50',
@@ -109,7 +101,7 @@ function Calendar({
 
               <SelectContent
                 position="popper"
-                className="border-zinc-300 bg-white"
+                className="border-zinc-300 bg-background"
               >
                 {/* Ganti <div> dengan <SelectViewport> */}
                 <ScrollArea
@@ -131,19 +123,14 @@ function Calendar({
             </Select>
           );
         },
-        IconLeft: () => <ChevronLeftIcon className="h-4 w-4" />,
-        IconRight: () => <ChevronRightIcon className="h-4 w-4" />
-      }}
-      disabledDays={[...holidayDates, new Date().getDay() === 0]}
-      dayClassName={(date) => {
-        // Check if the day is a holiday or a Sunday
-        if (isHolidayOrSunday(date)) {
-          return 'day_disabled'; // Apply the disabled style
-        }
-        return ''; // No additional class for non-disabled days
+        IconLeft: () => (
+          <ChevronLeftIcon className="text-primary-text h-4 w-4" />
+        ),
+        IconRight: () => (
+          <ChevronRightIcon className="text-primary-text h-4 w-4" />
+        )
       }}
       modifiers={{
-        holiday: holidayDates,
         sunday: { dayOfWeek: [0] },
         saturday: { dayOfWeek: [6] }
       }}

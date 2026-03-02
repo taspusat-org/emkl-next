@@ -98,6 +98,9 @@ import {
 } from '@/lib/utils';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { LoadRowsRenderer } from '@/components/LoadRows';
+import DraggableColumn from '@/components/custom-ui/DraggableColumns';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
 
 interface Filter {
   page: number;
@@ -109,12 +112,10 @@ interface Filter {
   sortDirection: 'asc' | 'desc';
 }
 
-interface GridConfig {
-  columnsOrder: number[];
-  columnsWidth: { [key: string]: number };
-}
-
 const GridShipper = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -354,42 +355,6 @@ const GridShipper = () => {
       setContextMenu(null);
     }
   };
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : formatCurrency(0);
-    if (!textValue) return '';
-
-    // Priority: columnFilter over search
-    const searchTerm = columnFilter?.trim() || search?.trim() || '';
-
-    if (!searchTerm) {
-      return textValue;
-    }
-
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    // Create regex for continuous string match
-    const escapedTerm = escapeRegExp(searchTerm);
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-
-    // Replace all occurrences
-    const highlighted = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
@@ -469,6 +434,16 @@ const GridShipper = () => {
     }
     setIsAllSelected(!isAllSelected);
   };
+
+  const handleFilterRows = (val: string) => {
+    setIsFilteringRows(true);
+    // setLocalSelectedValue(val);
+    // onChange?.(val);
+    setTimeout(() => {
+      setIsFilteringRows(false);
+    }, 1000);
+  };
+
   const handleClearInput = () => {
     setFilters((prev) => ({
       ...prev,
@@ -569,12 +544,10 @@ const GridShipper = () => {
   const columns = useMemo((): Column<IShipper>[] => {
     return [
       {
-        key: 'no',
+        key: 'nomor',
         name: 'NO',
         width: 50,
         minWidth: 10,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
@@ -613,10 +586,17 @@ const GridShipper = () => {
         key: 'select',
         name: '',
         width: 50,
+        resizable: true,
+        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%]"></div>
+            <div
+              className="headers-cell h-[50%]"
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            ></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -2656,7 +2636,7 @@ const GridShipper = () => {
         }
       },
       {
-        key: 'nomor',
+        key: 'number',
         name: 'Nomor',
         resizable: true,
         draggable: true,
@@ -3226,7 +3206,7 @@ const GridShipper = () => {
       },
       {
         key: 'usertracing',
-        name: 'usertracing',
+        name: 'user tracing',
         resizable: true,
         draggable: true,
         width: 150,
@@ -3245,7 +3225,7 @@ const GridShipper = () => {
                   filters.sortBy === 'usertracing' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                usert racing
+                user tracing
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'usertracing' &&
@@ -3298,7 +3278,7 @@ const GridShipper = () => {
       },
       {
         key: 'passwordtracing',
-        name: 'passwordtracing',
+        name: 'password tracing',
         resizable: true,
         draggable: true,
         width: 170,
@@ -3372,7 +3352,7 @@ const GridShipper = () => {
       },
       {
         key: 'kodeprospek',
-        name: 'kodeprospek',
+        name: 'kode prospek',
         resizable: true,
         draggable: true,
         width: 150,
@@ -3444,7 +3424,7 @@ const GridShipper = () => {
       },
       {
         key: 'namashipperprospek',
-        name: 'namashipperprospek',
+        name: 'nama shipper prospek',
         resizable: true,
         draggable: true,
         width: 200,
@@ -3518,7 +3498,7 @@ const GridShipper = () => {
       },
       {
         key: 'emaildelay',
-        name: 'emaildelay',
+        name: 'email delay',
         resizable: true,
         draggable: true,
         width: 200,
@@ -3590,7 +3570,7 @@ const GridShipper = () => {
       },
       {
         key: 'keterangan1barisinvoice',
-        name: 'keterangan1barisinvoice',
+        name: 'keterangan 1 baris invoice',
         resizable: true,
         draggable: true,
         width: 250,
@@ -3733,7 +3713,7 @@ const GridShipper = () => {
       },
       {
         key: 'namaparaf',
-        name: 'namaparaf',
+        name: 'nama paraf',
         resizable: true,
         draggable: true,
         width: 200,
@@ -3805,7 +3785,7 @@ const GridShipper = () => {
       },
       {
         key: 'saldopiutang',
-        name: 'saldopiutang',
+        name: 'saldo piutang',
         resizable: true,
         draggable: true,
         width: 200,
@@ -3882,7 +3862,7 @@ const GridShipper = () => {
       },
       {
         key: 'keteranganshipperjobminus',
-        name: 'keteranganshipperjobminus',
+        name: 'keterangan shipper job minus',
         resizable: true,
         draggable: true,
         width: 250,
@@ -3903,7 +3883,7 @@ const GridShipper = () => {
                     : 'font-normal'
                 }`}
               >
-                keteranganshipperjobminus
+                keterangan shipper job minus
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'keteranganshipperjobminus' &&
@@ -3956,7 +3936,7 @@ const GridShipper = () => {
       },
       {
         key: 'tglemailshipperjobminus',
-        name: 'tglemailshipperjobminus',
+        name: 'tgl email shipper job minus',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -4031,7 +4011,7 @@ const GridShipper = () => {
       },
       {
         key: 'tgllahir',
-        name: 'tgllahir',
+        name: 'tgl lahir',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
@@ -4102,7 +4082,7 @@ const GridShipper = () => {
       },
       {
         key: 'idshipperasal',
-        name: 'idshipperasal',
+        name: 'id shipperasal',
         resizable: true,
         draggable: true,
         width: 150,
@@ -4316,7 +4296,7 @@ const GridShipper = () => {
       },
       {
         key: 'idtipe',
-        name: 'idtipe',
+        name: 'id tipe',
         resizable: true,
         draggable: true,
         width: 120,
@@ -4386,7 +4366,7 @@ const GridShipper = () => {
       },
       {
         key: 'idinitial',
-        name: 'idinitial',
+        name: 'id initial',
         resizable: true,
         draggable: true,
         width: 150,
@@ -4458,7 +4438,7 @@ const GridShipper = () => {
       },
       {
         key: 'nshipperprospek',
-        name: 'nshipperprospek',
+        name: 'nama shipper prospek',
         resizable: true,
         draggable: true,
         width: 200,
@@ -4532,7 +4512,7 @@ const GridShipper = () => {
       },
       {
         key: 'parentshipper_id',
-        name: 'parentshipper_id',
+        name: 'parent shipper',
         resizable: true,
         draggable: true,
         width: 200,
@@ -4606,7 +4586,7 @@ const GridShipper = () => {
       },
       {
         key: 'npwpnik',
-        name: 'npwpnik',
+        name: 'npwp nik',
         resizable: true,
         draggable: true,
         width: 200,
@@ -4625,7 +4605,7 @@ const GridShipper = () => {
                   filters.sortBy === 'npwpnik' ? 'font-bold' : 'font-normal'
                 }`}
               >
-                npwpnik
+                npwp nik
               </p>
               <div className="ml-2">
                 {filters.sortBy === 'npwpnik' &&
@@ -4746,7 +4726,7 @@ const GridShipper = () => {
       },
       {
         key: 'kodepajak',
-        name: 'kodepajak',
+        name: 'kode pajak',
         resizable: true,
         draggable: true,
         width: 200,
@@ -10492,9 +10472,13 @@ const GridShipper = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => columns[orderIndex])
+        .map((orderIndex) => filteredColumns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -10768,40 +10752,86 @@ const GridShipper = () => {
   }, []);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
-          <label htmlFor="" className="text-xs text-zinc-600">
-            SEARCH :
-          </label>
-          <div className="relative flex w-[200px] flex-row items-center">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => {
-                handleInputChange(e);
-              }}
-              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-              placeholder="Type to search..."
-            />
-            {(filters.search !== '' || inputValue !== '') && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="absolute right-2 text-gray-500 hover:bg-transparent"
-                onClick={handleClearInput}
+      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
+          <div className="flex flex-row items-center">
+            <label htmlFor="" className="text-xs">
+              SEARCH :
+            </label>
+            <div className="relative flex w-[200px] flex-row items-center">
+              <Input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => {
+                  handleInputChange(e);
+                }}
+                className="m-2 h-[28px] w-[200px] rounded-sm"
+                placeholder="Type to search..."
+              />
+              {(filters.search !== '' || inputValue !== '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="absolute right-2 text-gray-500 hover:bg-transparent"
+                  onClick={handleClearInput}
+                >
+                  <Image src={IcClose} width={15} height={15} alt="close" />
+                </Button>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-row items-center">
+            <div>
+              <Select
+                defaultValue="ALL ROWS"
+                onValueChange={handleFilterRows}
+                disabled={isFilteringRows}
               >
-                <Image src={IcClose} width={15} height={15} alt="close" />
-              </Button>
-            )}
+                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectGroup>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="ALL ROWS"
+                    >
+                      <p className="text-sm font-normal">ALL ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="CHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">CHECKED ROWS</p>
+                    </SelectItem>
+                    <SelectItem
+                      className="text=xs cursor-pointer"
+                      value="UNCHECKED ROWS"
+                    >
+                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DraggableColumn
+              defaultColumns={columns}
+              saveColumns={finalColumns}
+              userId={user.id}
+              gridName="GridShipper"
+              setColumnsOrder={setColumnsOrder}
+              setColumnsWidth={setColumnsWidth}
+              onReset={() => {
+                setDataGridKey((prevKey) => prevKey + 1);
+                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+              }}
+            />
           </div>
         </div>
 
         <DataGrid
+          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           // columns={combinedColumns}
@@ -10811,7 +10841,8 @@ const GridShipper = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onScroll={handleScroll}
@@ -10822,12 +10853,7 @@ const GridShipper = () => {
             noRowsFallback: <EmptyRowsRenderer />
           }}
         />
-        <div
-          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
           <ActionButton
             module="SHIPPER"
             onAdd={handleAdd}
@@ -10835,6 +10861,8 @@ const GridShipper = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            rowsLength={rows.length}
+            totalItems={allShipper ? allShipper.pagination.totalItems : 0}
             customActions={[
               {
                 label: 'Print',
@@ -10895,11 +10923,11 @@ const GridShipper = () => {
           {contextMenu && (
             <div
               ref={contextMenuRef}
+              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
-                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',

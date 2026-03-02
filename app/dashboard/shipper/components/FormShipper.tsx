@@ -262,9 +262,9 @@ const FormShipper = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-y-auto border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-y-auto border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Shipper '
               : mode === 'edit'
@@ -303,7 +303,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semiboldlg:w-[15%]"
                     >
                       NAMA
                     </FormLabel>
@@ -327,7 +327,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semiboldlg:w-[15%]">
                       KETERANGAN
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -350,7 +350,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semiboldlg:w-[15%]">
                       CONTACT PERSON
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -373,7 +373,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semiboldlg:w-[15%]">
                       ALAMAT
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -392,10 +392,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel
-                    required={true}
-                    className="text-sm font-semibold text-gray-700"
-                  >
+                  <FormLabel required={true} className="text-sm font-semibold">
                     COA
                   </FormLabel>
                 </div>
@@ -418,10 +415,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel
-                    required={true}
-                    className="text-sm font-semibold text-gray-700"
-                  >
+                  <FormLabel required={true} className="text-sm font-semibold">
                     COA PIUTANG
                   </FormLabel>
                 </div>
@@ -444,10 +438,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel
-                    required={true}
-                    className="text-sm font-semibold text-gray-700"
-                  >
+                  <FormLabel required={true} className="text-sm font-semibold">
                     COA HUTANG
                   </FormLabel>
                 </div>
@@ -473,7 +464,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KOTA
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -496,7 +487,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KODEPOS
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -519,7 +510,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       TELP
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -529,10 +520,10 @@ const FormShipper = ({
                           mask="999999999999999"
                           maskPlaceholder={null}
                           value={field.value ?? ''}
-                          className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                          className={`text-primary-text h-9 w-full rounded-sm border border-input-border bg-background-input px-3 py-2 text-sm focus:border-input-border focus:bg-background-input-focus ${
                             mode === 'delete'
                               ? 'text-zinc-400'
-                              : 'text-zinc-900'
+                              : 'text-primary-text'
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
@@ -550,7 +541,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       EMAIL
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -559,10 +550,10 @@ const FormShipper = ({
                           {...field}
                           type="email"
                           value={field.value ?? ''}
-                          className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                          className={`text-primary-text h-9 w-full rounded-sm border border-input-border bg-background-input px-3 py-2 text-sm focus:border-input-border focus:bg-background-input-focus ${
                             mode === 'delete'
                               ? 'text-zinc-400'
-                              : 'text-zinc-900'
+                              : 'text-primary-text'
                           } focus:outline-none focus:ring-0`}
                           readOnly={mode === 'view' || mode === 'delete'}
                         />
@@ -578,7 +569,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       FAX
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -601,7 +592,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       WEB
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -626,7 +617,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       CREDIT LIMIT
                     </FormLabel>
@@ -653,7 +644,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       CREDIT TERM
                     </FormLabel>
@@ -680,7 +671,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       CREDIT TERM PLUS
                     </FormLabel>
@@ -707,7 +698,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       NPWP
                     </FormLabel>
@@ -718,10 +709,10 @@ const FormShipper = ({
                           mask="99.999.999.9-999.999"
                           maskPlaceholder={null}
                           value={field.value ?? ''}
-                          className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                          className={`text-primary-text h-9 w-full rounded-sm border border-input-border bg-background-input px-3 py-2 text-sm focus:border-input-border focus:bg-background-input-focus ${
                             mode === 'delete'
                               ? 'text-zinc-400'
-                              : 'text-zinc-900'
+                              : 'text-primary-text'
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
@@ -736,10 +727,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel
-                    required={true}
-                    className="text-sm font-semibold text-gray-700"
-                  >
+                  <FormLabel required={true} className="text-sm font-semibold">
                     COA GIRO
                   </FormLabel>
                 </div>
@@ -765,7 +753,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       PPN
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -789,7 +777,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       TITIP KE
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -812,7 +800,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       PPN BATAL MUAT
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -836,7 +824,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       GRUP
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -859,7 +847,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       FORMAT DELIVERY REPORT
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -886,7 +874,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       COMODITY
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -909,7 +897,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NAMA SHIPPER CETAK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -932,7 +920,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       FORMAT CETAK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -953,10 +941,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel
-                    required={true}
-                    className="text-sm font-semibold text-gray-700"
-                  >
+                  <FormLabel required={true} className="text-sm font-semibold">
                     MARKETING
                   </FormLabel>
                 </div>
@@ -980,7 +965,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       BLOK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1003,7 +988,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NOMOR
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1026,7 +1011,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       RT
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1049,7 +1034,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       RW
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1072,7 +1057,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KELURAHAN
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1095,7 +1080,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KABUPATEN
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1118,7 +1103,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KECAMATAN
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1141,7 +1126,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       PROPINSI
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1164,7 +1149,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       ISDPP10PSN
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1188,7 +1173,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       USER TRACING
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1211,7 +1196,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       PASSWORD TRACING
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1236,7 +1221,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       KODE PROSPEK
                     </FormLabel>
@@ -1262,7 +1247,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       NAMA SHIPPER PROSPEK
                     </FormLabel>
@@ -1286,7 +1271,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       EMAIL DELAY
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1309,7 +1294,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KETERANGAN 1 BARIS INVOICE
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1332,7 +1317,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NIK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1342,10 +1327,10 @@ const FormShipper = ({
                           mask="9999999999999999"
                           maskPlaceholder={null}
                           value={field.value ?? ''}
-                          className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                          className={`text-primary-text h-9 w-full rounded-sm border border-input-border bg-background-input px-3 py-2 text-sm focus:border-input-border focus:bg-background-input-focus ${
                             mode === 'delete'
                               ? 'text-zinc-400'
-                              : 'text-zinc-900'
+                              : 'text-primary-text'
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
@@ -1363,7 +1348,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NAMA PARAF
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1386,7 +1371,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       SALDO PIUTANG
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1410,7 +1395,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KETERANGAN SHIPPER JOB MINUS
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1433,7 +1418,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       TANGGAL EMAIL SHIPPER JOB MINUS
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1461,7 +1446,7 @@ const FormShipper = ({
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                      className="font-semibold lg:w-[15%]"
                     >
                       TGL LAHIR
                     </FormLabel>
@@ -1483,7 +1468,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel className="text-sm font-semibold text-gray-700">
+                  <FormLabel className="text-sm font-semibold">
                     SHIPPER ASAL
                   </FormLabel>
                 </div>
@@ -1507,7 +1492,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       INITIAL
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1530,7 +1515,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       TIPE
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1553,7 +1538,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       ID TIPE
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1577,7 +1562,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       ID INITIAL
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1601,7 +1586,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NAMA SHIPPER PROSPEK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1624,7 +1609,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       PARENT SHIPPER
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1650,7 +1635,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NPWP NIK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1660,10 +1645,10 @@ const FormShipper = ({
                           mask="9999999999999999"
                           maskPlaceholder={null}
                           value={field.value ?? ''}
-                          className={`h-9 w-full rounded-sm border border-zinc-300 px-3 py-2 text-sm text-zinc-600 focus:border-blue-500 focus:bg-[#ffffee] ${
+                          className={`text-primary-text h-9 w-full rounded-sm border border-input-border bg-background-input px-3 py-2 text-sm focus:border-input-border focus:bg-background-input-focus ${
                             mode === 'delete'
                               ? 'text-zinc-400'
-                              : 'text-zinc-900'
+                              : 'text-primary-text'
                           } focus:outline-none focus:ring-0`}
                           onChange={field.onChange}
                           type="text"
@@ -1681,7 +1666,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       NITKU
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1704,7 +1689,7 @@ const FormShipper = ({
                 control={forms.control}
                 render={({ field }) => (
                   <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
-                    <FormLabel className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]">
+                    <FormLabel className="font-semibold lg:w-[15%]">
                       KODE PAJAK
                     </FormLabel>
                     <div className="flex flex-col lg:w-[85%]">
@@ -1724,10 +1709,7 @@ const FormShipper = ({
 
               <div className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                 <div className="w-full lg:w-[15%]">
-                  <FormLabel
-                    required={true}
-                    className="text-sm font-semibold text-gray-700"
-                  >
+                  <FormLabel required={true} className="text-sm font-semibold">
                     Status Aktif
                   </FormLabel>
                 </div>
@@ -1749,7 +1731,7 @@ const FormShipper = ({
 
             <div
               className="mt-auto flex h-fit items-center 
-gap-2 border-t border-zinc-300 bg-zinc-200 px-3 py-2"
+gap-2 border-t border-border bg-background-form-footer px-3 py-2"
             >
               <Button
                 type="submit"
@@ -1785,9 +1767,7 @@ gap-2 border-t border-zinc-300 bg-zinc-200 px-3 py-2"
                     }
                   >
                     <FaSave />
-                    <p className="text-center">
-                      {mode === 'delete' ? 'DELETE' : 'SAVE & ADD'}
-                    </p>
+                    <p className="text-center">SAVE & ADD</p>
                   </Button>
                 </div>
               )}

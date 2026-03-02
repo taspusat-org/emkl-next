@@ -16,6 +16,14 @@ import {
   setIdDetailLogtrail,
   setIdHeaderLogtrail
 } from '@/lib/store/logtrailSlice/logtrailSlice';
+import { highlightText } from '@/components/custom-ui/HighlightText';
+import { useTheme } from 'next-themes';
+import Image from 'next/image';
+import IcClose from '@/public/image/x.svg';
+import { Button } from '@/components/ui/button';
+import { LoadRowsRenderer } from '@/components/LoadRows';
+import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { cancelPreviousRequest } from '@/lib/utils';
 
 interface Row {
   id: string;
@@ -48,6 +56,9 @@ interface Filter {
 }
 
 const GridLogtrail = () => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 20,
@@ -92,6 +103,7 @@ const GridLogtrail = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const [fetchedPages, setFetchedPages] = useState(new Set([currentPage]));
   const [rows, setRows] = useState<Row[]>([]);
   const dispatch = useDispatch();
@@ -123,37 +135,9 @@ const GridLogtrail = () => {
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text !== null && text !== undefined ? String(text) : ''; // Pastikan 0 tidak dianggap falsy
-    if (!textValue) return '';
-
-    if (!search.trim() && !columnFilter.trim()) return textValue;
-
-    const combinedSearch = search + columnFilter;
-
-    // Regex untuk mencari setiap huruf dari combinedSearch dan mengganti dengan elemen <span> dengan background yellow dan font-size 12px
-    const regex = new RegExp(`(${combinedSearch})`, 'gi');
-
-    // Ganti semua kecocokan dengan elemen JSX
-    const highlightedText = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-xs"
-        dangerouslySetInnerHTML={{ __html: highlightedText }}
-      />
-    );
-  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    cancelPreviousRequest(abortControllerRef);
     const searchValue = e.target.value;
     setInputValue(searchValue);
     setCurrentPage(1);
@@ -188,6 +172,19 @@ const GridLogtrail = () => {
     setCurrentPage(1);
     setRows([]);
   };
+
+  const handleClearInput = () => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: {
+        ...prev.filters
+      },
+      search: '',
+      page: 1
+    }));
+    setInputValue('');
+  };
+
   const handleSort = (column: string) => {
     const newSortOrder =
       filters.sortBy === column && filters.sortDirection === 'asc'
@@ -962,27 +959,6 @@ const GridLogtrail = () => {
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div
-        className="flex h-full w-full items-center justify-center"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   useEffect(() => {
     setIsFirstLoad(true);
   }, []);
@@ -1036,25 +1012,32 @@ const GridLogtrail = () => {
   }, [logtrail, currentPage, filters]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
-        <div
-          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-          style={{
-            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-          }}
-        >
+      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+        <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
           <label htmlFor="" className="text-xs text-zinc-600">
             SEARCH :
           </label>
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => {
-              handleInputChange(e);
-            }}
-            className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
-            placeholder="Type to search..."
-          />
+          <div className="relative flex w-[200px] flex-row items-center">
+            <Input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => {
+                handleInputChange(e);
+              }}
+              className="m-2 h-[28px] w-[200px] rounded-sm"
+              placeholder="Type to search..."
+            />
+            {(filters.search !== '' || inputValue !== '') && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="absolute right-2 text-gray-500 hover:bg-transparent"
+                onClick={handleClearInput}
+              >
+                <Image src={IcClose} width={15} height={15} alt="close" />
+              </Button>
+            )}
+          </div>
         </div>
         <DataGrid
           ref={gridRef}
@@ -1065,7 +1048,8 @@ const GridLogtrail = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className="rdg-light fill-grid"
+          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          enableVirtualization={false}
           onCellKeyDown={handleKeyDown}
           onScroll={handleScroll}
           renderers={{

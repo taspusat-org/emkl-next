@@ -8,6 +8,7 @@ import React, {
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { useTheme } from 'next-themes';
 import { TbLayoutNavbarFilled } from 'react-icons/tb';
 import { IoClose } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
@@ -44,6 +45,8 @@ import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import InputDatePicker from './InputDatePicker';
 import { formatCurrency } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
+import { EmptyRowsRenderer } from '../EmptyRows';
+import { LoadRowsRenderer } from '../LoadRows';
 
 interface LookUpProps {
   columns: {
@@ -127,6 +130,8 @@ export default function LookUpModal({
   notIn,
   autoSearch = true
 }: LookUpProps) {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
   const [selectedCol, setSelectedCol] = useState<number>(0);
@@ -844,24 +849,6 @@ export default function LookUpModal({
     return row.id;
   }
 
-  function EmptyRowsRenderer() {
-    return (
-      <div
-        className="flex h-fit w-full items-center justify-center border border-l-0 border-t-0 border-blue-500 py-1"
-        style={{ textAlign: 'center', gridColumn: '1/-1' }}
-      >
-        <p className="text-gray-400">NO ROWS DATA FOUND</p>
-      </div>
-    );
-  }
-
-  function LoadRowsRenderer() {
-    return (
-      <div>
-        <ImSpinner2 className="animate-spin text-3xl text-primary" />
-      </div>
-    );
-  }
   const handleInputKeydown = (event: any) => {
     if (!autoSearch && !open && event.key === 'Enter') {
       event.preventDefault();
@@ -1297,7 +1284,7 @@ export default function LookUpModal({
                 // autoFocus
                 className={`w-full rounded-r-none text-sm text-zinc-900 lg:w-[100%] rounded-none${
                   showOnButton ? 'rounded-r-none border-r-0' : ''
-                } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+                } border border-input-border pr-10 focus:border-input-border-focus`}
                 disabled={disabled}
                 onKeyDownCapture={(e) => {
                   // Tangkap event di capture phase (sebelum bubbling)
@@ -1337,7 +1324,7 @@ export default function LookUpModal({
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+                  className="text-primary-text hover:text-primary-text h-9 rounded-l-none border border-input-border bg-background-grid-header hover:bg-background-input-focus"
                   onClick={handleButtonClick}
                   disabled={disabled}
                 >
@@ -1357,10 +1344,8 @@ export default function LookUpModal({
         <DialogTitle hidden={true}>Title</DialogTitle>
 
         <DialogContent className="flex h-full min-w-full flex-col overflow-hidden bg-black bg-opacity-50 p-10">
-          <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-            <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-              {labelLookup || label}
-            </h2>
+          <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+            <h2 className="text-sm font-semibold">{labelLookup || label}</h2>
             <div
               className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
               onClick={() => {
@@ -1377,13 +1362,13 @@ export default function LookUpModal({
               collapse === true ? 'w-full' : 'w-[100%]'
             } flex-grow overflow-hidden transition-all duration-300`}
           >
-            <div className="h-full min-w-full border border-blue-500 bg-white p-6">
-              <div className="rounded-sm border border-blue-500 p-4">
+            <div className="h-full min-w-full border border-border bg-background-card p-6">
+              <div className="rounded-sm border border-border p-4">
                 <div className="flex w-full flex-row gap-4">
                   <div className="flex w-full flex-row items-center">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                      className="font-semibold lg:w-[30%]"
                     >
                       TGL DARI
                     </FormLabel>
@@ -1399,7 +1384,7 @@ export default function LookUpModal({
                   <div className="flex w-full flex-row items-center lg:ml-4">
                     <FormLabel
                       required={true}
-                      className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[30%]"
+                      className="font-semibold lg:w-[30%]"
                     >
                       SAMPAI TGL
                     </FormLabel>
@@ -1425,15 +1410,9 @@ export default function LookUpModal({
                   </p>
                 </Button>
               </div>
-              <div className="my-4 h-[500px] w-full rounded-sm border border-blue-500">
-                <div
-                  className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-                  style={{
-                    background:
-                      'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                  }}
-                >
-                  <label htmlFor="" className="text-xs text-zinc-600">
+              <div className="my-4 h-[500px] w-full rounded-sm border border-border">
+                <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2">
+                  <label htmlFor="" className="text-xs">
                     SEARCH :
                   </label>
                   <div className="relative flex w-[200px] flex-row items-center">
@@ -1443,7 +1422,7 @@ export default function LookUpModal({
                       onChange={(e) => {
                         handleInputChange(e);
                       }}
-                      className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+                      className="m-2 h-[28px] w-[200px] rounded-sm"
                       placeholder="Type to search..."
                     />
                     {(filters.search !== '' || inputValue !== '') && (
@@ -1477,7 +1456,7 @@ export default function LookUpModal({
                   onCellDoubleClick={handleCellDoubleClick}
                   rowHeight={30}
                   headerRowHeight={singleColumn ? 0 : 70}
-                  className="rdg-light h-[450px]"
+                  className={`${isDark ? 'rdg-dark' : 'rdg-light'} h-[450px]`}
                   onColumnsReorder={onColumnsReorder}
                   onCellKeyDown={handleKeyDown}
                   renderers={{
@@ -1485,20 +1464,14 @@ export default function LookUpModal({
                   }}
                 />
                 {isLoading ? (
-                  <div
-                    className="flex w-full flex-row gap-2 py-1"
-                    style={{
-                      background:
-                        'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                    }}
-                  >
+                  <div className="flex w-full flex-row gap-2 bg-background-grid-header py-1">
                     <LoadRowsRenderer />
                   </div>
                 ) : null}
               </div>
             </div>
           </div>
-          <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+          <div className="m-0 flex h-fit items-end gap-2 bg-background-grid-header px-3 py-2">
             <Button
               type="button"
               variant="secondary"

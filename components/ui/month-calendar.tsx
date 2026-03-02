@@ -125,7 +125,7 @@ function MonthCal({
             type="button"
             onClick={() => setViewMode('month')}
             className={cn(
-              'hover:text-primary-foreground rounded border border-[#2694e8] bg-[#bae1ff] px-2 py-1 text-sm font-semibold text-[#1773b9] transition-colors hover:bg-[#8abfe8] focus:bg-blue-300'
+              'hover:text-primary-foreground rounded border border-[#2694e8] bg-background-grid-header px-2 py-1 text-sm font-semibold text-[#1773b9] transition-colors hover:bg-[#8abfe8] dark:text-white focus:dark:text-black'
             )}
           >
             Back to{' '}
@@ -190,7 +190,7 @@ function MonthCal({
                           ? variant?.calendar?.selected ??
                               'border border-[#f9dd34] bg-[#ffef8f] text-zinc-900 hover:bg-[#fff6c2]'
                           : variant?.calendar?.main ??
-                              'hover:text-primary-foreground border border-[#2694e8] bg-[#bae1ff] font-semibold text-[#1773b9] hover:bg-[#8abfe8] focus:bg-blue-300 focus:text-white',
+                              'hover:text-primary-foreground border border-[#2694e8] bg-background-grid-header font-semibold text-[#1773b9] hover:bg-[#8abfe8] focus:bg-blue-300 focus:text-white dark:text-white',
                         'h-full w-full rounded-sm p-0 font-semibold disabled:cursor-not-allowed disabled:opacity-50 aria-selected:opacity-100'
                       )}
                     >
@@ -219,7 +219,7 @@ function MonthCal({
               setViewMode('year');
             }}
             className={cn(
-              'hover:text-primary-foreground rounded border border-[#2694e8] bg-[#bae1ff] px-2 py-1 text-sm font-semibold text-[#1773b9] transition-colors hover:bg-[#8abfe8] focus:bg-blue-300'
+              'hover:text-primary-foreground rounded border border-[#2694e8] bg-background-grid-header px-2 py-1 text-sm font-semibold text-[#1773b9] transition-colors hover:bg-[#8abfe8] focus:bg-blue-300 dark:text-white focus:dark:text-black'
             )}
           >
             {callbacks?.yearLabel ? callbacks?.yearLabel(menuYear) : menuYear}
@@ -295,7 +295,7 @@ function MonthCal({
                               ? variant?.calendar?.selected ??
                                   'border border-[#f9dd34] bg-[#ffef8f] text-zinc-900 hover:bg-[#fff6c2]'
                               : variant?.calendar?.main ??
-                                  'hover:text-primary-foreground border border-[#2694e8] bg-[#bae1ff] font-semibold text-[#1773b9] hover:bg-[#8abfe8] focus:bg-blue-300 focus:text-white',
+                                  'hover:text-primary-foreground border border-[#2694e8] bg-background-grid-header font-semibold text-[#1773b9] hover:bg-[#8abfe8] focus:bg-blue-300 focus:text-white dark:text-white',
                             'h-full w-full rounded-sm p-0 font-semibold aria-selected:opacity-100'
                           )}
                         >

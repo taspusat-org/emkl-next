@@ -9,6 +9,7 @@ interface AcosState {
   focus: string; // Menambahkan openName ke dalam state
   clearLookup: boolean; // Menambahkan openName ke dalam state
   submitClicked: boolean; // Menambahkan openName ke dalam state
+  errorLookups: { label: string; order: number }[]; // Track lookup errors dengan urutan
 }
 
 const initialState: AcosState = {
@@ -19,7 +20,8 @@ const initialState: AcosState = {
   openNameModal: '', // Default openName kosong
   focus: '', // Default openName kosong
   clearLookup: false, // Default openName kosong
-  submitClicked: false // Default openName kosong
+  submitClicked: false, // Default openName kosong
+  errorLookups: [] // Track lookup yang error
 };
 
 const lookupSlice = createSlice({
@@ -61,6 +63,29 @@ const lookupSlice = createSlice({
     },
     clearOpenNameModal(state) {
       state.openNameModal = ''; // Clears the openName
+    },
+    addErrorLookup(
+      state,
+      action: PayloadAction<{ label: string; order: number }>
+    ) {
+      // Tambah ke array jika belum ada
+      const exists = state.errorLookups.find(
+        (item) => item.label === action.payload.label
+      );
+      if (!exists) {
+        state.errorLookups.push(action.payload);
+        // Sort berdasarkan order
+        state.errorLookups.sort((a, b) => a.order - b.order);
+      }
+    },
+    removeErrorLookup(state, action: PayloadAction<string>) {
+      // Hapus dari array
+      state.errorLookups = state.errorLookups.filter(
+        (item) => item.label !== action.payload
+      );
+    },
+    clearErrorLookups(state) {
+      state.errorLookups = [];
     }
   }
 });
@@ -75,7 +100,10 @@ export const {
   setClearLookup,
   setFocusLookup,
   setSubmitClicked,
-  clearOpenNameModal
+  clearOpenNameModal,
+  addErrorLookup,
+  removeErrorLookup,
+  clearErrorLookups
 } = lookupSlice.actions;
 
 export default lookupSlice.reducer;

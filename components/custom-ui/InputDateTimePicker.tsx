@@ -350,7 +350,7 @@ const InputDateTimePicker = forwardRef<
 
     return (
       <div
-        className={`relative flex items-center rounded-sm border border-zinc-300 focus-within:border-blue-500 ${
+        className={`relative flex items-center rounded-sm border border-input-border focus-within:border-input-border-focus ${
           disabled ? 'pointer-events-none opacity-70' : ''
         } ${className}`}
       >
@@ -358,8 +358,10 @@ const InputDateTimePicker = forwardRef<
           ref={setRefs as any}
           {...rest}
           mask={mask}
-          className={`h-9 w-full rounded-sm px-3 text-sm text-zinc-500 focus:bg-[#ffffee] focus:text-zinc-900 focus:outline-none focus:ring-0 ${
-            disabled ? 'cursor-not-allowed bg-gray-100 text-gray-500' : ''
+          className={`h-9 w-full rounded-sm px-3 text-sm text-input-text focus:bg-background-input-focus focus:outline-none focus:ring-0 ${
+            disabled
+              ? 'cursor-not-allowed bg-background-input text-input-text-disabled'
+              : ''
           }`}
           maskPlaceholder={
             showTime ? MASK_PLACEHOLDER : dateFormat.toUpperCase()
@@ -408,7 +410,7 @@ const InputDateTimePicker = forwardRef<
                 disabled={disabled}
                 className={`ml-1 flex h-9 w-9 items-center justify-center border ${
                   disabled
-                    ? 'cursor-not-allowed bg-gray-200 text-gray-400'
+                    ? 'cursor-not-allowed bg-background-input-disabled text-input-text-disabled'
                     : 'cursor-pointer border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#abcbfd]'
                 }`}
               >
@@ -416,7 +418,7 @@ const InputDateTimePicker = forwardRef<
               </button>
             </PopoverTrigger>
             <PopoverContent
-              className="flex w-auto flex-row border border-blue-500 bg-white p-2"
+              className="flex w-auto flex-row border border-border bg-background-header p-2"
               sideOffset={-1}
               align="end"
             >

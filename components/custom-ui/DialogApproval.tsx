@@ -410,29 +410,23 @@ const DialogApproval: React.FC = ({}) => {
               closeDialog();
             }
           }}
-          className="fixed inset-0 z-50 flex items-center justify-center border-blue-500 bg-gray-500 bg-opacity-50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center border-border bg-gray-500 bg-opacity-50 p-4"
         >
           <div
-            className="max-h-[500px] min-h-[100px] w-full max-w-[400px] rounded bg-white shadow-lg"
+            className="max-h-[500px] min-h-[100px] w-full max-w-[400px] rounded bg-background-grid-header shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-blue-500 px-2"
-              style={{
-                background:
-                  'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-              }}
-            >
-              <p className="text-sm font-semibold text-zinc-800">{mode}</p>
+            <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border px-2">
+              <p className="text-sm font-semibold">{mode}</p>
               <div
-                className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
+                className="cursor-pointer rounded-md border border-border bg-red-500 p-0 hover:bg-red-400"
                 onClick={closeDialog}
               >
                 <IoMdClose className="h-5 w-5 font-bold text-white" />
               </div>
             </div>
-            <div className="flex h-fit max-h-[500px] w-full overflow-hidden bg-white px-5 py-5">
-              <div className="flex h-fit max-h-[450px] w-full flex-col gap-1 overflow-y-auto bg-white">
+            <div className="flex h-fit max-h-[500px] w-full overflow-hidden bg-background px-5 py-5">
+              <div className="flex h-fit max-h-[450px] w-full flex-col gap-1 overflow-y-auto bg-background">
                 {dataParameter.map((item: any, index: any) => (
                   <Button
                     key={index}
@@ -539,7 +533,7 @@ const DialogApproval: React.FC = ({}) => {
 
       {showTanggalDialog && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center border-blue-500 bg-gray-500 bg-opacity-50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center border-border bg-gray-500 bg-opacity-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowTanggalDialog(false);
@@ -550,19 +544,19 @@ const DialogApproval: React.FC = ({}) => {
           }}
         >
           <div
-            className="max-h-[500px] min-h-[100px] w-full max-w-[400px] rounded bg-white shadow-lg"
+            className="max-h-[500px] min-h-[100px] w-full max-w-[400px] rounded bg-background-grid-header shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-blue-500 px-2"
-              style={{
-                background:
-                  'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-              }}
+              className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border px-2"
+              // style={{
+              //   background:
+              //     'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+              // }}
             >
-              <p className="text-sm font-semibold text-zinc-800">{mode}</p>
+              <p className="text-sm font-semibold">{mode}</p>
               <div
-                className="cursor-pointer rounded-md border border-zinc-200 bg-red-500 p-0 hover:bg-red-400"
+                className="cursor-pointer rounded-md border border-border bg-red-500 p-0 hover:bg-red-400"
                 onClick={() => {
                   setShowTanggalDialog(false);
                   setSelectedItem(null);
@@ -573,8 +567,8 @@ const DialogApproval: React.FC = ({}) => {
                 <IoMdClose className="h-5 w-5 font-bold text-white" />
               </div>
             </div>
-            <div className="mb-4 p-4">
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+            <div className="bg-background p-4">
+              <label className="mb-2 block text-sm font-medium">
                 Tanggal Approval <span className="text-red-500">*</span>
               </label>
               {/* <Textarea
@@ -594,16 +588,15 @@ const DialogApproval: React.FC = ({}) => {
                 }}
               />
               {showErrorKeterangan ? (
-                <p className="text-[0.8rem] text-destructive">
+                <p className="bg-background text-[0.8rem] text-destructive">
                   TANGGAL WAJIB DIISI
                 </p>
               ) : null}
             </div>
 
-            <div className="flex justify-end gap-2 p-4">
+            <div className="flex justify-end gap-2 bg-background p-4">
               <Button
-                variant="outline"
-                className="flex w-fit items-center gap-1 bg-zinc-500 text-sm text-white hover:bg-zinc-400"
+                variant="cancel"
                 onClick={() => {
                   setShowTanggalDialog(false);
                   setSelectedItem(null);
@@ -611,7 +604,7 @@ const DialogApproval: React.FC = ({}) => {
                   setShowErrorKeterangan(false);
                 }}
               >
-                <IoMdClose /> <p className="text-center text-white">Cancel</p>
+                <p className="text-center">Cancel</p>
               </Button>
               <Button
                 type="submit"

@@ -8,6 +8,7 @@ import {
   FormLabel,
   FormMessage
 } from '@/components/ui/form';
+import { useTheme } from 'next-themes';
 import { useGetMenu } from '@/lib/server/useMenu';
 import { Button } from '@/components/ui/button';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -60,6 +61,8 @@ const FormManagerMarketing = ({
   isLoadingUpdate,
   isLoadingDelete
 }: any) => {
+  const { theme, resolvedTheme } = useTheme();
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [popOverTglSampai, setPopOverTglSampai] = useState<boolean>(false);
   const [editingRowId, setEditingRowId] = useState<number | null>(null); // Menyimpan ID baris yang sedang diedit
@@ -341,14 +344,8 @@ const FormManagerMarketing = ({
         },
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
-          <div className="flex h-full flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] items-center justify-center text-center font-normal">
-              <p className="text-sm">No.</p>
-            </div>
-
-            <div className="flex h-[50%] w-full cursor-pointer items-center justify-center">
-              <FaTimes className="bg-red-500 text-white" />
-            </div>
+          <div className="flex h-full flex-col items-center justify-center gap-1">
+            <p className="text-sm">No.</p>
           </div>
         )
       },
@@ -361,11 +358,8 @@ const FormManagerMarketing = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nominal Awal</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm font-normal`}>Nominal Awal</p>
           </div>
         ),
         name: 'nominalawal',
@@ -410,11 +404,8 @@ const FormManagerMarketing = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Nominal Akhir</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm font-normal`}>Nominal Akhir</p>
           </div>
         ),
         name: 'nominal',
@@ -466,11 +457,8 @@ const FormManagerMarketing = ({
         cellClass: 'form-input',
         width: 180,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Persentase</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm font-normal`}>Persentase</p>
           </div>
         ),
         name: 'persentase',
@@ -522,11 +510,8 @@ const FormManagerMarketing = ({
         cellClass: 'form-input',
         width: 250,
         renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>Status Aktif</p>
-            </div>
-            <div className="relative h-[50%] w-full px-1"></div>
+          <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
+            <p className={`text-sm font-normal`}>Status Aktif</p>
           </div>
         ),
         name: 'statusaktif',
@@ -780,9 +765,9 @@ const FormManagerMarketing = ({
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
-      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border bg-white">
-        <div className="flex items-center justify-between bg-[#e0ecff] px-2 py-2">
-          <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+      <DialogContent className="flex h-full min-w-full flex-col overflow-hidden border border-border bg-background">
+        <div className="flex items-center justify-between bg-background-form-header px-2 py-2">
+          <h2 className="text-sm font-semibold">
             {mode === 'add'
               ? 'Add Manager Marketing'
               : mode === 'edit'
@@ -801,8 +786,8 @@ const FormManagerMarketing = ({
             <IoMdClose className="h-5 w-5 font-bold text-white" />
           </div>
         </div>
-        <div className="h-full flex-1 overflow-y-auto bg-zinc-200 pl-1 pr-2">
-          <div className="min-h-full bg-white px-5 py-3">
+        <div className="h-full flex-1 overflow-y-auto bg-background-card pl-1 pr-2">
+          <div className="h-full bg-background-card px-5 py-3">
             <Form {...forms}>
               <form
                 ref={formRef}
@@ -817,7 +802,7 @@ const FormManagerMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           NAMA
                         </FormLabel>
@@ -843,7 +828,7 @@ const FormManagerMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           KETERANGAN
                         </FormLabel>
@@ -868,7 +853,7 @@ const FormManagerMarketing = ({
                       <FormItem className="flex w-full flex-col justify-between lg:flex-row lg:items-center">
                         <FormLabel
                           required={true}
-                          className="font-semibold text-gray-700 dark:text-gray-200 lg:w-[15%]"
+                          className="font-semibold lg:w-[15%]"
                         >
                           MINIMAL PROFIT
                         </FormLabel>
@@ -891,7 +876,7 @@ const FormManagerMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         STATUS MENTOR
                       </FormLabel>
@@ -914,7 +899,7 @@ const FormManagerMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         STATUS LEADER
                       </FormLabel>
@@ -938,7 +923,7 @@ const FormManagerMarketing = ({
                     <div className="w-full lg:w-[15%]">
                       <FormLabel
                         required={true}
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
                       >
                         Status Aktif
                       </FormLabel>
@@ -958,24 +943,21 @@ const FormManagerMarketing = ({
                     </div>
                   </div>
                   <div className="h-[400px] min-h-[400px]">
-                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-blue-500 bg-white">
-                      <div
-                        className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                        }}
-                      ></div>
+                    <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+                      <div className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-border bg-background-grid-header px-2"></div>
 
                       <DataGrid
                         key={dataGridKey}
                         ref={gridRef}
                         columns={columns as any[]}
                         rows={rows}
-                        headerRowHeight={70}
+                        headerRowHeight={40}
                         rowHeight={60}
                         renderers={{ noRowsFallback: <EmptyRowsRenderer /> }}
-                        className="rdg-light fill-grid text-sm"
+                        className={`${
+                          isDark ? 'rdg-dark' : 'rdg-light'
+                        } fill-grid`}
+                        enableVirtualization={false}
                       />
                       {/* <div
                         className="flex flex-row border border-b-0 border-l-0 border-blue-500 p-2"
@@ -993,13 +975,7 @@ const FormManagerMarketing = ({
                           </div>
                         </div>
                       </div> */}
-                      <div
-                        className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
-                        style={{
-                          background:
-                            'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                        }}
-                      ></div>
+                      <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2"></div>
                     </div>
                   </div>
                 </div>
@@ -1007,7 +983,7 @@ const FormManagerMarketing = ({
             </Form>
           </div>
         </div>
-        <div className="m-0 flex h-fit items-end gap-2 bg-zinc-200 px-3 py-2">
+        <div className="m-0 flex h-fit items-end gap-2 bg-background-form-footer px-3 py-2">
           <Button
             type="submit"
             variant="save"

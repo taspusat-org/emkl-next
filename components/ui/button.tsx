@@ -16,7 +16,7 @@ const buttonVariants = cva(
         success: 'bg-green-500 text-white shadow hover:bg-green-600',
         warning: 'bg-yellow-500 text-black hover:bg-yellow-600',
         outline:
-          'border border-primary bg-white shadow-sm hover:bg-accent hover:text-accent-foreground',
+          'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',
         cancel:
           'border border-primary bg-white shadow-sm hover:bg-gray-100 hover:text-primary text-primary hover:font-bold',
         secondary:
