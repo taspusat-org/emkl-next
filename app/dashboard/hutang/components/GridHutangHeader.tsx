@@ -1708,7 +1708,6 @@ const GridHutangHeader = () => {
     }
   }, [rows, isFirstLoad]);
   useEffect(() => {
-    console.log(selectedDate, selectedDate2, 'inidiaa');
     if (isFirstLoad) {
       if (
         selectedDate !== filters.filters.tglDari ||

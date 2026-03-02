@@ -40,8 +40,8 @@ const FormJobParty = ({
   // popOver,
   onSubmit,
   isLoadingCreate // mode,
-  // isLoadingUpdate,
-} // isLoadingDelete
+  // isLoadingDelete
+} // isLoadingUpdate,
 : any) => {
   const { theme, resolvedTheme } = useTheme();
   const isDark = theme === 'dark' || resolvedTheme === 'dark';

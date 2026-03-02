@@ -2196,25 +2196,37 @@ const GridPengeluaranHeader = () => {
     if (isFirstLoad) {
       if (
         selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai ||
-        selectedBank !== filters.filters.bank_id
+        selectedDate2 !== filters.filters.tglSampai
       ) {
         setFilters((prevFilters) => ({
           ...prevFilters,
           filters: {
             ...prevFilters.filters,
             tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            bank_id: selectedBank
+            tglSampai: selectedDate2
           }
         }));
       }
     } else if (onReload) {
+      if (filters.filters.bank_id !== selectedBank) {
+        setFilters((prevFilters: Filter) => ({
+          ...prevFilters,
+          filters: {
+            ...filterPengeluaran,
+            tglDari: selectedDate,
+            tglSampai: selectedDate2,
+            bank_id: selectedBank
+          }
+        }));
+        setSelectedRow(0);
+        setCurrentPage(1);
+        setCheckedRows(new Set());
+        setIsAllSelected(false);
+      }
       // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
       if (
         selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai ||
-        (selectedBank !== filters.filters.bank_id && onReload && !isFirstLoad)
+        selectedDate2 !== filters.filters.tglSampai
       ) {
         setFilters((prevFilters) => ({
           ...prevFilters,
@@ -2227,16 +2239,7 @@ const GridPengeluaranHeader = () => {
         }));
       }
     }
-  }, [
-    selectedDate,
-    selectedDate2,
-    selectedBank,
-    filters.filters.tglDari,
-    filters.filters.tglSampai,
-    filters,
-    onReload,
-    isFirstLoad
-  ]);
+  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
   useEffect(() => {
     // Ambil parameter nobukti dari URL
     const rawNobukti = searchParams.get('nobukti');
@@ -2285,6 +2288,7 @@ const GridPengeluaranHeader = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
+    setIsFirstLoad(false);
   }, [allData, currentPage, filters, isFetchingManually, isDataUpdated]);
   useEffect(() => {
     if (rows.length > 0 && selectedRow !== null) {
@@ -2300,14 +2304,14 @@ const GridPengeluaranHeader = () => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-  // useEffect(() => {
-  //   if (gridRef.current && dataGridKey) {
-  //     setTimeout(() => {
-  //       gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-  //       setIsFirstLoad(false);
-  //     }, 0);
-  //   }
-  // }, [dataGridKey]);
+  useEffect(() => {
+    if (gridRef.current && dataGridKey) {
+      setTimeout(() => {
+        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
+        setIsFirstLoad(false);
+      }, 0);
+    }
+  }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
