@@ -1409,6 +1409,7 @@ const GridConsignee = () => {
 
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
+    ap;
     setPrevFilters(filters);
   }, [allData, currentPage, filters, isFetchingManually]);
   useEffect(() => {
