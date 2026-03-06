@@ -42,9 +42,9 @@ import { MdFullscreen } from 'react-icons/md';
 export const HeaderPdfViewer = (
   onExport: () => void,
   onPrint: () => void,
-  pdfUrl: string | null,
   printInstance: PrintPlugin,
-  zoomInstance: ZoomPlugin
+  zoomInstance: ZoomPlugin,
+  pdfUrl?: string | null
 ) => {
   const handleSharePdf = async () => {
     if (!pdfUrl) {
@@ -394,56 +394,6 @@ export const HeaderPdfViewer = (
       return null;
     };
 
-    const handleShare = async () => {
-      try {
-        const url = findPdfUrl();
-
-        // If Web Share API available and we have a URL, use it
-        if (navigator.share && url) {
-          await navigator.share({
-            title: document.title || 'PDF',
-            text: 'Share PDF',
-            url
-          });
-          setIsMenuOpen(false);
-          return;
-        }
-
-        // If no URL but Web Share API supports files, try to fetch the download link and share file (best effort)
-        if ((navigator as any).canShare && !url) {
-          const downloadButton = document.querySelector(
-            '[aria-label="Download"]'
-          ) as HTMLButtonElement | null;
-          if (downloadButton) {
-            // Try to programmatically click to trigger download (fallback)
-            downloadButton.click();
-            setIsMenuOpen(false);
-            return;
-          }
-        }
-
-        // Fallback: open the PDF URL in a new tab if available, otherwise trigger download button
-        if (url) {
-          window.open(url, '_blank');
-          setIsMenuOpen(false);
-          return;
-        }
-
-        const downloadButton = document.querySelector(
-          '[aria-label="Download"]'
-        ) as HTMLButtonElement | null;
-        if (downloadButton) downloadButton.click();
-        setIsMenuOpen(false);
-      } catch (err) {
-        // On any error, fallback to clicking download
-        const downloadButton = document.querySelector(
-          '[aria-label="Download"]'
-        ) as HTMLButtonElement | null;
-        if (downloadButton) downloadButton.click();
-        setIsMenuOpen(false);
-      }
-    };
-
     return (
       <div className="relative sm:hidden">
         {/* Burger Menu Toggle Button - Only visible on mobile */}
@@ -465,12 +415,12 @@ export const HeaderPdfViewer = (
             <div className="py-1">
               <button
                 onClick={() => {
-                  handleSharePdf();
+                  onExport();
                 }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100"
               >
                 <FaFileExport className="text-blue-600" />
-                <span>Share</span>
+                <span>Export</span>
               </button>
 
               <button
@@ -511,16 +461,18 @@ export const HeaderPdfViewer = (
                 <FaFileExport className="text-orange-500" />
                 <span>Export</span>
               </button>
-              <button
-                onClick={() => {
-                  handleSharePdf();
-                  setIsMenuOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100"
-              >
-                <FaShare className="text-purple-500" />
-                <span>Share</span>
-              </button>
+              {pdfUrl ? (
+                <button
+                  onClick={() => {
+                    handleSharePdf();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100"
+                >
+                  <FaShare className="text-purple-500" />
+                  <span>Share</span>
+                </button>
+              ) : null}
             </div>
           </div>
         )}
@@ -660,13 +612,15 @@ export const HeaderPdfViewer = (
                     <FaFileExport className="text-xs lg:text-sm" />
                     <span className="hidden text-sm lg:inline">Export</span>
                   </button>
-                  <button
-                    onClick={handleSharePdf}
-                    className="flex flex-row items-center gap-1 rounded bg-purple-500 px-2 py-0.5 text-white transition-colors hover:bg-purple-700 lg:gap-2 lg:px-3 lg:py-1"
-                  >
-                    <FaShare className="text-xs lg:text-sm" />
-                    <span className="hidden text-sm lg:inline">Share</span>
-                  </button>
+                  {pdfUrl ? (
+                    <button
+                      onClick={handleSharePdf}
+                      className="flex flex-row items-center gap-1 rounded bg-purple-500 px-2 py-0.5 text-white transition-colors hover:bg-purple-700 lg:gap-2 lg:px-3 lg:py-1"
+                    >
+                      <FaShare className="text-xs lg:text-sm" />
+                      <span className="hidden text-sm lg:inline">Share</span>
+                    </button>
+                  ) : null}
                 </div>
 
                 {/* Mobile Burger Menu - Only visible on mobile */}

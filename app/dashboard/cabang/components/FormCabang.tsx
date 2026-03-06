@@ -49,7 +49,8 @@ const FormCabang = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'text',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      focusOnError: true
     }
   ];
 
@@ -66,7 +67,8 @@ const FormCabang = ({
       pageSize: 20,
       showOnButton: true,
       postData: 'namacabang',
-      dataToPost: 'id'
+      dataToPost: 'id',
+      focusOnError: true
     }
   ];
 

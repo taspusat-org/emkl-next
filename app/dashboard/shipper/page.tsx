@@ -43,13 +43,13 @@ const Page = () => {
         const [
           getStatusAktifLookup,
           getAkunpusatLookup,
-          getMarketingLookup,
-          getShipperLookup
+          getMarketingLookup
+          // getShipperLookup
         ] = await Promise.all([
           getParameterFn({ isLookUp: 'true' }),
           getAkunpusatFn({ isLookUp: 'true' }),
-          getMarketingHeaderFn({ isLookUp: 'true' }),
-          getShipperFn({ isLookUp: 'true' })
+          getMarketingHeaderFn({ isLookUp: 'true' })
+          // getShipperFn({ isLookUp: 'true' })
         ]);
 
         // Process Parameter lookup data dengan type safety
@@ -130,16 +130,16 @@ const Page = () => {
         }
         dispatch(setType({ key: 'MARKETING', type: getMarketingLookup.type }));
 
-        if (getShipperLookup.type === 'local') {
-          dispatch(setData({ key: 'SHIPPER', data: getShipperLookup.data }));
-          const defaultValue =
-            getShipperLookup.data
-              .map((item: any) => item.default)
-              .find((val: any) => val !== null) || '';
+        // if (getShipperLookup.type === 'local') {
+        //   dispatch(setData({ key: 'SHIPPER', data: getShipperLookup.data }));
+        //   const defaultValue =
+        //     getShipperLookup.data
+        //       .map((item: any) => item.default)
+        //       .find((val: any) => val !== null) || '';
 
-          dispatch(setDefault({ key: 'SHIPPER', isdefault: defaultValue }));
-        }
-        dispatch(setType({ key: 'SHIPPER', type: getShipperLookup.type }));
+        //   dispatch(setDefault({ key: 'SHIPPER', isdefault: defaultValue }));
+        // }
+        // dispatch(setType({ key: 'SHIPPER', type: getShipperLookup.type }));
       } catch (err) {
         console.error('Error fetching lookup data:', err);
       }

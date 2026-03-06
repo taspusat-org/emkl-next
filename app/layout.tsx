@@ -70,10 +70,8 @@ export default function RootLayout({
               <FormErrorProvider>
                 <PersistGate loading={null} persistor={persistor}>
                   <NextTopLoader showSpinner={false} />
-                  <Providers>
-                    <Toaster />
-                    <IdleTimerProvider>{children}</IdleTimerProvider>
-                  </Providers>
+                  <Toaster />
+                  <Providers>{children}</Providers>
                 </PersistGate>
               </FormErrorProvider>
             </QueryClientProvider>

@@ -29,8 +29,12 @@ const InputNumeric: React.FC<NumericInputProps> = ({
   isDecimal = false,
   maxDecimalPlaces = 2
 }) => {
-  const normalizeValue = (val: string | number | null | undefined) =>
-    val == null ? '' : typeof val === 'number' ? String(val) : val;
+  const normalizeValue = (val: string | number | null | undefined) => {
+    if (val == null || val === '') return '';
+    // Jangan convert 0 jadi string jika memang valuenya 0
+    if (val === 0 || val === '0') return '0';
+    return typeof val === 'number' ? String(val) : val;
+  };
 
   const [inputValue, setInputValue] = useState<string>(normalizeValue(value));
 

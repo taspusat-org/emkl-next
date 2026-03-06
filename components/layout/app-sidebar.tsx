@@ -44,7 +44,7 @@ import IcTasSmall from '@/public/image/IcTas-Small.png';
 
 import Image from 'next/image';
 import Header from './header';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { clearCredentials } from '@/lib/store/authSlice/authSlice';
 import { deleteCookie } from '@/lib/utils/cookie-actions';
 import { clearHeaderData } from '@/lib/store/headerSlice/headerSlice';
@@ -74,10 +74,14 @@ export default function AppSidebar({
   const { setOpen } = useSidebar(); // Get setOpen from SidebarContext
   const [mounted, setMounted] = React.useState(false);
   const [search, setSearch] = React.useState('');
-  const [menuData, setMenuData] = React.useState<string | null>(null);
   const [currentDateTime, setCurrentDateTime] = React.useState(initialDateTime);
   const [searchResults, setSearchResults] = React.useState<any[]>([]);
+  const searchDebounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const { data: session } = useSession();
 
+  const menuData = useSelector((state: RootState) => state.menu.menuData);
   const dispatch = useDispatch();
   const logout = async () => {
     tokenCache.clearCache();
@@ -85,7 +89,6 @@ export default function AppSidebar({
     await persistor.purge();
     await signOut({ callbackUrl: '/auth/signin' });
   };
-  const { user, token } = useSelector((state: RootState) => state.auth);
   const [isCollapsed, setIsCollapsed] = React.useState(false);
   const [activePath, setActivePath] = React.useState<string>('');
   const [hoveredItemId, setHoveredItemId] = React.useState<string | null>(null);
@@ -106,8 +109,16 @@ export default function AppSidebar({
   }, [pathname]);
   const [filters, setFilters] = React.useState({
     search: '',
-    userId: user.id ?? ''
+    userId: session?.user.id ?? ''
   });
+
+  // Update filters when session changes
+  React.useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      userId: session?.user.id ?? ''
+    }));
+  }, [session?.user.id]);
 
   const { data: allMenu, isLoading: isLoadingMenu } = useGetSearchMenu(filters);
   React.useEffect(() => {
@@ -118,16 +129,6 @@ export default function AppSidebar({
     }
   }, [filters, allMenu]);
 
-  React.useEffect(() => {
-    if (user.id) {
-      api2
-        .get(`/menu/sidebar?userId=${user.id}`)
-        .then((response) => {
-          setMenuData(response.data);
-        })
-        .catch((error) => console.error('Failed to fetch menu data:', error));
-    }
-  }, [user.id]);
   React.useEffect(() => {
     const interval = setInterval(() => {
       const currentDate = new Date();
@@ -147,14 +148,9 @@ export default function AppSidebar({
 
     return () => clearInterval(interval); // Cleanup interval on unmount
   }, []);
-
-  if (!mounted) {
-    return null;
-  }
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearch(query);
-    setFilters((prev) => ({ ...prev, search: query })); // Update filters when search term changes
   };
   const handleClearSearch = () => {
     setSearch('');
@@ -176,6 +172,26 @@ export default function AppSidebar({
     }));
   };
   const isMenuOpen = (menuName: string) => openMenus[menuName] || false;
+
+  React.useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      setFilters((prev) => ({ ...prev, search }));
+    }, 300);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [search]);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>
@@ -210,14 +226,14 @@ export default function AppSidebar({
 
             {filters.search ? (
               searchResults.length > 0 ? (
-                <div className="absolute top-full z-50 h-fit w-full overflow-y-auto rounded bg-white shadow-md">
+                <div className="absolute top-full z-50 h-fit max-h-[500px] w-full overflow-y-auto rounded bg-white shadow-md">
                   {searchResults.map((menu) => {
                     return (
                       <Link
                         key={menu.id}
                         onClick={handleClickSearch}
                         href={`/dashboard/${menu.url.toLowerCase()}`}
-                        className="flex cursor-pointer flex-col border border-gray-400 bg-gray-700 px-2 py-1 hover:bg-gray-500"
+                        className="flex min-h-[30px] cursor-pointer flex-col border border-gray-400 bg-gray-700 px-2 py-1 hover:bg-gray-500"
                       >
                         <span className="text-sm">{menu.title}</span>
                         <span className="text-[8px]">
@@ -229,7 +245,7 @@ export default function AppSidebar({
                 </div>
               ) : (
                 <div className="absolute top-full z-50 mt-2 h-fit w-full overflow-y-auto rounded bg-white shadow-md">
-                  <div className="flex cursor-pointer items-center bg-gray-500 px-4 py-2 text-sm hover:bg-gray-400">
+                  <div className="flex cursor-pointer flex-col border border-gray-400 bg-gray-700 px-2 py-1 hover:bg-gray-500">
                     No Element Found
                   </div>
                 </div>

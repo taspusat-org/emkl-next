@@ -1,5 +1,12 @@
 import { Icons } from '@/components/icons';
 
+// Extend Window interface untuk lookup order counter
+declare global {
+  interface Window {
+    __lookupOrderCounter?: number;
+  }
+}
+
 export interface NavItem {
   title: string;
   url: string;

@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useState, useMemo } from 'react';
 import { MdDelete, MdEdit } from 'react-icons/md';
 import { FaPlus } from 'react-icons/fa6';
@@ -71,9 +72,9 @@ const ActionButton = ({
   onExport,
   onReport,
   onView,
-  checkedRows,
   rowsLength = 0,
   totalItems = 0,
+  checkedRows,
   module = '',
   customActions = [],
   dropdownMenus = [],

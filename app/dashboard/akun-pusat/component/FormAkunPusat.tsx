@@ -53,6 +53,7 @@ const FormAkunPusat = ({
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
       labelLookup: 'TYPE AKUNTANSI LOOKUP',
+      required: true,
 
       selectedRequired: false,
       endpoint: 'type-akuntansi',
@@ -60,6 +61,7 @@ const FormAkunPusat = ({
       singleColumn: true,
       pageSize: 20,
       disabled: mode === 'view' || mode === 'delete' ? true : false,
+      showOnButton: true,
       postData: 'nama',
       dataToPost: 'id'
     }

@@ -64,6 +64,7 @@
 
   .dark {
     --background: 0, 0%, 10%;
+    --background: 0, 0%, 10%;
     --foreground: 253 31% 98%;
     --background-input: 240, 3.8%, 15.49%;
     --background-input-disabled: 240, 3.8%, 12%;
@@ -185,6 +186,7 @@ input {
 .selected-row {
   background-color: #ffe48d !important;
   color: black !important;
+  color: black !important;
 }
 .text-header {
   font-family: 'Open Sans Condensed', sans-serif;
@@ -294,13 +296,18 @@ table {
 
   border-right: 1px solid hsla(var(--border));
   border-bottom: 1px solid hsla(var(--border));
+  border-right: 1px solid hsla(var(--border));
+  border-bottom: 1px solid hsla(var(--border));
 }
 .rdg > .rdg-row > .rdg-cell:last-child {
+  border-right: 1px solid hsla(var(--border));
   border-right: 1px solid hsla(var(--border));
 }
 .rdg-summary-row .rdg-cell {
   border-top: 1px solid hsla(var(--border)); /* Border atas khusus untuk summary row */
+  border-top: 1px solid hsla(var(--border)); /* Border atas khusus untuk summary row */
 }
+/* .rdg-row-odd:not(:has(.form-input)) {
 /* .rdg-row-odd:not(:has(.form-input)) {
   background-color: #f0f0f0;
 } */
@@ -314,8 +321,10 @@ table {
 }
 .rdg-bottom-summary-row {
   border-top: 1px solid hsla(var(--border)) !important;
+  border-top: 1px solid hsla(var(--border)) !important;
 }
 .rdg-summary-row {
+  border-top: 1px solid hsla(var(--border)) !important;
   border-top: 1px solid hsla(var(--border)) !important;
 }
 .headers-cell {
@@ -323,6 +332,18 @@ table {
   width: 100%;
   flex-direction: row;
   justify-content: space-between;
+  border-bottom: 1px solid hsla(var(--border));
+  align-items: center;
+  padding: 0px 8px;
+  letter-spacing: 0.5px;
+  font-size: 6px;
+}
+.dark .headers-cell {
+  display: flex;
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  border-bottom: 1px solid hsla(var(--border));
   border-bottom: 1px solid hsla(var(--border));
   align-items: center;
   padding: 0px 8px;
@@ -344,7 +365,18 @@ table {
   /* Light mode */
   background-color: #ffffff;
   color: #111827;
+  /* Light mode */
+  background-color: #ffffff;
+  color: #111827;
   padding: 0 2px 0 0;
+}
+
+.dark .column-headers {
+  /* Dark mode */
+  background: linear-gradient(to bottom, #2b2f36 0%, #23262d 100%);
+
+  padding: 0 2px 0 0;
+  color: #ffffff;
 }
 
 .dark .column-headers {

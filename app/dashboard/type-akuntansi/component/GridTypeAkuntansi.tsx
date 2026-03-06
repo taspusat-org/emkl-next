@@ -486,9 +486,16 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -507,7 +514,7 @@ const GridTypeAkuntansi = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        headerCellClass: 'column-header',
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -560,13 +567,12 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(
-                      cellValue,
-                      filters.search,
-                      String(columnFilter)
-                    )}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(cellValue, filters.search)
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -641,9 +647,16 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -714,9 +727,16 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -859,9 +879,16 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -932,9 +959,16 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -1005,9 +1039,16 @@ const GridTypeAkuntansi = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -1795,7 +1836,6 @@ const GridTypeAkuntansi = () => {
             />
           </div>
         </div>
-
         <DataGrid
           key={dataGridKey}
           ref={gridRef}

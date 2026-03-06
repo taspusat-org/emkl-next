@@ -49,7 +49,6 @@ export default function Header({ ip, currentDateTime }: Props) {
           {isMobile ? null : <UserNav />}
         </div>
       </header>
-
       <div className="bg-background pl-6 pt-6">
         <Breadcrumbs />
       </div>

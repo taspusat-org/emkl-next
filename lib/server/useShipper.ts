@@ -29,7 +29,7 @@ export const useGetShipper = (
     sortBy?: string;
     sortDirection?: string;
     limit?: number;
-    search?: string; // Kata kunci pencarian
+    search?: string;
   } = {},
   signal?: AbortSignal
 ) => {
@@ -37,7 +37,9 @@ export const useGetShipper = (
     ['shipper', filters],
     async () => await getShipperFn(filters, signal),
     {
-      enabled: !signal?.aborted
+      enabled: !signal?.aborted,
+      staleTime: Infinity, // Prevent automatic refetch
+      cacheTime: Infinity // Keep data in cache
     }
   );
 };
@@ -50,7 +52,6 @@ export const useCreateShipper = () => {
 
   return useMutation(storeShipperFn, {
     onSuccess: () => {
-      void queryClient.invalidateQueries('shipper');
       // toast({
       //   title: "Proses Berhasil",
       //   description: "Data Berhasil Ditambahkan"

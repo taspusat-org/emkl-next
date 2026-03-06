@@ -298,7 +298,7 @@ const SidebarTrigger = React.forwardRef<
       }}
       {...props}
     >
-      <IoMenu className="text-3xl font-extrabold text-red-500" />
+      <IoMenu className="text-3xl font-extrabold text-red-500 dark:text-white" />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

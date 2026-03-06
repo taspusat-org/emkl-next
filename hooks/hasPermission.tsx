@@ -1,6 +1,7 @@
 // hooks/usePermissions.ts
 import { getPermissionFn } from '@/lib/apis/menu.api';
 import { RootState } from '@/lib/store/store';
+import { getSession, useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
@@ -12,8 +13,9 @@ interface Permission {
 const usePermissions = () => {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const { id } = useSelector((state: RootState) => state.auth);
+  const { data: session } = useSession();
 
+  const { id } = useSelector((state: RootState) => state.auth);
   // Array untuk pengecualian, bisa berisi subject atau action
   const exclusionList: (string | string[])[] = [
     'SHOW',
@@ -29,19 +31,23 @@ const usePermissions = () => {
   ];
 
   useEffect(() => {
-    const fetchPermissions = async () => {
-      const res = await getPermissionFn(String(id));
-      const data = res.abilities;
+    if (session?.user.id) {
+      const fetchPermissions = async () => {
+        const res = await getPermissionFn(
+          session?.user.id as unknown as string
+        );
+        const data = res?.abilities;
 
-      if (data) {
-        setPermissions(data);
-      }
+        if (data) {
+          setPermissions(data);
+        }
 
-      setLoading(false);
-    };
+        setLoading(false);
+      };
 
-    fetchPermissions();
-  }, [id]);
+      fetchPermissions();
+    }
+  }, [session]);
 
   // Fungsi untuk memeriksa apakah subject atau action ada di dalam pengecualian
   const isExcluded = (subject: string, action: string): boolean => {

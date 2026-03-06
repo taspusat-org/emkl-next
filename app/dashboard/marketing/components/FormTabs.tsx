@@ -3,11 +3,6 @@
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
-import GridMarketingDetail from './GridMarketingdetail';
-import GridMarketingManager from './GridMarketingManager';
-import GridMarketingProsesFee from './GridMarketingProsesFee';
-import FormMarketingOrderan from './FormMarketingOrderan';
-import FormMarketingBiaya from './FormMarketingBiaya';
 import { useDispatch } from 'react-redux';
 import { setTab } from '@/lib/store/tabSlice/tabSlice';
 
@@ -49,22 +44,6 @@ export function FormTabs({ mode, forms }: FormTabsProps) {
           Marketing Proses Fee
         </TabsTrigger>
       </TabsList>
-
-      {/* <TabsContent value="formMarketingOrderan" className="h-full">
-        <FormMarketingOrderan activeForm={activeFormTab} mode={mode} forms={forms} />
-      </TabsContent>
-
-      <TabsContent value="formMarketingBiaya" className="h-full">
-        <FormMarketingBiaya activeForm={activeFormTab} mode={mode} forms={forms} />
-      </TabsContent>
-
-      <TabsContent value="marketingmanager" className="h-full">
-        <GridMarketingManager activeTab={activeFormTab} />
-      </TabsContent>
-
-      <TabsContent value="marketingprosesfee" className="h-full">
-        <GridMarketingProsesFee activeTab={activeFormTab} />
-      </TabsContent> */}
     </Tabs>
   );
 }
