@@ -99,8 +99,8 @@ const FormLabel = React.forwardRef<
       ref={ref}
       className={cn(
         error && 'uppercase text-destructive',
-        className,
-        'uppercase'
+        '!text-primary-text uppercase',
+        className
       )}
       htmlFor={formItemId}
       {...props}

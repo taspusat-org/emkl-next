@@ -20,7 +20,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormShipper from './FormShipper';
 import { useQueryClient } from 'react-query';
-import { getAkunpusatFn } from '@/lib/apis/akunpusat.api';
 
 import {
   useCreateShipper,
@@ -28,21 +27,11 @@ import {
   useGetShipper,
   useUpdateShipper
 } from '@/lib/server/useShipper';
-import { getColumnShipperFn } from '@/lib/apis/shipper.api';
-import { syncAcosFn } from '@/lib/apis/acos.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
-import {
-  FaFileExport,
-  FaPlus,
-  FaPrint,
-  FaSort,
-  FaSortDown,
-  FaSortUp,
-  FaTimes
-} from 'react-icons/fa';
+import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
-import { api, api2 } from '@/lib/utils/AxiosInstance';
+import { api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter } from 'next/navigation';
 import {
   Select,
@@ -53,17 +42,13 @@ import {
   SelectValue
 } from '@/components/ui/select';
 
-import { HiDocument } from 'react-icons/hi2';
-import { setReportData } from '@/lib/store/reportSlice/reportSlice';
 import { useDispatch } from 'react-redux';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import ReportDesignerMenu from '@/app/reports/menu/page';
 import { IShipper, filterShipper } from '@/lib/types/shipper.type';
-import { number } from 'zod';
 import {
   clearOpenName,
   setClearLookup
@@ -80,7 +65,6 @@ import {
 } from '@/lib/validations/shipper.validation';
 import { formatCurrency } from '@/lib/utils';
 import { getShipperFn } from '@/lib/apis/shipper.api';
-import { generateStatusColumns } from '@/components/custom-ui/GridDynamic';
 import {
   Tooltip,
   TooltipContent,
@@ -158,6 +142,25 @@ const GridShipper = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const getCoa = useSelector((state: RootState) => state.lookup.data);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isAfterMutation, setIsAfterMutation] = useState(false);
+  const [shouldBulkFetch, setShouldBulkFetch] = useState(true);
+  const scrollPositionRef = useRef<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null); // TAMBAHAN BARU
+  const prevRowsLengthRef = useRef<number>(0);
+  const prevMinPageRef = useRef<number>(1);
+  const hasAdjustedScrollRef = useRef<boolean>(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(
+    null
+  );
+  const lastScrollTopRef = useRef<number>(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [pageDataCache, setPageDataCache] = useState<Map<number, IShipper[]>>(
+    new Map()
+  );
   const forms = useForm<ShipperInput>({
     resolver: mode === 'delete' ? undefined : zodResolver(ShipperSchema),
     mode: 'onSubmit',
@@ -249,10 +252,13 @@ const GridShipper = () => {
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
+  const effectiveLimit = shouldBulkFetch ? 150 : filters.limit;
+
   const { data: allShipper, isLoading: isLoadingShipper } = useGetShipper(
     {
       ...filters,
-      page: currentPage
+      page: currentPage,
+      limit: effectiveLimit
     },
     abortControllerRef.current?.signal
   );
@@ -380,7 +386,6 @@ const GridShipper = () => {
     }, 200);
 
     setSelectedRow(0);
-    setCurrentPage(1);
     setRows([]);
   };
   const handleSort = (column: string) => {
@@ -455,91 +460,6 @@ const GridShipper = () => {
     }));
     setInputValue('');
   };
-  console.log(forms.getValues());
-
-  // const [pvtFields, setPvtFields] = useState<string[]>([]);
-
-  // useEffect(() => {
-  //   const fetchFields = async () => {
-  //     try {
-  //       const res = await getColumnShipperFn();
-
-  //       if (res?.data) {
-  //         setPvtFields((prev) => Array.from(new Set([...prev, ...res.data])));
-  //       }
-  //     } catch (err) {
-  //       console.error('Failed to load shipper columns:', err);
-  //     }
-  //   };
-
-  //   fetchFields();
-  // }, []);
-
-  // const pvtFields = [
-  //   'statustidakasuransi',
-  //   'asuransi_tas',
-  //   'top_field',
-  //   'open_field',
-  //   'bongkaran',
-  //   'delivery_report',
-  //   'final_asuransi_bulan',
-  //   'job_banyak_invoice',
-  //   'job_pajak',
-  //   'cetak_keterangan_shipper',
-  //   'fumigasi',
-  //   'adjust_tagih_warkat',
-  //   'job_non_ppn',
-  //   'approval_pajakp_pisah_ongkos',
-  //   'decimal_invoice',
-  //   'reimbursement',
-  //   'not_invoice_tambahan',
-  //   'invoice_jasa_pengurusan_transportasi',
-  //   'not_ucase_shipper',
-  //   'shipper_sttb',
-  //   'shipper_cabang',
-  //   'spk',
-  //   'ppn_warkat_eksport',
-  //   'ppn_11',
-  //   'non_prospek',
-  //   'info_delay',
-  //   'job_minus',
-  //   'shipper_sendiri',
-  //   'wajib_invoice_sebelum_biaya',
-  //   'tanpa_nik_npwp',
-  //   'pusat',
-  //   'app_saldo_piutang',
-  //   'nama_paraf',
-  //   'not_order_trucking',
-  //   'passport',
-  //   'ppn_kunci',
-  //   'approval_shipper_job_minus',
-  //   'approval_top',
-  //   'blacklist_shipper',
-  //   'non_lapor_pajak',
-  //   'shipper_potongan',
-  //   'shipper_tidak_tagih_invoice_utama',
-  //   'not_tampil_web',
-  //   'not_free_admin',
-  //   'non_reimbursement',
-  //   'app_cetak_invoice_lain',
-  //   'lewat_hitung_ulang_ppn',
-  //   'online',
-  //   'keterangan_buruh',
-  //   'edit_keterangan_invoice_utama',
-  //   'tampil_keterangan_tambahan_sttb',
-  //   'update_ppn_shiper_khusus',
-  //   'shipper_rincian',
-  //   'national_id',
-  //   'refdesc_po'
-  // ];
-
-  // const statusColumns = generateStatusColumns({
-  //   fields: pvtFields,
-  //   filters,
-  //   handleSort,
-  //   handleContextMenu,
-  //   handleColumnFilterChange
-  // });
 
   const columns = useMemo((): Column<IShipper>[] => {
     return [
@@ -4874,4911 +4794,4912 @@ const GridShipper = () => {
               </TooltipProvider>
             );
           }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-      {
-        key: 'statustidakasuransi',
-        name: 'STATUS TIDAK ASURANSI',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('statustidakasuransi')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'statustidakasuransi'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                STATUS TIDAK ASURANSI
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'statustidakasuransi' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'statustidakasuransi' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('statustidakasuransi_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.statustidakasuransi_memo
-            ? JSON.parse(props.row.statustidakasuransi_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'asuransi_tas',
-        name: 'ASURANSI TAS',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('asuransi_tas')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'asuransi_tas'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                ASURANSI TAS
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'asuransi_tas' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'asuransi_tas' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('asuransi_tas_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.asuransi_tas_memo
-            ? JSON.parse(props.row.asuransi_tas_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'top_field',
-        name: 'TOP',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('top_field')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'top_field' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                TOP
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'top_field' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'top_field' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('top_field_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.top_field_memo
-            ? JSON.parse(props.row.top_field_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'open_field',
-        name: 'OPEN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('open_field')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'open_field' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                OPEN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'open_field' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'open_field' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('open_field_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.open_field_memo
-            ? JSON.parse(props.row.open_field_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'bongkaran',
-        name: 'BONGKARAN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('bongkaran')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'bongkaran' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                BONGKARAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'bongkaran' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'bongkaran' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('bongkaran_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.bongkaran_memo
-            ? JSON.parse(props.row.bongkaran_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'delivery_report',
-        name: 'DELIVERY REPORT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 220,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('delivery_report')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'delivery_report'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                DELIVERY REPORT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'delivery_report' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'delivery_report' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('delivery_report_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.delivery_report_memo
-            ? JSON.parse(props.row.delivery_report_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'final_asuransi_bulan',
-        name: 'FINAL ASURANSI BULAN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('final_asuransi_bulan')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'final_asuransi_bulan'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                FINAL ASURANSI BULAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'final_asuransi_bulan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'final_asuransi_bulan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('final_asuransi_bulan_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.final_asuransi_bulan_memo
-            ? JSON.parse(props.row.final_asuransi_bulan_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'job_banyak_invoice',
-        name: 'JOB BANYAK INVOICE',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('job_banyak_invoice')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'job_banyak_invoice'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                JOB BANYAK INVOICE
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'job_banyak_invoice' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'job_banyak_invoice' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('job_banyak_invoice_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.job_banyak_invoice_memo
-            ? JSON.parse(props.row.job_banyak_invoice_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'job_pajak',
-        name: 'JOB PAJAK',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('job_pajak')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'job_pajak' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                JOB PAJAK
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'job_pajak' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'job_pajak' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('job_pajak_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.job_pajak_memo
-            ? JSON.parse(props.row.job_pajak_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'cetak_keterangan_shipper',
-        name: 'CETAK KETERANGAN SHIPPER',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('cetak_keterangan_shipper')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'cetak_keterangan_shipper'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                CETAK KETERANGAN SHIPPER
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'cetak_keterangan_shipper' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'cetak_keterangan_shipper' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'cetak_keterangan_shipper_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.cetak_keterangan_shipper_memo
-            ? JSON.parse(props.row.cetak_keterangan_shipper_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'fumigasi',
-        name: 'FUMIGASI',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('fumigasi')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'fumigasi' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                FUMIGASI
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'fumigasi' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'fumigasi' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('fumigasi_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.fumigasi_memo
-            ? JSON.parse(props.row.fumigasi_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'adjust_tagih_warkat',
-        name: 'ADJUST TAGIH WARKAT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('adjust_tagih_warkat')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'adjust_tagih_warkat'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                ADJUST TAGIH WARKAT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'adjust_tagih_warkat' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'adjust_tagih_warkat' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('adjust_tagih_warkat_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.adjust_tagih_warkat_memo
-            ? JSON.parse(props.row.adjust_tagih_warkat_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'job_non_ppn',
-        name: 'JOB NON PPN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('job_non_ppn')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'job_non_ppn' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                JOB NON PPN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'job_non_ppn' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'job_non_ppn' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('job_non_ppn_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.job_non_ppn_memo
-            ? JSON.parse(props.row.job_non_ppn_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'approval_pajakp_pisah_ongkos',
-        name: 'APPROVAL PAJAKP PISAH ONGKOS',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('approval_pajakp_pisah_ongkos')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'approval_pajakp_pisah_ongkos'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                APPROVAL PAJAKP PISAH ONGKOS
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'approval_pajakp_pisah_ongkos' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'approval_pajakp_pisah_ongkos' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'approval_pajakp_pisah_ongkos_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.approval_pajakp_pisah_ongkos_memo
-            ? JSON.parse(props.row.approval_pajakp_pisah_ongkos_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'decimal_invoice',
-        name: 'DECIMAL INVOICE',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('decimal_invoice')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'decimal_invoice'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                DECIMAL INVOICE
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'decimal_invoice' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'decimal_invoice' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('decimal_invoice_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.decimal_invoice_memo
-            ? JSON.parse(props.row.decimal_invoice_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'reimbursement',
-        name: 'REIMBURSEMENT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('reimbursement')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'reimbursement'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                REIMBURSEMENT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'reimbursement' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'reimbursement' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('reimbursement_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.reimbursement_memo
-            ? JSON.parse(props.row.reimbursement_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'not_invoice_tambahan',
-        name: 'NOT INVOICE TAMBAHAN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 250,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('not_invoice_tambahan')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'not_invoice_tambahan'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NOT INVOICE TAMBAHAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'not_invoice_tambahan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'not_invoice_tambahan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('not_invoice_tambahan_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.not_invoice_tambahan_memo
-            ? JSON.parse(props.row.not_invoice_tambahan_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'invoice_jasa_pengurusan_transportasi',
-        name: 'INVOICE JASA PENGURUSAN TRANSPORTASI',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 290,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('invoice_jasa_pengurusan_transportasi')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'invoice_jasa_pengurusan_transportasi'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                INVOICE JASA PENGURUSAN TRANSPORTASI
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'invoice_jasa_pengurusan_transportasi' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'invoice_jasa_pengurusan_transportasi' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'invoice_jasa_pengurusan_transportasi_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.invoice_jasa_pengurusan_transportasi_memo
-            ? JSON.parse(props.row.invoice_jasa_pengurusan_transportasi_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'not_ucase_shipper',
-        name: 'NOT UCASE SHIPPER',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('not_ucase_shipper')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'not_ucase_shipper'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NOT UCASE SHIPPER
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'not_ucase_shipper' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'not_ucase_shipper' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('not_ucase_shipper_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.not_ucase_shipper_memo
-            ? JSON.parse(props.row.not_ucase_shipper_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'shipper_sttb',
-        name: 'SHIPPER STTB',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_sttb')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_sttb'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER STTB
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_sttb' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_sttb' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('shipper_sttb_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.shipper_sttb_memo
-            ? JSON.parse(props.row.shipper_sttb_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'shipper_cabang',
-        name: 'SHIPPER CABANG',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 220,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_cabang')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_cabang'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER CABANG
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_cabang' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_cabang' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('shipper_cabang_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.shipper_cabang_memo
-            ? JSON.parse(props.row.shipper_cabang_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'spk',
-        name: 'SPK',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 160,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('spk')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'spk' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                SPK
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'spk' && filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'spk' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('spk_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.spk_memo
-            ? JSON.parse(props.row.spk_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'ppn_warkat_eksport',
-        name: 'PPN WARKAT EKSPORT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 240,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('ppn_warkat_eksport')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'ppn_warkat_eksport'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                PPN WARKAT EKSPORT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'ppn_warkat_eksport' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'ppn_warkat_eksport' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('ppn_warkat_eksport_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.ppn_warkat_eksport_memo
-            ? JSON.parse(props.row.ppn_warkat_eksport_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'ppn_11',
-        name: 'PPN 11%',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 180,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('ppn_11')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'ppn_11' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                PPN 11%
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'ppn_11' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'ppn_11' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('ppn_11_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.ppn_11_memo
-            ? JSON.parse(props.row.ppn_11_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'non_prospek',
-        name: 'NON PROSPEK',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('non_prospek')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'non_prospek' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NON PROSPEK
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'non_prospek' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'non_prospek' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('non_prospek_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.non_prospek_memo
-            ? JSON.parse(props.row.non_prospek_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'info_delay',
-        name: 'INFO DELAY',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('info_delay')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'info_delay' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                INFO DELAY
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'info_delay' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'info_delay' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('info_delay_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.info_delay_memo
-            ? JSON.parse(props.row.info_delay_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'job_minus',
-        name: 'JOB MINUS',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('job_minus')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'job_minus' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                JOB MINUS
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'job_minus' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'job_minus' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('job_minus_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.job_minus_memo
-            ? JSON.parse(props.row.job_minus_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'shipper_sendiri',
-        name: 'SHIPPER SENDIRI',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_sendiri')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_sendiri'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER SENDIRI
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_sendiri' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_sendiri' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('shipper_sendiri_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.shipper_sendiri_memo
-            ? JSON.parse(props.row.shipper_sendiri_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'wajib_invoice_sebelum_biaya',
-        name: 'WAJIB INVOICE SEBELUM BIAYA',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 270,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('wajib_invoice_sebelum_biaya')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'wajib_invoice_sebelum_biaya'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                WAJIB INVOICE SEBELUM BIAYA
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'wajib_invoice_sebelum_biaya' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'wajib_invoice_sebelum_biaya' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'wajib_invoice_sebelum_biaya_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.wajib_invoice_sebelum_biaya_memo
-            ? JSON.parse(props.row.wajib_invoice_sebelum_biaya_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'tanpa_nik_npwp',
-        name: 'TANPA NIK NPWP',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('tanpa_nik_npwp')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'tanpa_nik_npwp'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                TANPA NIK NPWP
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'tanpa_nik_npwp' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tanpa_nik_npwp' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('tanpa_nik_npwp_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.delivery_report_memo
-            ? JSON.parse(props.row.delivery_report_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'pusat',
-        name: 'PUSAT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 170,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('pusat')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'pusat' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                PUSAT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'pusat' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'pusat' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('pusat_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.pusat_memo
-            ? JSON.parse(props.row.pusat_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'app_saldo_piutang',
-        name: 'APP SALDO PIUTANG',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('app_saldo_piutang')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'app_saldo_piutang'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                APP SALDO PIUTANG
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'app_saldo_piutang' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'app_saldo_piutang' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('app_saldo_piutang_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.app_saldo_piutang_memo
-            ? JSON.parse(props.row.app_saldo_piutang_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'nama_paraf',
-        name: 'NAMA PARAF',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('nama_paraf')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'nama_paraf' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NAMA PARAF
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'nama_paraf' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'nama_paraf' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('nama_paraf_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.nama_paraf_memo
-            ? JSON.parse(props.row.nama_paraf_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'not_order_trucking',
-        name: 'NOT ORDER TRUCKING',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('not_order_trucking')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'not_order_trucking'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NOT ORDER TRUCKING
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'not_order_trucking' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'not_order_trucking' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('not_order_trucking_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.not_order_trucking_memo
-            ? JSON.parse(props.row.not_order_trucking_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'passport',
-        name: 'PASSPORT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 180,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('passport')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'passport' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                PASSPORT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'passport' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'passport' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('passport_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.passport_memo
-            ? JSON.parse(props.row.passport_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'ppn_kunci',
-        name: 'PPN KUNCI',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('ppn_kunci')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'ppn_kunci' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                PPN KUNCI
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'ppn_kunci' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'ppn_kunci' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('ppn_kunci_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.ppn_kunci_memo
-            ? JSON.parse(props.row.ppn_kunci_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'approval_shipper_job_minus',
-        name: 'APPROVAL SHIPPER JOB MINUS',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 270,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('approval_shipper_job_minus')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'approval_shipper_job_minus'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                APPROVAL SHIPPER JOB MINUS
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'approval_shipper_job_minus' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'approval_shipper_job_minus' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'approval_shipper_job_minus_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.approval_shipper_job_minus_memo
-            ? JSON.parse(props.row.approval_shipper_job_minus_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'approval_top',
-        name: 'APPROVAL TOP',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('approval_top')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'approval_top'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                APPROVAL TOP
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'approval_top' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'approval_top' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('approval_top_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.approval_top_memo
-            ? JSON.parse(props.row.approval_top_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'blacklist_shipper',
-        name: 'BLACKLIST SHIPPER',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 240,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('blacklist_shipper')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'blacklist_shipper'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                BLACKLIST SHIPPER
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'blacklist_shipper' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'blacklist_shipper' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('blacklist_shipper_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.blacklist_shipper_memo
-            ? JSON.parse(props.row.blacklist_shipper_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'non_lapor_pajak',
-        name: 'NON LAPOR PAJAK',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('non_lapor_pajak')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'non_lapor_pajak'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NON LAPOR PAJAK
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'non_lapor_pajak' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'non_lapor_pajak' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('non_lapor_pajak_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.non_lapor_pajak_memo
-            ? JSON.parse(props.row.non_lapor_pajak_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'shipper_potongan',
-        name: 'SHIPPER POTONGAN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 220,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_potongan')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_potongan'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER POTONGAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_potongan' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_potongan' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('shipper_potongan_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.shipper_potongan_memo
-            ? JSON.parse(props.row.shipper_potongan_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'shipper_tidak_tagih_invoice_utama',
-        name: 'SHIPPER TIDAK TAGIH INVOICE UTAMA',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 300,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_tidak_tagih_invoice_utama')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_tidak_tagih_invoice_utama'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER TIDAK TAGIH INVOICE UTAMA
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_tidak_tagih_invoice_utama' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_tidak_tagih_invoice_utama' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'shipper_tidak_tagih_invoice_utama_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.shipper_tidak_tagih_invoice_utama_memo
-            ? JSON.parse(props.row.shipper_tidak_tagih_invoice_utama_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'not_tampil_web',
-        name: 'NOT TAMPIL WEB',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('not_tampil_web')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'not_tampil_web'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NOT TAMPIL WEB
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'not_tampil_web' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'not_tampil_web' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('not_tampil_web_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.not_tampil_web_memo
-            ? JSON.parse(props.row.not_tampil_web_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'not_free_admin',
-        name: 'NOT FREE ADMIN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 200,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('not_free_admin')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'not_free_admin'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NOT FREE ADMIN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'not_free_admin' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'not_free_admin' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('not_free_admin_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.not_free_admin_memo
-            ? JSON.parse(props.row.not_free_admin_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'non_reimbursement',
-        name: 'NON REIMBURSEMENT',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('non_reimbursement')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'non_reimbursement'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                NON REIMBURSEMENT
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'non_reimbursement' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'non_reimbursement' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('non_reimbursement_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.non_reimbursement_memo
-            ? JSON.parse(props.row.non_reimbursement_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'app_cetak_invoice_lain',
-        name: 'APP CETAK INVOICE LAIN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 260,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('app_cetak_invoice_lain')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'app_cetak_invoice_lain'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                APP CETAK INVOICE LAIN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'app_cetak_invoice_lain' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'app_cetak_invoice_lain' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('app_cetak_invoice_lain_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.app_cetak_invoice_lain_memo
-            ? JSON.parse(props.row.app_cetak_invoice_lain_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'lewat_hitung_ulang_ppn',
-        name: 'LEWAT HITUNG ULANG PPN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 260,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('lewat_hitung_ulang_ppn')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'lewat_hitung_ulang_ppn'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                LEWAT HITUNG ULANG PPN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'lewat_hitung_ulang_ppn' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'lewat_hitung_ulang_ppn' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('lewat_hitung_ulang_ppn_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.lewat_hitung_ulang_ppn_memo
-            ? JSON.parse(props.row.lewat_hitung_ulang_ppn_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'online',
-        name: 'ONLINE',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('online')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'online' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                ONLINE
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'online' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'online' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('online_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.online_memo
-            ? JSON.parse(props.row.online_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'keterangan_buruh',
-        name: 'KETERANGAN BURUH',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 240,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('keterangan_buruh')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'keterangan_buruh'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                KETERANGAN BURUH
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'keterangan_buruh' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'keterangan_buruh' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('keterangan_buruh_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.keterangan_buruh_memo
-            ? JSON.parse(props.row.keterangan_buruh_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'edit_keterangan_invoice_utama',
-        name: 'EDIT KETERANGAN INVOICE UTAMA',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 300,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('edit_keterangan_invoice_utama')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'edit_keterangan_invoice_utama'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                EDIT KETERANGAN INVOICE UTAMA
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'edit_keterangan_invoice_utama' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'edit_keterangan_invoice_utama' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'edit_keterangan_invoice_utama_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.edit_keterangan_invoice_utama_memo
-            ? JSON.parse(props.row.edit_keterangan_invoice_utama_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'tampil_keterangan_tambahan_sttb',
-        name: 'TAMPIL KETERANGAN TAMBAHAN STTB',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 300,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('tampil_keterangan_tambahan_sttb')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'tampil_keterangan_tambahan_sttb'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                TAMPIL KETERANGAN TAMBAHAN STTB
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'tampil_keterangan_tambahan_sttb' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'tampil_keterangan_tambahan_sttb' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'tampil_keterangan_tambahan_sttb_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.tampil_keterangan_tambahan_sttb_memo
-            ? JSON.parse(props.row.tampil_keterangan_tambahan_sttb_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'update_ppn_shiper_khusus',
-        name: 'UPDATE PPN SHIPPER KHUSUS',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 270,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('update_ppn_shiper_khusus')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'update_ppn_shiper_khusus'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                UPDATE PPN SHIPPER KHUSUS
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'update_ppn_shiper_khusus' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'update_ppn_shiper_khusus' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange(
-                    'update_ppn_shiper_khusus_nama',
-                    value
-                  )
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.update_ppn_shiper_khusus_memo
-            ? JSON.parse(props.row.update_ppn_shiper_khusus_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'shipper_rincian',
-        name: 'SHIPPER RINCIAN',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 230,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('shipper_rincian')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'shipper_rincian'
-                    ? 'font-bold'
-                    : 'font-normal'
-                }`}
-              >
-                SHIPPER RINCIAN
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'shipper_rincian' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'shipper_rincian' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('shipper_rincian_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.shipper_rincian_memo
-            ? JSON.parse(props.row.shipper_rincian_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'national_id',
-        name: 'NATIONAL ID',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 190,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('national_id')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'national_id' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                NATIONAL ID
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'national_id' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'national_id' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('national_id_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.national_id_memo
-            ? JSON.parse(props.row.national_id_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
-      {
-        key: 'refdesc_po',
-        name: 'REFDESC PO',
-        resizable: true,
-        draggable: true,
-        headerCellClass: 'column-headers',
-        width: 210,
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('refdesc_po')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'refdesc_po' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                REFDESC PO
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'refdesc_po' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'refdesc_po' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('refdesc_po_nama', value)
-                }
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.refdesc_po_memo
-            ? JSON.parse(props.row.refdesc_po_memo)
-            : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
-
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'statustidakasuransi',
+      //   name: 'STATUS TIDAK ASURANSI',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('statustidakasuransi')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'statustidakasuransi'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           STATUS TIDAK ASURANSI
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'statustidakasuransi' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'statustidakasuransi' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('statustidakasuransi_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.statustidakasuransi_memo
+      //       ? JSON.parse(props.row.statustidakasuransi_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'asuransi_tas',
+      //   name: 'ASURANSI TAS',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('asuransi_tas')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'asuransi_tas'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           ASURANSI TAS
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'asuransi_tas' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'asuransi_tas' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('asuransi_tas_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.asuransi_tas_memo
+      //       ? JSON.parse(props.row.asuransi_tas_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'top_field',
+      //   name: 'TOP',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('top_field')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'top_field' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           TOP
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'top_field' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'top_field' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('top_field_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.top_field_memo
+      //       ? JSON.parse(props.row.top_field_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'open_field',
+      //   name: 'OPEN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('open_field')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'open_field' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           OPEN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'open_field' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'open_field' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('open_field_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.open_field_memo
+      //       ? JSON.parse(props.row.open_field_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'bongkaran',
+      //   name: 'BONGKARAN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('bongkaran')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'bongkaran' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           BONGKARAN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'bongkaran' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'bongkaran' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('bongkaran_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.bongkaran_memo
+      //       ? JSON.parse(props.row.bongkaran_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'delivery_report',
+      //   name: 'DELIVERY REPORT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 220,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('delivery_report')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'delivery_report'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           DELIVERY REPORT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'delivery_report' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'delivery_report' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('delivery_report_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.delivery_report_memo
+      //       ? JSON.parse(props.row.delivery_report_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'final_asuransi_bulan',
+      //   name: 'FINAL ASURANSI BULAN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('final_asuransi_bulan')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'final_asuransi_bulan'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           FINAL ASURANSI BULAN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'final_asuransi_bulan' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'final_asuransi_bulan' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('final_asuransi_bulan_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.final_asuransi_bulan_memo
+      //       ? JSON.parse(props.row.final_asuransi_bulan_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'job_banyak_invoice',
+      //   name: 'JOB BANYAK INVOICE',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('job_banyak_invoice')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'job_banyak_invoice'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           JOB BANYAK INVOICE
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'job_banyak_invoice' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'job_banyak_invoice' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('job_banyak_invoice_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.job_banyak_invoice_memo
+      //       ? JSON.parse(props.row.job_banyak_invoice_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'job_pajak',
+      //   name: 'JOB PAJAK',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('job_pajak')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'job_pajak' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           JOB PAJAK
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'job_pajak' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'job_pajak' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('job_pajak_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.job_pajak_memo
+      //       ? JSON.parse(props.row.job_pajak_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'cetak_keterangan_shipper',
+      //   name: 'CETAK KETERANGAN SHIPPER',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 250,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('cetak_keterangan_shipper')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'cetak_keterangan_shipper'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           CETAK KETERANGAN SHIPPER
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'cetak_keterangan_shipper' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'cetak_keterangan_shipper' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'cetak_keterangan_shipper_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.cetak_keterangan_shipper_memo
+      //       ? JSON.parse(props.row.cetak_keterangan_shipper_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'fumigasi',
+      //   name: 'FUMIGASI',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('fumigasi')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'fumigasi' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           FUMIGASI
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'fumigasi' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'fumigasi' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('fumigasi_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.fumigasi_memo
+      //       ? JSON.parse(props.row.fumigasi_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'adjust_tagih_warkat',
+      //   name: 'ADJUST TAGIH WARKAT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('adjust_tagih_warkat')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'adjust_tagih_warkat'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           ADJUST TAGIH WARKAT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'adjust_tagih_warkat' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'adjust_tagih_warkat' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('adjust_tagih_warkat_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.adjust_tagih_warkat_memo
+      //       ? JSON.parse(props.row.adjust_tagih_warkat_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'job_non_ppn',
+      //   name: 'JOB NON PPN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('job_non_ppn')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'job_non_ppn' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           JOB NON PPN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'job_non_ppn' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'job_non_ppn' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('job_non_ppn_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.job_non_ppn_memo
+      //       ? JSON.parse(props.row.job_non_ppn_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'approval_pajakp_pisah_ongkos',
+      //   name: 'APPROVAL PAJAKP PISAH ONGKOS',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 250,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('approval_pajakp_pisah_ongkos')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'approval_pajakp_pisah_ongkos'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           APPROVAL PAJAKP PISAH ONGKOS
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'approval_pajakp_pisah_ongkos' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'approval_pajakp_pisah_ongkos' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'approval_pajakp_pisah_ongkos_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.approval_pajakp_pisah_ongkos_memo
+      //       ? JSON.parse(props.row.approval_pajakp_pisah_ongkos_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'decimal_invoice',
+      //   name: 'DECIMAL INVOICE',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('decimal_invoice')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'decimal_invoice'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           DECIMAL INVOICE
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'decimal_invoice' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'decimal_invoice' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('decimal_invoice_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.decimal_invoice_memo
+      //       ? JSON.parse(props.row.decimal_invoice_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'reimbursement',
+      //   name: 'REIMBURSEMENT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('reimbursement')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'reimbursement'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           REIMBURSEMENT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'reimbursement' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'reimbursement' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('reimbursement_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.reimbursement_memo
+      //       ? JSON.parse(props.row.reimbursement_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'not_invoice_tambahan',
+      //   name: 'NOT INVOICE TAMBAHAN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 250,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('not_invoice_tambahan')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'not_invoice_tambahan'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NOT INVOICE TAMBAHAN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'not_invoice_tambahan' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'not_invoice_tambahan' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('not_invoice_tambahan_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.not_invoice_tambahan_memo
+      //       ? JSON.parse(props.row.not_invoice_tambahan_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'invoice_jasa_pengurusan_transportasi',
+      //   name: 'INVOICE JASA PENGURUSAN TRANSPORTASI',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 290,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('invoice_jasa_pengurusan_transportasi')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'invoice_jasa_pengurusan_transportasi'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           INVOICE JASA PENGURUSAN TRANSPORTASI
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'invoice_jasa_pengurusan_transportasi' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'invoice_jasa_pengurusan_transportasi' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'invoice_jasa_pengurusan_transportasi_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.invoice_jasa_pengurusan_transportasi_memo
+      //       ? JSON.parse(props.row.invoice_jasa_pengurusan_transportasi_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'not_ucase_shipper',
+      //   name: 'NOT UCASE SHIPPER',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('not_ucase_shipper')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'not_ucase_shipper'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NOT UCASE SHIPPER
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'not_ucase_shipper' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'not_ucase_shipper' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('not_ucase_shipper_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.not_ucase_shipper_memo
+      //       ? JSON.parse(props.row.not_ucase_shipper_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'shipper_sttb',
+      //   name: 'SHIPPER STTB',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('shipper_sttb')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'shipper_sttb'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           SHIPPER STTB
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'shipper_sttb' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'shipper_sttb' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('shipper_sttb_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.shipper_sttb_memo
+      //       ? JSON.parse(props.row.shipper_sttb_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'shipper_cabang',
+      //   name: 'SHIPPER CABANG',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 220,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('shipper_cabang')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'shipper_cabang'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           SHIPPER CABANG
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'shipper_cabang' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'shipper_cabang' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('shipper_cabang_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.shipper_cabang_memo
+      //       ? JSON.parse(props.row.shipper_cabang_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'spk',
+      //   name: 'SPK',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 160,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('spk')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'spk' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           SPK
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'spk' && filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'spk' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('spk_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.spk_memo
+      //       ? JSON.parse(props.row.spk_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'ppn_warkat_eksport',
+      //   name: 'PPN WARKAT EKSPORT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 240,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('ppn_warkat_eksport')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'ppn_warkat_eksport'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           PPN WARKAT EKSPORT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'ppn_warkat_eksport' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'ppn_warkat_eksport' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('ppn_warkat_eksport_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.ppn_warkat_eksport_memo
+      //       ? JSON.parse(props.row.ppn_warkat_eksport_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'ppn_11',
+      //   name: 'PPN 11%',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 180,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('ppn_11')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'ppn_11' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           PPN 11%
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'ppn_11' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'ppn_11' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('ppn_11_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.ppn_11_memo
+      //       ? JSON.parse(props.row.ppn_11_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'non_prospek',
+      //   name: 'NON PROSPEK',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('non_prospek')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'non_prospek' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           NON PROSPEK
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'non_prospek' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'non_prospek' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('non_prospek_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.non_prospek_memo
+      //       ? JSON.parse(props.row.non_prospek_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'info_delay',
+      //   name: 'INFO DELAY',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('info_delay')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'info_delay' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           INFO DELAY
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'info_delay' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'info_delay' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('info_delay_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.info_delay_memo
+      //       ? JSON.parse(props.row.info_delay_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'job_minus',
+      //   name: 'JOB MINUS',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('job_minus')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'job_minus' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           JOB MINUS
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'job_minus' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'job_minus' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('job_minus_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.job_minus_memo
+      //       ? JSON.parse(props.row.job_minus_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'shipper_sendiri',
+      //   name: 'SHIPPER SENDIRI',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('shipper_sendiri')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'shipper_sendiri'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           SHIPPER SENDIRI
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'shipper_sendiri' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'shipper_sendiri' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('shipper_sendiri_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.shipper_sendiri_memo
+      //       ? JSON.parse(props.row.shipper_sendiri_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'wajib_invoice_sebelum_biaya',
+      //   name: 'WAJIB INVOICE SEBELUM BIAYA',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 270,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('wajib_invoice_sebelum_biaya')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'wajib_invoice_sebelum_biaya'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           WAJIB INVOICE SEBELUM BIAYA
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'wajib_invoice_sebelum_biaya' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'wajib_invoice_sebelum_biaya' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'wajib_invoice_sebelum_biaya_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.wajib_invoice_sebelum_biaya_memo
+      //       ? JSON.parse(props.row.wajib_invoice_sebelum_biaya_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'tanpa_nik_npwp',
+      //   name: 'TANPA NIK NPWP',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('tanpa_nik_npwp')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'tanpa_nik_npwp'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           TANPA NIK NPWP
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'tanpa_nik_npwp' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'tanpa_nik_npwp' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('tanpa_nik_npwp_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.delivery_report_memo
+      //       ? JSON.parse(props.row.delivery_report_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'pusat',
+      //   name: 'PUSAT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 170,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('pusat')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'pusat' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           PUSAT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'pusat' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'pusat' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('pusat_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.pusat_memo
+      //       ? JSON.parse(props.row.pusat_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'app_saldo_piutang',
+      //   name: 'APP SALDO PIUTANG',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('app_saldo_piutang')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'app_saldo_piutang'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           APP SALDO PIUTANG
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'app_saldo_piutang' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'app_saldo_piutang' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('app_saldo_piutang_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.app_saldo_piutang_memo
+      //       ? JSON.parse(props.row.app_saldo_piutang_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'nama_paraf',
+      //   name: 'NAMA PARAF',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('nama_paraf')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'nama_paraf' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           NAMA PARAF
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'nama_paraf' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'nama_paraf' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('nama_paraf_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.nama_paraf_memo
+      //       ? JSON.parse(props.row.nama_paraf_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'not_order_trucking',
+      //   name: 'NOT ORDER TRUCKING',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('not_order_trucking')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'not_order_trucking'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NOT ORDER TRUCKING
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'not_order_trucking' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'not_order_trucking' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('not_order_trucking_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.not_order_trucking_memo
+      //       ? JSON.parse(props.row.not_order_trucking_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'passport',
+      //   name: 'PASSPORT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 180,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('passport')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'passport' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           PASSPORT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'passport' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'passport' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('passport_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.passport_memo
+      //       ? JSON.parse(props.row.passport_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'ppn_kunci',
+      //   name: 'PPN KUNCI',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('ppn_kunci')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'ppn_kunci' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           PPN KUNCI
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'ppn_kunci' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'ppn_kunci' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('ppn_kunci_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.ppn_kunci_memo
+      //       ? JSON.parse(props.row.ppn_kunci_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'approval_shipper_job_minus',
+      //   name: 'APPROVAL SHIPPER JOB MINUS',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 270,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('approval_shipper_job_minus')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'approval_shipper_job_minus'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           APPROVAL SHIPPER JOB MINUS
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'approval_shipper_job_minus' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'approval_shipper_job_minus' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'approval_shipper_job_minus_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.approval_shipper_job_minus_memo
+      //       ? JSON.parse(props.row.approval_shipper_job_minus_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'approval_top',
+      //   name: 'APPROVAL TOP',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('approval_top')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'approval_top'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           APPROVAL TOP
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'approval_top' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'approval_top' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('approval_top_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.approval_top_memo
+      //       ? JSON.parse(props.row.approval_top_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'blacklist_shipper',
+      //   name: 'BLACKLIST SHIPPER',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 240,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('blacklist_shipper')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'blacklist_shipper'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           BLACKLIST SHIPPER
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'blacklist_shipper' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'blacklist_shipper' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('blacklist_shipper_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.blacklist_shipper_memo
+      //       ? JSON.parse(props.row.blacklist_shipper_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'non_lapor_pajak',
+      //   name: 'NON LAPOR PAJAK',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('non_lapor_pajak')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'non_lapor_pajak'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NON LAPOR PAJAK
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'non_lapor_pajak' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'non_lapor_pajak' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('non_lapor_pajak_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.non_lapor_pajak_memo
+      //       ? JSON.parse(props.row.non_lapor_pajak_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'shipper_potongan',
+      //   name: 'SHIPPER POTONGAN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 220,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('shipper_potongan')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'shipper_potongan'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           SHIPPER POTONGAN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'shipper_potongan' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'shipper_potongan' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('shipper_potongan_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.shipper_potongan_memo
+      //       ? JSON.parse(props.row.shipper_potongan_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'shipper_tidak_tagih_invoice_utama',
+      //   name: 'SHIPPER TIDAK TAGIH INVOICE UTAMA',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 300,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('shipper_tidak_tagih_invoice_utama')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'shipper_tidak_tagih_invoice_utama'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           SHIPPER TIDAK TAGIH INVOICE UTAMA
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'shipper_tidak_tagih_invoice_utama' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'shipper_tidak_tagih_invoice_utama' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'shipper_tidak_tagih_invoice_utama_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.shipper_tidak_tagih_invoice_utama_memo
+      //       ? JSON.parse(props.row.shipper_tidak_tagih_invoice_utama_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'not_tampil_web',
+      //   name: 'NOT TAMPIL WEB',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('not_tampil_web')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'not_tampil_web'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NOT TAMPIL WEB
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'not_tampil_web' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'not_tampil_web' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('not_tampil_web_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.not_tampil_web_memo
+      //       ? JSON.parse(props.row.not_tampil_web_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'not_free_admin',
+      //   name: 'NOT FREE ADMIN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 200,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('not_free_admin')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'not_free_admin'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NOT FREE ADMIN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'not_free_admin' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'not_free_admin' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('not_free_admin_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.not_free_admin_memo
+      //       ? JSON.parse(props.row.not_free_admin_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'non_reimbursement',
+      //   name: 'NON REIMBURSEMENT',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('non_reimbursement')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'non_reimbursement'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           NON REIMBURSEMENT
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'non_reimbursement' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'non_reimbursement' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('non_reimbursement_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.non_reimbursement_memo
+      //       ? JSON.parse(props.row.non_reimbursement_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'app_cetak_invoice_lain',
+      //   name: 'APP CETAK INVOICE LAIN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 260,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('app_cetak_invoice_lain')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'app_cetak_invoice_lain'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           APP CETAK INVOICE LAIN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'app_cetak_invoice_lain' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'app_cetak_invoice_lain' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('app_cetak_invoice_lain_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.app_cetak_invoice_lain_memo
+      //       ? JSON.parse(props.row.app_cetak_invoice_lain_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'lewat_hitung_ulang_ppn',
+      //   name: 'LEWAT HITUNG ULANG PPN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 260,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('lewat_hitung_ulang_ppn')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'lewat_hitung_ulang_ppn'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           LEWAT HITUNG ULANG PPN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'lewat_hitung_ulang_ppn' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'lewat_hitung_ulang_ppn' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('lewat_hitung_ulang_ppn_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.lewat_hitung_ulang_ppn_memo
+      //       ? JSON.parse(props.row.lewat_hitung_ulang_ppn_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'online',
+      //   name: 'ONLINE',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('online')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'online' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           ONLINE
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'online' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'online' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('online_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.online_memo
+      //       ? JSON.parse(props.row.online_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'keterangan_buruh',
+      //   name: 'KETERANGAN BURUH',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 240,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('keterangan_buruh')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'keterangan_buruh'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           KETERANGAN BURUH
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'keterangan_buruh' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'keterangan_buruh' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('keterangan_buruh_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.keterangan_buruh_memo
+      //       ? JSON.parse(props.row.keterangan_buruh_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'edit_keterangan_invoice_utama',
+      //   name: 'EDIT KETERANGAN INVOICE UTAMA',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 300,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('edit_keterangan_invoice_utama')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'edit_keterangan_invoice_utama'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           EDIT KETERANGAN INVOICE UTAMA
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'edit_keterangan_invoice_utama' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'edit_keterangan_invoice_utama' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'edit_keterangan_invoice_utama_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.edit_keterangan_invoice_utama_memo
+      //       ? JSON.parse(props.row.edit_keterangan_invoice_utama_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'tampil_keterangan_tambahan_sttb',
+      //   name: 'TAMPIL KETERANGAN TAMBAHAN STTB',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 300,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('tampil_keterangan_tambahan_sttb')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'tampil_keterangan_tambahan_sttb'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           TAMPIL KETERANGAN TAMBAHAN STTB
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'tampil_keterangan_tambahan_sttb' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'tampil_keterangan_tambahan_sttb' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'tampil_keterangan_tambahan_sttb_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.tampil_keterangan_tambahan_sttb_memo
+      //       ? JSON.parse(props.row.tampil_keterangan_tambahan_sttb_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'update_ppn_shiper_khusus',
+      //   name: 'UPDATE PPN SHIPPER KHUSUS',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 270,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('update_ppn_shiper_khusus')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'update_ppn_shiper_khusus'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           UPDATE PPN SHIPPER KHUSUS
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'update_ppn_shiper_khusus' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'update_ppn_shiper_khusus' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange(
+      //               'update_ppn_shiper_khusus_nama',
+      //               value
+      //             )
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.update_ppn_shiper_khusus_memo
+      //       ? JSON.parse(props.row.update_ppn_shiper_khusus_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'shipper_rincian',
+      //   name: 'SHIPPER RINCIAN',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 230,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('shipper_rincian')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'shipper_rincian'
+      //               ? 'font-bold'
+      //               : 'font-normal'
+      //           }`}
+      //         >
+      //           SHIPPER RINCIAN
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'shipper_rincian' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'shipper_rincian' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('shipper_rincian_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.shipper_rincian_memo
+      //       ? JSON.parse(props.row.shipper_rincian_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'national_id',
+      //   name: 'NATIONAL ID',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 190,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('national_id')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'national_id' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           NATIONAL ID
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'national_id' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'national_id' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('national_id_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.national_id_memo
+      //       ? JSON.parse(props.row.national_id_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
+      // {
+      //   key: 'refdesc_po',
+      //   name: 'REFDESC PO',
+      //   resizable: true,
+      //   draggable: true,
+      //   headerCellClass: 'column-headers',
+      //   width: 210,
+      //   renderHeaderCell: () => (
+      //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+      //       <div
+      //         className="headers-cell h-[50%]"
+      //         onClick={() => handleSort('refdesc_po')}
+      //         onContextMenu={(event) =>
+      //           setContextMenu(handleContextMenu(event))
+      //         }
+      //       >
+      //         <p
+      //           className={`text-sm ${
+      //             filters.sortBy === 'refdesc_po' ? 'font-bold' : 'font-normal'
+      //           }`}
+      //         >
+      //           REFDESC PO
+      //         </p>
+      //         <div className="ml-2">
+      //           {filters.sortBy === 'refdesc_po' &&
+      //           filters.sortDirection === 'asc' ? (
+      //             <FaSortUp className="font-bold" />
+      //           ) : filters.sortBy === 'refdesc_po' &&
+      //             filters.sortDirection === 'desc' ? (
+      //             <FaSortDown className="font-bold" />
+      //           ) : (
+      //             <FaSort className="text-zinc-400" />
+      //           )}
+      //         </div>
+      //       </div>
+
+      //       <div className="relative h-[50%] w-full px-1">
+      //         <FilterOptions
+      //           endpoint="parameter"
+      //           value="id"
+      //           label="text"
+      //           filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
+      //           onChange={(value) =>
+      //             handleColumnFilterChange('refdesc_po_nama', value)
+      //           }
+      //         />
+      //       </div>
+      //     </div>
+      //   ),
+      //   renderCell: (props: any) => {
+      //     const memoData = props.row.refdesc_po_memo
+      //       ? JSON.parse(props.row.refdesc_po_memo)
+      //       : null;
+      //     if (memoData) {
+      //       return (
+      //         <TooltipProvider delayDuration={0}>
+      //           <Tooltip>
+      //             <TooltipTrigger asChild>
+      //               <div className="flex h-full w-full items-center justify-center py-1">
+      //                 <div
+      //                   className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+      //                   style={{
+      //                     backgroundColor: memoData.WARNA,
+      //                     color: memoData.WARNATULISAN,
+      //                     padding: '2px 6px',
+      //                     borderRadius: '2px',
+      //                     textAlign: 'left',
+      //                     fontWeight: '600'
+      //                   }}
+      //                 >
+      //                   <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+      //                 </div>
+      //               </div>
+      //             </TooltipTrigger>
+      //             <TooltipContent
+      //               side="right"
+      //               className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+      //             >
+      //               <p>{memoData.MEMO}</p>
+      //             </TooltipContent>
+      //           </Tooltip>
+      //         </TooltipProvider>
+      //       );
+      //     }
+
+      //     return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+      //   }
+      // },
 
       {
         key: 'modifiedby',
@@ -10063,28 +9984,88 @@ const GridShipper = () => {
     );
   }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingShipper || !hasMore || rows.length === 0) return;
+    if (
+      isLoadingShipper ||
+      rows.length === 0 ||
+      isTransitioning ||
+      isFetching ||
+      isAfterMutation
+    )
+      return;
 
-    const findUnfetchedPage = (pageOffset: number) => {
-      let page = currentPage + pageOffset;
-      while (page > 0 && fetchedPages.has(page)) {
-        page += pageOffset;
-      }
-      return page > 0 ? page : null;
-    };
+    const { currentTarget } = event;
+    const scrollTop = currentTarget.scrollTop;
+    const scrollHeight = currentTarget.scrollHeight;
+    const clientHeight = currentTarget.clientHeight;
 
-    if (isAtBottom(event)) {
-      const nextPage = findUnfetchedPage(1);
+    // Deteksi apakah user benar-benar melakukan scroll
+    const hasScrolled = Math.abs(scrollTop - lastScrollTopRef.current) > 5;
 
-      if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
+    if (!hasScrolled) {
+      return;
+    }
+
+    // Update last scroll position
+    lastScrollTopRef.current = scrollTop;
+
+    // Set flag bahwa user sedang scroll
+    setIsScrolling(true);
+
+    // Clear timeout sebelumnya
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    // Set timeout untuk mendeteksi scroll berhenti
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+
+    // SIMPAN SCROLL CONTAINER & POSITION
+    scrollPositionRef.current = scrollTop;
+    scrollContainerRef.current = currentTarget;
+
+    // HITUNG ROW INDEX BERDASARKAN SCROLL POSITION
+    const rowHeight = 30;
+    const firstVisibleRow = Math.floor(scrollTop / rowHeight);
+    const lastVisibleRow = Math.floor((scrollTop + clientHeight) / rowHeight);
+
+    // Threshold berdasarkan jumlah baris (50 baris dari atas/bawah)
+    const THRESHOLD_ROWS = 50;
+
+    // SCROLL KE BAWAH - trigger jika kurang dari 50 baris tersisa di bawah
+    const rowsRemainingBelow = rows.length - lastVisibleRow;
+    if (rowsRemainingBelow <= THRESHOLD_ROWS) {
+      const maxPage = Math.max(...visiblePages);
+      const nextPage = maxPage + 1;
+
+      if (
+        nextPage <= totalPages &&
+        !pageDataCache.has(nextPage) &&
+        !isFetching &&
+        isScrolling
+      ) {
+        setIsFetching(true);
+        setIsTransitioning(true);
+        hasAdjustedScrollRef.current = false;
         setCurrentPage(nextPage);
-        setIsAllSelected(false);
       }
     }
 
-    if (isAtTop(event)) {
-      const prevPage = findUnfetchedPage(-1);
-      if (prevPage && !fetchedPages.has(prevPage)) {
+    // SCROLL KE ATAS - trigger jika scroll berada di 50 baris pertama
+    if (firstVisibleRow <= THRESHOLD_ROWS) {
+      const minPage = Math.min(...visiblePages);
+      const prevPage = minPage - 1;
+
+      if (
+        prevPage >= 1 &&
+        !pageDataCache.has(prevPage) &&
+        !isFetching &&
+        isScrolling
+      ) {
+        setIsFetching(true);
+        setIsTransitioning(true);
+        hasAdjustedScrollRef.current = false;
         setCurrentPage(prevPage);
       }
     }
@@ -10147,9 +10128,11 @@ const GridShipper = () => {
     }
   }
   const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
+    indexOnPage: number,
+    fetchedPages: number[],
+    pagedData: Record<string, IShipper[]>,
+    pageNumber: number,
+    keepOpenModal = false
   ) => {
     dispatch(setClearLookup(true));
     clearError();
@@ -10164,14 +10147,26 @@ const GridShipper = () => {
         setPopOver(false);
       }
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/shipper-allItems`);
+        const response = await api2.get(
+          `/redis/get/shipper-page-${pageNumber}`
+        );
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows([]);
           setRows(response.data);
           setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
+          // setCurrentPage(pageNumber);
+          setVisiblePages(fetchedPages);
           setSelectedRow(indexOnPage);
+          setPageDataCache(
+            new Map(
+              Object.entries(pagedData).map(([key, value]) => [
+                Number(key),
+                value as IShipper[]
+              ])
+            )
+          );
+
           setTimeout(() => {
             gridRef?.current?.selectCell({
               rowIdx: indexOnPage,
@@ -10224,7 +10219,13 @@ const GridShipper = () => {
           },
           {
             onSuccess: (data) =>
-              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber,
+                keepOpenModal
+              )
           }
         );
 
@@ -10239,7 +10240,13 @@ const GridShipper = () => {
             fields: { ...values, ...filters }
           },
           {
-            onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
+            onSuccess: (data: any) =>
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber
+              )
           }
         );
         queryClient.invalidateQueries('shipper');
@@ -10270,40 +10277,6 @@ const GridShipper = () => {
       setPopOver(true);
     }
   };
-
-  // const handleExportBySelect = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
-
-  //   // Mengubah checkedRows menjadi format JSON
-  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-  //   try {
-  //     const response = await exportMenuBySelectFn(jsonCheckedRows);
-
-  //     // Buat link untuk mendownload file
-  //     const link = document.createElement('a');
-  //     const url = window.URL.createObjectURL(response);
-  //     link.href = url;
-  //     link.download = `laporan_menu${Date.now()}.xlsx`; // Nama file yang diunduh
-  //     link.click(); // Trigger download
-
-  //     // Revoke URL setelah download
-  //     window.URL.revokeObjectURL(url);
-  //   } catch (error) {
-  //     console.error('Error exporting menu data:', error);
-  //     alert({
-  //       title: 'Failed to generate the export. Please try again.',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
 
   const handleReport = async () => {
     try {
@@ -10387,44 +10360,9 @@ const GridShipper = () => {
     }
   };
 
-  // const handleReportBySelect = async () => {
-  //   if (checkedRows.size === 0) {
-  //     alert({
-  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //     return; // Stop execution if no rows are selected
-  //   }
-
-  //   const jsonCheckedRows = Array.from(checkedRows).map((id) => ({ id }));
-  //   try {
-  //     const response = await reportMenuBySelectFn(jsonCheckedRows);
-  //     const reportRows = response.map((row: any) => ({
-  //       ...row,
-  //       judullaporan: 'Laporan Menu',
-  //       usercetak: user.username,
-  //       tglcetak: new Date().toLocaleDateString(),
-  //       judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
-  //     }));
-  //     dispatch(setReportData(reportRows));
-  //     window.open('/reports/menu', '_blank');
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //     alert({
-  //       title: 'Failed to generate the report. Please try again.',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   }
-  // };
-
-  document.querySelectorAll('.column-headers').forEach((element) => {
-    element.classList.remove('c1kqdw7y7-0-0-beta-47');
-  });
   function getRowClass(row: IShipper) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
-    return rowIndex === selectedRow ? 'selected-row' : formatCurrency(0);
+    return rowIndex === selectedRow ? 'selected-row' : '';
   }
 
   function rowKeyGetter(row: IShipper) {
@@ -10437,17 +10375,9 @@ const GridShipper = () => {
     clearError();
     forms.reset();
   };
-  const handleAdd = async () => {
-    try {
-      // Jalankan API sinkronisasi
-      setMode('add');
-
-      setPopOver(true);
-
-      // forms.reset();
-    } catch (error) {
-      console.error('Error syncing ACOS:', error);
-    }
+  const handleAdd = () => {
+    setMode('add');
+    setPopOver(true);
   };
 
   useEffect(() => {
@@ -10502,9 +10432,6 @@ const GridShipper = () => {
     );
   }, []);
   useEffect(() => {
-    setIsFirstLoad(true);
-  }, []);
-  useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {
       setSelectedRow(0);
       gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
@@ -10513,39 +10440,216 @@ const GridShipper = () => {
   }, [rows, isFirstLoad]);
 
   useEffect(() => {
-    if (!allShipper || isDataUpdated) return;
+    const handleBulkFetch = async () => {
+      // Hanya proses jika shouldBulkFetch true dan ada data dari API
+      if (!shouldBulkFetch || !allShipper || isDataUpdated || isAfterMutation) {
+        return;
+      }
+
+      const bulkData = allShipper.data || [];
+
+      if (bulkData.length === 0) return;
+
+      const pageSize = 30;
+      const newCache = new Map<number, IShipper[]>();
+
+      for (let i = 0; i < 5; i++) {
+        const pageNum = i + 1;
+        const startIdx = i * pageSize;
+        const endIdx = startIdx + pageSize;
+        const pageData = bulkData.slice(startIdx, endIdx);
+
+        if (pageData.length > 0) {
+          newCache.set(pageNum, pageData);
+        }
+      }
+
+      setPageDataCache(newCache);
+      setVisiblePages([1, 2, 3, 4, 5]);
+
+      if (allShipper.pagination?.totalPages) {
+        setTotalPages(allShipper.pagination.totalPages);
+      }
+
+      setHasMore(bulkData.length === 150);
+      setShouldBulkFetch(false); // Reset flag setelah bulk fetch selesai
+      setIsFirstLoad(false);
+      setIsFetching(false);
+
+      setTimeout(() => {
+        if (gridRef.current) {
+          setSelectedRow(0);
+          gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+        }
+      }, 100);
+    };
+
+    handleBulkFetch();
+  }, [allShipper, shouldBulkFetch, isDataUpdated, isAfterMutation]);
+  useEffect(() => {
+    // Skip jika masih bulk fetch mode atau after mutation
+    if (shouldBulkFetch || isDataUpdated || isAfterMutation) {
+      return;
+    }
+
+    if (!allShipper) return;
 
     const newRows = allShipper.data || [];
 
-    setRows((prevRows) => {
-      // Reset data if filter changes (first page)
-      if (currentPage === 1 || filters !== prevFilters) {
-        setCurrentPage(1); // Reset currentPage to 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-        return newRows; // Use the fetched new rows directly
-      }
+    // SIMPAN SCROLL INFO SEBELUM UPDATE
+    const scrollContainer = scrollContainerRef.current;
+    const scrollBeforeUpdate = scrollContainer
+      ? {
+          scrollTop: scrollContainer.scrollTop,
+          scrollHeight: scrollContainer.scrollHeight,
+          clientHeight: scrollContainer.clientHeight
+        }
+      : null;
 
-      // Add new data to the bottom for infinite scroll
-      if (!fetchedPages.has(currentPage)) {
-        return [...prevRows, ...newRows];
-      }
-
-      return prevRows;
+    // Cache data halaman yang baru di-fetch
+    setPageDataCache((prevCache) => {
+      const newCache = new Map(prevCache);
+      newCache.set(currentPage, newRows);
+      return newCache;
     });
 
-    if (allShipper.pagination.totalPages) {
+    // Update visible pages dengan scroll adjustment
+    setVisiblePages((prevVisible) => {
+      const maxVisible = Math.max(...prevVisible);
+      const minVisible = Math.min(...prevVisible);
+
+      // ==========================================
+      // SCROLL KE BAWAH
+      // ==========================================
+      if (currentPage > maxVisible) {
+        const newPages = [...prevVisible.slice(1), currentPage];
+        const removedPage = prevVisible[0];
+
+        // ADJUST SCROLL SETELAH PAGE DIHAPUS
+        setTimeout(() => {
+          if (scrollContainer && scrollBeforeUpdate) {
+            const rowHeight = 30;
+            const rowsPerPage = 30;
+            const removedHeight = rowsPerPage * rowHeight; // 900px
+
+            // Kurangi scroll position sebesar height yang dihapus
+            // TAPI pastikan tidak kurang dari 0
+            const newScrollTop = Math.max(
+              0,
+              scrollBeforeUpdate.scrollTop - removedHeight
+            );
+
+            requestAnimationFrame(() => {
+              scrollContainer.scrollTop = newScrollTop;
+              scrollPositionRef.current = newScrollTop;
+            });
+          }
+        }, 50);
+
+        // Hapus page dari cache
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
+      }
+
+      // ==========================================
+      // SCROLL KE ATAS
+      // ==========================================
+      if (currentPage < minVisible) {
+        const newPages = [currentPage, ...prevVisible.slice(0, 4)];
+        const removedPage = prevVisible[4];
+
+        // ADJUST SCROLL SETELAH PAGE DITAMBAH DI DEPAN
+        setTimeout(() => {
+          if (
+            scrollContainer &&
+            scrollBeforeUpdate &&
+            !hasAdjustedScrollRef.current
+          ) {
+            const rowHeight = 30;
+            const rowsPerPage = 30;
+            const addedHeight = rowsPerPage * rowHeight; // 900px
+
+            // KUNCI PERBAIKAN:
+            // Ketika page baru ditambahkan di depan, semua row existing bergeser ke bawah
+            // User yang tadinya di row 10 (scrollTop ~300px), sekarang berada di row 40 (scrollTop ~300px)
+            // Seharusnya berada di row 40 dengan scrollTop ~1200px (300 + 900)
+
+            const newScrollTop = scrollBeforeUpdate.scrollTop + addedHeight;
+
+            requestAnimationFrame(() => {
+              scrollContainer.scrollTop = newScrollTop;
+              scrollPositionRef.current = newScrollTop;
+              hasAdjustedScrollRef.current = true;
+            });
+          }
+        }, 50);
+
+        // Hapus page dari cache
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
+      }
+
+      return prevVisible;
+    });
+
+    if (allShipper.pagination?.totalPages) {
       setTotalPages(allShipper.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
-    setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
-  }, [allShipper, currentPage, filters, isFetchingManually, isDataUpdated]);
 
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setIsFetching(false);
+    }, 100);
+  }, [
+    allShipper,
+    currentPage,
+    filters,
+    isDataUpdated,
+    shouldBulkFetch,
+    isAfterMutation
+  ]);
+  useEffect(() => {
+    const combinedRows: IShipper[] = [];
+
+    // Combine semua page yang visible
+    visiblePages?.forEach((page) => {
+      const pageData = pageDataCache.get(page);
+      if (pageData) {
+        combinedRows.push(...pageData);
+      }
+    });
+
+    if (combinedRows.length > 0) {
+      const newMinPage = Math.min(...visiblePages);
+
+      // Update rows state
+      setRows(combinedRows);
+
+      // Simpan nilai untuk perbandingan di render berikutnya
+      prevMinPageRef.current = newMinPage;
+      prevRowsLengthRef.current = combinedRows.length;
+    }
+  }, [visiblePages, pageDataCache]);
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
       cell.setAttribute('tabindex', '-1');
+    });
+    document.querySelectorAll('.column-headers').forEach((element) => {
+      element.classList.remove('c1kqdw7y7-0-0-beta-47');
     });
   }, []);
   useEffect(() => {
@@ -10713,7 +10817,6 @@ const GridShipper = () => {
       forms.setValue('text', rowData?.text || '');
     }
   }, [forms, selectedRow, rows, mode]);
-  console.log(forms.getValues());
   useEffect(() => {
     // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
@@ -10733,18 +10836,21 @@ const GridShipper = () => {
   const modifiedByIndex = finalColumns.findIndex(
     (col) => col.key === 'statusaktif'
   );
-
-  // let combinedColumns: any[] = [];
-
-  // if (modifiedByIndex !== -1) {
-  //   combinedColumns = [
-  //     ...finalColumns.slice(0, modifiedByIndex + 1),
-  //     ...statusColumns,
-  //     ...finalColumns.slice(modifiedByIndex + 1)
-  //   ];
-  // } else {
-  //   combinedColumns = [...finalColumns, ...statusColumns];
-  // }
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+  useEffect(() => {
+    if (!isTransitioning && !isFetching) {
+      // Reset flag setelah transisi selesai
+      setTimeout(() => {
+        hasAdjustedScrollRef.current = false;
+      }, 200);
+    }
+  }, [isTransitioning, isFetching]);
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
@@ -10834,7 +10940,6 @@ const GridShipper = () => {
           key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
-          // columns={combinedColumns}
           rows={rows}
           rowKeyGetter={rowKeyGetter}
           rowClass={getRowClass}
@@ -10842,7 +10947,7 @@ const GridShipper = () => {
           headerRowHeight={70}
           rowHeight={30}
           className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
-          enableVirtualization={false}
+          // enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onScroll={handleScroll}
@@ -10871,53 +10976,6 @@ const GridShipper = () => {
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }
             ]}
-            // customActions={[
-            //   {
-            //     label: 'Resequence',
-            //     icon: <FaPlus />, // Custom icon
-            //     onClick: () => handleResequence(),
-            //     variant: 'success', // Optional styling variant
-            //     className: 'bg-purple-700 hover:bg-purple-800' // Additional styling
-            //   }
-            // ]}
-            // dropdownMenus={[
-            //   {
-            //     label: 'Report',
-            //     icon: <FaPrint />,
-            //     className: 'bg-cyan-500 hover:bg-cyan-700',
-            //     actions: [
-            //       {
-            //         label: 'REPORT ALL',
-            //         onClick: () => handleReport(),
-            //         className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       }
-            //       // ,
-            //       // {
-            //       //   label: 'REPORT BY SELECT',
-            //       //   onClick: () => handleReportBySelect(),
-            //       //   className: 'bg-cyan-500 hover:bg-cyan-700'
-            //       // }
-            //     ]
-            //   },
-            //   {
-            //     label: 'Export',
-            //     icon: <FaFileExport />,
-            //     className: 'bg-green-600 hover:bg-green-700',
-            //     actions: [
-            //       {
-            //         label: 'EXPORT ALL',
-            //         onClick: () => handleExport(),
-            //         className: 'bg-green-600 hover:bg-green-700'
-            //       }
-            //       // ,
-            //       // {
-            //       //   label: 'EXPORT BY SELECT',
-            //       //   // onClick: () => handleExportBySelect(),
-            //       //   className: 'bg-green-600 hover:bg-green-700'
-            //       // }
-            //     ]
-            //   }
-            // ]}
           />
           {isLoadingShipper ? <LoadRowsRenderer /> : null}
           {contextMenu && (

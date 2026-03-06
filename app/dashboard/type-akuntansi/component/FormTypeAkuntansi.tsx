@@ -220,9 +220,13 @@ const FormTypeAkuntansi = ({
                             <InputNumeric
                               {...field}
                               value={field.value ?? ''}
-                              onValueChange={(value: any) =>
-                                forms.setValue('order', Number(value))
-                              }
+                              onValueChange={(value: any) => {
+                                // ✅ PERBAIKAN: Jangan convert null jadi Number
+                                forms.setValue(
+                                  'order',
+                                  value === null ? null : Number(value)
+                                );
+                              }}
                               readOnly={mode === 'view' || mode === 'delete'}
                             />
                           </FormControl>

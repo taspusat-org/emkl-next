@@ -329,39 +329,35 @@
       "nomor": 50,
       "select": 50,
       "nama": 300,
-      "keterangan": 200,
+      "keterangan": 50,
       "statuslangsungcair": 200,
       "statusdefault": 150,
       "statusbank": 150,
       "statusaktif": 50,
-      "modifiedby": 150,
-      "created_at": 250,
-      "updated_at": 250
+      "modifiedby": 50,
+      "created_at": 50,
+      "updated_at": 250,
+      "cabang_id": 50
     }
   },
   "GridLabaRugiKalkulasi-1": {
-    "columnsOrder": [
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
-    ],
+    "columnsOrder": [0, 1, 2, 3, 4, 5, 14, 6, 7, 8, 9, 13, 10, 11, 12],
     "columnsWidth": {
       "nomor": 50,
       "select": 50,
       "periode": 100,
-      "estkomisimarketing": 250,
-      "komisimarketing": 250,
-      "biayakantorpusat": 250,
-      "biayatour": 250,
-      "gajidireksi": 250,
-      "estkomisikacab": 250,
-      "biayabonustriwulan": 250,
-      "estkomisimarketing2": 250,
+      "komisimarketing": 200,
+      "gajidireksi": 200,
+      "estkomisikacab": 200,
+      "updated_at": 250,
+      "biayabonustriwulan": 200,
+      "estkomisimarketing2": 200,
       "estkomisikacabcabang1": 250,
       "estkomisikacabcabang2": 250,
+      "created_at": 250,
       "statusfinalkomisimarketing": 250,
       "statusfinalbonustriwulan": 150,
-      "modifiedby": 150,
-      "created_at": 250,
-      "updated_at": 250
+      "modifiedby": 150
     }
   },
   "b-1": {

@@ -45,7 +45,12 @@ import {
   setClearLookup,
   setOpenName,
   setSubmitClicked,
-  setType
+  setType,
+  addErrorLookup,
+  removeErrorLookup,
+  clearErrorLookups,
+  addPendingLookup,
+  removePendingLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
 import { FormLabel } from '../ui/form';
 import IcClose from '@/public/image/x.svg';
@@ -55,6 +60,8 @@ import { setSelectLookup } from '@/lib/store/selectLookupSlice/selectLookupSlice
 import { formatCurrency } from '@/lib/utils';
 import { debounce } from 'lodash';
 import FilterInput from './FilterInput';
+import { useTheme } from 'next-themes';
+import { highlightText } from './HighlightText';
 
 interface LookUpProps {
   columns: {
@@ -80,19 +87,22 @@ interface LookUpProps {
   isSubmitClicked?: boolean;
   inputLookupValue?: string | number;
   allowedFilterShowAllFirst?: boolean;
-  disabled?: boolean; // New prop for disabling the input/button
-  clearDisabled?: boolean; // New prop for disabling the input/button
+  disabled?: boolean;
+  clearDisabled?: boolean;
   selectedRequired?: boolean;
   name?: string;
   forms?: any;
   required?: boolean;
-  onSelectRow?: (selectedRowValue?: any | undefined) => void; // Make selectedRowValue optional
+  onSelectRow?: (selectedRowValue?: any | undefined) => void;
   onClear?: () => void;
-  autoSearch?: boolean; // Tambahkan ini
-  isExactMatch?: boolean; // Tambahkan ini
-  showClearButton?: boolean; // Tambahkan ini
-  forInput?: boolean; // Tambahkan ini
-  hideFilter?: boolean; // Tambahkan ini
+  autoSearch?: boolean;
+  isExactMatch?: boolean;
+  showClearButton?: boolean;
+  forInput?: boolean;
+  hideFilter?: boolean;
+  focusOnError?: boolean;
+  errorMessage?: string;
+  side?: 'top' | 'bottom' | 'left' | 'right';
 }
 interface Filter {
   page: number;
@@ -104,7 +114,7 @@ interface Filter {
 }
 interface Row {
   id: string;
-  [key: string]: any; // Add this line
+  [key: string]: any;
 }
 
 export default function LookUp({
@@ -127,8 +137,8 @@ export default function LookUp({
   pageSize = 20,
   isSubmitClicked = false,
   postData,
-  disabled = false, // Default to false if not provided
-  clearDisabled = false, // Default to false if not provided
+  disabled = false,
+  clearDisabled = false,
   filterby,
   onSelectRow,
   onClear,
@@ -136,17 +146,19 @@ export default function LookUp({
   isExactMatch = false,
   showClearButton = true,
   forInput = false,
-  hideFilter = false
+  hideFilter = false,
+  focusOnError = false,
+  errorMessage,
+  side = 'bottom'
 }: LookUpProps) {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [open, setOpen] = useState<boolean>(false);
-  const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isEnterLoading, setIsEnterLoading] = useState(false);
   const [inputValue, setInputValue] = useState<string>('');
   const [onPaste, setOnPaste] = useState<boolean>(false);
   const dispatch = useDispatch();
-  const triggerRef = useRef<HTMLDivElement | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [popoverWidth, setPopoverWidth] = useState<number | string>('auto');
   const [clickedOutside, setClickedOutside] = useState(false);
@@ -155,15 +167,29 @@ export default function LookUp({
   const [filtering, setFiltering] = useState(false);
   const [clicked, setClicked] = useState(false);
   const [deleteClicked, setDeleteClicked] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const isUserTypingRef = useRef(false);
   const prevLookupNamaRef = useRef<string | undefined>(undefined);
   const hasInitializedRef = useRef(false);
+  const renderOrderRef = useRef<number>(0);
   const [showError, setShowError] = useState({
     label: label,
     status: false,
     message: ''
   });
+  const [suppressErrorMessage, setSuppressErrorMessage] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<number>(0);
+
+  const selectFirstRowControllerRef = useRef<AbortController | null>(null);
+  const selectFirstRowRequestIdRef = useRef<number>(0);
+
+  const instanceIdRef = useRef<string>(
+    `${label}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  );
+
   const [totalPages, setTotalPages] = useState(1);
   const columnInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>(
     {}
@@ -185,6 +211,13 @@ export default function LookUp({
   const submitClicked = useSelector(
     (state: RootState) => state.lookup.submitClicked
   );
+  const errorLookups = useSelector(
+    (state: RootState) => state.lookup.errorLookups
+  );
+  const { theme, resolvedTheme } = useTheme();
+
+  const isDark = theme === 'dark' || resolvedTheme === 'dark';
+
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set([1]));
   const collapse = useSelector((state: RootState) => state.collapse.value);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -197,20 +230,33 @@ export default function LookUp({
     sortBy: dataSortBy ? dataSortBy : '',
     sortDirection: dataSortDirection ? dataSortDirection : 'asc'
   });
-  const [prevFilters, setPrevFilters] = useState<Filter>(filters);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const requestIdRef = useRef(0);
 
-  // Shallow compare sederhana untuk objek flat (filters, sort, dll)
-  function shallowEqual(a: Record<string, any>, b: Record<string, any>) {
-    if (a === b) return true;
-    const ka = Object.keys(a),
-      kb = Object.keys(b);
-    if (ka.length !== kb.length) return false;
-    for (const k of ka) if (a[k] !== b[k]) return false;
-    return true;
-  }
+  const isTypingRef = useRef(false);
+  const shouldFetchWithoutFilterRef = useRef(false);
+  const pasteErrorRef = useRef(false);
+
+  const getAbortController = () => {
+    return abortControllerRef.current;
+  };
+
+  const setAbortController = (controller: AbortController | null) => {
+    abortControllerRef.current = controller;
+  };
+
+  const getRequestId = () => {
+    return requestIdRef.current;
+  };
+
+  const incrementRequestId = () => {
+    requestIdRef.current += 1;
+    return requestIdRef.current;
+  };
+
+  const columnFiltersString = useMemo(
+    () => JSON.stringify(filters.filters),
+    [filters.filters]
+  );
 
   const initializeColumnFilters = useCallback(() => {
     const initialFilters: Record<string, string> = {};
@@ -219,10 +265,8 @@ export default function LookUp({
     });
     return initialFilters;
   }, [rawColumns]);
-
-  // Gabung params dari state & props
   const buildParams = useCallback(
-    (overrideSearch?: string) => {
+    (overrideSearch?: string, skipFilters: boolean = false) => {
       const searchValue =
         overrideSearch !== undefined ? overrideSearch : filters.search;
 
@@ -233,31 +277,27 @@ export default function LookUp({
         sortDirection: filters.sortDirection
       };
 
-      // Hanya kirim search params jika user sedang mengetik
-      if (isUserTypingRef.current && searchValue) {
-        if (open) {
-          params['search'] = searchValue; // like search saat modal terbuka
-        } else {
-          if (!autoSearch && isExactMatch) {
-            params['exactMatch'] = searchValue; // exact search
+      // Jika skipFilters = true, maka JANGAN kirim search & column filters
+      if (!skipFilters) {
+        // Kirim search params
+        if (searchValue && searchValue.trim() !== '') {
+          if (isExactMatch) {
+            params['exactMatch'] = searchValue;
           } else {
-            params['search'] = searchValue; // like search
+            params['search'] = searchValue;
           }
         }
-      }
 
-      // Selalu kirim semua column filters (termasuk yang kosong)
-      if (filters.filters) {
+        // Kirim column filters
         rawColumns.forEach((col) => {
-          params[col.key] = filters.filters[col.key] || '';
-        });
-      } else {
-        rawColumns.forEach((col) => {
-          params[col.key] = '';
+          const filterValue = filters.filters[col.name] || '';
+          if (filterValue) {
+            params[col.key] = filterValue;
+          }
         });
       }
 
-      // Tambahkan filterby jika ada
+      // filterby selalu dikirim (ini adalah filter tetap dari props)
       if (filterby && !Array.isArray(filterby)) {
         for (const [k, v] of Object.entries(filterby)) {
           params[k] = v;
@@ -266,106 +306,94 @@ export default function LookUp({
 
       return params;
     },
-    [currentPage, filters, filterby, rawColumns, autoSearch, open, isExactMatch]
+    [currentPage, filters, filterby, rawColumns, isExactMatch]
   );
-  // Mapping API → Row[]
+
   const mapApiToRows = useCallback(
     (payload: any[]): Row[] => {
       return payload.map((item: any) => {
         const row: Row = { id: item.id };
-        if (
-          item?.default &&
-          !lookupNama &&
-          item.default === 'YA' &&
-          !deleteClicked &&
-          !clicked
-        ) {
-          setInputValue(item.text);
-          const value = dataToPost ? item[dataToPost as string] : item.id;
-          lookupValue?.(value);
-          onSelectRow?.(item);
-        }
+
+        // PERBAIKAN: Pindahkan logika default ke luar map dan simplifikasi kondisi
         for (const [k, v] of Object.entries(item)) if (k !== 'id') row[k] = v;
         return row;
       });
     },
-    [
-      lookupNama,
-      lookupValue,
-      onSelectRow,
-      setInputValue,
-      deleteClicked,
-      clicked
-    ]
+    [dataToPost]
   );
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onPaste) {
       setOnPaste(false);
-      return; // Langsung return jika sedang paste
+      return;
     }
     if (disabled) return;
 
     const searchValue = e.target.value;
 
-    // Set flag bahwa user sedang mengetik (untuk filtering)
-    isUserTypingRef.current = true;
+    if (!open && searchValue.trim() !== '') {
+      setOpen(true);
+      dispatch(setOpenName(label || ''));
+    }
 
-    // Update input value immediately
+    // Reset paste error saat user mulai mengetik
+    pasteErrorRef.current = false;
+
+    // Set flag bahwa user sedang mengetik
+    isUserTypingRef.current = true;
+    isTypingRef.current = true;
+    setHasUserInteracted(true);
+
+    if (searchValue.trim() !== '') {
+      shouldFetchWithoutFilterRef.current = false;
+    }
+
+    // Update input value immediately untuk responsive UI
     setInputValue(searchValue);
+
+    // Set rows kosong immediately saat user mengetik
+    setRows([]);
+
+    // Clear error saat user mulai mengetik
+    setShowError({ label: label ?? '', status: false, message: '' });
+    dispatch(removeErrorLookup(label || ''));
+    setSuppressErrorMessage(true);
+
+    // Track pending state
+    if (searchValue.trim() !== '' && required) {
+      dispatch(addPendingLookup(label || ''));
+    }
 
     // Clear previous debounce timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new debounce timer
+    // Set debounce timer - tunggu user selesai mengetik
     debounceTimerRef.current = setTimeout(() => {
+      // Set flag bahwa user selesai mengetik
+      isTypingRef.current = false;
+
+      // Update filters dengan search value
       setFilters((prev) => ({
         ...prev,
         filters: initializeColumnFilters(),
         search: searchValue,
         page: 1
       }));
+
       setFiltering(true);
-      setRows([]);
       setCurrentPage(1);
       setFetchedPages(new Set([1]));
-
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    }, 500);
+    }, 500); // 500ms debounce
   };
-  // Modifikasi handleColumnFilterChange untuk mempertahankan search global
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    if (disabled) return;
-    setCurrentPage(1);
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-    debounceTimerRef.current = setTimeout(() => {
-      setFilters((prev) => {
-        // Inisialisasi dengan semua column filters kosong jika belum ada
-        const currentFilters = prev.filters || initializeColumnFilters();
 
-        return {
-          ...prev,
-          filters: {
-            ...currentFilters,
-            [colKey]: value // Update column filter yang spesifik
-          },
-          // Pertahankan search global yang sudah ada
-          search: prev.search || '',
-          page: 1
-        };
-      });
-      setFiltering(true);
-    }, 500);
-  };
+  const clearAllColumnFilters = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: initializeColumnFilters()
+    }));
+  }, [initializeColumnFilters]);
+
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
       setInputValue('');
@@ -376,17 +404,22 @@ export default function LookUp({
         page: 1
       }));
       setCurrentPage(1);
-    }, 500) // Bisa dikurangi jadi 250-300ms
+    }, 500)
   ).current;
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
+      // Set rows kosong saat filter column berubah
+      setRows([]);
+      // Reset flag shouldFetchWithoutFilter
+      shouldFetchWithoutFilterRef.current = false;
       debouncedFilterUpdate(colKey, value);
     },
-    []
+    [debouncedFilterUpdate]
   );
+
   const handleClearFilter = useCallback((colKey: string) => {
-    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    debouncedFilterUpdate.cancel();
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
@@ -394,117 +427,114 @@ export default function LookUp({
     }));
     setRows([]);
     setCurrentPage(1);
+    shouldFetchWithoutFilterRef.current = false;
   }, []);
+
   const gridRef = useRef<DataGridHandle | null>(null);
-  function highlightText(
-    text: string | number | null | undefined,
-    search: string,
-    columnFilter: string = ''
-  ) {
-    const textValue = text != null ? String(text) : '';
-    if (!textValue) return '';
 
-    // Priority: columnFilter over search
-    const searchTerm = columnFilter?.trim() || search?.trim() || '';
-
-    if (!searchTerm) {
-      return textValue;
-    }
-
-    const escapeRegExp = (s: string) =>
-      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-
-    // Create regex for continuous string match
-    const escapedTerm = escapeRegExp(searchTerm);
-    const regex = new RegExp(`(${escapedTerm})`, 'gi');
-
-    // Replace all occurrences
-    const highlighted = textValue.replace(
-      regex,
-      (match) =>
-        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
-    );
-
-    return (
-      <span
-        className="text-sm"
-        dangerouslySetInnerHTML={{ __html: highlighted }}
-      />
-    );
-  }
   const handlePaste = (event: string) => {
     setOnPaste(true);
     if (disabled) return;
     try {
       const pasted = event.trim();
-      console.log('pasted', pasted);
 
-      // Misal kolom display dengan key 'text', sesuaikac;n dengan kolom utama di aplikasi Anda
-      const match = rows.find(
+      if (forInput) {
+        setInputValue(pasted);
+        lookupValue?.(pasted);
+        dispatch(setSelectLookup({ key: label ?? '', data: { text: pasted } }));
+        setShowError({ label: label ?? '', status: false, message: '' });
+        clearAllColumnFilters();
+        dispatch(clearOpenName());
+        setOpen(false);
+        setTimeout(() => {
+          setOnPaste(false);
+        }, 100);
+        return;
+      }
+
+      // Untuk API type, gunakan selectFirstRow agar request ke API dengan filter
+      if (type !== 'local' && endpoint) {
+        setInputValue(pasted.toUpperCase());
+        setShowError({ label: label ?? '', status: false, message: '' });
+        pasteErrorRef.current = false;
+        // Tutup popover agar main useEffect tidak ikut fetch (mencegah double request)
+        setOpen(false);
+        dispatch(clearOpenName());
+        setTimeout(() => {
+          setOnPaste(false);
+        }, 100);
+        selectFirstRow(pasted, false, true);
+        return;
+      }
+
+      // Untuk local type, cari di full data (bukan rows yang sudah terfilter)
+      const searchSource = type === 'local' && data ? (data as Row[]) : rows;
+      const match = searchSource.find(
         (row) =>
           String(row[postData as string]).toUpperCase() === pasted.toUpperCase()
       );
       setInputValue(pasted.toUpperCase());
       if (match) {
+        pasteErrorRef.current = false;
         lookupValue?.(dataToPost ? match[dataToPost as string] : match.id);
         onSelectRow?.(match);
         setShowError({ label: label ?? '', status: false, message: '' });
+        clearAllColumnFilters();
         dispatch(clearOpenName());
         setOpen(false);
       } else {
+        pasteErrorRef.current = true;
         setShowError({
           label: label ?? '',
           status: true,
           message: 'DATA TIDAK DITEMUKAN'
         });
-
+        clearAllColumnFilters();
         setOpen(false);
         dispatch(clearOpenName());
-        // Bisa juga tampilkan pesan custom pada UI
       }
       setTimeout(() => {
         setOnPaste(false);
       }, 100);
     } catch (error) {}
   };
+
   const handleButtonClick = () => {
     setOnPaste(false);
-    if (disabled) return; // Jangan lakukan apa-apa jika disabled
+    if (disabled) return;
 
-    // Jika label sama dengan openName dan lookup sudah terbuka, tutup lookup
     if (label === openName) {
       if (open) {
         setCurrentPage(1);
         setFetchedPages(new Set());
         setRows([]);
-        setOpen(false); // Tutup lookup jika sudah terbuka
-        dispatch(clearOpenName()); // Clear openName dari Redux
+        clearAllColumnFilters();
+        setOpen(false);
+        dispatch(clearOpenName());
+        shouldFetchWithoutFilterRef.current = false;
       } else {
-        isUserTypingRef.current = false; // Reset flag saat buka popover
-        setOpen(true); // Buka lookup jika belum terbuka
-        dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+        // PERBAIKAN: Saat popover dibuka dan ada inputValue, set flag untuk fetch tanpa filter
+        if (inputValue && inputValue.trim() !== '') {
+          shouldFetchWithoutFilterRef.current = true;
+        }
+        setOpen(true);
+        dispatch(setOpenName(label || ''));
         setShowError({ label: label ?? '', status: false, message: '' });
       }
     } else {
-      isUserTypingRef.current = false; // Reset flag saat buka popover
-      setOpen(true); // Buka lookup jika label berbeda dengan openName
-      dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+      // PERBAIKAN: Saat popover dibuka dan ada inputValue, set flag untuk fetch tanpa filter
+      if (inputValue && inputValue.trim() !== '') {
+        shouldFetchWithoutFilterRef.current = true;
+      }
+      setOpen(true);
+      dispatch(setOpenName(label || ''));
       setShowError({ label: label ?? '', status: false, message: '' });
     }
-
-    setTimeout(
-      () => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      },
-      type !== 'local' ? 300 : 150
-    );
   };
 
   const handleClearInput = () => {
     setOnPaste(false);
-    if (disabled && !clearDisabled) return; // Prevent input clear if disabled
+    if (disabled && !clearDisabled) return;
     setFilters({ ...filters, search: '', filters: {} });
     setInputValue('');
     if (lookupValue) {
@@ -513,29 +543,39 @@ export default function LookUp({
     setShowError({ label: label ?? '', status: false, message: '' });
 
     setDeleteClicked(true);
-    isUserTypingRef.current = false; // Reset flag saat clear
+    setHasUserInteracted(true);
+    isUserTypingRef.current = false;
+    isTypingRef.current = false;
+    shouldFetchWithoutFilterRef.current = false; // TAMBAHKAN INI
+    setFiltering(false);
     dispatch(setSelectLookup({ key: label ?? '', data: {} }));
     dispatch(setSearchTerm(''));
-    dispatch(clearOpenName()); // Clear openName ketika input dibersihkan
+    dispatch(clearOpenName());
+    clearAllColumnFilters();
+    dispatch(removePendingLookup(label || ''));
     setOpen(false);
+
+    setTimeout(() => {
+      setDeleteClicked(false);
+    }, 100);
+
     if (onClear) {
-      onClear(); // Trigger the passed onClear function
+      onClear();
     }
   };
 
   const handleSort = (column: string) => {
     if (hideFilter) return;
+    shouldFetchWithoutFilterRef.current = false;
+
     if (type === 'local' || !endpoint) {
-      // Local sorting logic
       const currentSortBy = filters.sortBy;
       const currentSortDirection = filters.sortDirection;
-      // Determine new sort direction
       let newSortDirection: 'asc' | 'desc' = 'asc';
       if (currentSortBy === column && currentSortDirection === 'asc') {
         newSortDirection = 'desc';
       }
 
-      // Update filters
       setFilters((prevFilters) => ({
         ...prevFilters,
         sortBy: column,
@@ -543,23 +583,17 @@ export default function LookUp({
         page: 1
       }));
 
-      // Sort the current rows locally
       const sortedRows = [...rows].sort((a, b) => {
-        // Assuming rows are objects with the column as a key
-        // Adjust the comparison based on your data structure (e.g., handle numbers, strings, dates)
         let aValue = a[column];
         let bValue = b[column];
 
-        // Handle null/undefined values
         if (aValue == null) aValue = '';
         if (bValue == null) bValue = '';
 
-        // Convert to strings for comparison if needed (or handle specific types)
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           aValue = aValue.toLowerCase();
           bValue = bValue.toLowerCase();
         } else if (typeof aValue !== typeof bValue) {
-          // Ensure comparable types (e.g., convert numbers to strings if mixed)
           aValue = String(aValue);
           bValue = String(bValue);
         }
@@ -572,7 +606,6 @@ export default function LookUp({
         }
         return 0;
       });
-      // For local sorting, also handle pagination reset if applicable
       setCurrentPage(1);
       setSelectedRow(0);
       setTimeout(() => {
@@ -608,15 +641,15 @@ export default function LookUp({
   const inputStopPropagation = (e: React.KeyboardEvent) => {
     e.stopPropagation();
   };
+
   const columns: readonly Column<Row>[] = useMemo(() => {
     return rawColumns.map((col, index) => ({
       ...col,
       key: col.key,
-      name: col.name, // Store col.name for filter lookup
+      name: col.name,
 
       headerCellClass: 'column-headers',
-      // Set width to 100% jika singleColumn true, jika tidak pakai default width
-      width: singleColumn ? '100%' : col.width ?? 250, // Default width jika tidak ada
+      width: singleColumn ? '100%' : col.width ?? 250,
       resizable: true,
       renderHeaderCell: () => (
         <div
@@ -654,7 +687,6 @@ export default function LookUp({
                 colKey={col.name}
                 value={filters.filters[col.name] || ''}
                 onChange={(value) => handleFilterInputChange(col.name, value)}
-                autoFocus
                 tabIndex={-1}
                 onClick={(e: React.MouseEvent<HTMLInputElement>) =>
                   e.stopPropagation()
@@ -664,43 +696,13 @@ export default function LookUp({
                   columnInputRefs.current[col.name] = el;
                 }}
               />
-
-              {/* <Input
-              ref={(el) => {
-                // Menyimpan ref input berdasarkan kolom key
-                columnInputRefs.current[col.name] = el;
-              }}
-              autoFocus={false}
-              onKeyDown={(e) => handleInputColumnKeydown(e, col.name)}
-              type="text"
-              tabIndex={-1}
-              onClick={(e) => e.stopPropagation()}
-              className="filter-input z-[999999] h-8 w-full rounded-none"
-              value={filters.filters[col.key] || ''}
-              // onKeyDown={(e) => handleColumnInputKeydown(e, col.name)}
-              onChange={(e) => {
-                const value = e.target.value;
-                handleFilterInputChange(col.key, value);
-              }}
-            />
-            {filters.filters[col.key] && (
-              <button
-                className="absolute right-2 top-2 text-xs text-gray-500"
-                onClick={() => handleClearFilter(col.key)}
-                type="button"
-              >
-                <FaTimes />
-              </button>
-            )} */}
             </div>
           )}
         </div>
       ),
       renderCell: (props: any) => {
-        // Use col.name to get the filter value since filters use col.name as key
         const columnFilter = filters.filters[col.name] || '';
         let cellValue = props.row[props.column.key as keyof Row] || '';
-        // Jika kolom punya property isCurrency, format sebagai currency
         if (col.isCurrency) {
           cellValue = formatCurrency(cellValue);
         }
@@ -709,7 +711,11 @@ export default function LookUp({
             className={`m-0 flex h-full items-center p-0  text-[12px] ${
               col.isCurrency ? 'justify-end' : 'justify-start'
             } ${forInput ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-            style={forInput ? { pointerEvents: 'none' } : undefined}
+            style={
+              forInput
+                ? { pointerEvents: 'none', whiteSpace: 'pre-wrap' }
+                : { whiteSpace: 'pre-wrap' }
+            }
           >
             {highlightText(cellValue, filters.search, columnFilter)}
           </div>
@@ -725,6 +731,7 @@ export default function LookUp({
   function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
     return currentTarget.scrollTop <= 10;
   }
+
   function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
     const { currentTarget } = event;
     if (!currentTarget) return false;
@@ -734,6 +741,7 @@ export default function LookUp({
       currentTarget.scrollHeight - 2
     );
   }
+
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
     if (isLoading || !hasMore || rows.length === 0) return;
     const findUnfetchedPage = (pageOffset: number) => {
@@ -751,31 +759,21 @@ export default function LookUp({
       }
     }
   }
+
   function handleCellClick(args: any) {
     const clickedRow = args.row;
+    if (forInput) return;
+
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    const classValue = clickedRow[postData as string];
-    setClicked(true);
-    if (forInput) return; // disable clicking rows when used as input picker
-
-    setFilters({ ...filters, search: classValue || '' });
-    setInputValue(classValue);
-
-    dispatch(setLookUpValue(clickedRow || ''));
-    dispatch(setSelectLookup({ key: label ?? '', data: clickedRow }));
-    setFiltering(false);
-    setOpen(false);
     if (rowIndex !== -1) {
       setSelectedRow(rowIndex);
     }
-    const value = dataToPost ? clickedRow[dataToPost as string] : clickedRow.id;
-    lookupValue?.(value);
-    onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
-    dispatch(clearOpenName());
-    setTimeout(() => setClicked(false), 1000);
+
+    selectRowAndClose(clickedRow);
   }
+
   function onSelectedCellChange(args: { row: Row }) {
-    if (forInput) return; // don't change selection when used as input picker
+    if (forInput) return;
     const clickedRow = args.row;
     const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
     if (rowIndex !== -1) {
@@ -786,61 +784,6 @@ export default function LookUp({
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
-  const handleKeyDown = (
-    args: CellKeyDownArgs<Row>,
-    event: React.KeyboardEvent
-  ) => {
-    if (!openName) {
-      return;
-    }
-    const visibleRowCount = 8;
-    const firstDataRowIndex = 0;
-    const clickedRow = args.row;
-    const rowIndex = rows.findIndex((r) => r.id === clickedRow.id);
-    const classValue = clickedRow[postData as string];
-
-    if (event.key === 'ArrowDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const nextRow = Math.min(prev + 1, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'ArrowUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const newRow = Math.max(prev - 1, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === 'ArrowRight') {
-      setSelectedCol((prev) => {
-        return Math.min(prev + 1, columns.length - 1);
-      });
-    } else if (event.key === 'ArrowLeft') {
-      setSelectedCol((prev) => {
-        return Math.max(prev - 1, 0);
-      });
-    } else if (event.key === 'PageDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const nextRow = Math.min(prev + visibleRowCount - 1, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'PageUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const newRow = Math.max(prev - visibleRowCount + 1, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === 'Enter') {
-      dispatch(clearOpenName());
-      setInputValue(classValue);
-
-      const value = dataToPost ? clickedRow[dataToPost] : clickedRow.id;
-      lookupValue?.(value);
-      onSelectRow?.(clickedRow); // cukup satu kali, tanpa else
-      setOpen(false);
-    }
-  };
 
   function onColumnsReorder(sourceKey: string, targetKey: string) {
     setColumnsOrder((columnsOrder) => {
@@ -857,14 +800,19 @@ export default function LookUp({
     });
   }
 
+  // ============================================================================
+  // PERBAIKAN: fetchRows dengan parameter skipFilters
+  // ============================================================================
   async function fetchRows(
     signal?: AbortSignal,
-    overrideSearch?: string
+    overrideSearch?: string,
+    skipFilters: boolean = false
   ): Promise<Row[]> {
+    const instanceId = instanceIdRef.current;
     try {
       const response = await api2.get(`/${endpoint}`, {
-        params: buildParams(overrideSearch), // ← Pass override ke buildParams
-        signal
+        params: buildParams(overrideSearch, skipFilters),
+        signal: signal
       });
       const { data, pagination } = response.data.data
         ? response.data
@@ -875,7 +823,7 @@ export default function LookUp({
       if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
         return [];
       }
-      console.error('Failed to fetch rows', error);
+      console.error(`[${label}] Failed to fetch rows:`, error);
       return [];
     }
   }
@@ -906,99 +854,309 @@ export default function LookUp({
     );
   }
 
-  const selectFirstRow = async () => {
-    const newRows = await fetchRows(undefined, inputValue); // ← Pass inputValue sebagai override!
+  const selectRowAndClose = useCallback(
+    (rowData: Row) => {
+      if (!rowData) {
+        setShowError({
+          label: label ?? '',
+          status: true,
+          message: 'DATA TIDAK DITEMUKAN'
+        });
+        return;
+      }
 
-    if (newRows.length > 0) {
-      const firstRow = newRows[0];
-      const classValue = firstRow[postData as string];
+      const classValue = rowData[postData as string];
+      const value = dataToPost ? rowData[dataToPost as string] : rowData.id;
+
       setInputValue(classValue);
       setClicked(true);
-      dispatch(setSelectLookup({ key: label ?? '', data: firstRow }));
-      const value = firstRow[dataToPost as any];
+      setHasUserInteracted(true);
+
+      // Clear any existing error when a row is selected
+      setShowError({ label: label ?? '', status: false, message: '' });
+      dispatch(removeErrorLookup(label || ''));
+      setSuppressErrorMessage(true);
+
+      setFilters((prev) => ({ ...prev, search: classValue || '' }));
+
+      dispatch(setLookUpValue(rowData as any));
+      dispatch(setSelectLookup({ key: label ?? '', data: rowData }));
+      dispatch(removePendingLookup(label || ''));
+      dispatch(clearOpenName());
+
       lookupValue?.(value);
-      onSelectRow?.(firstRow);
+      onSelectRow?.(rowData);
 
-      // Update filters.search juga agar sync
-      setFilters((prev) => ({
-        ...prev,
-        search: inputValue
-      }));
+      setFiltering(false);
+      setOpen(false);
+      clearAllColumnFilters();
+      // JANGAN reset shouldFetchWithoutFilterRef di sini
+      // Biarkan flag tetap true agar saat dibuka lagi masih fetch tanpa filter
+      setTimeout(() => setClicked(false), 100);
+    },
+    [label, postData, dataToPost, dispatch, lookupValue, onSelectRow]
+  );
 
-      setTimeout(() => setClicked(false), 1000);
-    } else {
+  const selectFirstRow = async (
+    searchValue?: string,
+    fromEnterKey: boolean = false,
+    exactMatch: boolean = false
+  ) => {
+    const instanceId = instanceIdRef.current;
+    const valueToSearch = searchValue ?? inputValue;
+
+    if (fromEnterKey) {
+      setIsEnterLoading(true);
+    }
+
+    try {
+      let newRows: Row[] = [];
+
+      // Jika type local, ambil dari data lokal
+      if (type === 'local' || !endpoint) {
+        const allRows = data ? [...data] : [];
+
+        // Filter berdasarkan search value
+        if (valueToSearch && valueToSearch.trim() !== '') {
+          const searchLower = valueToSearch.toLowerCase();
+          const validColumnKeys = columns.map((col) => col.key);
+
+          newRows = allRows.filter((row: Row) =>
+            validColumnKeys.some((colKey) =>
+              String(row[colKey] ?? '')
+                .toLowerCase()
+                .includes(searchLower)
+            )
+          );
+        } else {
+          newRows = allRows;
+        }
+
+        // Apply filterby jika ada
+        if (filterby && !Array.isArray(filterby)) {
+          newRows = newRows.filter((row: Row) =>
+            Object.entries(filterby).every(
+              ([k, v]) => String(row[k]) === String(v)
+            )
+          );
+        }
+      } else {
+        // Jika type API, gunakan fetchRows
+        const previousController = selectFirstRowControllerRef.current;
+        if (previousController) {
+          previousController.abort(
+            `New selectFirstRow for instance: ${instanceId}`
+          );
+        }
+
+        const controller = new AbortController();
+        selectFirstRowControllerRef.current = controller;
+
+        selectFirstRowRequestIdRef.current += 1;
+        const myRequestId = selectFirstRowRequestIdRef.current;
+
+        newRows = await fetchRows(controller.signal, valueToSearch, false);
+
+        if (myRequestId !== selectFirstRowRequestIdRef.current) {
+          if (fromEnterKey) {
+            setIsEnterLoading(false);
+          }
+          return;
+        }
+      }
+      if (newRows.length > 0) {
+        // Jika exactMatch=true, harus ada baris yang nilai postData-nya sama persis
+        const targetRow = exactMatch
+          ? newRows.find(
+              (row) =>
+                String(row[postData as string]).toUpperCase() ===
+                valueToSearch.toUpperCase()
+            )
+          : newRows[0];
+
+        if (!targetRow) {
+          // exact match tidak ditemukan
+          dispatch(removePendingLookup(label || ''));
+          pasteErrorRef.current = true;
+          setShowError({
+            label: label ?? '',
+            status: true,
+            message: 'DATA TIDAK DITEMUKAN'
+          });
+          if (focusOnError) {
+            dispatch(
+              addErrorLookup({
+                label: label || '',
+                order: renderOrderRef.current
+              })
+            );
+          }
+        } else {
+          const classValue = targetRow[postData as string];
+          setInputValue(classValue);
+          setClicked(true);
+          dispatch(setSelectLookup({ key: label ?? '', data: targetRow }));
+          dispatch(removePendingLookup(label || ''));
+          const value = targetRow[dataToPost as any];
+          lookupValue?.(value);
+          onSelectRow?.(targetRow);
+
+          setFilters((prev) => ({
+            ...prev,
+            search: valueToSearch
+          }));
+
+          setTimeout(() => setClicked(false), 1000);
+
+          if (fromEnterKey) {
+            setTimeout(() => {
+              setOpen(false);
+              dispatch(clearOpenName());
+            }, 1000);
+          }
+        }
+      } else {
+        dispatch(removePendingLookup(label || ''));
+        setShowError({
+          label: label ?? '',
+          status: true,
+          message: 'DATA TIDAK DITEMUKAN'
+        });
+
+        // TAMBAHAN: Tambahkan ke error lookups jika focusOnError aktif
+        if (focusOnError) {
+          dispatch(
+            addErrorLookup({
+              label: label || '',
+              order: renderOrderRef.current
+            })
+          );
+        }
+
+        if (fromEnterKey) {
+          setOpen(false);
+          dispatch(clearOpenName());
+        }
+      }
+    } catch (err: any) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
+        if (fromEnterKey) {
+          setIsEnterLoading(false);
+        }
+        return;
+      }
+
+      dispatch(removePendingLookup(label || ''));
+      console.error(`[${label}] selectFirstRow error:`, err);
       setShowError({
         label: label ?? '',
         status: true,
-        message: 'DATA TIDAK DITEMUKAN'
+        message: 'GAGAL MENGAMBIL DATA'
       });
+
+      // TAMBAHAN: Tambahkan ke error lookups jika focusOnError aktif
+      if (focusOnError) {
+        dispatch(
+          addErrorLookup({ label: label || '', order: renderOrderRef.current })
+        );
+      }
+
+      if (fromEnterKey) {
+        setOpen(false);
+        dispatch(clearOpenName());
+      }
+    } finally {
+      if (fromEnterKey) {
+        setIsEnterLoading(false);
+      }
     }
   };
-  const handleInputKeydown = (event: any) => {
+
+  const handleInputKeydown = async (event: any) => {
     if (forInput) {
-      // When used as input, accept Enter to commit inputValue as the lookup value
       if (event.key === 'Enter') {
+        clearAllColumnFilters();
         dispatch(clearOpenName());
         lookupValue?.(inputValue);
-        // dispatch(setLookUpValue(inputValue));
         dispatch(
           setSelectLookup({ key: label ?? '', data: { text: inputValue } })
         );
         setOpen(false);
       }
-      return; // don't handle other keyboard selection when used as input picker
+      return;
     }
+
     if (!autoSearch && !open && event.key === 'Enter') {
       event.preventDefault();
-      selectFirstRow();
+      selectFirstRow(inputValue);
       return;
     }
 
     if ((!open && !filters.filters) || !openName) {
       return;
     }
-    const rowData = rows[selectedRow];
-    const totalRows = rows.length; // Ensure the data contains all rows
-    const visibleRowCount = 12; // You can adjust this value based on your visible row count
+
+    const totalRows = rows.length;
+    const visibleRowCount = 12;
+
+    const safeSelectedRow = Math.min(Math.max(0, selectedRow), totalRows - 1);
+    const rowData = rows[safeSelectedRow];
 
     if (event.key === 'Enter') {
-      dispatch(clearOpenName());
-      setInputValue(rowData[postData as string]);
-      const value = dataToPost ? rowData[dataToPost] : rowData.id;
-      lookupValue?.(value);
-      onSelectRow?.(rowData); // cukup satu kali, tanpa else
-      setOpen(false);
+      event.preventDefault();
+      if (isEnterLoading) {
+        return;
+      }
+
+      if (open && inputValue.trim() !== '' && totalRows === 0) {
+        await selectFirstRow(inputValue, true);
+
+        return;
+
+        // if (!isLoading) {
+        //   setShowError({
+        //     label: label ?? '',
+        //     status: true,
+        //     message: 'DATA TIDAK DITEMUKAN'
+        //   });
+        //   dispatch(removePendingLookup(label || ''));
+        //   clearAllColumnFilters();
+        //   setOpen(false);
+        //   dispatch(clearOpenName());
+        //   return;
+        // }
+      }
+
+      if (rowData && totalRows > 0) {
+        selectRowAndClose(rowData);
+        return;
+      }
+
+      if (!rowData && inputValue.trim() !== '') {
+        setShowError({
+          label: label ?? '',
+          status: true,
+          message: 'DATA TIDAK DITEMUKAN'
+        });
+        dispatch(removePendingLookup(label || ''));
+        clearAllColumnFilters();
+        setOpen(false);
+        dispatch(clearOpenName());
+        return;
+      }
     }
+
     if (event.key === 'ArrowDown') {
       if (gridRef.current !== null) {
-        // Only update selectedRow if we haven't reached the last row
         if (selectedRow < totalRows - 1) {
           gridRef?.current?.selectCell({ rowIdx: selectedRow + 1, idx: 0 });
         }
-
-        setTimeout(
-          () => {
-            if (inputRef.current) {
-              inputRef.current.focus();
-            }
-          },
-          type !== 'local' ? 300 : 150
-        );
       }
     } else if (event.key === 'ArrowUp') {
       if (selectedRow === 0 && gridRef.current) {
         event.preventDefault();
       } else {
         gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 0 });
-
-        setTimeout(
-          () => {
-            if (inputRef.current) {
-              inputRef.current.focus();
-            }
-          },
-          type !== 'local' ? 300 : 150
-        );
       }
     } else if (event.key === 'PageDown') {
       const nextRow = Math.min(selectedRow + visibleRowCount, totalRows - 1);
@@ -1006,155 +1164,55 @@ export default function LookUp({
         rowIdx: nextRow,
         idx: 0
       });
-      // Ensure selectCell is updated after selectedRow change
-      setTimeout(
-        () => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        },
-        type !== 'local' ? 300 : 150
-      );
     } else if (event.key === 'PageUp') {
       const newRow = Math.max(selectedRow - visibleRowCount, 0);
       gridRef?.current?.selectCell({
         rowIdx: newRow,
         idx: 0
       });
-      // Ensure selectCell is updated after selectedRow change
-      setTimeout(
-        () => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-          }
-        },
-        type !== 'local' ? 300 : 150
-      );
     }
   };
 
-  const handleInputColumnKeydown = (event: any, colKey: string) => {
-    if (forInput) return; // prevent keyboard actions when forInput
-    if ((!open && !filters.filters) || !openName) {
-      return;
-    }
-    const rowData = rows[selectedRow];
-    const totalRows = rows.length; // Ensure the data contains all rows
-    const visibleRowCount = 12; // You can adjust this value based on your visible row count
-
-    if (event.key === 'Enter') {
-      dispatch(clearOpenName());
-      setInputValue(rowData[postData as string]);
-      const value = dataToPost ? rowData[dataToPost] : rowData.id;
-      lookupValue?.(value);
-      onSelectRow?.(rowData); // cukup satu kali, tanpa else
-      setOpen(false);
-    }
-    if (event.key === 'ArrowDown') {
-      if (gridRef.current !== null) {
-        // Only update selectedRow if we haven't reached the last row
-        if (selectedRow < totalRows - 1) {
-          gridRef?.current?.selectCell({ rowIdx: selectedRow + 1, idx: 0 });
-        }
-
-        setTimeout(
-          () => {
-            if (columnInputRefs.current[colKey]) {
-              columnInputRefs.current[colKey].focus();
-            }
-          },
-          type !== 'local' ? 300 : 150
-        );
-      }
-    } else if (event.key === 'ArrowUp') {
-      if (selectedRow === 0 && gridRef.current) {
-        event.preventDefault();
-        setTimeout(
-          () => {
-            if (columnInputRefs.current[colKey]) {
-              columnInputRefs.current[colKey].focus();
-            }
-          },
-          type !== 'local' ? 300 : 150
-        );
-      } else {
-        gridRef?.current?.selectCell({ rowIdx: selectedRow - 1, idx: 0 });
-
-        setTimeout(
-          () => {
-            if (columnInputRefs.current[colKey]) {
-              columnInputRefs.current[colKey].focus();
-            }
-          },
-          type !== 'local' ? 300 : 150
-        );
-      }
-    } else if (event.key === 'PageDown') {
-      const nextRow = Math.min(selectedRow + visibleRowCount, totalRows - 1);
-      gridRef?.current?.selectCell({
-        rowIdx: nextRow,
-        idx: 0
-      });
-      // Ensure selectCell is updated after selectedRow change
-      setTimeout(
-        () => {
-          if (columnInputRefs.current[colKey]) {
-            columnInputRefs.current[colKey].focus();
-          }
-        },
-        type !== 'local' ? 300 : 150
-      );
-    } else if (event.key === 'PageUp') {
-      const newRow = Math.max(selectedRow - visibleRowCount, 0);
-      gridRef?.current?.selectCell({
-        rowIdx: newRow,
-        idx: 0
-      });
-      // Ensure selectCell is updated after selectedRow change
-      setTimeout(
-        () => {
-          if (columnInputRefs.current[colKey]) {
-            columnInputRefs.current[colKey].focus();
-          }
-        },
-        type !== 'local' ? 300 : 150
-      );
-    }
-  };
   useEffect(() => {
     if (open) {
       setIsFirstLoad(true);
-      // Reset flag saat popover dibuka agar tidak filter data awal
-      isUserTypingRef.current = false;
+      setSelectedRow(0);
+      setTimeout(() => {
+        isUserTypingRef.current = false;
+        isTypingRef.current = false;
+      }, 150);
     }
   }, [open]);
 
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0 && open) {
-      setTimeout(() => {
-        gridRef.current?.selectCell({ rowIdx: 0, idx: 0 });
-        setSelectedRow(0);
-      }, 100);
       setIsFirstLoad(false);
     }
   }, [rows, isFirstLoad, open]);
+
   const handleClickInput = (event: React.MouseEvent) => {
     event.stopPropagation();
+
     if (selectedRequired) {
       return;
     }
 
     if (!open) {
-      isUserTypingRef.current = false; // Reset flag saat buka popover
+      // PERBAIKAN: Saat popover dibuka dan ada inputValue, set flag untuk fetch tanpa filter
+      if (inputValue && inputValue.trim() !== '') {
+        shouldFetchWithoutFilterRef.current = true;
+      }
       setOpen(true);
-      dispatch(setOpenName(label || '')); // Set openName dengan label yang diklik
+      dispatch(setOpenName(label || ''));
       setShowError({ label: label ?? '', status: false, message: '' });
-
-      // Focus kembali ke input setelah popover terbuka
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 50);
     } else if (open && filters.search.trim() !== '' && rows.length > 0) {
+      if (forInput) {
+        setOpen(false);
+        clearAllColumnFilters();
+        dispatch(setOpenName(label || ''));
+        dispatch(clearOpenName());
+        return;
+      }
       setFilters({
         ...filters,
         search: rows[0][postData as string] || ''
@@ -1162,29 +1220,23 @@ export default function LookUp({
       setInputValue(rows[0][postData as string] || '');
       const value = dataToPost ? rows[0][dataToPost as string] : rows[0].id;
       lookupValue?.(value);
-      onSelectRow?.(rows[0]); // cukup satu kali, tanpa else
-      setFiltering(false); // Set filtering ke false untuk mencegah popover terbuka kembali
-      setOpen(false);
+      onSelectRow?.(rows[0]);
       dispatch(clearOpenName());
-    } else {
-      setFiltering(false); // Set filtering ke false untuk mencegah popover terbuka kembali
+    } else if (open && singleColumn) {
       setOpen(false);
+      clearAllColumnFilters();
       dispatch(clearOpenName());
     }
   };
+
   const applyFilters = useCallback(
     (rows: Row[]) => {
       let filtered = rows;
 
-      // filter khusus kolom pada columns lewat global search (filters.search)
-      // HANYA jika user sedang mengetik
-      if (
-        isUserTypingRef.current &&
-        filters.search &&
-        filters.search.trim() !== ''
-      ) {
+      if (filters.search && filters.search.trim() !== '') {
         const validColumnKeys = columns.map((col) => col.key);
         const searchLower = filters.search.toLowerCase();
+
         filtered = filtered.filter((row: Row) =>
           validColumnKeys.some((colKey) =>
             String(row[colKey] ?? '')
@@ -1194,8 +1246,6 @@ export default function LookUp({
         );
       }
 
-      // filter berdasarkan filters lainnya (per kolom)
-      // Map col.name (used as filter key) to col.key (used in row data)
       const nameToKeyMap = rawColumns.reduce(
         (acc, col) => {
           acc[col.name] = col.key;
@@ -1216,7 +1266,7 @@ export default function LookUp({
             .includes(String(filterValue).toLowerCase())
         );
       }
-      // filterby (opsional)
+
       if (filterby && !Array.isArray(filterby)) {
         filtered = filtered.filter((row: Row) =>
           Object.entries(filterby).every(
@@ -1224,102 +1274,169 @@ export default function LookUp({
           )
         );
       }
+
       return filtered;
     },
     [filterby, filters, columns, rawColumns]
   );
-
   useEffect(() => {
     if (type === 'local' || !endpoint) {
-      // Mode local tetap seperti sebelumnya
       const filteredRows = data ? applyFilters(data) : [];
 
-      // Check if we're not clearing input and lookupNama is undefined
-      if (isdefault && !deleteClicked && !lookupNama) {
-        // Only set default value if inputValue is empty (cleared)
+      if (isdefault && !hasUserInteracted && !lookupNama && !inputValue) {
         if (isdefault === 'YA') {
           const defaultRow = filteredRows.find(
             (row: any) => row.default === 'YA'
           );
-          if (defaultRow && !clicked) {
+          if (defaultRow) {
             setInputValue(defaultRow?.text);
             if (lookupValue) {
               lookupValue(
                 dataToPost ? defaultRow[dataToPost as string] : defaultRow?.id
               );
             }
+            onSelectRow?.(defaultRow);
           }
         }
       }
+
       setRows(filteredRows);
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    abortRef.current?.abort('Effect re-run');
-    const controller = new AbortController();
-    abortRef.current = controller;
+    // PERBAIKAN: Jangan fetch jika sedang mengetik (tunggu debounce selesai)
+    if (isTypingRef.current) {
+      return;
+    }
+    const shouldFetchForDefault =
+      !hasUserInteracted && !inputValue && !lookupNama && rows.length === 0;
 
-    const myRequestId = ++requestIdRef.current;
+    if (!open && !shouldFetchForDefault) {
+      setIsLoading(false);
+      return;
+    }
+
+    // API mode
+    const instanceId = instanceIdRef.current;
+    setIsLoading(true);
+
+    const previousController = getAbortController();
+    if (previousController) {
+      previousController.abort(`New request for instance: ${instanceId}`);
+    }
+
+    const controller = new AbortController();
+    setAbortController(controller);
+
+    const myRequestId = incrementRequestId();
+
+    // PERBAIKAN: Tentukan apakah harus skip filter
+    const shouldSkip =
+      shouldFetchWithoutFilterRef.current || shouldFetchForDefault;
 
     (async () => {
       try {
-        const shouldFetch = autoSearch || open;
-        if (shouldFetch) {
-          const newRows = await fetchRows(controller.signal); // pakai currentPage di buildParams()
+        const newRows = await fetchRows(
+          controller.signal,
+          undefined,
+          shouldSkip
+        );
 
-          if (myRequestId !== requestIdRef.current) return;
-          setRows((prev) => {
-            if (currentPage === 1) return newRows;
+        if (myRequestId !== getRequestId()) return;
 
-            // append + dedup by id
-            const seen = new Set<number | string>();
-            const merged = [...prev, ...newRows].filter((r) => {
-              const k = r.id;
-              if (seen.has(k)) return false;
-              seen.add(k);
-              return true;
-            });
-            return merged;
+        setRows((prev) => {
+          if (currentPage === 1) return newRows;
+
+          const seen = new Set<number | string>();
+          const merged = [...prev, ...newRows].filter((r) => {
+            const k = r.id;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
           });
+          return merged;
+        });
 
-          // tandai halaman ini sudah diambil
-          setFetchedPages((prev) => {
-            const s = new Set(prev);
-            s.add(currentPage);
-            return s;
-          });
-        } else {
+        setFetchedPages((prev) => {
+          const s = new Set(prev);
+          s.add(currentPage);
+          return s;
+        });
+
+        setHasMore(currentPage < totalPages);
+      } catch (err: any) {
+        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
           return;
         }
-        // update hasMore berdasar totalPages
-        setHasMore(currentPage < totalPages);
-      } catch (err) {
-        if (myRequestId === requestIdRef.current) {
-          console.error('Failed to fetch rows', err);
+        if (myRequestId === getRequestId()) {
+          console.error(`[${instanceId}] Failed to fetch rows:`, err);
         }
       } finally {
-        if (myRequestId === requestIdRef.current) {
+        if (myRequestId === getRequestId()) {
           setIsLoading(false);
         }
       }
     })();
 
-    return () => controller.abort();
+    return () => {
+      // Tidak abort di cleanup untuk mencegah cancel premature
+    };
   }, [
     open,
     endpoint,
     type,
     currentPage,
-    filters,
+    filters.search,
+    filters.sortBy,
+    filters.sortDirection,
+    columnFiltersString,
     totalPages,
-    deleteClicked,
-    clicked,
+    data,
+    applyFilters,
+    hasUserInteracted,
+    inputValue,
     lookupNama,
-    autoSearch
+    rows.length
   ]);
+  // Tambahkan useEffect ini setelah useEffect yang ada
+  useEffect(() => {
+    // Handle default value untuk type API
+    if (
+      type !== 'local' &&
+      endpoint &&
+      !hasUserInteracted &&
+      !inputValue &&
+      !lookupNama &&
+      rows.length > 0
+    ) {
+      const defaultRow = rows.find((row: any) => row.default === 'YA');
+      if (defaultRow) {
+        const value = dataToPost
+          ? defaultRow[dataToPost as string]
+          : defaultRow.id;
+        const classValue = defaultRow[postData as string];
 
+        setInputValue(classValue);
+        lookupValue?.(value);
+        onSelectRow?.(defaultRow);
+        dispatch(setSelectLookup({ key: label ?? '', data: defaultRow }));
+      }
+    }
+  }, [
+    type,
+    endpoint,
+    rows,
+    hasUserInteracted,
+    inputValue,
+    lookupNama,
+    dataToPost,
+    postData,
+    lookupValue,
+    onSelectRow,
+    dispatch,
+    label
+  ]);
   useEffect(() => {
     const handleResize = () => {
       if (inputRef.current) {
@@ -1339,56 +1456,54 @@ export default function LookUp({
       }
     };
   }, []);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (selectedRequired) {
         return;
       }
 
-      // Jika komponen digunakan sebagai input (forInput=true),
-      // klik di luar hanya menutup popover tanpa memilih value atau menampilkan error
-      if (forInput) {
-        if (
-          popoverRef.current &&
-          !popoverRef.current.contains(e.target as Node) &&
-          gridLookUpRef.current &&
-          !gridLookUpRef.current.contains(e.target as Node)
-        ) {
-          setClickedOutside(true);
-          setFiltering(false);
-          setOpen(false);
-          dispatch(clearOpenName());
-        }
-        return;
-      }
-
-      if (
+      const isOutside =
         popoverRef.current &&
         !popoverRef.current.contains(e.target as Node) &&
         gridLookUpRef.current &&
-        !gridLookUpRef.current.contains(e.target as Node)
-      ) {
+        !gridLookUpRef.current.contains(e.target as Node);
+
+      if (!isOutside) {
+        return;
+      }
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+
+      if (forInput) {
         setClickedOutside(true);
-        setFiltering(false);
         setOpen(false);
         dispatch(clearOpenName());
-        if (filters.search.trim() !== '' && rows.length > 0 && !lookupNama) {
-          setFilters({
-            ...filters,
-            search: rows[0][postData as string] || ''
-          });
-          setInputValue(rows[0][postData as string] || '');
-          const value = dataToPost ? rows[0][dataToPost as string] : rows[0].id;
-          lookupValue?.(value);
-          onSelectRow?.(rows[0]); // cukup satu kali, tanpa else
-        }
-        if (inputValue && rows.length === 0) {
-          setShowError({
-            label: label ?? '',
-            status: true,
-            message: 'DATA TIDAK DITEMUKAN'
-          });
-        }
+        dispatch(removePendingLookup(label || ''));
+        setFiltering(false);
+        shouldFetchWithoutFilterRef.current = false;
+        return;
+      }
+
+      setClickedOutside(true);
+      setOpen(false);
+      clearAllColumnFilters();
+      dispatch(clearOpenName());
+      setFiltering(false);
+      shouldFetchWithoutFilterRef.current = false;
+
+      const currentInputValue = inputValue;
+
+      // PERBAIKAN: Selalu panggil selectFirstRow jika ada inputValue
+      if (currentInputValue && currentInputValue.trim() !== '') {
+        // selectFirstRow akan handle error jika data tidak ditemukan
+        selectFirstRow(currentInputValue);
+      } else {
+        // Jika tidak ada inputValue, hapus pending lookup
+        dispatch(removePendingLookup(label || ''));
       }
     };
 
@@ -1397,44 +1512,59 @@ export default function LookUp({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [
-    filters.search,
-    filters.filters,
+    inputValue,
     rows,
     postData,
+    dataToPost,
     selectedRequired,
-    forInput
-  ]); // Tambahka
+    forInput,
+    lookupValue,
+    onSelectRow,
+    label,
+    dispatch,
+    selectFirstRow // TAMBAHKAN dependency
+  ]);
+
   useEffect(() => {
-    // PERUBAHAN: Tambahkan kondisi autoSearch
-    if (autoSearch) {
-      // Behavior lama: buka modal otomatis saat ada search
-      if (
-        filters.search.trim() !== '' &&
-        !clickedOutside &&
-        filtering &&
-        !deleteClicked &&
-        !onPaste // TAMBAHAN: Tambahkan kondisi onPaste
-      ) {
+    if (
+      autoSearch &&
+      !onPaste &&
+      !deleteClicked &&
+      !clicked &&
+      !clickedOutside &&
+      label === openName
+    ) {
+      if (filters.search.trim() !== '' && filtering) {
         setOpen(true);
         setSelectedRow(0);
+        setClickedOutside(false);
       } else if (
-        filters.search.trim() === '' &&
-        !clickedOutside &&
-        filtering &&
-        filters.filters &&
-        !deleteClicked &&
-        !onPaste // TAMBAHAN: Tambahkan kondisi onPaste
+        Object.values(filters.filters || {}).some(
+          (v) => v && v.trim() !== ''
+        ) &&
+        filtering
       ) {
         setOpen(true);
         setSelectedRow(0);
+        setClickedOutside(false);
       }
     }
-    // Jika autoSearch false, modal hanya dibuka manual via button
 
     if (clickedOutside) {
-      setClickedOutside(false);
+      setTimeout(() => setClickedOutside(false), 100);
     }
-  }, [filters.search, clickedOutside, filtering, autoSearch, onPaste]); // TAMBAHAN: onPaste di dependency
+  }, [
+    filters.search,
+    columnFiltersString,
+    filtering,
+    autoSearch,
+    onPaste,
+    deleteClicked,
+    clicked,
+    clickedOutside,
+    openName,
+    label
+  ]);
 
   useEffect(() => {
     let newWidth = inputRef.current?.offsetWidth || 'auto';
@@ -1446,12 +1576,11 @@ export default function LookUp({
     }
     setPopoverWidth(newWidth);
   }, [extendSize]);
+
   useEffect(() => {
-    // Hanya jalankan sekali saat mount dan lookupNama ada
     if (!hasInitializedRef.current && lookupNama) {
       setInputValue(lookupNama);
 
-      // Cari row yang sesuai (jika rows sudah ada)
       const foundRow = rows.find(
         (row) => String(row[postData as string]) === String(lookupNama)
       );
@@ -1466,23 +1595,19 @@ export default function LookUp({
       hasInitializedRef.current = true;
       prevLookupNamaRef.current = lookupNama;
     }
-  }, [lookupNama, rows]); // rows added untuk handle case dimana lookupNama ada tapi rows belum loaded
+  }, [lookupNama, rows]);
 
-  // Effect 2: Handle perubahan lookupNama setelah initialized
   useEffect(() => {
-    // Skip jika belum initialized atau user sedang mengetik
     if (!hasInitializedRef.current || isUserTypingRef.current) {
       return;
     }
 
-    // Deteksi perubahan nilai
     const hasValueChanged = prevLookupNamaRef.current !== lookupNama;
 
     if (!hasValueChanged) {
       return;
     }
 
-    // Update value
     if (lookupNama && !deleteClicked && !clicked) {
       setInputValue(lookupNama);
 
@@ -1497,58 +1622,114 @@ export default function LookUp({
         );
       }
     } else if (!lookupNama && !deleteClicked && !clicked) {
-      // Clear input jika lookupNama di-clear dari luar
       setInputValue('');
       setFilters((prev) => ({ ...prev, search: '', filters: {} }));
     }
 
-    // Update ref
     prevLookupNamaRef.current = lookupNama;
   }, [lookupNama, rows, deleteClicked, clicked]);
 
-  // Effect 3: Reset typing flag
   useEffect(() => {
-    // Reset flag setelah lookupNama berubah
     isUserTypingRef.current = false;
   }, [lookupNama]);
+
   useEffect(() => {
     if (clearLookup) {
-      setInputValue(''); // Assuming "text" is the display column
-      dispatch(setClearLookup(false)); // Reset clearLookup state in Redux
+      setInputValue('');
+      dispatch(setClearLookup(false));
       setFilters({ ...filters, search: '', filters: {} });
+      shouldFetchWithoutFilterRef.current = false;
     }
   }, [clearLookup, dispatch]);
+
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       if (event.key === 'ArrowUp') {
-        event.preventDefault(); // Mencegah scroll pada tombol space
+        event.preventDefault();
       } else if (event.key === 'ArrowDown') {
         event.preventDefault();
       }
     };
 
-    // Menambahkan event listener saat komponen di-mount
     document.addEventListener('keydown', preventScrollOnSpace);
 
-    // Menghapus event listener saat komponen di-unmount
     return () => {
       document.removeEventListener('keydown', preventScrollOnSpace);
     };
   }, []);
-  useEffect(() => {
-    // Update status open jika openName sama dengan label
-    if (label === openName && !onPaste) {
-      setOpen(true); // Jika label sama dengan openName, buka lookup
-    }
-  }, [openName, label, onPaste]); // Efek dijalankan setiap kali openName atau label berubah
 
-  // When used as an input picker (forInput), send the inputValue back
-  // as the selected value whenever the popover transitions from open -> closed.
+  useEffect(() => {
+    const handleGlobalEnter = async (event: KeyboardEvent) => {
+      if (label !== openName) return;
+
+      if (event.key !== 'Enter') return;
+
+      if (isEnterLoading) return;
+
+      if (forInput) return;
+
+      if (open && rows.length > 0) {
+        event.preventDefault();
+        const safeSelectedRow = Math.min(
+          Math.max(0, selectedRow),
+          rows.length - 1
+        );
+        const rowData = rows[safeSelectedRow];
+        if (rowData) {
+          selectRowAndClose(rowData);
+          return;
+        }
+      }
+
+      if (inputValue.trim() !== '') {
+        event.preventDefault();
+        if (open && rows.length === 0 && !isLoading) {
+          setShowError({
+            label: label ?? '',
+            status: true,
+            message: 'DATA TIDAK DITEMUKAN'
+          });
+          dispatch(removePendingLookup(label || ''));
+          setOpen(false);
+          dispatch(clearOpenName());
+          return;
+        }
+
+        await selectFirstRow(inputValue, true);
+        return;
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalEnter);
+
+    return () => {
+      document.removeEventListener('keydown', handleGlobalEnter);
+    };
+  }, [
+    label,
+    openName,
+    open,
+    rows,
+    selectedRow,
+    inputValue,
+    forInput,
+    isEnterLoading,
+    isLoading,
+    selectRowAndClose,
+    dispatch,
+    setShowError
+  ]);
+
+  useEffect(() => {
+    if (label === openName && !onPaste) {
+      setOpen(true);
+    }
+  }, [openName, label, onPaste]);
+
   const prevOpenRef = useRef<boolean>(open);
   useEffect(() => {
     if (prevOpenRef.current && !open && forInput) {
       lookupValue?.(inputValue);
-      // dispatch(setLookUpValue(inputValue));
       dispatch(
         setSelectLookup({ key: label ?? '', data: { text: inputValue } })
       );
@@ -1560,16 +1741,16 @@ export default function LookUp({
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       if (inputRef.current) {
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-          setSelectedRow(0); // Set selected row to the first row
-          gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 }); // Select the first cell in the grid
+          setSelectedRow(0);
+          gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
         }
-        return; // Prevent propagation to other grid key handlers
+        return;
       }
       document.addEventListener('keydown', preventScrollOnSpace);
     };
   }, [inputRef]);
+
   useEffect(() => {
-    // Cek apakah inputValue atau lookupNama kosong untuk label yang sama
     if (submitClicked && required) {
       if (
         showError.label?.toLowerCase() === label?.toLowerCase() &&
@@ -1588,43 +1769,81 @@ export default function LookUp({
   }, [required, submitClicked, inputValue, lookupNama, label, dispatch]);
 
   useEffect(() => {
-    // Jika sedang onPaste, jangan lakukan apapun
     if (onPaste) return;
+    if (pasteErrorRef.current) return;
 
-    // Jika inputValue tidak kosong, set showError ke false
     if (inputValue !== '') {
       setShowError({ label: label ?? '', status: false, message: '' });
-    }
-    // Jika lookupNama tidak undefined dan label sama dengan showError.label, set showError ke false
-    else if (
+    } else if (
       lookupNama !== undefined &&
       String(label) === String(showError.label)
     ) {
       setShowError({ label: label ?? '', status: false, message: '' });
     }
-    // Perubahan: Hapus onPaste dari dependency agar efek ini tidak berjalan saat onPaste berubah
   }, [lookupNama, inputValue, label, showError.label]);
+
   useEffect(() => {
     if (focus === name && submitClicked) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
     }
   }, [focus, name, inputRef, submitClicked]);
+
+  useEffect(() => {
+    if (focusOnError && required) {
+      const order = Date.now() + Math.random();
+      renderOrderRef.current = order;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (focusOnError && showError.status && showError.label === label) {
+      dispatch(
+        addErrorLookup({ label: label || '', order: renderOrderRef.current })
+      );
+    } else if (!showError.status) {
+      dispatch(removeErrorLookup(label || ''));
+    }
+  }, [focusOnError, showError.status, showError.label, label, dispatch]);
+
+  useEffect(() => {
+    if (focusOnError && errorLookups.length > 0) {
+      const firstError = errorLookups[0];
+      if (firstError.label === label) {
+        setTimeout(() => {
+          inputRef.current?.select();
+        }, 100);
+      }
+    }
+  }, [focusOnError, errorLookups, label]);
+
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+
+      const controller = getAbortController();
+      if (controller) {
+        controller.abort(`Component unmount: ${label}`);
+        setAbortController(null);
+      }
     };
   }, []);
+
   useEffect(() => {
     if (forms?.formState.errors) {
       setShowError({
         label: label ?? '',
-        status: true,
+        status: false,
         message: ''
       });
     }
   }, [forms?.formState.errors, label, name]);
+
+  // Reset suppressErrorMessage when a new errorMessage arrives from parent
+  useEffect(() => {
+    if (errorMessage) {
+      setSuppressErrorMessage(false);
+    }
+  }, [errorMessage]);
+
   return (
     <Popover open={open} onOpenChange={() => {}}>
       <PopoverTrigger asChild>
@@ -1643,15 +1862,14 @@ export default function LookUp({
                       <Input
                         {...field}
                         ref={inputRef}
-                        // autoFocus
                         onPaste={(e) =>
                           handlePaste(e.clipboardData.getData('text'))
                         }
-                        className={`w-full text-sm text-zinc-900 lg:w-[100%] ${
+                        className={`w-full rounded-r-none text-sm text-input-text lg:w-[100%] rounded-none${
                           showOnButton && !forInput
                             ? 'rounded-r-none border-r-0'
                             : ''
-                        } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+                        } border border-input-border pr-10 focus:border-input-border-focus`}
                         disabled={disabled}
                         value={inputValue}
                         onClick={(e) => handleClickInput(e as any)}
@@ -1661,9 +1879,7 @@ export default function LookUp({
                         }}
                       />
 
-                      {!forInput &&
-                      (filters.search !== '' || inputValue !== '') &&
-                      showClearButton ? (
+                      {!forInput && showClearButton ? (
                         <Button
                           type="button"
                           disabled={disabled && !clearDisabled ? true : false}
@@ -1693,9 +1909,7 @@ export default function LookUp({
                       ) : null}
                     </div>
                   </FormControl>
-                  {name && forms ? (
-                    <FormMessage />
-                  ) : showError.status === true && label === showError.label ? (
+                  {showError.status === true && label === showError.label ? (
                     <p className="text-[0.8rem] text-destructive">
                       {showError.message}
                     </p>
@@ -1704,7 +1918,6 @@ export default function LookUp({
               )}
             />
           ) : (
-            // Jika forms/control tidak ada, render input manual
             <div className="flex w-full flex-col justify-between ">
               <div
                 className="relative flex w-full flex-row items-center"
@@ -1712,16 +1925,14 @@ export default function LookUp({
               >
                 <Input
                   ref={inputRef}
-                  // autoFocus
                   onPaste={(e) => handlePaste(e.clipboardData.getData('text'))}
-                  className={`w-full text-sm text-zinc-900 lg:w-[100%] ${
+                  className={`w-full rounded-r-none text-sm text-input-text lg:w-[100%] rounded-none${
                     showOnButton && !forInput ? 'rounded-r-none border-r-0' : ''
-                  } border border-zinc-300 pr-10 focus:border-[#adcdff]`}
+                  } border border-input-border pr-10 focus:border-input-border-focus`}
                   disabled={disabled}
                   value={inputValue}
                   onClick={(e) => handleClickInput(e as any)}
                   onKeyDownCapture={(e) => {
-                    // Tangkap event di capture phase (sebelum bubbling)
                     if (
                       e.key === 'ArrowLeft' ||
                       e.key === 'ArrowRight' ||
@@ -1741,9 +1952,7 @@ export default function LookUp({
                   name={String(name) ?? ''}
                 />
 
-                {!forInput &&
-                (filters.search !== '' || inputValue !== '') &&
-                showClearButton ? (
+                {!forInput && showClearButton ? (
                   <Button
                     type="button"
                     disabled={disabled && !clearDisabled ? true : false}
@@ -1768,7 +1977,9 @@ export default function LookUp({
                 ) : null}
               </div>
               <p className="text-[0.8rem] text-destructive">
-                {showError.status === true && label === showError.label
+                {!suppressErrorMessage && errorMessage
+                  ? errorMessage
+                  : showError.status === true && label === showError.label
                   ? showError.message
                   : null}
               </p>
@@ -1777,15 +1988,20 @@ export default function LookUp({
         </div>
       </PopoverTrigger>
       <PopoverContent
-        // ref={contentRef}
         id="popover-content"
-        className="h-fit border border-blue-500 p-0 shadow-none backdrop-blur-none"
-        side="bottom"
+        className="h-fit border border-border p-0 shadow-none backdrop-blur-none"
+        side={side}
         align="start"
-        sideOffset={-1} // Atur offset ke 0 agar tidak ada jarak
-        avoidCollisions={true}
+        sideOffset={side === 'top' ? 4 : -2}
+        avoidCollisions={side === 'top'}
         style={{ width: popoverWidth }}
-        onEscapeKeyDown={() => setOpen(false)}
+        onEscapeKeyDown={() => {
+          if (!isEnterLoading) {
+            setOpen(false);
+          }
+        }}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {open && (
           <div ref={gridLookUpRef} className="w-full">
@@ -1794,14 +2010,8 @@ export default function LookUp({
                 collapse === true ? 'w-full' : 'w-[100%]'
               } flex-grow overflow-hidden transition-all duration-300`}
             >
-              <div className="min-w-full rounded-lg bg-white">
-                <div
-                  className="flex h-[25px] w-full flex-row items-center border border-x-0 border-t-0 border-blue-500 px-2 py-2"
-                  style={{
-                    background:
-                      'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                  }}
-                >
+              <div className="min-w-full rounded-lg bg-background">
+                <div className="flex h-[25px] w-full flex-row items-center border border-x-0 border-t-0 border-border bg-background-grid-header px-2 py-2">
                   <p className="text-[12px]">{labelLookup}</p>
                 </div>
                 <div
@@ -1823,12 +2033,12 @@ export default function LookUp({
                     onScroll={handleScroll}
                     rowClass={getRowClass}
                     onCellClick={handleCellClick}
-                    onSelectedCellChange={(args) => {
+                    onSelectedCellChange={(args: any) => {
                       onSelectedCellChange({ row: args.row });
                     }}
                     rowHeight={30}
                     headerRowHeight={singleColumn ? 0 : hideFilter ? 30 : 70}
-                    className={`rdg-light ${
+                    className={`${isDark ? 'rdg-dark' : 'rdg-light'} ${
                       rows.length > 0
                         ? rows.length < 10
                           ? 'h-fit'
@@ -1837,22 +2047,15 @@ export default function LookUp({
                         ? 'h-[30px]'
                         : 'h-[100px]'
                     } ${rows.length < 10 ? 'overflow-hidden' : ''}`}
-                    // className="rdg-light fill-grid overflow-hidden"
                     onColumnsReorder={onColumnsReorder}
                     renderers={{
                       noRowsFallback: <EmptyRowsRenderer />
                     }}
                   />
                   {isLoading ? (
-                    <div
-                      className="absolute bottom-0 flex w-full flex-row gap-2 py-1"
-                      style={{
-                        background:
-                          'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
-                      }}
-                    >
+                    <div className="absolute bottom-0 flex w-full flex-row gap-2 bg-background-grid-header py-1">
                       <LoadRowsRenderer />
-                      <p className="text-sm text-zinc-600">Loading...</p>
+                      <p className="text-primary-text text-sm">Loading...</p>
                     </div>
                   ) : null}
                 </div>

@@ -278,3 +278,57 @@ export const todayDate = () => {
     todayDate.getMonth() + 1
   ).padStart(2, '0')}-${todayDate.getFullYear()}`;
 };
+export default function highlightText(
+  text?: string | number | null | undefined,
+  search?: string,
+  columnFilter?: string
+): string {
+  const textValue = text != null ? String(text) : '';
+  if (!textValue) return '';
+
+  // Priority: columnFilter over search
+  const searchTerm = columnFilter || search || '';
+
+  if (!searchTerm) {
+    // Preserve semua spasi bahkan tanpa search
+    return textValue.replace(/ /g, '&nbsp;');
+  }
+
+  const escapeRegExp = (s: string) =>
+    s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+  const escapedTerm = escapeRegExp(searchTerm);
+  const regex = new RegExp(`(${escapedTerm})`, 'gi');
+
+  // Split text berdasarkan match untuk process per bagian
+  const parts: string[] = [];
+  let lastIndex = 0;
+  let match;
+
+  // Reset regex lastIndex
+  const globalRegex = new RegExp(`(${escapedTerm})`, 'gi');
+
+  while ((match = globalRegex.exec(textValue)) !== null) {
+    // Tambahkan text sebelum match (preserve spasi)
+    if (match.index > lastIndex) {
+      const beforeText = textValue.substring(lastIndex, match.index);
+      parts.push(beforeText.replace(/ /g, '&nbsp;'));
+    }
+
+    // Tambahkan matched text dengan highlight (preserve spasi)
+    const matchedText = match[0].replace(/ /g, '&nbsp;');
+    parts.push(
+      `<span style="background-color: yellow; font-size: 0.870rem; font-weight: 500; color: black;">${matchedText}</span>`
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Tambahkan sisa text setelah match terakhir (preserve spasi)
+  if (lastIndex < textValue.length) {
+    const afterText = textValue.substring(lastIndex);
+    parts.push(afterText.replace(/ /g, '&nbsp;'));
+  }
+
+  return parts.join('');
+}

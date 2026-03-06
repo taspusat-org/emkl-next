@@ -23,8 +23,6 @@ import IcTasSmall from '@/public/image/IcTas-Small.png';
 import { useDispatch } from 'react-redux';
 import Image from 'next/image';
 import { FaUser, FaEye, FaEyeSlash } from 'react-icons/fa';
-import bgImage from '@/public/image/bg-top.png';
-import IcHeader from '@/public/image/header.png';
 import { useLottie } from 'lottie-react';
 import LoginAnimation from '@/public/image/lottie/login.json';
 import { storeEmailVerificationFn } from '@/lib/apis/auth.api';
@@ -36,6 +34,8 @@ import {
   setProcessing
 } from '@/lib/store/loadingSlice/loadingSlice';
 import { truncateSync } from 'fs';
+import { setMenuData } from '@/lib/store/menuSlice/menuSlice';
+import { api2 } from '@/lib/utils/AxiosInstance';
 export const metadata: Metadata = {
   title: 'Authentication',
   description: 'Authentication forms built using the components.'
@@ -139,14 +139,23 @@ export default function SignInViewPage() {
           submitText: 'OK'
         });
       } else {
-        // Gunakan getSession untuk mendapatkan session setelah login
+        // Ambil session setelah login berhasil
         const session = await getSession();
 
-        if (session) {
-          // Jika sesi sudah ada, arahkan ke dashboard
-          router.replace('/dashboard'); // Menggunakan replace agar tidak menambah riwayat
+        if (session?.user?.id) {
+          // Pre-fetch menu data dan simpan ke Redux
+          try {
+            const menuResponse = await api2.get(
+              `/menu/sidebar?userId=${session.user.id}`
+            );
+            dispatch(setMenuData(menuResponse.data));
+          } catch (error) {
+            console.error('Failed to fetch menu data:', error);
+          }
+
+          // Redirect ke dashboard
+          router.replace('/dashboard');
         } else {
-          // Jika sesi gagal diinisialisasi, kembali ke halaman login
           router.push('/auth/signin');
         }
       }
@@ -164,19 +173,6 @@ export default function SignInViewPage() {
   };
 
   const { View } = useLottie(options);
-  useEffect(() => {
-    if (session) {
-      dispatch(
-        setCredentials({
-          user: (session.user as User) ?? null,
-          id: session.user.id ?? null,
-          cabang_id: session.cabang_id ?? null
-        })
-      );
-      // Jika sesi sudah diupdate, arahkan ke dashboard
-      router.replace('/dashboard');
-    }
-  }, [session, dispatch, router]);
 
   useEffect(() => {
     const navigationEntries = performance.getEntriesByType('navigation');

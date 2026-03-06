@@ -254,7 +254,7 @@ const tokenCache = SessionTokenCache.getInstance();
 const configureAxios = (baseURL: string): AxiosInstance => {
   const apiInstance = axios.create({
     baseURL: baseURL || '',
-    timeout: 30000
+    timeout: 60000
   });
 
   apiInstance.interceptors.request.use(

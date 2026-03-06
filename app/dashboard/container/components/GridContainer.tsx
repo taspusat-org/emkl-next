@@ -14,6 +14,7 @@ import DataGrid, {
   Column,
   DataGridHandle
 } from 'react-data-grid';
+import { useTheme } from 'next-themes';
 
 import { ImSpinner2 } from 'react-icons/im';
 import ActionButton from '@/components/custom-ui/ActionButton';
@@ -108,7 +109,6 @@ import { EmptyRowsRenderer } from '@/components/EmptyRows';
 import { LoadRowsRenderer } from '@/components/LoadRows';
 import DraggableColumn from '@/components/custom-ui/DraggableColumns';
 import { highlightText } from '@/components/custom-ui/HighlightText';
-import { useTheme } from 'next-themes';
 
 interface Filter {
   page: number;
@@ -326,7 +326,6 @@ const GridContainer = () => {
 
     setSelectedRow(0);
   };
-
   const handleSort = (column: string) => {
     const originalIndex = columns.findIndex((col) => col.key === column);
 
@@ -564,9 +563,16 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -637,9 +643,16 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -711,7 +724,7 @@ const GridContainer = () => {
                       <div
                         className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
                         style={{
-                          backgroundColor: memoData.WARNA,
+                          backgroundColor: isDark ? '#004b23' : memoData.WARNA,
                           color: memoData.WARNATULISAN,
                           padding: '2px 6px',
                           borderRadius: '2px',
@@ -797,9 +810,16 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -871,9 +891,16 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -946,9 +973,16 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
+                  <div
+                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        cellValue,
+                        filters.search,
+                        columnFilter
+                      )
+                    }}
+                  ></div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -962,7 +996,7 @@ const GridContainer = () => {
         }
       }
     ];
-  }, [filters, rows, checkedRows]);
+  }, [filters, rows, checkedRows, isDark]);
 
   const onColumnResize = (index: number, width: number) => {
     // 1) Dapatkan key kolom yang di-resize
@@ -1380,11 +1414,11 @@ const GridContainer = () => {
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahoma.ttf',
             'Tahoma'
-          ); // Regular
+          );
           Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
             '/fonts/tahomabd.ttf',
             'Tahoma'
-          ); // Bold
+          );
           Stimulsoft.Base.StiLicense.Key =
             '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
             '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
@@ -1866,6 +1900,7 @@ const GridContainer = () => {
             //   // }
             // ]}
           />
+
           {isLoadingContainer ? <LoadRowsRenderer /> : null}
           {contextMenu && (
             <div

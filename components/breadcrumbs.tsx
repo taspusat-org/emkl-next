@@ -22,7 +22,10 @@ export function Breadcrumbs() {
           <Fragment key={item.title}>
             {index !== items.length - 1 && (
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink className="text-sm" href={item.link}>
+                <BreadcrumbLink
+                  className="text-sm text-gray-400 dark:text-white"
+                  href={item.link}
+                >
                   {item.title}
                 </BreadcrumbLink>
               </BreadcrumbItem>

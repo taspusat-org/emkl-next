@@ -14,6 +14,7 @@ import {
 } from '@/lib/store/lookupSlice/lookupSlice';
 import { getAkuntansiFn } from '@/lib/apis/akuntansi.api';
 import GridAkunPusat from './component/GridAkunPusat';
+// import GridAkunPusat from '@/components/custom-ui/Akunpusatlama';
 
 interface ApiResponse {
   type: string;

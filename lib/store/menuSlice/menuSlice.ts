@@ -1,42 +1,30 @@
-// src/store/menuSlice.ts
+// lib/store/menuSlice/menuSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export interface ItemMenu {
-  url: string;
-}
-export interface Menu {
-  id: number;
-  title: string;
-  aco_id: number;
-  icon: string;
-  isActive: number;
-  parentId: number;
-  url: string;
-  order: number;
-  items: string;
-}
-
 interface MenuState {
-  value: Menu[];
+  menuData: string | null;
+  isLoaded: boolean;
 }
 
 const initialState: MenuState = {
-  value: [] // Initial state as an empty array
+  menuData: null,
+  isLoaded: false
 };
 
-export const menuSlice = createSlice({
+const menuSlice = createSlice({
   name: 'menu',
   initialState,
   reducers: {
-    setMenu: (state, action: PayloadAction<Menu[]>) => {
-      state.value = action.payload; // Replace the current state with new details
+    setMenuData: (state, action: PayloadAction<string>) => {
+      state.menuData = action.payload;
+      state.isLoaded = true;
     },
-    resetMenu: (state) => {
-      state.value = []; // Reset details to an empty array
+    clearMenuData: (state) => {
+      state.menuData = null;
+      state.isLoaded = false;
     }
   }
 });
 
-export const { setMenu, resetMenu } = menuSlice.actions;
-
+export const { setMenuData, clearMenuData } = menuSlice.actions;
 export default menuSlice.reducer;

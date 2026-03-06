@@ -19,6 +19,7 @@ import { persistor } from '@/lib/store/store';
 import { deleteCookie } from '@/lib/utils/cookie-actions';
 import { useRouter } from 'next/navigation';
 import { tokenCache } from '@/lib/utils/AxiosInstance';
+import ThemeToggle from './ThemeToggle/theme-toggle';
 
 export function UserNav() {
   const { data: session } = useSession();
@@ -60,6 +61,14 @@ export function UserNav() {
               </p>
             </div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem asChild>
+              <div className="flex w-full items-center justify-between">
+                <span>Theme</span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={logout}>
             Log out

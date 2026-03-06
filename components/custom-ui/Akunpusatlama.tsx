@@ -80,17 +80,6 @@ import {
 } from '@/lib/utils';
 import { LoadRowsRenderer } from '@/components/LoadRows';
 import { EmptyRowsRenderer } from '@/components/EmptyRows';
-import DraggableColumn from '@/components/custom-ui/DraggableColumns';
-import { highlightText } from '@/components/custom-ui/HighlightText';
-import { useTheme } from 'next-themes';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 
 interface Filter {
   page: number;
@@ -102,8 +91,6 @@ interface Filter {
 }
 
 const GridAkunPusat = () => {
-  const { theme, resolvedTheme } = useTheme();
-  const isDark = theme === 'dark' || resolvedTheme === 'dark';
   const { alert } = useAlert();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -127,7 +114,6 @@ const GridAkunPusat = () => {
   const [isDataUpdated, setIsDataUpdated] = useState(false);
   const [isAllSelected, setIsAllSelected] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
-  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [fetchingPages, setFetchingPages] = useState<Set<number>>(new Set());
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
@@ -140,18 +126,14 @@ const GridAkunPusat = () => {
     new Map()
   );
   const [isFetching, setIsFetching] = useState(false);
-  const [isScrolling, setIsScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastScrollTopRef = useRef<number>(0);
+  const [pendingPages, setPendingPages] = useState<Set<number>>(new Set());
   const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5]);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isAfterMutation, setIsAfterMutation] = useState(false);
-  const [shouldBulkFetch, setShouldBulkFetch] = useState(true); // Flag untuk bulk fetch (initial load, filter, sort, search)
   const scrollPositionRef = useRef<number>(0);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null); // TAMBAHAN BARU
   const prevRowsLengthRef = useRef<number>(0);
   const prevMinPageRef = useRef<number>(1);
-  const hasAdjustedScrollRef = useRef<boolean>(false); // Flag untuk track apakah sudah adjust scroll
   const [columnsWidth, setColumnsWidth] = useState<{ [key: string]: number }>(
     {}
   );
@@ -165,14 +147,12 @@ const GridAkunPusat = () => {
   });
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
 
-  const effectiveLimit = shouldBulkFetch ? 150 : filters.limit;
-
   const {
     data: allAkunpusat,
     isLoading: isLoadingAkunpusat,
     refetch
   } = useGetAkunpusat(
-    { ...filters, page: currentPage, limit: effectiveLimit },
+    { ...filters, page: currentPage },
     abortControllerRef.current?.signal
   );
   //
@@ -222,7 +202,7 @@ const GridAkunPusat = () => {
       setSelectedRow(0);
       setVisiblePages([1, 2, 3, 4, 5]);
       setPageDataCache(new Map());
-      setShouldBulkFetch(true); // Trigger bulk fetch saat filter
+      // setIsFirstLoad(true); // TAMBAHKAN INI
     }, 300)
   ).current;
 
@@ -247,7 +227,7 @@ const GridAkunPusat = () => {
     setCurrentPage(1);
     setVisiblePages([1, 2, 3, 4, 5]);
     setPageDataCache(new Map());
-    setShouldBulkFetch(true); // Trigger bulk fetch saat clear filter
+    // setIsFirstLoad(true); // TAMBAHKAN INI
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,7 +255,7 @@ const GridAkunPusat = () => {
     setRows([]);
     setVisiblePages([1, 2, 3, 4, 5]);
     setPageDataCache(new Map());
-    setShouldBulkFetch(true); // Trigger bulk fetch saat search
+    // setIsFirstLoad(true); // TAMBAHKAN INI
   };
 
   const handleClearInput = () => {
@@ -290,6 +270,42 @@ const GridAkunPusat = () => {
     }));
     setInputValue('');
   };
+  function highlightText(
+    text: string | number | null | undefined,
+    search: string,
+    columnFilter: string = ''
+  ) {
+    const textValue = text != null ? String(text) : '';
+    if (!textValue) return '';
+
+    // Priority: columnFilter over search
+    const searchTerm = columnFilter?.trim() || search?.trim() || '';
+
+    if (!searchTerm) {
+      return textValue;
+    }
+
+    const escapeRegExp = (s: string) =>
+      s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+
+    // Create regex for continuous string match
+    const escapedTerm = escapeRegExp(searchTerm);
+    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+
+    // Replace all occurrences
+    const highlighted = textValue.replace(
+      regex,
+      (match) =>
+        `<span style="background-color: yellow; font-size: 13px; font-weight: 500">${match}</span>`
+    );
+
+    return (
+      <span
+        className="text-sm"
+        dangerouslySetInnerHTML={{ __html: highlighted }}
+      />
+    );
+  }
 
   const handleSort = (column: string) => {
     const originalIndex = columns.findIndex((col) => col.key === column);
@@ -321,7 +337,7 @@ const GridAkunPusat = () => {
     setRows([]);
     setVisiblePages([1, 2, 3, 4, 5]);
     setPageDataCache(new Map());
-    setShouldBulkFetch(true); // Trigger bulk fetch saat sort
+    // setIsFirstLoad(true); // TAMBAHKAN INI - trigger fetch pages 2-5
   };
 
   const handleRowSelect = (rowId: number) => {
@@ -346,15 +362,6 @@ const GridAkunPusat = () => {
       setCheckedRows(new Set(allIds));
     }
     setIsAllSelected(!isAllSelected);
-  };
-
-  const handleFilterRows = (val: string) => {
-    setIsFilteringRows(true);
-    // setLocalSelectedValue(val);
-    // onChange?.(val);
-    setTimeout(() => {
-      setIsFilteringRows(false);
-    }, 1000);
   };
 
   // const handleContextMenu = (event: React.MouseEvent) => {
@@ -1658,42 +1665,14 @@ const GridAkunPusat = () => {
     const scrollHeight = currentTarget.scrollHeight;
     const clientHeight = currentTarget.clientHeight;
 
-    // Deteksi apakah user benar-benar melakukan scroll
-    const hasScrolled = Math.abs(scrollTop - lastScrollTopRef.current) > 5;
-
-    if (!hasScrolled) {
-      return;
-    }
-
-    // Update last scroll position
-    lastScrollTopRef.current = scrollTop;
-
-    // Set flag bahwa user sedang scroll
-    setIsScrolling(true);
-
-    // Clear timeout sebelumnya
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current);
-    }
-
-    // Set timeout untuk mendeteksi scroll berhenti
-    scrollTimeoutRef.current = setTimeout(() => {
-      setIsScrolling(false);
-    }, 150);
-
-    // SIMPAN SCROLL CONTAINER & POSITION
     scrollPositionRef.current = scrollTop;
     scrollContainerRef.current = currentTarget;
 
-    // HITUNG ROW INDEX BERDASARKAN SCROLL POSITION
-    const rowHeight = 30;
-    const currentRowIndex = Math.floor(scrollTop / rowHeight);
+    // Threshold untuk trigger fetch - lebih konservatif
+    const topThreshold = scrollHeight * 0.2;
+    const bottomThreshold = scrollHeight * 0.5;
 
-    // Threshold untuk trigger fetch
-    const topThreshold = scrollHeight * 0.2; // Ubah ke 20% untuk trigger lebih awal
-    const bottomThreshold = scrollHeight * 0.7; // Ubah ke 70%
-
-    // SCROLL KE BAWAH
+    // Scroll ke bawah
     if (scrollTop + clientHeight >= bottomThreshold) {
       const maxPage = Math.max(...visiblePages);
       const nextPage = maxPage + 1;
@@ -1701,40 +1680,22 @@ const GridAkunPusat = () => {
       if (
         nextPage <= totalPages &&
         !pageDataCache.has(nextPage) &&
-        !isFetching &&
-        isScrolling
+        !isFetching
       ) {
-        console.log(
-          `⬇️ Trigger fetch page ${nextPage} at row ${currentRowIndex} (scroll: ${Math.round(
-            ((scrollTop + clientHeight) / scrollHeight) * 100
-          )}%)`
-        );
         setIsFetching(true);
         setIsTransitioning(true);
-        hasAdjustedScrollRef.current = false;
         setCurrentPage(nextPage);
       }
     }
 
-    // SCROLL KE ATAS
+    // Scroll ke atas
     if (scrollTop <= topThreshold) {
       const minPage = Math.min(...visiblePages);
       const prevPage = minPage - 1;
 
-      if (
-        prevPage >= 1 &&
-        !pageDataCache.has(prevPage) &&
-        !isFetching &&
-        isScrolling
-      ) {
-        console.log(
-          `⬆️ Trigger fetch page ${prevPage} at row ${currentRowIndex} (scroll: ${Math.round(
-            (scrollTop / scrollHeight) * 100
-          )}%)`
-        );
+      if (prevPage >= 1 && !pageDataCache.has(prevPage) && !isFetching) {
         setIsFetching(true);
         setIsTransitioning(true);
-        hasAdjustedScrollRef.current = false;
         setCurrentPage(prevPage);
       }
     }
@@ -1792,13 +1753,9 @@ const GridAkunPusat = () => {
 
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // filter key columns dengan key yg ada di columnsWidth
-      const filteredColumns = columns.filter((col) =>
-        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
-      );
       // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => filteredColumns[orderIndex])
+        .map((orderIndex) => columns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
@@ -1926,191 +1883,46 @@ const GridAkunPusat = () => {
     }
   }, [isFirstLoad, rows]);
 
-  // useEffect untuk handle bulk fetch (initial load, filter, sort, search)
-
   useEffect(() => {
-    const handleBulkFetch = async () => {
-      // Hanya proses jika shouldBulkFetch true dan ada data dari API
-      if (
-        !shouldBulkFetch ||
-        !allAkunpusat ||
-        isDataUpdated ||
-        isAfterMutation
-      ) {
-        return;
-      }
-
-      const bulkData = allAkunpusat.data || [];
-
-      if (bulkData.length === 0) return;
-
-      console.log('🚀 Bulk fetch - fetched 150 rows, splitting into 5 pages');
-
-      const pageSize = 30;
-      const newCache = new Map<number, IAkunpusat[]>();
-
-      for (let i = 0; i < 5; i++) {
-        const pageNum = i + 1;
-        const startIdx = i * pageSize;
-        const endIdx = startIdx + pageSize;
-        const pageData = bulkData.slice(startIdx, endIdx);
-
-        if (pageData.length > 0) {
-          newCache.set(pageNum, pageData);
-        }
-      }
-
-      setPageDataCache(newCache);
-      setVisiblePages([1, 2, 3, 4, 5]);
-
-      if (allAkunpusat.pagination?.totalPages) {
-        setTotalPages(allAkunpusat.pagination.totalPages);
-      }
-
-      setHasMore(bulkData.length === 150);
-      setShouldBulkFetch(false); // Reset flag setelah bulk fetch selesai
-      setIsFirstLoad(false);
-      setIsFetching(false);
-
-      setTimeout(() => {
-        if (gridRef.current) {
-          setSelectedRow(0);
-          gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-        }
-      }, 100);
-    };
-
-    handleBulkFetch();
-  }, [allAkunpusat, shouldBulkFetch, isDataUpdated, isAfterMutation]);
-
-  useEffect(() => {
-    // Skip jika masih bulk fetch mode atau after mutation
-    if (shouldBulkFetch || isDataUpdated || isAfterMutation) {
-      return;
-    }
-
-    if (!allAkunpusat) return;
+    if (!allAkunpusat || isDataUpdated || isAfterMutation) return;
 
     const newRows = allAkunpusat.data || [];
 
-    console.log(`📄 Fetched page ${currentPage}: ${newRows.length} rows`);
-
-    // SIMPAN SCROLL INFO SEBELUM UPDATE
-    const scrollContainer = scrollContainerRef.current;
-    const scrollBeforeUpdate = scrollContainer
-      ? {
-          scrollTop: scrollContainer.scrollTop,
-          scrollHeight: scrollContainer.scrollHeight,
-          clientHeight: scrollContainer.clientHeight
-        }
-      : null;
-
-    // Cache data halaman yang baru di-fetch
+    // Cache data halaman
     setPageDataCache((prevCache) => {
       const newCache = new Map(prevCache);
       newCache.set(currentPage, newRows);
       return newCache;
     });
 
-    // Update visible pages dengan scroll adjustment
     setVisiblePages((prevVisible) => {
       const maxVisible = Math.max(...prevVisible);
       const minVisible = Math.min(...prevVisible);
 
-      // ==========================================
-      // SCROLL KE BAWAH
-      // ==========================================
+      // Scroll ke bawah - jaga 5 pages, buang page pertama
       if (currentPage > maxVisible) {
         const newPages = [...prevVisible.slice(1), currentPage];
+
+        // Hapus page yang sudah tidak visible dari cache
         const removedPage = prevVisible[0];
-
-        console.log(`⬇️ Scroll down: ${prevVisible} → ${newPages}`);
-
-        // ADJUST SCROLL SETELAH PAGE DIHAPUS
-        setTimeout(() => {
-          if (scrollContainer && scrollBeforeUpdate) {
-            const rowHeight = 30;
-            const rowsPerPage = 30;
-            const removedHeight = rowsPerPage * rowHeight; // 900px
-
-            // Kurangi scroll position sebesar height yang dihapus
-            // TAPI pastikan tidak kurang dari 0
-            const newScrollTop = Math.max(
-              0,
-              scrollBeforeUpdate.scrollTop - removedHeight
-            );
-
-            requestAnimationFrame(() => {
-              scrollContainer.scrollTop = newScrollTop;
-              scrollPositionRef.current = newScrollTop;
-              console.log(
-                `  📍 Adjusted scroll DOWN: ${scrollBeforeUpdate.scrollTop}px → ${newScrollTop}px (removed ${removedHeight}px)`
-              );
-            });
-          }
-        }, 50);
-
-        // Hapus page dari cache
         setPageDataCache((prev) => {
           const updated = new Map(prev);
           updated.delete(removedPage);
-          console.log(`  🗑️ Removed page ${removedPage} from cache`);
           return updated;
         });
 
         return newPages;
       }
 
-      // ==========================================
-      // SCROLL KE ATAS
-      // ==========================================
+      // Scroll ke atas - jaga 5 pages, buang page terakhir
       if (currentPage < minVisible) {
         const newPages = [currentPage, ...prevVisible.slice(0, 4)];
+
+        // Hapus page yang sudah tidak visible dari cache
         const removedPage = prevVisible[4];
-
-        console.log(`⬆️ Scroll up: ${prevVisible} → ${newPages}`);
-
-        // ADJUST SCROLL SETELAH PAGE DITAMBAH DI DEPAN
-        setTimeout(() => {
-          if (
-            scrollContainer &&
-            scrollBeforeUpdate &&
-            !hasAdjustedScrollRef.current
-          ) {
-            const rowHeight = 30;
-            const rowsPerPage = 30;
-            const addedHeight = rowsPerPage * rowHeight; // 900px
-
-            // KUNCI PERBAIKAN:
-            // Ketika page baru ditambahkan di depan, semua row existing bergeser ke bawah
-            // User yang tadinya di row 10 (scrollTop ~300px), sekarang berada di row 40 (scrollTop ~300px)
-            // Seharusnya berada di row 40 dengan scrollTop ~1200px (300 + 900)
-
-            const newScrollTop = scrollBeforeUpdate.scrollTop + addedHeight;
-
-            requestAnimationFrame(() => {
-              scrollContainer.scrollTop = newScrollTop;
-              scrollPositionRef.current = newScrollTop;
-              hasAdjustedScrollRef.current = true;
-
-              console.log(
-                `  📍 Adjusted scroll UP: ${scrollBeforeUpdate.scrollTop}px → ${newScrollTop}px (added ${addedHeight}px at top)`
-              );
-
-              // Log untuk verifikasi
-              const rowIndex = Math.floor(newScrollTop / rowHeight);
-              console.log(`  📊 User sekarang di row index: ~${rowIndex}`);
-            });
-          } else if (hasAdjustedScrollRef.current) {
-            console.log(`  ⏭️ Skipped scroll adjustment (already adjusted)`);
-          }
-        }, 50);
-
-        // Hapus page dari cache
         setPageDataCache((prev) => {
           const updated = new Map(prev);
           updated.delete(removedPage);
-          console.log(`  🗑️ Removed page ${removedPage} from cache`);
           return updated;
         });
 
@@ -2120,42 +1932,28 @@ const GridAkunPusat = () => {
       return prevVisible;
     });
 
-    if (allAkunpusat.pagination?.totalPages) {
+    if (allAkunpusat.pagination.totalPages) {
       setTotalPages(allAkunpusat.pagination.totalPages);
     }
 
     setHasMore(newRows.length === filters.limit);
     setPrevFilters(filters);
 
+    // Reset flags setelah fetch selesai
     setTimeout(() => {
       setIsTransitioning(false);
       setIsFetching(false);
     }, 100);
-  }, [
-    allAkunpusat,
-    currentPage,
-    filters,
-    isDataUpdated,
-    shouldBulkFetch,
-    isAfterMutation
-  ]);
-
-  // ============================================
-  // useEffect #3: COMBINE VISIBLE PAGES INTO ROWS
-  // ============================================
-  useEffect(() => {
-    if (gridRef.current && dataGridKey) {
-      setTimeout(() => {
-        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-        setIsFirstLoad(false);
-      }, 0);
-    }
-  }, [dataGridKey]);
+  }, [allAkunpusat, currentPage, filters, isDataUpdated]);
 
   useEffect(() => {
     const combinedRows: IAkunpusat[] = [];
+    const scrollContainer = scrollContainerRef.current;
 
-    // Combine semua page yang visible
+    // Ambil nilai dari ref (nilai sebelumnya yang tersimpan)
+    const prevMinPage = prevMinPageRef.current;
+    const prevRowsLength = prevRowsLengthRef.current; // GUNAKAN REF, BUKAN rows.length
+
     visiblePages?.forEach((page) => {
       const pageData = pageDataCache.get(page);
       if (pageData) {
@@ -2165,19 +1963,70 @@ const GridAkunPusat = () => {
 
     if (combinedRows.length > 0) {
       const newMinPage = Math.min(...visiblePages);
+      const isScrollingUp = newMinPage < prevMinPage;
+
+      // Jika scrolling up dan rows bertambah di awal
+      if (
+        isScrollingUp &&
+        combinedRows.length > prevRowsLength &&
+        scrollContainer
+      ) {
+        requestAnimationFrame(() => {
+          // Hitung berapa banyak rows yang ditambahkan
+          const addedRowsCount = combinedRows.length - prevRowsLength;
+          const rowHeight = 30; // sesuai dengan rowHeight di DataGrid
+          const scrollOffset = addedRowsCount * rowHeight;
+          scrollContainer.scrollTop = scrollPositionRef.current + scrollOffset;
+        });
+      }
 
       // Update rows state
       setRows(combinedRows);
 
       // Simpan nilai untuk perbandingan di render berikutnya
       prevMinPageRef.current = newMinPage;
-      prevRowsLengthRef.current = combinedRows.length;
-
-      console.log(
-        `📊 Combined rows: ${combinedRows.length} (pages: ${visiblePages})`
-      );
+      prevRowsLengthRef.current = combinedRows.length; // SIMPAN LENGTH BARU
     }
   }, [visiblePages, pageDataCache]);
+  useEffect(() => {
+    const fetchInitialPages = async () => {
+      // Kondisi: jalankan saat isFirstLoad true dan page 1 sudah ada data
+      if (
+        isFirstLoad &&
+        currentPage === 1 &&
+        rows.length > 0 &&
+        pageDataCache.has(1) &&
+        !isFetching
+      ) {
+        setIsFetching(true);
+
+        // Fetch pages 2-5 secara berurutan
+        for (let page = 2; page <= 5; page++) {
+          if (page <= totalPages && !pageDataCache.has(page)) {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            setCurrentPage(page);
+            await new Promise((resolve) => setTimeout(resolve, 300));
+          }
+        }
+
+        setIsFirstLoad(false);
+        setIsFetching(false);
+      }
+    };
+
+    // Trigger hanya jika isFirstLoad true dan tidak sedang loading
+    if (isFirstLoad && !isLoadingAkunpusat && pageDataCache.has(1)) {
+      fetchInitialPages();
+    }
+  }, [
+    isFirstLoad,
+    rows.length,
+    currentPage,
+    isLoadingAkunpusat,
+    totalPages,
+    pageDataCache,
+    isFetching
+  ]);
   console.log('pageDataCache', pageDataCache);
   console.log('visiblePages', visiblePages);
   useEffect(() => {
@@ -2267,6 +2116,7 @@ const GridAkunPusat = () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+
   useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
     if (filters !== prevFilters) {
@@ -2274,6 +2124,7 @@ const GridAkunPusat = () => {
       setPrevFilters(filters); // Simpan filters terbaru
     }
   }, [filters, refetch]); // Dependency array termasuk filters dan refetch
+
   useEffect(() => {
     if (isSubmitSuccessful) {
       // reset();
@@ -2281,128 +2132,49 @@ const GridAkunPusat = () => {
       requestAnimationFrame(() => setFocus('coa'));
     }
   }, [isSubmitSuccessful, setFocus]);
+
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
     };
   }, []);
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-  useEffect(() => {
-    if (!isTransitioning && !isFetching) {
-      // Reset flag setelah transisi selesai
-      setTimeout(() => {
-        hasAdjustedScrollRef.current = false;
-      }, 200);
-    }
-  }, [isTransitioning, isFetching]);
 
-  useEffect(() => {
-    console.log('📊 State Debug:', {
-      shouldBulkFetch,
-      currentPage,
-      effectiveLimit,
-      visiblePages,
-      cacheSize: pageDataCache.size,
-      rowsCount: rows.length,
-      cachedPages: Array.from(pageDataCache.keys())
-    });
-  }, [
-    shouldBulkFetch,
-    currentPage,
-    effectiveLimit,
-    visiblePages,
-    pageDataCache,
-    rows
-  ]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
-        <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
-          <div className="flex flex-row items-center">
-            <label htmlFor="" className="text-xs">
-              SEARCH :
-            </label>
-            <div className="relative flex w-[200px] flex-row items-center">
-              <Input
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => {
-                  handleInputChange(e);
-                }}
-                className="m-2 h-[28px] w-[200px] rounded-sm"
-                placeholder="Type to search..."
-              />
-              {(filters.search !== '' || inputValue !== '') && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="text-primary-text absolute right-2 hover:bg-transparent"
-                  onClick={handleClearInput}
-                >
-                  <Image src={IcClose} width={15} height={15} alt="close" />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-row items-center">
-            <div>
-              <Select
-                defaultValue="ALL ROWS"
-                onValueChange={handleFilterRows}
-                disabled={isFilteringRows}
-              >
-                <SelectTrigger className="filter-select z-[999999] h-8 w-full cursor-pointer overflow-hidden rounded-sm border border-input-border bg-background-input p-2 text-xs font-thin">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent align="end">
-                  <SelectGroup>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="ALL ROWS"
-                    >
-                      <p className="text-sm font-normal">ALL ROWS</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="CHECKED ROWS"
-                    >
-                      <p className="text-sm font-normal">CHECKED ROWS</p>
-                    </SelectItem>
-                    <SelectItem
-                      className="text=xs cursor-pointer"
-                      value="UNCHECKED ROWS"
-                    >
-                      <p className="text-sm font-normal">UNCHECKED ROWS</p>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <DraggableColumn
-              defaultColumns={columns}
-              saveColumns={finalColumns}
-              userId={user.id}
-              gridName="GridAkunPusat"
-              setColumnsOrder={setColumnsOrder}
-              setColumnsWidth={setColumnsWidth}
-              onReset={() => {
-                setDataGridKey((prevKey) => prevKey + 1);
-                gridRef?.current?.selectCell({ rowIdx: 0, idx: 0 });
+      <div className="flex h-[100%]  w-full flex-col rounded-sm border border-blue-500 bg-white">
+        <div
+          className="flex h-[38px] w-full flex-row items-center rounded-t-sm border-b border-blue-500 px-2"
+          style={{
+            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+          }}
+        >
+          <label htmlFor="" className="text-xs text-zinc-600">
+            SEARCH :
+          </label>
+          <div className="relative flex w-[200px] flex-row items-center">
+            <Input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => {
+                handleInputChange(e);
               }}
+              className="m-2 h-[28px] w-[200px] rounded-sm bg-white text-black"
+              placeholder="Type to search..."
             />
+            {(filters.search !== '' || inputValue !== '') && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="absolute right-2 text-gray-500 hover:bg-transparent"
+                onClick={handleClearInput}
+              >
+                <Image src={IcClose} width={15} height={15} alt="close" />
+              </Button>
+            )}
           </div>
         </div>
 
         <DataGrid
-          key={dataGridKey}
           ref={gridRef}
           columns={finalColumns}
           rows={rows}
@@ -2411,7 +2183,7 @@ const GridAkunPusat = () => {
           onCellClick={handleCellClick}
           headerRowHeight={70}
           rowHeight={30}
-          className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
+          className="rdg-light fill-grid"
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onCellKeyDown={handleKeyDown}
@@ -2424,7 +2196,12 @@ const GridAkunPusat = () => {
           }}
           enableVirtualization={false}
         />
-        <div className="flex flex-row justify-between border border-x-0 border-b-0 border-border bg-background-grid-header p-2">
+        <div
+          className="flex flex-row justify-between border border-x-0 border-b-0 border-blue-500 p-2"
+          style={{
+            background: 'linear-gradient(to bottom, #eff5ff 0%, #e0ecff 100%)'
+          }}
+        >
           <ActionButton
             module="Type-Akuntansi"
             onAdd={handleAdd}
@@ -2432,8 +2209,6 @@ const GridAkunPusat = () => {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onView={handleView}
-            rowsLength={rows.length}
-            totalItems={allAkunpusat ? allAkunpusat.pagination.totalItems : 0}
             customActions={[
               {
                 label: 'Print',
@@ -2447,11 +2222,11 @@ const GridAkunPusat = () => {
           {contextMenu && (
             <div
               ref={contextMenuRef}
-              className="bg-background-input"
               style={{
                 position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
                 top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
                 left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
+                backgroundColor: 'white',
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',
