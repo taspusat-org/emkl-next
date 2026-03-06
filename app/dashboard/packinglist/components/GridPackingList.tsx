@@ -2039,6 +2039,7 @@ const GridPackingList = () => {
     setHasMore(newRows.length === filters.limit);
     setFetchedPages((prev) => new Set(prev).add(currentPage));
     setPrevFilters(filters);
+    setIsFirstLoad(false);
   }, [allData, currentPage, filters, isFetchingManually]);
   useEffect(() => {
     return () => {

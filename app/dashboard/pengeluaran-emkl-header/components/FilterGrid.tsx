@@ -26,51 +26,27 @@ import { IoMdRefresh } from 'react-icons/io';
 import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import FormLabel from '@/components/ui/form';
+import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
 
 const FilterGrid = () => {
   const dispatch = useDispatch();
-  const [popOverTglDari, setPopOverTglDari] = useState<boolean>(false);
+  const { onReload } = useSelector((state: any) => state.filter);
 
-  const [popOverTgl, setPopOverTgl] = useState<boolean>(false);
-  const {
-    selectedDate,
-    selectedDate2,
-    selectedKaryawan1,
-    selectedKaryawan2,
-    onReload
-  } = useSelector((state: any) => state.filter);
+  const [triggerValidation, setTriggerValidation] = useState(false);
 
-  const handleDateChange1 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate(newValue)); // Dispatch to Redux
-  };
-  const handleDateChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    dispatch(setSelectedDate2(newValue)); // Dispatch to Redux
-  };
-
-  const handleCalendarSelect1 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate(String(value)));
-      setPopOverTglDari(false); // Menutup popover setelah memilih tanggal
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
-  const handleCalendarSelect2 = (value: Date | undefined) => {
-    if (value) {
-      dispatch(setSelectedDate2(String(value)));
-
-      setPopOverTgl(false); // Menutup popover setelah memilih tanggal
-    } else {
-      setSelectedDate(''); // Jika tidak ada tanggal yang dipilih, set menjadi kosong
-    }
-  };
   const onSubmit = () => {
-    // dispatch(setProcessing());
-
-    dispatch(setOnReload(true));
+    setTriggerValidation(true);
   };
+
+  const handleValidationResult = (isValid: boolean) => {
+    if (triggerValidation) {
+      if (isValid) {
+        dispatch(setOnReload(true));
+      }
+      setTriggerValidation(false);
+    }
+  };
+
   const lookUpPropsPengeluaranEmkl = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],
@@ -110,32 +86,11 @@ const FilterGrid = () => {
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-border bg-background-grid-header">
         <div className="flex h-[30px] w-full flex-row items-center rounded-t-sm border-b border-border px-2" />
         <div className="bg-background-header p-4">
-          <div className="flex w-full flex-col items-center justify-between lg:flex-row">
-            <label htmlFor="" className="w-full text-sm font-bold lg:w-[20%]">
-              periode:
-              <span style={{ color: 'red', marginLeft: '4px' }}>*</span>
-            </label>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate}
-                showCalendar
-                onChange={handleDateChange1}
-                onSelect={handleCalendarSelect1}
-              />
-            </div>
-
-            <div className="flex w-[20%] items-center justify-center">
-              <p className="text-center text-sm font-bold">S/D</p>
-            </div>
-            <div className="relative w-full lg:w-[30%]">
-              <InputDatePicker
-                value={selectedDate2}
-                showCalendar
-                onChange={handleDateChange2}
-                onSelect={handleCalendarSelect2}
-              />
-            </div>
-          </div>
+          <PeriodeValidation
+            label="periode"
+            onValidationChange={handleValidationResult}
+            triggerValidation={triggerValidation}
+          />
           <div className="mt-2 flex w-[50%] flex-col items-center justify-between lg:flex-row">
             <label htmlFor="" className="w-full text-sm font-bold lg:w-[20%]">
               Pengeluaran Emkl:
@@ -172,15 +127,6 @@ const FilterGrid = () => {
       </div>
     </div>
   );
-};
-
-// Fungsi untuk mengonversi string dd-mm-yyyy menjadi objek Date
-const parseDateFromDDMMYYYY = (dateString: string): Date | undefined => {
-  const parts = dateString.split('-');
-  if (parts.length !== 3) return undefined;
-  const [day, month, year] = parts.map(Number);
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return undefined;
-  return new Date(year, month - 1, day); // Menggunakan month - 1 karena JavaScript Date menganggap bulan dimulai dari 0
 };
 
 export default FilterGrid;
