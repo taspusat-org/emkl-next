@@ -15,6 +15,8 @@ import {
 import { useDispatch } from 'react-redux';
 import { extractPaperSizeFromPDF } from '@/lib/utils/paperSizeUtils';
 
+const PRINTER_API_BASE = 'http://localhost:3004';
+
 interface CustomPrintModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,28 +27,43 @@ interface CustomPrintModalProps {
 }
 
 const isMobileDevice = (): boolean => {
-  const userAgent =
-    navigator.userAgent || navigator.vendor || (window as any).opera;
-
-  const mobileRegex =
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i;
-
-  const isMobilePlatform = /Android|iOS|iPhone|iPad|iPod/.test(
-    navigator.platform
-  );
-
-  const isTouchDevice =
-    'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-  const hasOrientation = typeof window.orientation !== 'undefined';
-
+  const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
   return (
-    mobileRegex.test(userAgent) ||
-    isMobilePlatform ||
-    (isTouchDevice && hasOrientation)
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(
+      ua
+    ) ||
+    /Android|iOS|iPhone|iPad|iPod/.test(navigator.platform) ||
+    ('ontouchstart' in window && typeof window.orientation !== 'undefined')
   );
 };
 
+async function callRestartSpooler(
+  printerHost: string | null,
+  printerName: string
+): Promise<{ cooldownSeconds: number; endsAt: number }> {
+  const isShared = printerHost !== null;
+  const url = isShared
+    ? `http://${printerHost}:3004/api/printer/restart-spooler`
+    : `${PRINTER_API_BASE}/api/printer/restart-spooler`;
+
+  const body = isShared ? { sharedPrinters: [printerName] } : {};
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.message || 'Restart spooler gagal');
+  return {
+    cooldownSeconds: data.cooldownSeconds || 30,
+    endsAt: data.endsAt || Date.now() + 30000
+  };
+}
+
+// ============================================================
+// Main Component
+// ============================================================
 const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   isOpen,
   onClose,
@@ -61,9 +78,8 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const [loadingPrinters, setLoadingPrinters] = useState(false);
   const [layout, setLayout] = useState<'portrait' | 'landscape'>('portrait');
   const [paperSize, setPaperSize] = useState('');
-  const [colorMode, setColorMode] = useState<'color' | 'bw'>(defaultColorMode);
+  const [colorMode] = useState<'color' | 'bw'>(defaultColorMode);
   const [isCheckingPrinters, setIsCheckingPrinters] = useState(false);
-
   const [pageOption, setPageOption] = useState<
     'all' | 'odd' | 'even' | 'custom'
   >('all');
@@ -74,8 +90,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const outerRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const printButtonRef = useRef<HTMLButtonElement | null>(null);
-  const closeButtonRef = useRef<HTMLDivElement | null>(null);
-
   const dragging = useRef(false);
   const start = useRef({ x: 0, y: 0 });
   const pos = useRef({ x: 0, y: 0 });
@@ -83,13 +97,12 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   const { alert } = useAlert();
   const dispatch = useDispatch();
 
+  // Check printers on open
   useEffect(() => {
     if (!isOpen) return;
-
     if (isCheckingPrinters || isPrinterCheckComplete) return;
 
-    const isMobile = isMobileDevice();
-    if (isMobile) {
+    if (isMobileDevice()) {
       alert({
         title: 'Silahkan gunakan perangkat Laptop / PC untuk mencetak dokumen',
         variant: 'danger',
@@ -105,19 +118,16 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         dispatch(setProcessing());
         setLoadingPrinters(true);
 
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Timeout')), 10000)
-        );
-        const printersPromise = getPrintersFn();
         const data = (await Promise.race([
-          printersPromise,
-          timeoutPromise
+          getPrintersFn(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 30000)
+          )
         ])) as PrinterInfo[];
 
         setPrinters(data);
-        const onlinePrinters = data.filter((p) => p.status === 'Online');
-
-        if (onlinePrinters.length === 0) {
+        const online = data.filter((p) => p.status === 'Online');
+        if (online.length === 0) {
           alert({
             title: 'Printer Belum ada, silahkan install terlebih dahulu',
             variant: 'danger',
@@ -130,7 +140,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         } else {
           setIsPrinterCheckComplete(true);
         }
-      } catch (err) {
+      } catch {
         alert({
           title: 'Printer Belum ada, silahkan install terlebih dahulu',
           variant: 'danger',
@@ -146,7 +156,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         dispatch(setProcessed());
       }
     };
-
     checkPrinters();
   }, [
     isOpen,
@@ -157,30 +166,20 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
     isPrinterCheckComplete
   ]);
 
+  // Block Ctrl+P & F12
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+      if (((e.ctrlKey || e.metaKey) && e.key === 'p') || e.key === 'F12') {
         e.preventDefault();
         e.stopPropagation();
-        return false;
-      }
-      if (e.key === 'F12') {
-        e.preventDefault();
-        e.stopPropagation();
-        return false;
       }
     };
-
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      return false;
     };
-
     window.addEventListener('keydown', handleKeyDown, true);
     window.addEventListener('contextmenu', handleContextMenu, true);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('contextmenu', handleContextMenu, true);
@@ -192,143 +191,120 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
     return () => setMounted(false);
   }, []);
 
+  // Keyboard shortcuts
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeydown = (e: KeyboardEvent) => {
       if (isLoading) return;
-
       if (e.key === 'Escape') {
         e.preventDefault();
-        e.stopPropagation();
         onClose();
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        e.stopPropagation();
         handleAction();
       }
     };
-
     window.addEventListener('keydown', handleKeydown, true);
     return () => window.removeEventListener('keydown', handleKeydown, true);
   }, [isOpen, onClose, isLoading]);
 
+  // Focus print button
   useEffect(() => {
     if (isOpen && !isLoading && isPrinterCheckComplete) {
-      const timer = setTimeout(() => {
-        printButtonRef.current?.focus();
-      }, 100);
-
+      const t = setTimeout(() => printButtonRef.current?.focus(), 100);
       pos.current = { x: 0, y: 0 };
-      if (innerRef.current) {
+      if (innerRef.current)
         innerRef.current.style.transform = 'translate3d(0,0,0)';
-      }
-
-      return () => clearTimeout(timer);
+      return () => clearTimeout(t);
     }
   }, [isOpen, isLoading, isPrinterCheckComplete]);
 
+  // Detect paper size from PDF
   useEffect(() => {
-    const detectPaperSizeFromDocument = async () => {
+    if (!isOpen || !docUrl || !isPrinterCheckComplete) return;
+    (async () => {
       try {
-        console.log('🔍 Starting paper size detection for:', docUrl);
-
         const result = await extractPaperSizeFromPDF(docUrl);
-
         if (result) {
-          console.log('Paper size detected:', result);
           setPaperSize(result.paperSize);
           setLayout(result.layout);
         } else {
-          console.log('Could not detect paper size, using defaults');
           setPaperSize('CUSTOM_A4');
           setLayout('portrait');
         }
-      } catch (err) {
-        console.error('Failed to detect paper size:', err);
+      } catch {
         setPaperSize('CUSTOM_A4');
         setLayout('portrait');
       }
-    };
-
-    if (isOpen && docUrl && isPrinterCheckComplete) {
-      detectPaperSizeFromDocument();
-    }
+    })();
   }, [isOpen, docUrl, isPrinterCheckComplete]);
 
+  // Restore last printer
   useEffect(() => {
     if (!isOpen || !isPrinterCheckComplete) return;
-
-    const lastPrinter = localStorage.getItem('lastPrinter');
-
-    if (lastPrinter) {
-      const isLastPrinterOnline = printers.some(
-        (p) =>
-          p.name.replace(/\\/g, '\\\\') === lastPrinter && p.status === 'Online'
-      );
-
-      if (isLastPrinterOnline) {
-        setDestination(lastPrinter);
-        return;
-      } else {
-        localStorage.removeItem('lastPrinter');
-      }
+    const last = localStorage.getItem('lastPrinter');
+    if (
+      last &&
+      printers.some(
+        (p) => p.name.replace(/\\/g, '\\\\') === last && p.status === 'Online'
+      )
+    ) {
+      setDestination(last);
+      return;
+    } else if (last) {
+      localStorage.removeItem('lastPrinter');
     }
-
-    const defaultPrinter = printers.find(
-      (p) => p.isDefault === true && p.status === 'Online'
-    );
-
-    if (defaultPrinter) {
-      setDestination(defaultPrinter.name.replace(/\\/g, '\\\\'));
+    const def = printers.find((p) => p.isDefault && p.status === 'Online');
+    if (def) {
+      setDestination(def.name.replace(/\\/g, '\\\\'));
       return;
     }
-
     setDestination('');
   }, [isOpen, isPrinterCheckComplete, printers]);
 
+  // Reset on close
+  useEffect(() => {
+    if (!isOpen) {
+      setPrinters([]);
+      setIsPrinterCheckComplete(false);
+      setDestination('');
+    }
+  }, [isOpen]);
+
+  // Drag handlers
   const onPointerDown = (e: React.PointerEvent) => {
     const target = e.target as HTMLElement;
-
     if (target.tagName === 'BUTTON' || isLoading) {
       e.stopPropagation();
       return;
     }
-
     if (e.button !== 0) return;
-
     dragging.current = true;
     start.current = {
       x: e.clientX - pos.current.x,
       y: e.clientY - pos.current.y
     };
-
     innerRef.current?.setPointerCapture(e.pointerId);
   };
-
   const onPointerMove = (e: React.PointerEvent) => {
     if (!dragging.current) return;
-
     const x = e.clientX - start.current.x;
     const y = e.clientY - start.current.y;
     pos.current = { x, y };
-
-    if (innerRef.current) {
-      innerRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    }
+    if (innerRef.current)
+      innerRef.current.style.transform = `translate3d(${x}px,${y}px,0)`;
   };
-
   const onPointerUp = (e: React.PointerEvent) => {
     dragging.current = false;
     innerRef.current?.releasePointerCapture(e.pointerId);
   };
-
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && !isLoading) {
-      onClose();
-    }
+    if (e.target === e.currentTarget && !isLoading) onClose();
   };
 
+  // ============================================================
+  // handleAction: kirim print, tangkap error kertas_hilang
+  // ============================================================
   const handleAction = async () => {
     if (isLoading || isCheckingPrinters) return;
 
@@ -357,9 +333,80 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
       localStorage.setItem('lastPrinter', destination);
       onClose();
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Print error:', err);
+
+      let errorData: any = null;
+      try {
+        if (err?.response?.data) errorData = err.response.data;
+        else if (err?.message) {
+          try {
+            errorData = JSON.parse(err.message);
+          } catch {
+            /* not json */
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+
+      const status = errorData?.status;
+
+      // ✅ KERTAS HILANG — tutup print modal dulu, baru munculkan alert
+      if (status === 'kertas_hilang') {
+        const missing: string[] = errorData.missingPapers || [];
+        const printerHost: string | null = errorData.printerHost || null;
+        const printerDest = destination;
+
+        onClose(); // tutup print modal dulu agar alert tampil di depan
+
+        try {
+          await alert({
+            variant: 'danger',
+            title: `Kertas tidak terdeteksi: ${missing.join(
+              ', '
+            )}. Restart Print Spooler sekarang?`,
+            submitText: 'Ya, Restart',
+            cancelText: 'Tidak',
+            catchOnCancel: true
+          });
+
+          // User klik "Ya, Restart"
+          try {
+            await callRestartSpooler(printerHost, printerDest);
+            await alert({
+              variant: 'success',
+              title:
+                'Spooler sedang di-restart. Printer akan siap dalam 30 detik.',
+              submitText: 'OK'
+            });
+          } catch (restartErr: any) {
+            await alert({
+              variant: 'danger',
+              title: `Gagal restart spooler: ${restartErr.message}`,
+              submitText: 'OK'
+            });
+          }
+        } catch {
+          // User klik "Tidak" — tidak ada aksi tambahan
+        }
+        return;
+      }
+
+      // ✅ COOLDOWN AKTIF
+      if (status === 'spooler_cooldown') {
+        const remaining = errorData?.remainingSeconds || 30;
+        onClose();
+        await alert({
+          variant: 'danger',
+          title: `Printer sedang restart. Mohon tunggu ${remaining} detik lagi.`,
+          submitText: 'OK'
+        });
+        return;
+      }
+
+      // Error umum
       onClose();
-      console.error('Gagal mengirim dokumen ke printer:', err);
       alert({
         title: 'Gagal mengirim dokumen ke printer. Silahkan hubungi Tim IT',
         variant: 'danger',
@@ -372,19 +419,12 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
   useDisableBodyScroll(isOpen);
 
-  useEffect(() => {
-    if (!isOpen) {
-      setPrinters([]);
-      setIsPrinterCheckComplete(false);
-      setDestination('');
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
   if (!isPrinterCheckComplete) return null;
 
   const modalContent = (
     <>
+      {/* Backdrop */}
       <div
         ref={outerRef}
         className={cn(
@@ -396,6 +436,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         aria-hidden={!isOpen}
       />
 
+      {/* Print Modal */}
       <div
         className={cn(
           'fixed inset-0 z-[2147483641] flex items-center justify-center p-4',
@@ -428,7 +469,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
               Print Dialog
             </h2>
             <div
-              ref={closeButtonRef}
               className="w-fit rounded-sm bg-red-500 p-1"
               onPointerDown={(e) => e.stopPropagation()}
             >
@@ -440,6 +480,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
           </div>
 
           <div className="flex flex-col gap-3 border border-blue-500 border-b-[#dddddd] bg-white px-4 py-4">
+            {/* Destination */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-gray-700">
                 Destination
@@ -447,9 +488,9 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
               <select
                 value={destination}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  setDestination(val);
-                  localStorage.setItem('lastPrinter', val);
+                  const v = e.target.value;
+                  setDestination(v);
+                  localStorage.setItem('lastPrinter', v);
                 }}
                 disabled={isLoading}
                 className="w-full border border-gray-400 bg-white px-3 py-2 text-sm text-gray-800 focus:border-blue-500 focus:outline-none disabled:opacity-50"
@@ -477,6 +518,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
               </select>
             </div>
 
+            {/* Pages */}
             {showPages && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold uppercase tracking-wider text-gray-700">
@@ -493,7 +535,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
                   <option value="even">Even pages only</option>
                   <option value="custom">Customised</option>
                 </select>
-
                 {pageOption === 'custom' && (
                   <Input
                     type="text"
@@ -507,6 +548,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
               </div>
             )}
 
+            {/* Loading spinner */}
             {isLoading && (
               <div className="flex justify-center">
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500" />
@@ -514,6 +556,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
             )}
           </div>
 
+          {/* Actions */}
           <div className="flex items-start gap-4 border-x border-b border-blue-500 border-t-[#dddddd] bg-[#f4f4f4] py-2 md:flex-row">
             <Button
               type="submit"
@@ -548,13 +591,15 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
   if (!portalRoot) {
     portalRoot = document.createElement('div');
     portalRoot.id = 'print-modal-root';
-    portalRoot.style.position = 'fixed';
-    portalRoot.style.top = '0';
-    portalRoot.style.left = '0';
-    portalRoot.style.right = '0';
-    portalRoot.style.bottom = '0';
-    portalRoot.style.pointerEvents = 'none';
-    portalRoot.style.zIndex = '2147483647';
+    Object.assign(portalRoot.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      right: '0',
+      bottom: '0',
+      pointerEvents: 'none',
+      zIndex: '2147483647'
+    });
     document.body.appendChild(portalRoot);
   }
 
