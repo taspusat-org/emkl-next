@@ -352,43 +352,28 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
 
       const status = errorData?.status;
 
-      // ✅ KERTAS HILANG — tutup print modal dulu, baru munculkan alert
+      // ✅ KERTAS HILANG — langsung restart spooler, tampilkan hasil lewat useAlert
       if (status === 'kertas_hilang') {
-        const missing: string[] = errorData.missingPapers || [];
         const printerHost: string | null = errorData.printerHost || null;
         const printerDest = destination;
 
-        onClose(); // tutup print modal dulu agar alert tampil di depan
+        // Tutup print modal dulu agar alert dari useAlert tampil bebas tanpa z-index bentrok
+        onClose();
 
         try {
-          await alert({
-            variant: 'danger',
-            title: `Kertas tidak terdeteksi: ${missing.join(
-              ', '
-            )}. Restart Print Spooler sekarang?`,
-            submitText: 'Ya, Restart',
-            cancelText: 'Tidak',
-            catchOnCancel: true
+          await callRestartSpooler(printerHost, printerDest);
+          alert({
+            variant: 'success',
+            title:
+              'Kertas hilang terdeteksi. Spooler telah di-restart, printer akan siap dalam 30 detik. Silakan cetak ulang.',
+            submitText: 'OK'
           });
-
-          // User klik "Ya, Restart"
-          try {
-            await callRestartSpooler(printerHost, printerDest);
-            await alert({
-              variant: 'success',
-              title:
-                'Spooler sedang di-restart. Printer akan siap dalam 30 detik.',
-              submitText: 'OK'
-            });
-          } catch (restartErr: any) {
-            await alert({
-              variant: 'danger',
-              title: `Gagal restart spooler: ${restartErr.message}`,
-              submitText: 'OK'
-            });
-          }
-        } catch {
-          // User klik "Tidak" — tidak ada aksi tambahan
+        } catch (restartErr: any) {
+          alert({
+            variant: 'danger',
+            title: `Kertas hilang terdeteksi. Gagal restart spooler: ${restartErr.message}`,
+            submitText: 'OK'
+          });
         }
         return;
       }
@@ -397,7 +382,7 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
       if (status === 'spooler_cooldown') {
         const remaining = errorData?.remainingSeconds || 30;
         onClose();
-        await alert({
+        alert({
           variant: 'danger',
           title: `Printer sedang restart. Mohon tunggu ${remaining} detik lagi.`,
           submitText: 'OK'
