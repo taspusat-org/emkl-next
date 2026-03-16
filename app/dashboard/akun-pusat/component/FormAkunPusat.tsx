@@ -369,6 +369,9 @@ const FormAkunPusat = ({
                             forms.setValue('type_id', Number(id))
                           }
                           required={true}
+                          onSelectRow={(val) =>
+                            forms.setValue('type_nama', val?.nama)
+                          }
                           inputLookupValue={forms.getValues('type_id')}
                           lookupNama={forms.getValues('type_nama')}
                         />
@@ -395,6 +398,9 @@ const FormAkunPusat = ({
                           name="cabang_id"
                           forms={forms}
                           required={true}
+                          onSelectRow={(val) =>
+                            forms.setValue('cabang_nama', val?.nama)
+                          }
                           inputLookupValue={forms.getValues('cabang_id')}
                           lookupNama={forms.getValues('cabang_nama')}
                         />
@@ -419,6 +425,9 @@ const FormAkunPusat = ({
                           forms={forms}
                           lookupValue={(id) =>
                             forms.setValue('statusaktif', Number(id))
+                          }
+                          onSelectRow={(val) =>
+                            forms.setValue('statusaktif_nama', val?.text)
                           }
                           inputLookupValue={forms.getValues('statusaktif')}
                           lookupNama={forms.getValues('statusaktif_nama')}

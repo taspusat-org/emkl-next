@@ -10155,7 +10155,6 @@ const GridShipper = () => {
           setRows([]);
           setRows(response.data);
           setIsDataUpdated(true);
-          // setCurrentPage(pageNumber);
           setVisiblePages(fetchedPages);
           setSelectedRow(indexOnPage);
           setPageDataCache(
@@ -10818,14 +10817,6 @@ const GridShipper = () => {
     }
   }, [forms, selectedRow, rows, mode]);
   useEffect(() => {
-    // Initialize the refs based on columns dynamically
-    columns.forEach((col) => {
-      if (!inputColRefs.current[col.key]) {
-        inputColRefs.current[col.key] = null;
-      }
-    });
-  }, []);
-  useEffect(() => {
     if (isSubmitSuccessful) {
       // reset();
       // Pastikan fokus terjadi setelah repaint
@@ -10833,9 +10824,6 @@ const GridShipper = () => {
     }
   }, [isSubmitSuccessful, setFocus]);
 
-  const modifiedByIndex = finalColumns.findIndex(
-    (col) => col.key === 'statusaktif'
-  );
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) {
@@ -10856,6 +10844,14 @@ const GridShipper = () => {
       debouncedFilterUpdate.cancel();
     };
   }, []);
+  useEffect(() => {
+    if (!isTransitioning && !isFetching) {
+      // Reset flag setelah transisi selesai
+      setTimeout(() => {
+        hasAdjustedScrollRef.current = false;
+      }, 200);
+    }
+  }, [isTransitioning, isFetching]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%]  w-full flex-col rounded-sm border border-border bg-background">
@@ -10968,6 +10964,7 @@ const GridShipper = () => {
             onEdit={handleEdit}
             rowsLength={rows.length}
             totalItems={allShipper ? allShipper.pagination.totalItems : 0}
+            startRow={(Math.min(...visiblePages) - 1) * filters.limit + 1}
             customActions={[
               {
                 label: 'Print',

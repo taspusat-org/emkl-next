@@ -90,9 +90,9 @@ const ReportMenuPage: React.FC = () => {
   const layoutPluginInstance = HeaderPdfViewer(
     handleExport, // Pass callback export dinamis
     onPrint,
-    pdfUrl,
     printPluginInstance, // Pass instance print
-    zoomPluginInstance // Pass instance zoom
+    zoomPluginInstance, // Pass instance zoom
+    pdfUrl
   );
 
   useEffect(() => {

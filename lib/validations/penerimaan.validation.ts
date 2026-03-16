@@ -1,8 +1,9 @@
 import { z } from 'zod';
+import { dynamicRequiredMessage } from '../utils';
 
 export const penerimaanDetailSchema = z.object({
   id: z.string().optional(),
-  coa: z.string().nullable(),
+  coa: z.string().min(1, { message: dynamicRequiredMessage('COA') }),
   keterangan: z.string().nullable(),
   nominal: z.string().nullable()
 });

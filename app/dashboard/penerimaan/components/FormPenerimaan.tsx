@@ -16,7 +16,6 @@ import LookUp from '@/components/custom-ui/LookUp';
 import { Input } from '@/components/ui/input';
 import { IoMdClose, IoMdRefresh } from 'react-icons/io';
 import { FaSave, FaTimes, FaTrashAlt } from 'react-icons/fa';
-import InputMask from '@mona-health/react-input-mask';
 import DataGrid, {
   CellKeyDownArgs,
   Column,
@@ -24,12 +23,8 @@ import DataGrid, {
 } from 'react-data-grid';
 import { formatCurrency, isLeapYear, parseCurrency } from '@/lib/utils';
 import InputDatePicker from '@/components/custom-ui/InputDatePicker';
-import { KasGantungDetail } from '@/lib/types/kasgantungheader.type';
 import { FaRegSquarePlus } from 'react-icons/fa6';
-import { Textarea } from '@/components/ui/textarea';
-import { useGetKasGantungDetail } from '@/lib/server/useKasGantung';
 import InputCurrency from '@/components/custom-ui/InputCurrency';
-import LookUpModal from '@/components/custom-ui/LookUpModal';
 import { PenerimaanDetail } from '@/lib/types/penerimaan.type';
 import { useGetPenerimaanDetail } from '@/lib/server/usePenerimaan';
 import { useTheme } from 'next-themes';
@@ -143,7 +138,6 @@ const FormPenerimaan = ({
     (acc, row) => acc + (row.nominal ? parseCurrency(row.nominal) : 0),
     0
   );
-
   const columns = useMemo((): Column<PenerimaanDetail>[] => {
     return [
       {
@@ -231,7 +225,7 @@ const FormPenerimaan = ({
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
-              <p className={`text-sm font-normal`}>COA</p>
+              <FormLabel required={true}>COA</FormLabel>
             </div>
             <div className="relative h-[50%] w-full px-1"></div>
           </div>
@@ -253,6 +247,10 @@ const FormPenerimaan = ({
                         disabled={mode === 'view' || mode === 'delete'}
                         lookupValue={(id) =>
                           handleInputChange(rowIdx, 'coa', String(id))
+                        }
+                        errorMessage={
+                          forms.formState.errors.details?.[rowIdx]?.coa
+                            ?.message as string
                         }
                         inputLookupValue={props.row.coa}
                         lookupNama={props.row.coa_nama}
@@ -298,7 +296,7 @@ const FormPenerimaan = ({
                       e.target.value
                     )
                   }
-                  className="h-2 min-h-9 w-full rounded border border-gray-300"
+                  className="h-2 min-h-9 w-full rounded"
                 />
               )}
             </div>
@@ -343,7 +341,7 @@ const FormPenerimaan = ({
         }
       }
     ];
-  }, [rows, checkedRows, editingRowId, editableValues]);
+  }, [rows, checkedRows, editingRowId, editableValues, forms.formState.errors]);
   const lookUpPropsRelasi = [
     {
       columns: [{ key: 'nama', name: 'NAMA' }],

@@ -20,10 +20,17 @@ import { MdOutlineZoomOut } from 'react-icons/md';
 import { FaDownload, FaFileExport, FaPrint } from 'react-icons/fa';
 import { exportShipperFn } from '@/lib/apis/shipper.api';
 import { exportKasGantungFn } from '@/lib/apis/kasgantungheader.api';
+import { HeaderPdfViewer } from '@/components/custom-ui/HeaderPdfViewer';
+import CustomPrintModal from '@/components/custom-ui/CustomPrint';
+import { useDispatch } from 'react-redux';
+import { setProcessed } from '@/lib/store/loadingSlice/loadingSlice';
 const ReportMenuPage: React.FC = () => {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [savedFilters, setSavedFilters] = useState<any>({});
   const [savedId, setSaveId] = useState<any>('');
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const dispatch = useDispatch();
+
   // Print plugin
   const printPluginInstance = printPlugin();
   const { Print } = printPluginInstance;
@@ -75,82 +82,16 @@ const ReportMenuPage: React.FC = () => {
       console.error('Error exporting shipper data:', error);
     }
   };
-
-  const layoutPluginInstance = defaultLayoutPlugin({
-    sidebarTabs: (defaultTabs) => [defaultTabs[0]],
-    renderToolbar: (Toolbar: React.ComponentType<ToolbarProps>) => (
-      <Toolbar>
-        {(slots: ToolbarSlot) => {
-          const {
-            GoToFirstPage,
-            GoToPreviousPage,
-            GoToNextPage,
-            GoToLastPage,
-            ZoomOut: DefaultZoomOut,
-            ZoomIn: DefaultZoomIn,
-            CurrentScale,
-            CurrentPageInput,
-            Download,
-            SwitchTheme,
-            EnterFullScreen
-          } = slots;
-          return (
-            <div className="relative grid w-full grid-cols-3 items-center gap-4 overflow-visible bg-white px-4 py-2 shadow dark:bg-red-500">
-              {/* Column 1: page navigation */}
-              <div className="flex items-center justify-start gap-2">
-                <GoToFirstPage />
-                <GoToPreviousPage />
-                <CurrentPageInput />
-                <GoToNextPage />
-                <GoToLastPage />
-              </div>
-
-              {/* Column 2: zoom controls */}
-              <div className="relative flex items-center justify-center gap-2 text-black">
-                <DefaultZoomOut />
-                <ZoomPopover />
-                <DefaultZoomIn />
-                {/* Zoom popover from zoom plugin */}
-              </div>
-
-              {/* Column 3: download, print, theme, fullscreen */}
-              <div className="flex items-center justify-end gap-2">
-                <Download>
-                  {(props) => (
-                    <button
-                      onClick={props.onClick}
-                      className="flex flex-row items-center gap-2 rounded bg-green-600 px-3 py-1 text-white hover:bg-green-800"
-                    >
-                      <FaDownload /> Download
-                    </button>
-                  )}
-                </Download>
-
-                <Print>
-                  {(props: RenderPrintProps) => (
-                    <button
-                      onClick={props.onClick}
-                      className="flex flex-row items-center gap-2 rounded bg-cyan-500 px-3 py-1 text-white hover:bg-cyan-700"
-                    >
-                      <FaPrint /> Print
-                    </button>
-                  )}
-                </Print>
-                <button
-                  onClick={() => handleExport()}
-                  className="flex flex-row items-center gap-2 rounded bg-orange-500 px-3 py-1 text-white hover:bg-cyan-700"
-                >
-                  <FaFileExport /> Export
-                </button>
-
-                <EnterFullScreen />
-              </div>
-            </div>
-          );
-        }}
-      </Toolbar>
-    )
-  });
+  const onPrint = () => {
+    setIsPrintModalOpen(true);
+  };
+  const layoutPluginInstance = HeaderPdfViewer(
+    handleExport, // Pass callback export dinamis
+    onPrint,
+    printPluginInstance, // Pass instance print
+    zoomPluginInstance, // Pass instance zoom
+    pdfUrl
+  );
 
   useEffect(() => {
     const stored = sessionStorage.getItem('pdfUrl');
@@ -166,6 +107,17 @@ const ReportMenuPage: React.FC = () => {
   return (
     <div className="flex h-screen w-screen flex-col">
       <main className="flex-1 overflow-hidden">
+        {pdfUrl && (
+          <CustomPrintModal
+            isOpen={isPrintModalOpen}
+            onClose={() => {
+              setIsPrintModalOpen(false);
+              dispatch(setProcessed());
+            }}
+            docUrl={pdfUrl ?? ''}
+            showPages={true}
+          />
+        )}
         {pdfUrl ? (
           <Worker workerUrl="/pdf.worker.min.js">
             <Viewer
