@@ -519,7 +519,7 @@ const GridAkunPusat = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        headerCellClass: 'column-header',
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -660,7 +660,7 @@ const GridAkunPusat = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        headerCellClass: 'column-header',
+        headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1309,7 +1309,6 @@ const GridAkunPusat = () => {
           await handleMultipleDelete(checkedRowsArray);
 
           setIsAfterMutation(true);
-          // Reset isAfterMutation setelah 1 detik
           setTimeout(() => {
             setIsAfterMutation(false);
           }, 1000);
@@ -1347,10 +1346,11 @@ const GridAkunPusat = () => {
   };
 
   const onSuccess = async (
-    indexOnPage: any,
-    fetchedPages: any,
-    pagedData: any,
-    keepOpenModal: any = false
+    indexOnPage: number,
+    fetchedPages: number[],
+    pagedData: Record<string, IAkunpusat[]>,
+    pageNumber: number,
+    keepOpenModal = false
   ) => {
     dispatch(setClearLookup(true));
     clearError();
@@ -1365,16 +1365,15 @@ const GridAkunPusat = () => {
 
         // setRows([]);
         if (mode !== 'delete') {
-          const response = await api2.get(`/redis/get/akunpusat-allItems`);
+          const response = await api2.get(
+            `/redis/get/akunpusat-page-${pageNumber}`
+          );
           // Set the rows only if the data has changed
           if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
             setRows([]);
-            console.log('response', response);
             setRows(response.data);
             setIsDataUpdated(true);
-            // setCurrentPage(pageNumber);
             setVisiblePages(fetchedPages);
-            console.log(fetchedPages, 'fetchedPages');
             setSelectedRow(indexOnPage);
             setPageDataCache(
               new Map(
@@ -1399,13 +1398,6 @@ const GridAkunPusat = () => {
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsDataUpdated(false);
-    } finally {
-      // dispatch(setClearLookup(false));
-      setIsDataUpdated(false);
-      // Reset isAfterMutation setelah 1 detik untuk mengaktifkan kembali scroll handler
-      setTimeout(() => {
-        setIsAfterMutation(false);
-      }, 1000);
     }
   };
 
@@ -1421,7 +1413,6 @@ const GridAkunPusat = () => {
               setRows((prevRows) =>
                 prevRows.filter((row) => row.id !== selectedRowId)
               );
-              setIsAfterMutation(true);
               if (selectedRow === 0) {
                 setSelectedRow(selectedRow);
                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
@@ -1432,10 +1423,6 @@ const GridAkunPusat = () => {
                   idx: 1
                 });
               }
-              // Reset isAfterMutation setelah 1 detik
-              setTimeout(() => {
-                setIsAfterMutation(false);
-              }, 1000);
             }
           });
         }
@@ -1453,6 +1440,7 @@ const GridAkunPusat = () => {
                 data.itemIndex,
                 data.fetchedPages,
                 data.pagedData,
+                data.pageNumber,
                 keepOpenModal
               )
           }
@@ -1471,7 +1459,12 @@ const GridAkunPusat = () => {
           },
           {
             onSuccess: (data) =>
-              onSuccess(data.itemIndex, data.fetchedPages, data.pagedData)
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber
+              )
           }
         );
         queryClient.invalidateQueries('akunpusat');
@@ -1482,80 +1475,6 @@ const GridAkunPusat = () => {
       dispatch(setProcessed());
     }
   };
-
-  // const loadGridConfig = async (userId: string, gridName: string) => {
-  //   try {
-  //     const response = await fetch(
-  //       `/api/loadgrid?userId=${userId}&gridName=${gridName}`
-  //     );
-  //     if (!response.ok) {
-  //       throw new Error('Failed to load grid configuration');
-  //     }
-
-  //     const { columnsOrder, columnsWidth }: GridConfig = await response.json();
-
-  //     setColumnsOrder(
-  //       columnsOrder && columnsOrder.length
-  //         ? columnsOrder
-  //         : columns.map((_, index) => index)
-  //     );
-  //     setColumnsWidth(
-  //       columnsWidth && Object.keys(columnsWidth).length
-  //         ? columnsWidth
-  //         : columns.reduce(
-  //             (acc, column) => ({
-  //               ...acc,
-  //               [column.key]: columnsWidth[column.key] || column.width // Use width from columnsWidth or fallback to default column width
-  //             }),
-  //             {}
-  //           )
-  //     );
-  //   } catch (error) {
-  //     console.error('Failed to load grid configuration:', error);
-
-  //     // If configuration is not available or error occurs, fallback to original column widths
-  //     setColumnsOrder(columns.map((_, index) => index));
-
-  //     setColumnsWidth(
-  //       columns.reduce(
-  //         (acc, column) => {
-  //           // Use the original column width instead of '1fr' when configuration is missing or error occurs
-  //           acc[column.key] =
-  //             typeof column.width === 'number' ? column.width : 0; // Ensure width is a number or default to 0
-  //           return acc;
-  //         },
-  //         {} as { [key: string]: number }
-  //       )
-  //     );
-  //   }
-  // };
-
-  // const saveGridConfig = async (
-  //   userId: string, // userId sebagai identifier
-  //   gridName: string,
-  //   columnsOrder: number[],
-  //   columnsWidth: { [key: string]: number }
-  // ) => {
-  //   try {
-  //     const response = await fetch('/api/savegrid', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json'
-  //       },
-  //       body: JSON.stringify({
-  //         userId,
-  //         gridName,
-  //         config: { columnsOrder, columnsWidth }
-  //       })
-  //     });
-
-  //     if (!response.ok) {
-  //       throw new Error('Failed to save grid configuration');
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to save grid configuration:', error);
-  //   }
-  // };
 
   const onColumnResize = (index: number, width: number) => {
     const columnKey = columns[columnsOrder[index]].key; // 1) Dapatkan key kolom yang di-resize
@@ -1687,14 +1606,15 @@ const GridAkunPusat = () => {
 
     // HITUNG ROW INDEX BERDASARKAN SCROLL POSITION
     const rowHeight = 30;
-    const currentRowIndex = Math.floor(scrollTop / rowHeight);
+    const firstVisibleRow = Math.floor(scrollTop / rowHeight);
+    const lastVisibleRow = Math.floor((scrollTop + clientHeight) / rowHeight);
 
-    // Threshold untuk trigger fetch
-    const topThreshold = scrollHeight * 0.2; // Ubah ke 20% untuk trigger lebih awal
-    const bottomThreshold = scrollHeight * 0.7; // Ubah ke 70%
+    // Threshold berdasarkan jumlah baris (50 baris dari atas/bawah)
+    const THRESHOLD_ROWS = 50;
 
-    // SCROLL KE BAWAH
-    if (scrollTop + clientHeight >= bottomThreshold) {
+    // SCROLL KE BAWAH - trigger jika kurang dari 50 baris tersisa di bawah
+    const rowsRemainingBelow = rows.length - lastVisibleRow;
+    if (rowsRemainingBelow <= THRESHOLD_ROWS) {
       const maxPage = Math.max(...visiblePages);
       const nextPage = maxPage + 1;
 
@@ -1704,11 +1624,6 @@ const GridAkunPusat = () => {
         !isFetching &&
         isScrolling
       ) {
-        console.log(
-          `⬇️ Trigger fetch page ${nextPage} at row ${currentRowIndex} (scroll: ${Math.round(
-            ((scrollTop + clientHeight) / scrollHeight) * 100
-          )}%)`
-        );
         setIsFetching(true);
         setIsTransitioning(true);
         hasAdjustedScrollRef.current = false;
@@ -1716,8 +1631,8 @@ const GridAkunPusat = () => {
       }
     }
 
-    // SCROLL KE ATAS
-    if (scrollTop <= topThreshold) {
+    // SCROLL KE ATAS - trigger jika scroll berada di 50 baris pertama
+    if (firstVisibleRow <= THRESHOLD_ROWS) {
       const minPage = Math.min(...visiblePages);
       const prevPage = minPage - 1;
 
@@ -1727,11 +1642,6 @@ const GridAkunPusat = () => {
         !isFetching &&
         isScrolling
       ) {
-        console.log(
-          `⬆️ Trigger fetch page ${prevPage} at row ${currentRowIndex} (scroll: ${Math.round(
-            (scrollTop / scrollHeight) * 100
-          )}%)`
-        );
         setIsFetching(true);
         setIsTransitioning(true);
         hasAdjustedScrollRef.current = false;
@@ -1926,8 +1836,6 @@ const GridAkunPusat = () => {
     }
   }, [isFirstLoad, rows]);
 
-  // useEffect untuk handle bulk fetch (initial load, filter, sort, search)
-
   useEffect(() => {
     const handleBulkFetch = async () => {
       // Hanya proses jika shouldBulkFetch true dan ada data dari API
@@ -1943,8 +1851,6 @@ const GridAkunPusat = () => {
       const bulkData = allAkunpusat.data || [];
 
       if (bulkData.length === 0) return;
-
-      console.log('🚀 Bulk fetch - fetched 150 rows, splitting into 5 pages');
 
       const pageSize = 30;
       const newCache = new Map<number, IAkunpusat[]>();
@@ -1993,8 +1899,6 @@ const GridAkunPusat = () => {
 
     const newRows = allAkunpusat.data || [];
 
-    console.log(`📄 Fetched page ${currentPage}: ${newRows.length} rows`);
-
     // SIMPAN SCROLL INFO SEBELUM UPDATE
     const scrollContainer = scrollContainerRef.current;
     const scrollBeforeUpdate = scrollContainer
@@ -2024,8 +1928,6 @@ const GridAkunPusat = () => {
         const newPages = [...prevVisible.slice(1), currentPage];
         const removedPage = prevVisible[0];
 
-        console.log(`⬇️ Scroll down: ${prevVisible} → ${newPages}`);
-
         // ADJUST SCROLL SETELAH PAGE DIHAPUS
         setTimeout(() => {
           if (scrollContainer && scrollBeforeUpdate) {
@@ -2043,9 +1945,6 @@ const GridAkunPusat = () => {
             requestAnimationFrame(() => {
               scrollContainer.scrollTop = newScrollTop;
               scrollPositionRef.current = newScrollTop;
-              console.log(
-                `  📍 Adjusted scroll DOWN: ${scrollBeforeUpdate.scrollTop}px → ${newScrollTop}px (removed ${removedHeight}px)`
-              );
             });
           }
         }, 50);
@@ -2054,7 +1953,6 @@ const GridAkunPusat = () => {
         setPageDataCache((prev) => {
           const updated = new Map(prev);
           updated.delete(removedPage);
-          console.log(`  🗑️ Removed page ${removedPage} from cache`);
           return updated;
         });
 
@@ -2067,8 +1965,6 @@ const GridAkunPusat = () => {
       if (currentPage < minVisible) {
         const newPages = [currentPage, ...prevVisible.slice(0, 4)];
         const removedPage = prevVisible[4];
-
-        console.log(`⬆️ Scroll up: ${prevVisible} → ${newPages}`);
 
         // ADJUST SCROLL SETELAH PAGE DITAMBAH DI DEPAN
         setTimeout(() => {
@@ -2092,17 +1988,7 @@ const GridAkunPusat = () => {
               scrollContainer.scrollTop = newScrollTop;
               scrollPositionRef.current = newScrollTop;
               hasAdjustedScrollRef.current = true;
-
-              console.log(
-                `  📍 Adjusted scroll UP: ${scrollBeforeUpdate.scrollTop}px → ${newScrollTop}px (added ${addedHeight}px at top)`
-              );
-
-              // Log untuk verifikasi
-              const rowIndex = Math.floor(newScrollTop / rowHeight);
-              console.log(`  📊 User sekarang di row index: ~${rowIndex}`);
             });
-          } else if (hasAdjustedScrollRef.current) {
-            console.log(`  ⏭️ Skipped scroll adjustment (already adjusted)`);
           }
         }, 50);
 
@@ -2110,7 +1996,6 @@ const GridAkunPusat = () => {
         setPageDataCache((prev) => {
           const updated = new Map(prev);
           updated.delete(removedPage);
-          console.log(`  🗑️ Removed page ${removedPage} from cache`);
           return updated;
         });
 
@@ -2139,19 +2024,6 @@ const GridAkunPusat = () => {
     shouldBulkFetch,
     isAfterMutation
   ]);
-
-  // ============================================
-  // useEffect #3: COMBINE VISIBLE PAGES INTO ROWS
-  // ============================================
-  useEffect(() => {
-    if (gridRef.current && dataGridKey) {
-      setTimeout(() => {
-        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-        setIsFirstLoad(false);
-      }, 0);
-    }
-  }, [dataGridKey]);
-
   useEffect(() => {
     const combinedRows: IAkunpusat[] = [];
 
@@ -2172,20 +2044,25 @@ const GridAkunPusat = () => {
       // Simpan nilai untuk perbandingan di render berikutnya
       prevMinPageRef.current = newMinPage;
       prevRowsLengthRef.current = combinedRows.length;
-
-      console.log(
-        `📊 Combined rows: ${combinedRows.length} (pages: ${visiblePages})`
-      );
     }
   }, [visiblePages, pageDataCache]);
-  console.log('pageDataCache', pageDataCache);
-  console.log('visiblePages', visiblePages);
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
       cell.setAttribute('tabindex', '-1');
     });
+    document.querySelectorAll('.column-headers').forEach((element) => {
+      element.classList.remove('c1kqdw7y7-0-0-beta-47');
+    });
   }, []);
+  useEffect(() => {
+    if (gridRef.current && dataGridKey) {
+      setTimeout(() => {
+        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
+        setIsFirstLoad(false);
+      }, 0);
+    }
+  }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
@@ -2240,34 +2117,6 @@ const GridAkunPusat = () => {
   }, [forms, selectedRow, rows, mode]);
 
   useEffect(() => {
-    // Initialize the refs based on columns dynamically
-    columns.forEach((col) => {
-      if (!inputColRefs.current[col.key]) {
-        inputColRefs.current[col.key] = null;
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        clearError();
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
-
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
-  useEffect(() => {
     // Memastikan refetch dilakukan saat filters berubah
     if (filters !== prevFilters) {
       refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
@@ -2294,6 +2143,13 @@ const GridAkunPusat = () => {
     };
   }, []);
   useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+  useEffect(() => {
     if (!isTransitioning && !isFetching) {
       // Reset flag setelah transisi selesai
       setTimeout(() => {
@@ -2301,25 +2157,6 @@ const GridAkunPusat = () => {
       }, 200);
     }
   }, [isTransitioning, isFetching]);
-
-  useEffect(() => {
-    console.log('📊 State Debug:', {
-      shouldBulkFetch,
-      currentPage,
-      effectiveLimit,
-      visiblePages,
-      cacheSize: pageDataCache.size,
-      rowsCount: rows.length,
-      cachedPages: Array.from(pageDataCache.keys())
-    });
-  }, [
-    shouldBulkFetch,
-    currentPage,
-    effectiveLimit,
-    visiblePages,
-    pageDataCache,
-    rows
-  ]);
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
       <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
@@ -2434,6 +2271,7 @@ const GridAkunPusat = () => {
             onView={handleView}
             rowsLength={rows.length}
             totalItems={allAkunpusat ? allAkunpusat.pagination.totalItems : 0}
+            startRow={(Math.min(...visiblePages) - 1) * filters.limit + 1}
             customActions={[
               {
                 label: 'Print',

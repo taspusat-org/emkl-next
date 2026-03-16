@@ -94,6 +94,17 @@ const InputDatePicker: React.FC<DateInputProps> = ({
           const nextVal = nextState.value || '';
           const parts = nextVal.split('-');
 
+          // Validate D2 immediately when D1='3': only allow 0 or 1
+          if (parts.length >= 1 && /^\d{2}/.test(parts[0])) {
+            const [d1, d2] = parts[0].split('');
+            if (d1 === '3' && d2 !== 'D' && Number(d2) > 1) {
+              return {
+                value: previousState.value,
+                selection: previousState.selection
+              };
+            }
+          }
+
           if (
             parts.length === 3 &&
             parts[0] !== 'DD' &&

@@ -1900,7 +1900,7 @@ export default function LookUp({
                         <Button
                           type="button"
                           variant="outline"
-                          className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+                          className="h-9 rounded-l-none border border-input-border bg-background-grid-header text-button-text hover:bg-background-input-focus hover:text-button-text"
                           onClick={handleButtonClick}
                           disabled={disabled}
                         >
@@ -1968,7 +1968,7 @@ export default function LookUp({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-9 rounded-l-none border border-[#adcdff] bg-[#e0ecff] text-[#0e2d5f] hover:bg-[#7eafff] hover:text-[#0e2d5f]"
+                    className="h-9 rounded-l-none border border-input-border bg-background-grid-header text-button-text hover:bg-[#7eafff] hover:text-[#0e2d5f]"
                     onClick={handleButtonClick}
                     disabled={disabled}
                   >

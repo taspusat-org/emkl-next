@@ -1,28 +1,14 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { CalendarIcon } from '@radix-ui/react-icons';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover';
-import InputMask from 'react-input-mask';
-import LookUp from '@/components/custom-ui/LookUp';
 import { useDispatch } from 'react-redux';
 import {
   setOnReload,
   setSelectedDate,
-  setSelectedDate2,
-  setSelectedKaryawan1,
-  setSelectedKaryawan2
+  setSelectedDate2
 } from '@/lib/store/filterSlice/filterSlice';
 import { useSelector } from 'react-redux';
-import { IoReload } from 'react-icons/io5';
 import { Button } from '@/components/ui/button';
 import { IoMdRefresh } from 'react-icons/io';
-import { setProcessing } from '@/lib/store/loadingSlice/loadingSlice';
-import InputDatePicker from '@/components/custom-ui/InputDatePicker';
 import PeriodeValidation from '@/components/custom-ui/PeriodeValidate';
 
 const FilterGrid = () => {

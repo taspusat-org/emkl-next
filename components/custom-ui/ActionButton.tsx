@@ -63,6 +63,7 @@ interface BaseActionProps {
   disableReport?: boolean;
   rowsLength?: number;
   totalItems?: number;
+  startRow?: number;
 }
 
 const ActionButton = ({
@@ -74,6 +75,7 @@ const ActionButton = ({
   onView,
   rowsLength = 0,
   totalItems = 0,
+  startRow = 1,
   checkedRows,
   module = '',
   customActions = [],
@@ -479,7 +481,8 @@ const ActionButton = ({
       {rowsLength > 0 && totalItems > 0 && (
         <div className="flex h-fit w-[150px] items-center justify-center lg:h-full lg:justify-end">
           <p className="text-primary-text text-xs">
-            View {rowsLength > 0 ? 1 : null} - {rowsLength} of{' '}
+            View {rowsLength > 0 ? startRow : null} -{' '}
+            {startRow > 1 ? startRow + rowsLength - 1 : rowsLength} of{' '}
             {totalItems ?? null}
           </p>
         </div>
