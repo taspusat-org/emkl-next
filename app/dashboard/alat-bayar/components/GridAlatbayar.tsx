@@ -99,6 +99,7 @@ import {
 } from '@/lib/utils';
 
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
+import { useSession } from 'next-auth/react';
 
 interface Filter {
   page: number;
@@ -127,6 +128,7 @@ const GridAlatbayar = () => {
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const { data: session } = useSession();
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
@@ -1305,7 +1307,12 @@ const GridAlatbayar = () => {
     // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
     //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
-      saveGridConfig(user.id, 'GridAlatbayar', [...columnsOrder], newWidthMap);
+      saveGridConfig(
+        String(session?.user.id),
+        'GridAlatbayar',
+        [...columnsOrder],
+        newWidthMap
+      );
     }, 300);
   };
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
@@ -1320,7 +1327,12 @@ const GridAlatbayar = () => {
       const newOrder = [...prevOrder];
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
-      saveGridConfig(user.id, 'GridAlatbayar', [...newOrder], columnsWidth);
+      saveGridConfig(
+        String(session?.user.id),
+        'GridAlatbayar',
+        [...newOrder],
+        columnsWidth
+      );
       return newOrder;
     });
   };
@@ -2198,13 +2210,13 @@ const GridAlatbayar = () => {
   }, [rows, isFirstLoad]);
   useEffect(() => {
     loadGridConfig(
-      user.id,
+      String(session?.user.id),
       'GridAlatbayar',
       columns,
       setColumnsOrder,
       setColumnsWidth
     );
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (isSubmitSuccessful) {
@@ -2666,7 +2678,7 @@ const GridAlatbayar = () => {
             <DraggableColumn
               defaultColumns={columns}
               saveColumns={finalColumns}
-              userId={user.id}
+              userId={String(session?.user.id)}
               gridName="GridAlatbayar"
               setColumnsOrder={setColumnsOrder}
               setColumnsWidth={setColumnsWidth}
@@ -2743,7 +2755,7 @@ const GridAlatbayar = () => {
                 variant="default"
                 onClick={() => {
                   resetGridConfig(
-                    user.id,
+                    String(session?.user.id),
                     'GridAlatbayar',
 
                     columns,
