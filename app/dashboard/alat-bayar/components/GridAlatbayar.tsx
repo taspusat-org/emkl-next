@@ -655,7 +655,7 @@ const GridAlatbayar = () => {
         name: 'Nama',
         resizable: true,
         draggable: true,
-        width: 300,
+        width: 200,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -725,7 +725,7 @@ const GridAlatbayar = () => {
         name: 'Keterangan',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 300,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -797,7 +797,7 @@ const GridAlatbayar = () => {
         name: 'Status Langsung Cair',
         resizable: true,
         draggable: true,
-        width: 200,
+        width: 70,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -888,7 +888,7 @@ const GridAlatbayar = () => {
         name: 'Status Default',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 70,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -979,7 +979,7 @@ const GridAlatbayar = () => {
         name: 'Status Bank',
         resizable: true,
         draggable: true,
-        width: 150,
+        width: 80,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -1072,7 +1072,7 @@ const GridAlatbayar = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 150,
+        width: 100,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1145,7 +1145,7 @@ const GridAlatbayar = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        width: 200,
+        width: 170,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
@@ -1221,7 +1221,7 @@ const GridAlatbayar = () => {
 
         headerCellClass: 'column-headers',
 
-        width: 150,
+        width: 170,
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
