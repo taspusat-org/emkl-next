@@ -19,7 +19,30 @@ import { getPermissionFn } from '@/lib/apis/menu.api';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import { useLainnyaDialog } from '@/lib/store/client/useDialogLainnya';
-// Import API untuk get permissions (sesuaikan dengan API Anda)
+import { useHotkeys } from '../providers/hotkeys-provider';
+
+const renderLabelWithShortcutUnderline = (
+  label: string,
+  shortcut?: string
+): React.ReactNode => {
+  const key = (shortcut ?? '').trim();
+  if (!key) return label;
+
+  const needle = key[0]?.toLowerCase();
+  if (!needle) return label;
+
+  const haystack = label.toLowerCase();
+  const matchIndex = haystack.indexOf(needle);
+  if (matchIndex < 0) return label;
+
+  return (
+    <>
+      {label.slice(0, matchIndex)}
+      <span className="text-sm underline">{label[matchIndex]}</span>
+      {label.slice(matchIndex + 1)}
+    </>
+  );
+};
 
 interface CustomAction {
   label: string;
@@ -28,6 +51,7 @@ interface CustomAction {
   variant?: 'success' | 'warning' | 'destructive' | 'outline';
   className?: string;
   disabled?: boolean;
+  shortcut?: string;
 }
 
 interface DropdownAction {
@@ -52,6 +76,16 @@ interface BaseActionProps {
   onView?: () => void;
   customActions?: CustomAction[];
   dropdownMenus?: DropdownMenuItem[];
+
+  shortcutAdd?: string;
+  shortcutEdit?: string;
+  shortcutDelete?: string;
+  shortcutView?: string;
+  shortcutExport?: string;
+  shortcutReport?: string;
+  shortcutModifier?: 'alt' | 'ctrl' | 'meta';
+  allowHotkeysInInput?: boolean;
+
   module?: string;
   checkedRows?: Set<number>;
   disableAdd?: boolean;
@@ -86,7 +120,15 @@ const ActionButton = ({
   disableDelete = false,
   disableView = false,
   disableExport = false,
-  disableReport = false
+  disableReport = false,
+  shortcutAdd,
+  shortcutEdit,
+  shortcutDelete,
+  shortcutView,
+  shortcutExport,
+  shortcutReport,
+  shortcutModifier = 'alt',
+  allowHotkeysInInput = true
 }: BaseActionProps) => {
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const { hasPermission, loading } = usePermissions();
@@ -112,6 +154,117 @@ const ActionButton = ({
   const handleDropdownClick = (index: number) => {
     setOpenMenu(openMenu === index ? null : index);
   };
+
+  const hotkeyBindings = useMemo(() => {
+    const bindings: Record<string, any> = {};
+    const mod = shortcutModifier;
+    const allowInInput = allowHotkeysInInput;
+
+    const toCombo = (key?: string) => {
+      const k = (key ?? '').trim().toLowerCase();
+      if (!k) return null;
+      return `${mod}+${k}`;
+    };
+
+    const addCombo = toCombo(shortcutAdd);
+    if (addCombo && onAdd) {
+      bindings[addCombo] = {
+        allowInInput,
+        handler: () => {
+          if (!disableAdd) onAdd();
+        }
+      };
+    }
+
+    const editCombo = toCombo(shortcutEdit);
+    if (editCombo && onEdit) {
+      bindings[editCombo] = {
+        allowInInput,
+        handler: () => {
+          if (!disableEdit) onEdit();
+        }
+      };
+    }
+
+    const deleteCombo = toCombo(shortcutDelete);
+    if (deleteCombo && onDelete) {
+      bindings[deleteCombo] = {
+        allowInInput,
+        handler: () => {
+          if (!disableDelete) onDelete();
+        }
+      };
+    }
+
+    const viewCombo = toCombo(shortcutView);
+    if (viewCombo && onView) {
+      bindings[viewCombo] = {
+        allowInInput,
+        handler: () => {
+          if (!disableView) onView();
+        }
+      };
+    }
+
+    const exportCombo = toCombo(shortcutExport);
+    if (exportCombo && onExport) {
+      bindings[exportCombo] = {
+        allowInInput,
+        handler: () => {
+          if (!disableExport) onExport();
+        }
+      };
+    }
+
+    const reportCombo = toCombo(shortcutReport);
+    if (reportCombo && onReport) {
+      bindings[reportCombo] = {
+        allowInInput,
+        handler: () => {
+          if (!disableReport) onReport();
+        }
+      };
+    }
+
+    for (const action of customActions) {
+      const combo = toCombo(action.shortcut);
+      if (!combo) continue;
+      bindings[combo] = {
+        allowInInput,
+        handler: () => {
+          if (!(action.disabled ?? false)) action.onClick();
+        }
+      };
+    }
+
+    return bindings;
+  }, [
+    shortcutModifier,
+    allowHotkeysInInput,
+    shortcutAdd,
+    shortcutEdit,
+    shortcutDelete,
+    shortcutView,
+    shortcutExport,
+    shortcutReport,
+    onAdd,
+    onEdit,
+    onDelete,
+    onView,
+    onExport,
+    onReport,
+    disableAdd,
+    disableEdit,
+    disableDelete,
+    disableView,
+    disableExport,
+    disableReport,
+    customActions
+  ]);
+
+  useHotkeys(hotkeyBindings, {
+    enabled: Object.keys(hotkeyBindings).length > 0
+  });
 
   const formattedModule = module?.replace(/-/g, ' ');
 
@@ -289,35 +442,42 @@ const ActionButton = ({
         {onAdd && (
           <Button
             onClick={onAdd}
-            disabled={disableAdd || !hasPermission(module, 'POST')}
+            disabled={disableAdd}
             variant="default"
             className="bg-[#0f82e1] text-sm font-thin hover:bg-[#105892] disabled:opacity-50"
           >
             <FaPlus />
-            <p className="text-sm font-normal">Add</p>
+            <p className="text-sm font-normal">
+              {renderLabelWithShortcutUnderline('Add', shortcutAdd)}
+            </p>
           </Button>
         )}
 
         {onEdit && (
           <Button
             onClick={onEdit}
-            disabled={disableEdit || !hasPermission(module, 'PUT')}
+            disabled={disableEdit}
             variant="warning"
             className="text-sm font-thin disabled:opacity-50"
           >
-            <MdEdit /> <p className="text-center text-sm">Edit</p>
+            <MdEdit />
+            <p className="text-center text-sm">
+              {renderLabelWithShortcutUnderline('Edit', shortcutEdit)}
+            </p>
           </Button>
         )}
 
         {onDelete && (
           <Button
             onClick={onDelete}
-            disabled={disableDelete || !hasPermission(module, 'DELETE')}
+            disabled={disableDelete}
             variant="destructive"
             className="gap-1 text-sm font-thin disabled:opacity-50"
           >
             <MdDelete />
-            <p className="text-center text-sm">Delete</p>
+            <p className="text-center text-sm">
+              {renderLabelWithShortcutUnderline('Delete', shortcutDelete)}
+            </p>
           </Button>
         )}
 
@@ -329,7 +489,9 @@ const ActionButton = ({
             className="gap-1 bg-orange-500 text-sm font-thin hover:bg-orange-700 disabled:opacity-50"
           >
             <BsEyeFill />
-            <p className="text-center text-sm">View</p>
+            <p className="text-center text-sm">
+              {renderLabelWithShortcutUnderline('View', shortcutView)}
+            </p>
           </Button>
         )}
 
@@ -341,7 +503,9 @@ const ActionButton = ({
             className="gap-1 bg-green-600 text-sm font-thin hover:bg-green-700 disabled:opacity-50"
           >
             <FaFileExport />
-            <p className="text-center text-sm">Export</p>
+            <p className="text-center text-sm">
+              {renderLabelWithShortcutUnderline('Export', shortcutExport)}
+            </p>
           </Button>
         )}
 
@@ -353,7 +517,9 @@ const ActionButton = ({
             className="gap-1 bg-cyan-500 text-sm font-thin hover:bg-cyan-700 disabled:opacity-50"
           >
             <FaPrint />
-            <p className="text-center text-sm">Report</p>
+            <p className="text-center text-sm">
+              {renderLabelWithShortcutUnderline('Report', shortcutReport)}
+            </p>
           </Button>
         )}
 
@@ -367,7 +533,10 @@ const ActionButton = ({
               action.disabled ? 'disabled:opacity-50' : ''
             }`}
           >
-            {action.icon} <p className="text-center text-sm">{action.label}</p>
+            {action.icon}{' '}
+            <p className="text-center text-sm">
+              {renderLabelWithShortcutUnderline(action.label, action.shortcut)}
+            </p>
           </Button>
         ))}
 

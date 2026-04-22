@@ -21,7 +21,8 @@ export async function loadPaperSizeConfig(): Promise<PaperSizeData> {
   }
 
   try {
-    const response = await fetch('/config/papersize.json');
+    // cache-busting agar tidak pakai versi lama dari browser cache
+    const response = await fetch(`/config/papersize.json?v=${Date.now()}`);
     if (!response.ok) {
       throw new Error('Failed to load paper size config');
     }
@@ -35,13 +36,9 @@ export async function loadPaperSizeConfig(): Promise<PaperSizeData> {
         name: 'CUSTOM_A4',
         layout: 'portrait'
       },
-      tolerance: 2
+      tolerance: 3
     };
   }
-}
-
-function createSizeKey(width: number, height: number): string {
-  return `${width}x${height}`;
 }
 
 function isWithinTolerance(
@@ -57,16 +54,27 @@ function findMatchingSize(
   height: number,
   config: PaperSizeData
 ): PaperSizeConfig | null {
-  const tolerance = config.tolerance || 2;
+  const tolerance = config.tolerance || 3;
 
   for (const [sizeKey, paperConfig] of Object.entries(config.paperSizes)) {
     const [configWidth, configHeight] = sizeKey.split('x').map(Number);
 
+    // Cek dimensi as-is
     if (
       isWithinTolerance(width, configWidth, tolerance) &&
       isWithinTolerance(height, configHeight, tolerance)
     ) {
       return paperConfig;
+    }
+
+    // Cek dimensi dibalik (rotated)
+    if (
+      isWithinTolerance(width, configHeight, tolerance) &&
+      isWithinTolerance(height, configWidth, tolerance)
+    ) {
+      const flippedLayout: 'portrait' | 'landscape' =
+        paperConfig.layout === 'portrait' ? 'landscape' : 'portrait';
+      return { ...paperConfig, layout: flippedLayout };
     }
   }
 
@@ -100,11 +108,15 @@ export async function detectPaperSize(
     };
   }
 
-  const layout = roundedWidth > roundedHeight ? 'landscape' : 'portrait';
+  // Fallback: orientasi dari dimensi aktual
+  const layout: 'portrait' | 'landscape' =
+    roundedWidth > roundedHeight ? 'landscape' : 'portrait';
 
-  console.log('No exact match, using default:', {
+  console.log('No exact match, fallback:', {
     paperSize: config.default.name,
-    layout
+    layout,
+    actualWidth: roundedWidth,
+    actualHeight: roundedHeight
   });
 
   return {
@@ -114,7 +126,7 @@ export async function detectPaperSize(
 }
 
 /**
- * Extract paper size from MRT file
+ * Extract paper size from MRT file (support JSON dan XML format)
  */
 export async function extractPaperSizeFromMRT(mrtUrl: string): Promise<{
   paperSize: string;
@@ -123,9 +135,34 @@ export async function extractPaperSizeFromMRT(mrtUrl: string): Promise<{
   try {
     const response = await fetch(mrtUrl);
     const text = await response.text();
+    const trimmed = text.trim();
 
+    // ── FORMAT JSON ──────────────────────────────────────────
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        const json = JSON.parse(trimmed);
+
+        const pageWidth =
+          json?.PageWidth ?? json?.page?.PageWidth ?? json?.report?.PageWidth;
+        const pageHeight =
+          json?.PageHeight ??
+          json?.page?.PageHeight ??
+          json?.report?.PageHeight;
+
+        if (pageWidth != null && pageHeight != null) {
+          const w = parseFloat(String(pageWidth));
+          const h = parseFloat(String(pageHeight));
+          console.log('MRT JSON PageSize:', { w, h });
+          return await detectPaperSize(w, h);
+        }
+      } catch (jsonErr) {
+        console.warn('MRT JSON parse failed, trying XML:', jsonErr);
+      }
+    }
+
+    // ── FORMAT XML ──────────────────────────────────────────
     const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, 'text/xml');
+    const xmlDoc = parser.parseFromString(trimmed, 'text/xml');
 
     const reportUnit = xmlDoc.querySelector('ReportUnit');
     const unitAttr = reportUnit?.getAttribute('Unit');
@@ -137,29 +174,30 @@ export async function extractPaperSizeFromMRT(mrtUrl: string): Promise<{
       unitMultiplier = 25.4;
     }
 
+    // Coba PaperSize element (format "w,h")
     const paperSizeElement = xmlDoc.querySelector('PaperSize');
     if (paperSizeElement) {
-      const widthStr = paperSizeElement.textContent?.split(',')[0];
-      const heightStr = paperSizeElement.textContent?.split(',')[1];
-
-      if (widthStr && heightStr) {
-        const width = parseFloat(widthStr) * unitMultiplier;
-        const height = parseFloat(heightStr) * unitMultiplier;
-
-        return await detectPaperSize(width, height);
+      const parts = paperSizeElement.textContent?.split(',');
+      if (parts && parts.length >= 2) {
+        const w = parseFloat(parts[0]) * unitMultiplier;
+        const h = parseFloat(parts[1]) * unitMultiplier;
+        if (!isNaN(w) && !isNaN(h)) {
+          return await detectPaperSize(w, h);
+        }
       }
     }
 
+    // Coba Page element dengan attribute PageWidth/PageHeight
     const page = xmlDoc.querySelector('Page');
     if (page) {
-      const pageWidth = page.getAttribute('PageWidth');
-      const pageHeight = page.getAttribute('PageHeight');
-
-      if (pageWidth && pageHeight) {
-        const width = parseFloat(pageWidth) * unitMultiplier;
-        const height = parseFloat(pageHeight) * unitMultiplier;
-
-        return await detectPaperSize(width, height);
+      const pw = page.getAttribute('PageWidth');
+      const ph = page.getAttribute('PageHeight');
+      if (pw && ph) {
+        const w = parseFloat(pw) * unitMultiplier;
+        const h = parseFloat(ph) * unitMultiplier;
+        if (!isNaN(w) && !isNaN(h)) {
+          return await detectPaperSize(w, h);
+        }
       }
     }
 

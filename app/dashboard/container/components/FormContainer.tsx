@@ -226,8 +226,6 @@ const FormContainer = ({
                         <LookUp
                           key={index}
                           {...props}
-                          name="statusaktif"
-                          forms={forms}
                           lookupValue={(id) =>
                             forms.setValue('statusaktif', id)
                           }

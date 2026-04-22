@@ -476,8 +476,6 @@ const GridPengeluaranHeader = () => {
         key: 'select',
         name: '',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -1908,189 +1906,189 @@ const GridPengeluaranHeader = () => {
     }
   };
 
-  const handleReport = async () => {
-    if (checkedRows.size === 0) {
-      alert({
-        title: 'PILIH DATA YANG INGIN DI CETAK!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    if (checkedRows.size > 1) {
-      alert({
-        title: 'HANYA BISA MEMILIH SATU DATA!',
-        variant: 'danger',
-        submitText: 'OK'
-      });
-      return; // Stop execution if no rows are selected
-    }
-    const rowId = Array.from(checkedRows)[0];
-
-    try {
-      dispatch(setProcessing());
-
-      //TANGGAL
-      const now = new Date();
-      const pad = (n: any) => n.toString().padStart(2, '0');
-      const tglcetak = `${pad(now.getDate())}-${pad(
-        now.getMonth() + 1
-      )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-        now.getMinutes()
-      )}:${pad(now.getSeconds())}`;
-
-      const { page, limit, ...filtersWithoutLimit } = filters;
-      const response = await getPengeluaranHeaderByIdFn(rowId);
-      if (!response.data?.length) {
-        alert({
-          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
-          variant: 'danger',
-          submitText: 'OK'
-        });
-        return;
-      }
-      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
-      const responseDetail = await getPengeluaranDetailFn({
-        filters: { nobukti: selectedRowNobukti }
-      });
-      const totalNominal =
-        responseDetail.data.reduce(
-          (sum: number, item: any) =>
-            sum + Math.round((Number(item.nominal) || 0) * 100),
-          0
-        ) / 100;
-
-      const reportRows = response.data.map((row: any) => ({
-        ...row,
-        judullaporan: 'Laporan Pengeluaran',
-        usercetak: user.username,
-        tglcetak,
-        terbilang: numberToTerbilang(totalNominal),
-        judul: `Bukti Pengeluaran KAS EMKL`
-      }));
-
-      sessionStorage.setItem(
-        'filtersWithoutLimit',
-        JSON.stringify(filtersWithoutLimit)
-      );
-      sessionStorage.setItem('dataId', rowId as unknown as string);
-      // Dynamically import Stimulsoft and generate the PDF report
-      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-        .then((module) => {
-          const { Stimulsoft } = module;
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahoma.ttf',
-            'Tahoma'
-          ); // Regular
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'Tahoma'
-          ); // Bold
-          Stimulsoft.Base.StiLicense.Key =
-            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
-
-          const report = new Stimulsoft.Report.StiReport();
-          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
-
-          // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanPengeluaran.mrt');
-          report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows, detail: responseDetail.data });
-
-          report.regData(dataSet.dataSetName, '', dataSet);
-          report.dictionary.synchronize();
-
-          // Render the report asynchronously
-
-          report.renderAsync(() => {
-            // Export the report to PDF asynchronously
-            report.exportDocumentAsync((pdfData: any) => {
-              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
-                type: 'application/pdf'
-              });
-              const pdfUrl = URL.createObjectURL(pdfBlob);
-
-              // Store the Blob URL in sessionStorage
-              sessionStorage.setItem('pdfUrl', pdfUrl);
-
-              // Navigate to the report page
-              window.open('/reports/pengeluaran', '_blank');
-            }, Stimulsoft.Report.StiExportFormat.Pdf);
-          });
-        })
-        .catch((error) => {
-          console.error('Failed to load Stimulsoft:', error);
-        });
-    } catch (error) {
-      dispatch(setProcessed());
-    } finally {
-      dispatch(setProcessed());
-    }
-  };
-
   // const handleReport = async () => {
+  //   if (checkedRows.size === 0) {
+  //     alert({
+  //       title: 'PILIH DATA YANG INGIN DI CETAK!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
+  //   if (checkedRows.size > 1) {
+  //     alert({
+  //       title: 'HANYA BISA MEMILIH SATU DATA!',
+  //       variant: 'danger',
+  //       submitText: 'OK'
+  //     });
+  //     return; // Stop execution if no rows are selected
+  //   }
   //   const rowId = Array.from(checkedRows)[0];
-  //   const now = new Date();
-  //   const pad = (n: any) => n.toString().padStart(2, '0');
-  //   const tglcetak = `${pad(now.getDate())}-${pad(
-  //     now.getMonth() + 1
-  //   )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-  //     now.getMinutes()
-  //   )}:${pad(now.getSeconds())}`;
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   dispatch(setProcessing()); // Show loading overlay when the request starts
 
   //   try {
-  //     const response = await getPengeluaranHeaderByIdFn(
-  //       rowId
-  //       // filtersWithoutLimit
-  //     );
+  //     dispatch(setProcessing());
 
+  //     //TANGGAL
+  //     const now = new Date();
+  //     const pad = (n: any) => n.toString().padStart(2, '0');
+  //     const tglcetak = `${pad(now.getDate())}-${pad(
+  //       now.getMonth() + 1
+  //     )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+  //       now.getMinutes()
+  //     )}:${pad(now.getSeconds())}`;
+
+  //     const { page, limit, ...filtersWithoutLimit } = filters;
+  //     const response = await getPengeluaranHeaderByIdFn(rowId);
+  //     if (!response.data?.length) {
+  //       alert({
+  //         title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
+  //         variant: 'danger',
+  //         submitText: 'OK'
+  //       });
+  //       return;
+  //     }
   //     const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
   //     const responseDetail = await getPengeluaranDetailFn({
   //       filters: { nobukti: selectedRowNobukti }
   //     });
-  //     const totalNominal = responseDetail.data.reduce(
-  //       (sum: number, i: any) => sum + Number(i.nominal || 0),
-  //       0
+  //     const totalNominal =
+  //       responseDetail.data.reduce(
+  //         (sum: number, item: any) =>
+  //           sum + Math.round((Number(item.nominal) || 0) * 100),
+  //         0
+  //       ) / 100;
+
+  //     const reportRows = response.data.map((row: any) => ({
+  //       ...row,
+  //       judullaporan: 'Laporan Pengeluaran',
+  //       usercetak: user.username,
+  //       tglcetak,
+  //       terbilang: numberToTerbilang(totalNominal),
+  //       judul: `Bukti Pengeluaran KAS EMKL`
+  //     }));
+
+  //     sessionStorage.setItem(
+  //       'filtersWithoutLimit',
+  //       JSON.stringify(filtersWithoutLimit)
   //     );
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'DATA TIDAK TERSEDIA!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
+  //     sessionStorage.setItem('dataId', rowId as unknown as string);
+  //     // Dynamically import Stimulsoft and generate the PDF report
+  //     import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
+  //       .then((module) => {
+  //         const { Stimulsoft } = module;
+  //         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+  //           '/fonts/tahoma.ttf',
+  //           'Tahoma'
+  //         ); // Regular
+  //         Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+  //           '/fonts/tahomabd.ttf',
+  //           'Tahoma'
+  //         ); // Bold
+  //         Stimulsoft.Base.StiLicense.Key =
+  //           '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+  //           '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+  //           'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+  //           'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+  //           '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+  //           'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+  //           'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+  //         const report = new Stimulsoft.Report.StiReport();
+  //         const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+
+  //         // Load the report template (MRT file)
+  //         report.loadFile('/reports/LaporanPengeluaran.mrt');
+  //         report.dictionary.dataSources.clear();
+  //         dataSet.readJson({ data: reportRows, detail: responseDetail.data });
+
+  //         report.regData(dataSet.dataSetName, '', dataSet);
+  //         report.dictionary.synchronize();
+
+  //         // Render the report asynchronously
+
+  //         report.renderAsync(() => {
+  //           // Export the report to PDF asynchronously
+  //           report.exportDocumentAsync((pdfData: any) => {
+  //             const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+  //               type: 'application/pdf'
+  //             });
+  //             const pdfUrl = URL.createObjectURL(pdfBlob);
+
+  //             // Store the Blob URL in sessionStorage
+  //             sessionStorage.setItem('pdfUrl', pdfUrl);
+
+  //             // Navigate to the report page
+  //             window.open('/reports/pengeluaran', '_blank');
+  //           }, Stimulsoft.Report.StiExportFormat.Pdf);
+  //         });
+  //       })
+  //       .catch((error) => {
+  //         console.error('Failed to load Stimulsoft:', error);
   //       });
-  //     } else {
-  //       const reportRows = response.data.map((row: any) => ({
-  //         ...row,
-  //         judullaporan: 'Laporan Pengeluaran',
-  //         usercetak: user.username,
-  //         tglcetak,
-  //         terbilang: numberToTerbilang(totalNominal),
-  //         judul: `Bukti Pengeluaran KAS EMKL`
-  //       }));
-  //
-  //       dispatch(setReportData(reportRows));
-  //       dispatch(setDetailDataReport(responseDetail.data));
-  //       window.open('/reports/designer', '_blank');
-  //     }
   //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //     alert({
-  //       title: 'Terjadi kesalahan saat memuat data!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
+  //     dispatch(setProcessed());
   //   } finally {
-  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
+  //     dispatch(setProcessed());
   //   }
   // };
+
+  const handleReport = async () => {
+    const rowId = Array.from(checkedRows)[0];
+    const now = new Date();
+    const pad = (n: any) => n.toString().padStart(2, '0');
+    const tglcetak = `${pad(now.getDate())}-${pad(
+      now.getMonth() + 1
+    )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
+      now.getMinutes()
+    )}:${pad(now.getSeconds())}`;
+    const { page, limit, ...filtersWithoutLimit } = filters;
+    dispatch(setProcessing()); // Show loading overlay when the request starts
+
+    try {
+      const response = await getPengeluaranHeaderByIdFn(
+        rowId
+        // filtersWithoutLimit
+      );
+
+      const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+      const responseDetail = await getPengeluaranDetailFn({
+        filters: { nobukti: selectedRowNobukti }
+      });
+      const totalNominal = responseDetail.data.reduce(
+        (sum: number, i: any) => sum + Number(i.nominal || 0),
+        0
+      );
+      if (response.data === null || response.data.length === 0) {
+        alert({
+          title: 'DATA TIDAK TERSEDIA!',
+          variant: 'danger',
+          submitText: 'OK'
+        });
+      } else {
+        const reportRows = response.data.map((row: any) => ({
+          ...row,
+          judullaporan: 'Laporan Pengeluaran',
+          usercetak: user.username,
+          tglcetak,
+          terbilang: numberToTerbilang(totalNominal),
+          judul: `Bukti Pengeluaran KAS EMKL`
+        }));
+
+        dispatch(setReportData(reportRows));
+        dispatch(setDetailDataReport(responseDetail.data));
+        window.open('/reports/designer', '_blank');
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert({
+        title: 'Terjadi kesalahan saat memuat data!',
+        variant: 'danger',
+        submitText: 'OK'
+      });
+    } finally {
+      dispatch(setProcessed()); // Hide loading overlay when the request is finished
+    }
+  };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
@@ -2166,6 +2164,7 @@ const GridPengeluaranHeader = () => {
 
     const rawNobukti = searchParams.get('pengeluaran_nobukti');
 
+    console.log(rawNobukti);
     // Set filters
     setFilters((prevFilters: Filter) => ({
       ...prevFilters,
@@ -2182,6 +2181,7 @@ const GridPengeluaranHeader = () => {
       window.history.replaceState({}, '', url.toString());
     }, 1000); // Delay 1 detik (1000 ms)
   }, []);
+  console.log(filters, 'ini filter');
 
   useEffect(() => {
     if (isFirstLoad && gridRef.current && rows.length > 0) {

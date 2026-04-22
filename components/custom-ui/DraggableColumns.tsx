@@ -192,7 +192,8 @@ export default function DraggableColumn({
     );
 
     const fixItems = [...savedColumns, ...columnsNotSaved]
-      .filter((i) => i && i.draggable !== undefined)
+      // DARI .filter((i) => i && i.draggable !== undefined UBAH JADI .filter((i) => (i && i.draggable !== undefined) || i.key == 'select') untuk sementara supaya dinamis karna kolom select masi ada yg dipasang draggable dan tidak ada draggable
+      .filter((i) => (i && i.draggable !== undefined) || i.key == 'select')
       .map((col: any, idx: number) => ({
         ...col,
         id: col.key,
@@ -215,7 +216,10 @@ export default function DraggableColumn({
     });
 
     const notDraggable = finalColumns.filter((item: any) => {
-      return item.draggable === false;
+      // UBAH DARI JADI return item.draggable === false || (!item.draggable && item.key == 'select'); untuk sementara supaya dinamis karna kolom select masi ada yg dipasang draggable dan tidak ada draggable
+      return (
+        item.draggable === false || (!item.draggable && item.key == 'select')
+      );
     });
 
     const largestWidth = defaultColumns.reduce((max: any, col: any) => {
@@ -250,7 +254,7 @@ export default function DraggableColumn({
       // scrollSensitivity: 60,
       // scrollSpeed: 10,
 
-      onEnd: (evt) => {
+      onEnd: (evt: any) => {
         if (evt.oldIndex == null || evt.newIndex == null) return;
 
         // setItemDraggable((prev) => {

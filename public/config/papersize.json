@@ -20,10 +20,15 @@
       "layout": "landscape",
       "description": "Letter Landscape"
     },
-    "210.1x139.7": {
+    "215.9x139.7": {
       "name": "CUSTOM_FAKTUR",
       "layout": "portrait",
-      "description": "Faktur/Half Letter"
+      "description": "Faktur/Half Letter Portrait (8.5x5.5 inch)"
+    },
+    "139.7x215.9": {
+      "name": "CUSTOM_FAKTUR",
+      "layout": "landscape",
+      "description": "Faktur/Half Letter Landscape (5.5x8.5 inch)"
     },
     "210.1x355.6": {
       "name": "CUSTOM_LEGAL",
@@ -37,8 +42,8 @@
     }
   },
   "default": {
-    "name": "CUSTOM_A4",
+    "name": "CUSTOM_LETTER",
     "layout": "portrait"
   },
-  "tolerance": 2
+  "tolerance": 3
 }

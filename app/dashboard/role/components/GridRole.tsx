@@ -363,8 +363,6 @@ const GridRole = () => {
         key: 'select',
         name: '',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">

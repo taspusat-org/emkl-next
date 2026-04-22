@@ -357,7 +357,6 @@ const CustomPrintModal: React.FC<CustomPrintModalProps> = ({
         const printerHost: string | null = errorData.printerHost || null;
         const printerDest = destination;
 
-        // Tutup print modal dulu agar alert dari useAlert tampil bebas tanpa z-index bentrok
         onClose();
 
         try {
