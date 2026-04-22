@@ -34,7 +34,9 @@ export const useGetAlatbayar = (
     ['alatbayar', filters],
     async () => await getAlatbayarFn(filters, signal),
     {
-      enabled: !signal?.aborted
+      enabled: !signal?.aborted,
+      staleTime: 0,
+      cacheTime: 0
     }
   );
 };

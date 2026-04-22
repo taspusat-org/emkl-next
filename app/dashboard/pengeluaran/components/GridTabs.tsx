@@ -23,7 +23,7 @@ export function GridTabs() {
       </TabsList>
 
       <TabsContent value="pengeluarandetail" className="h-full">
-        <GridPengeluaranDetail activeTab={activeTab} />
+        <GridPengeluaranDetail activeTab={activeTab} hyperlink={false} />
       </TabsContent>
 
       <TabsContent value="jurnalumumdetail" className="h-full">

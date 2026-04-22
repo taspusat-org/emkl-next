@@ -69,10 +69,12 @@ interface GridConfig {
 }
 const GridPengeluaranDetail = ({
   activeTab,
-  nobukti
+  nobukti,
+  hyperlink = true
 }: {
   activeTab: string;
   nobukti?: string;
+  hyperlink?: boolean;
 }) => {
   const { theme, resolvedTheme } = useTheme();
   const isDark = theme === 'dark' || resolvedTheme === 'dark';
@@ -316,11 +318,15 @@ const GridPengeluaranDetail = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="m-0 flex h-full w-full cursor-pointer items-center p-0 text-xs">
-                    <JsxParser
-                      components={{ HighlightWrapper }}
-                      jsx={props.row.link}
-                      renderInWrapper={false}
-                    />
+                    {hyperlink ? (
+                      <JsxParser
+                        components={{ HighlightWrapper }}
+                        jsx={props.row.link}
+                        renderInWrapper={false}
+                      />
+                    ) : (
+                      value
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent

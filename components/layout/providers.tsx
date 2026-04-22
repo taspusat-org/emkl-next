@@ -5,6 +5,7 @@ import { SessionProvider } from 'next-auth/react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store/store';
 import { LoadingOverlay } from '../custom-ui/LoadingOverlay';
+import { HotkeysProvider } from '../providers/hotkeys-provider';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const { isLoading, isProcessing } = useSelector(
@@ -27,7 +28,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         refetchOnWindowFocus={true} // ✅ KUNCI: Disable refetch saat window focus
         // refetchWhenOffline={true} // Disable refetch saat offline
       >
-        {children}
+        <HotkeysProvider>{children}</HotkeysProvider>
       </SessionProvider>
     </ThemeProvider>
   );

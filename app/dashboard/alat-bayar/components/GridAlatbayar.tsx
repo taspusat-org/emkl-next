@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useLayoutEffect,
   useCallback
 } from 'react';
 import 'react-data-grid/lib/styles.scss';
@@ -67,7 +68,7 @@ import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-
+import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import ReportDesignerMenu from '@/app/reports/menu/page';
 import { IAlatBayar } from '@/lib/types/alatbayar.type';
 import { number } from 'zod';
@@ -129,6 +130,29 @@ const GridAlatbayar = () => {
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isAfterMutation, setIsAfterMutation] = useState(false);
+  const [shouldBulkFetch, setShouldBulkFetch] = useState(true);
+  const scrollPositionRef = useRef<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const prevRowsLengthRef = useRef<number>(0);
+  const prevMinPageRef = useRef<number>(1);
+  const hasAdjustedScrollRef = useRef<boolean>(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(
+    null
+  );
+  const suppressScrollRef = useRef(false);
+
+  const lastScrollTopRef = useRef<number>(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingScrollAdjustment = useRef<number>(0);
+  const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [pageDataCache, setPageDataCache] = useState<Map<number, IAlatBayar[]>>(
+    new Map()
+  );
   const { mutateAsync: createAlatbayar, isLoading: isLoadingCreate } =
     useCreateAlatbayar();
   const { mutateAsync: updateAlatbayar, isLoading: isLoadingUpdate } =
@@ -137,6 +161,7 @@ const GridAlatbayar = () => {
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastDispatchedId = useRef<number | null>(null);
   const { mutateAsync: deleteAlatbayar, isLoading: isLoadingDelete } =
     useDeleteAlatbayar();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
@@ -165,6 +190,17 @@ const GridAlatbayar = () => {
   const { alert } = useAlert();
   const { user, cabang_id } = useSelector((state: RootState) => state.auth);
   const getLookup = useSelector((state: RootState) => state.lookup.data);
+  const selectedRowRef = useRef<number>(0);
+  useEffect(() => {
+    selectedRowRef.current = selectedRow;
+  }, [selectedRow]);
+
+  const [selectedCellKey, setSelectedCellKey] = useState<string>('nomor');
+  const streamBufferRef = useRef<Map<number, IAlatBayar[]>>(new Map());
+  // Melacak page yang sedang dalam proses prefetch agar tidak double-fetch
+  const prefetchingPagesRef = useRef<Set<number>>(new Set());
+  // Jumlah page yang di-buffer ke depan & ke belakang
+  const STREAM_BUFFER_SIZE = 5;
 
   const forms = useForm<AlatbayarInput>({
     resolver: mode === 'delete' ? undefined : zodResolver(AlatbayarSchema),
@@ -195,7 +231,7 @@ const GridAlatbayar = () => {
   const router = useRouter();
   const [filters, setFilters] = useState<Filter>({
     page: 1,
-    limit: 30,
+    limit: 50,
     search: '',
     filters: {
       nama: '',
@@ -213,15 +249,30 @@ const GridAlatbayar = () => {
   });
   const gridRef = useRef<DataGridHandle>(null);
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+  const effectiveLimit = shouldBulkFetch ? filters.limit * 5 : filters.limit;
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
   const { data: allAlatbayar, isLoading: isLoadingAlatbayar } = useGetAlatbayar(
     {
       ...filters,
-      page: currentPage
+      page: currentPage,
+      limit: effectiveLimit
     },
     abortControllerRef.current?.signal
   );
+
+  const currentMinPage =
+    visiblePages.length > 0 ? Math.min(...visiblePages) : 1;
+  const startRow = (currentMinPage - 1) * filters.limit + 1;
+
+  const resetBufferingCache = () => {
+    setShouldBulkFetch(true);
+    setPageDataCache(new Map());
+    setVisiblePages([1, 2, 3, 4, 5]);
+    setIsFetching(false);
+    streamBufferRef.current = new Map();
+    prefetchingPagesRef.current = new Set();
+  };
 
   const debouncedFilterUpdate = useRef(
     debounce((colKey: string, value: string) => {
@@ -235,7 +286,8 @@ const GridAlatbayar = () => {
       setRows([]);
       setCurrentPage(1);
       setSelectedRow(0);
-    }, 300) // Bisa dikurangi jadi 250-300ms
+      resetBufferingCache();
+    }, 300)
   ).current;
 
   const handleFilterInputChange = useCallback(
@@ -257,6 +309,7 @@ const GridAlatbayar = () => {
     setIsAllSelected(false);
     setRows([]);
     setCurrentPage(1);
+    resetBufferingCache();
   }, []);
 
   const { clearError } = useFormError();
@@ -284,6 +337,8 @@ const GridAlatbayar = () => {
     setInputValue('');
     setCheckedRows(new Set());
     setIsAllSelected(false);
+    setCurrentPage(1);
+    resetBufferingCache();
 
     // 3. focus sel di grid pakai displayIndex
     setTimeout(() => {
@@ -338,6 +393,7 @@ const GridAlatbayar = () => {
 
     setCheckedRows(new Set());
     setIsAllSelected(false);
+    resetBufferingCache();
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
     }, 100);
@@ -373,6 +429,7 @@ const GridAlatbayar = () => {
       sortDirection: newSortOrder,
       page: 1
     }));
+    resetBufferingCache();
     setTimeout(() => {
       gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
@@ -425,6 +482,7 @@ const GridAlatbayar = () => {
       page: 1
     }));
     setInputValue('');
+    resetBufferingCache();
   };
 
   const columns = useMemo((): Column<IAlatBayar>[] => {
@@ -472,7 +530,7 @@ const GridAlatbayar = () => {
           const rowIndex = rows.findIndex((row) => row.id === props.row.id);
           return (
             <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
-              {rowIndex + 1}
+              {props.row.nomor}
             </div>
           );
         }
@@ -505,7 +563,91 @@ const GridAlatbayar = () => {
           </div>
         )
       },
+      {
+        key: 'statusaktif',
+        name: 'Status Aktif',
+        resizable: true,
+        draggable: true,
+        width: 70,
+        headerCellClass: 'column-headers',
+        renderHeaderCell: () => (
+          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+            <div
+              className="headers-cell h-[50%] px-8"
+              onClick={() => handleSort('statusaktif')}
+              onContextMenu={(event) =>
+                setContextMenu(handleContextMenu(event))
+              }
+            >
+              <p
+                className={`text-sm ${
+                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
+                }`}
+              >
+                Status Aktif
+              </p>
+              <div className="ml-2">
+                {filters.sortBy === 'statusaktif' &&
+                filters.sortDirection === 'asc' ? (
+                  <FaSortUp className="font-bold" />
+                ) : filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'desc' ? (
+                  <FaSortDown className="font-bold" />
+                ) : (
+                  <FaSort className="text-zinc-400" />
+                )}
+              </div>
+            </div>
+            <div className="relative h-[50%] w-full px-1">
+              <FilterOptions
+                endpoint="parameter"
+                value="id"
+                label="text"
+                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                onChange={(value) =>
+                  handleColumnFilterChange('statusaktif', value)
+                } // Menangani perubahan nilai di parent
+              />
+            </div>
+          </div>
+        ),
+        renderCell: (props: any) => {
+          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
+          if (memoData) {
+            return (
+              <TooltipProvider delayDuration={0}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex h-full w-full items-center justify-center py-1">
+                      <div
+                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
+                        style={{
+                          backgroundColor: memoData.WARNA,
+                          color: memoData.WARNATULISAN,
+                          padding: '2px 6px',
+                          borderRadius: '2px',
+                          textAlign: 'left',
+                          fontWeight: '600'
+                        }}
+                      >
+                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="right"
+                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
+                  >
+                    <p>{memoData.MEMO}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          }
 
+          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+        }
+      },
       {
         key: 'nama',
         name: 'Nama',
@@ -919,91 +1061,7 @@ const GridAlatbayar = () => {
           return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
-      {
-        key: 'statusaktif',
-        name: 'Status Aktif',
-        resizable: true,
-        draggable: true,
-        width: 150,
-        headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%] px-8"
-              onClick={() => handleSort('statusaktif')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
-                }`}
-              >
-                Status Aktif
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'statusaktif' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'statusaktif' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
-              </div>
-            </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('statusaktif', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
-        renderCell: (props: any) => {
-          const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
-          if (memoData) {
-            return (
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex h-full w-full items-center justify-center py-1">
-                      <div
-                        className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
-                        style={{
-                          backgroundColor: memoData.WARNA,
-                          color: memoData.WARNATULISAN,
-                          padding: '2px 6px',
-                          borderRadius: '2px',
-                          textAlign: 'left',
-                          fontWeight: '600'
-                        }}
-                      >
-                        <p style={{ fontSize: '13px' }}>{memoData.SINGKATAN}</p>
-                      </div>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent
-                    side="right"
-                    className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                  >
-                    <p>{memoData.MEMO}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          }
 
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
-        }
-      },
       {
         key: 'modifiedby',
         name: 'Modified By',
@@ -1266,42 +1324,173 @@ const GridAlatbayar = () => {
       return newOrder;
     });
   };
-  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
-    return currentTarget.scrollTop <= 10;
-  }
-  function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
-    const { currentTarget } = event;
-    if (!currentTarget) return false;
-
-    return (
-      currentTarget.scrollTop + currentTarget.clientHeight >=
-      currentTarget.scrollHeight - 2
-    );
-  }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingAlatbayar || !hasMore || rows.length === 0) return;
+    if (
+      isLoadingAlatbayar ||
+      rows.length === 0 ||
+      isTransitioning ||
+      isFetching
+    )
+      return;
 
-    const findUnfetchedPage = (pageOffset: number) => {
-      let page = currentPage + pageOffset;
-      while (page > 0 && fetchedPages.has(page)) {
-        page += pageOffset;
-      }
-      return page > 0 ? page : null;
-    };
+    const { currentTarget } = event;
+    const scrollTop = currentTarget.scrollTop;
+    const scrollHeight = currentTarget.scrollHeight;
+    const clientHeight = currentTarget.clientHeight;
 
-    if (isAtBottom(event)) {
-      const nextPage = findUnfetchedPage(1);
+    const hasScrolled = Math.abs(scrollTop - lastScrollTopRef.current) > 5;
+    if (!hasScrolled) {
+      return;
+    }
 
-      if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
-        setCurrentPage(nextPage);
-        setIsAllSelected(false);
+    lastScrollTopRef.current = scrollTop;
+    setIsScrolling(true);
+
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+
+    scrollPositionRef.current = scrollTop;
+    scrollContainerRef.current = currentTarget;
+
+    const rowHeight = 27; // Mengikuti rowHeight grid prospek
+    const firstVisibleRow = Math.floor(scrollTop / rowHeight);
+    const lastVisibleRow = Math.floor((scrollTop + clientHeight) / rowHeight);
+
+    const THRESHOLD_ROWS = 50;
+
+    // SCROLL KE BAWAH
+    const rowsRemainingBelow = rows.length - lastVisibleRow;
+
+    if (rowsRemainingBelow <= THRESHOLD_ROWS) {
+      const maxPage = Math.max(...visiblePages);
+      const nextPage = maxPage + 1;
+
+      if (nextPage <= totalPages && !isFetching && isScrolling) {
+        if (streamBufferRef.current.has(nextPage)) {
+          // ✅ DATA ADA DI BUFFER — langsung masuk tanpa loading!
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+
+          const bufferedData = streamBufferRef.current.get(nextPage)!;
+
+          // Pindahkan dari buffer ke pageDataCache
+          setPageDataCache((prev) => {
+            const updated = new Map(prev);
+            updated.set(nextPage, bufferedData);
+            return updated;
+          });
+
+          // Hapus dari buffer (sudah masuk ke visible cache)
+          streamBufferRef.current = new Map(streamBufferRef.current);
+          streamBufferRef.current.delete(nextPage);
+
+          // Update visiblePages (geser window)
+          setVisiblePages((prevVisible) => {
+            const removedPage = prevVisible[0];
+            const newPages = [...prevVisible.slice(1), nextPage];
+
+            pendingScrollAdjustment.current = -(filters.limit * 27);
+            setSelectedRow((prev) => Math.max(0, prev - filters.limit));
+
+            setPageDataCache((prev) => {
+              const updated = new Map(prev);
+              updated.delete(removedPage); // Langsung hapus total dari memori
+              return updated;
+            });
+
+            return newPages;
+          });
+
+          // Update totalPages jika perlu (dari cache tidak ada pagination data,
+          // jadi kita biarkan dari fetch terakhir)
+
+          setTimeout(() => {
+            setIsTransitioning(false);
+            setIsFetching(false);
+          }, 50); // Lebih cepat karena tidak ada network latency
+
+          // Prefetch page berikutnya di background
+          const pagesToPrefetch = Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => nextPage + 1 + i
+          );
+          prefetchPages(pagesToPrefetch);
+        } else if (!pageDataCache.has(nextPage)) {
+          // ⚠️ Buffer miss — fallback ke fetch normal
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+          setCurrentPage(nextPage);
+        }
       }
     }
 
-    if (isAtTop(event)) {
-      const prevPage = findUnfetchedPage(-1);
-      if (prevPage && !fetchedPages.has(prevPage)) {
-        setCurrentPage(prevPage);
+    // SCROLL KE ATAS
+    if (firstVisibleRow <= THRESHOLD_ROWS) {
+      const minPage = Math.min(...visiblePages);
+      const prevPage = minPage - 1;
+
+      if (prevPage >= 1 && !isFetching && isScrolling) {
+        if (streamBufferRef.current.has(prevPage)) {
+          // ✅ DATA ADA DI BUFFER — langsung masuk tanpa loading!
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+
+          const bufferedData = streamBufferRef.current.get(prevPage)!;
+
+          setPageDataCache((prev) => {
+            const updated = new Map(prev);
+            updated.set(prevPage, bufferedData);
+            return updated;
+          });
+
+          streamBufferRef.current = new Map(streamBufferRef.current);
+          streamBufferRef.current.delete(prevPage);
+
+          setVisiblePages((prevVisible) => {
+            const removedPage = prevVisible[4];
+            const newPages = [prevPage, ...prevVisible.slice(0, 4)];
+
+            pendingScrollAdjustment.current = filters.limit * 27;
+            setSelectedRow((prev) => prev + filters.limit);
+
+            setPageDataCache((prev) => {
+              const updated = new Map(prev);
+              updated.delete(removedPage); // Langsung hapus total dari memori
+              return updated;
+            });
+
+            return newPages;
+          });
+
+          setTimeout(() => {
+            setIsTransitioning(false);
+            setIsFetching(false);
+          }, 50);
+
+          // Prefetch page sebelumnya di background
+          const pagesToPrefetch = Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => prevPage - 1 - i
+          ).filter((p) => p >= 1);
+          prefetchPages(pagesToPrefetch);
+        } else if (!pageDataCache.has(prevPage)) {
+          // ⚠️ Buffer miss — fallback ke fetch normal
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+          // Reset ke 0 dulu agar setCurrentPage(prevPage) pasti trigger re-fetch
+          // even jika prevPage == currentPage (stale value)
+          setCurrentPage(0);
+          setTimeout(() => setCurrentPage(prevPage), 0);
+        }
       }
     }
   }
@@ -1313,62 +1502,225 @@ const GridAlatbayar = () => {
       setSelectedRow(rowIndex);
     }
   }
-  async function handleKeyDown(
-    args: CellKeyDownArgs<IAlatBayar>,
-    event: React.KeyboardEvent
-  ) {
-    const visibleRowCount = 10;
-    const firstDataRowIndex = 0;
-    const selectedRowId = rows[selectedRow]?.id;
-
-    if (event.key === 'ArrowDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const nextRow = Math.min(prev + 1, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'ArrowUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const newRow = Math.max(prev - 1, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === 'ArrowRight') {
-      setSelectedCol((prev) => {
-        return Math.min(prev + 1, columns.length - 1);
-      });
-    } else if (event.key === 'ArrowLeft') {
-      setSelectedCol((prev) => {
-        return Math.max(prev - 1, 0);
-      });
-    } else if (event.key === 'PageDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const nextRow = Math.min(prev + visibleRowCount - 2, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'PageUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
+  const orderedColumns = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      // filter key columns dengan key yg ada di columnsWidth
+      const filteredColumns = columns.filter((col) =>
+        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
+      );
+      // Mapping dan filter untuk menghindari undefined
+      return columnsOrder
+        .map((orderIndex) => filteredColumns[orderIndex])
+        .filter((col) => col !== undefined);
     }
-  }
+    return columns;
+  }, [columns, columnsOrder]);
+
+  // Update properti width pada setiap kolom berdasarkan state columnsWidth
+  const finalColumns = useMemo(() => {
+    return orderedColumns.map((col) => ({
+      ...col,
+      width: columnsWidth[col.key] ?? col.width
+    }));
+  }, [orderedColumns, columnsWidth]);
+  const moveSelectionBy = useCallback(
+    (delta: number, focusBackTo?: HTMLElement | null) => {
+      if (rows.length === 0) return;
+
+      const nextRow = Math.min(
+        Math.max(selectedRowRef.current + delta, 0),
+        rows.length - 1
+      );
+      selectedRowRef.current = nextRow;
+
+      const idxFromKey = finalColumns.findIndex(
+        (c) => c.key === selectedCellKey
+      );
+      const idx = idxFromKey >= 0 ? idxFromKey : 0;
+
+      // Pindahkan selected cell bawaan grid (untuk ArrowLeft/ArrowRight) + tetap jaga input tetap fokus
+      gridRef.current?.scrollToCell?.({ rowIdx: nextRow, idx });
+      gridRef.current?.selectCell?.({ rowIdx: nextRow, idx });
+
+      if (focusBackTo && typeof window !== 'undefined') {
+        const start =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionStart
+            : null;
+        const end =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionEnd
+            : null;
+
+        window.requestAnimationFrame(() => {
+          if (!document.contains(focusBackTo)) return;
+          focusBackTo.focus({ preventScroll: true });
+          if (
+            focusBackTo instanceof HTMLInputElement &&
+            start !== null &&
+            end !== null
+          ) {
+            focusBackTo.setSelectionRange(start, end);
+          }
+        });
+      }
+    },
+    [rows.length, finalColumns, selectedCellKey]
+  );
+
+  const moveSelectionColumnBy = useCallback(
+    (delta: number, focusBackTo?: HTMLElement | null) => {
+      if (rows.length === 0) return;
+      if (finalColumns.length === 0) return;
+
+      const currentIdxFromKey = finalColumns.findIndex(
+        (c) => c.key === selectedCellKey
+      );
+      const currentIdx = currentIdxFromKey >= 0 ? currentIdxFromKey : 0;
+
+      const nextIdx = Math.min(
+        Math.max(currentIdx + delta, 0),
+        finalColumns.length - 1
+      );
+
+      const nextKey = finalColumns[nextIdx]?.key;
+      if (nextKey) setSelectedCellKey(String(nextKey));
+
+      const rowIdx = Math.min(
+        Math.max(selectedRowRef.current, 0),
+        rows.length - 1
+      );
+
+      gridRef.current?.scrollToCell?.({ rowIdx, idx: nextIdx });
+      gridRef.current?.selectCell?.({ rowIdx, idx: nextIdx });
+
+      if (focusBackTo && typeof window !== 'undefined') {
+        const start =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionStart
+            : null;
+        const end =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionEnd
+            : null;
+
+        window.requestAnimationFrame(() => {
+          if (!document.contains(focusBackTo)) return;
+          focusBackTo.focus({ preventScroll: true });
+          if (
+            focusBackTo instanceof HTMLInputElement &&
+            start !== null &&
+            end !== null
+          ) {
+            focusBackTo.setSelectionRange(start, end);
+          }
+        });
+      }
+    },
+    [rows.length, finalColumns, selectedCellKey]
+  );
+  const selectColumnEdge = useCallback(
+    (edge: 'first' | 'last', focusBackTo?: HTMLElement | null) => {
+      if (rows.length === 0) return;
+      if (finalColumns.length === 0) return;
+
+      const nextIdx = edge === 'first' ? 0 : finalColumns.length - 1;
+      const nextKey = finalColumns[nextIdx]?.key;
+      if (nextKey) setSelectedCellKey(String(nextKey));
+
+      const rowIdx = Math.min(
+        Math.max(selectedRowRef.current, 0),
+        rows.length - 1
+      );
+
+      gridRef.current?.scrollToCell?.({ rowIdx, idx: nextIdx });
+      gridRef.current?.selectCell?.({ rowIdx, idx: nextIdx });
+
+      if (focusBackTo && typeof window !== 'undefined') {
+        const start =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionStart
+            : null;
+        const end =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionEnd
+            : null;
+
+        window.requestAnimationFrame(() => {
+          if (!document.contains(focusBackTo)) return;
+          focusBackTo.focus({ preventScroll: true });
+          if (
+            focusBackTo instanceof HTMLInputElement &&
+            start !== null &&
+            end !== null
+          ) {
+            focusBackTo.setSelectionRange(start, end);
+          }
+        });
+      }
+    },
+    [rows.length, finalColumns]
+  );
+  const handleGridInputNavigationKeyDownCapture = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      const target = event.target as HTMLElement | null;
+
+      const isFilterInput =
+        target instanceof HTMLElement &&
+        target.classList.contains('filter-input');
+      const isGlobalSearchInput =
+        !!inputRef.current && target === inputRef.current;
+
+      // Hanya handle key navigation dari input filter column & input search global
+      if (!isFilterInput && !isGlobalSearchInput) return;
+
+      const visibleRowCount = 8;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(1, target);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(-1, target);
+      } else if (event.key === 'PageDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(visibleRowCount, target);
+      } else if (event.key === 'PageUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(-visibleRowCount, target);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionColumnBy(1, target);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionColumnBy(-1, target);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        event.stopPropagation();
+        selectColumnEdge('first', target);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        event.stopPropagation();
+        selectColumnEdge('last', target);
+      }
+    },
+    [moveSelectionBy, moveSelectionColumnBy, selectColumnEdge]
+  );
   const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
+    indexOnPage: number,
+    fetchedPages: number[],
+    pagedData: Record<string, IAlatBayar[]>,
+    pageNumber: number,
+    keepOpenModal = false
   ) => {
-    clearError();
     dispatch(setClearLookup(true));
+    clearError();
     setIsFetchingManually(true);
     try {
       if (keepOpenModal) {
@@ -1379,14 +1731,32 @@ const GridAlatbayar = () => {
         setPopOver(false);
       }
       if (mode !== 'delete') {
-        const response = await api2.get(`/redis/get/alatbayar-allItems`);
+        const response = await api2.get(
+          `/redis/get/alatbayar-page-${pageNumber}`
+        );
         // Set the rows only if the data has changed
         if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows([]);
           setRows(response.data);
           setIsDataUpdated(true);
-          setCurrentPage(pageNumber);
-          setFetchedPages(new Set([pageNumber]));
+          setVisiblePages(fetchedPages);
           setSelectedRow(indexOnPage);
+          setPageDataCache(
+            new Map(
+              Object.entries(pagedData).map(([key, value]) => [
+                Number(key),
+                value as IAlatBayar[]
+              ])
+            )
+          );
+          setCurrentPage(pageNumber);
+
+          const updatedBuffer = new Map(streamBufferRef.current);
+          Object.entries(pagedData).forEach(([key, value]) => {
+            updatedBuffer.set(Number(key), value as IAlatBayar[]);
+          });
+          streamBufferRef.current = updatedBuffer;
+
           setTimeout(() => {
             gridRef?.current?.selectCell({
               rowIdx: indexOnPage,
@@ -1416,7 +1786,7 @@ const GridAlatbayar = () => {
               setRows((prevRows) =>
                 prevRows.filter((row) => row.id !== selectedRowId)
               );
-              if (selectedRow === 0) {
+              if (selectedRow != rows.length - 1) {
                 setSelectedRow(selectedRow);
                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
               } else {
@@ -1439,7 +1809,13 @@ const GridAlatbayar = () => {
           },
           {
             onSuccess: (data) =>
-              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber,
+                keepOpenModal
+              )
           }
         );
 
@@ -1454,7 +1830,13 @@ const GridAlatbayar = () => {
             fields: { ...values, ...filters }
           },
           {
-            onSuccess: (data: any) => onSuccess(data.itemIndex, data.pageNumber)
+            onSuccess: (data: any) =>
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber
+              )
           }
         );
         queryClient.invalidateQueries('alatbayar');
@@ -1749,33 +2131,71 @@ const GridAlatbayar = () => {
     }
   };
 
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        clearError();
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
-        setPopOver(false);
-        dispatch(clearOpenName());
-      }
-    };
+  const prefetchPages = useCallback(
+    async (
+      pagesToFetch: number[],
+      existingCache?: Map<number, IAlatBayar[]>,
+      knownTotalPages?: number
+    ) => {
+      const cacheToCheck = existingCache ?? pageDataCache;
+      const effectiveTotalPages = knownTotalPages ?? totalPages; // ← pakai nilai fresh jika dikirim
 
-    // Add event listener for keydown when the component is mounted
-    document.addEventListener('keydown', handleEscape);
+      const validPages = pagesToFetch.filter(
+        (p) =>
+          p >= 1 &&
+          p <= effectiveTotalPages &&
+          !streamBufferRef.current.has(p) &&
+          !cacheToCheck.has(p) &&
+          !prefetchingPagesRef.current.has(p)
+      );
 
-    // Cleanup event listener when the component is unmounted or the effect is re-run
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [forms]);
+      if (validPages.length === 0) return;
+
+      // Tandai semua sebagai sedang di-fetch agar tidak dobel
+      validPages.forEach((p) => prefetchingPagesRef.current.add(p));
+
+      // Fetch semua secara paralel
+      await Promise.allSettled(
+        validPages.map(async (pageNum) => {
+          try {
+            const data = await getAlatbayarFn({
+              ...filters,
+              page: pageNum,
+              limit: filters.limit
+            });
+
+            if (data?.data && data.data.length > 0) {
+              console.log(
+                `[StreamBuffer] ✅ Berhasil masuk cache: Page ${pageNum}`
+              );
+              streamBufferRef.current = new Map(streamBufferRef.current);
+              streamBufferRef.current.set(pageNum, data.data);
+            }
+          } catch (err) {
+            // Silent fail — user tidak perlu tahu jika prefetch gagal
+            console.warn(
+              `[StreamBuffer] Prefetch page ${pageNum} failed:`,
+              err
+            );
+          } finally {
+            prefetchingPagesRef.current.delete(pageNum);
+          }
+        })
+      );
+    },
+    [filters, totalPages, pageDataCache]
+  );
   useEffect(() => {
-    if (isSubmitSuccessful) {
-      // reset();
-      // Pastikan fokus terjadi setelah repaint
-      requestAnimationFrame(() => setFocus('nama'));
+    setIsFirstLoad(true);
+  }, []);
+
+  useEffect(() => {
+    if (isFirstLoad && gridRef.current && rows.length > 0) {
+      setSelectedRow(0);
+      gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+      setIsFirstLoad(false);
     }
-  }, [isSubmitSuccessful, setFocus]);
-
+  }, [rows, isFirstLoad]);
   useEffect(() => {
     loadGridConfig(
       user.id,
@@ -1784,6 +2204,279 @@ const GridAlatbayar = () => {
       setColumnsOrder,
       setColumnsWidth
     );
+  }, []);
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      // reset();
+      // Pastikan fokus terjadi setelah repaint
+      requestAnimationFrame(() => setFocus('nama'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
+
+  // useEffect(() => {
+  //   if (isFirstLoad) {
+  //     setFilters((prevFilters) => ({
+  //       ...prevFilters,
+  //       filters: {
+  //         ...prevFilters.filters
+  //       },
+  //       page: 1
+  //     }));
+  //     resetBufferingCache(); // ADDED
+  //   }
+  // }, [filters, isFirstLoad]);
+
+  // 1. Bulk Fetch Initialization
+  useEffect(() => {
+    const handleBulkFetch = async () => {
+      if (
+        !shouldBulkFetch ||
+        !allAlatbayar ||
+        isDataUpdated ||
+        isAfterMutation
+      ) {
+        return;
+      }
+
+      const bulkData = allAlatbayar.data || [];
+      if (bulkData.length === 0) return;
+
+      const pageSize = filters.limit;
+      const newCache = new Map<number, IAlatBayar[]>();
+
+      for (let i = 0; i < 5; i++) {
+        const pageNum = i + 1;
+        const startIdx = i * pageSize;
+        const endIdx = startIdx + pageSize;
+        const pageData = bulkData.slice(startIdx, endIdx);
+
+        if (pageData.length > 0) {
+          newCache.set(pageNum, pageData);
+        }
+      }
+
+      setPageDataCache(newCache);
+      setVisiblePages([1, 2, 3, 4, 5]);
+
+      // 1. Hitung total pages manual berdasarkan limit UI (50)
+      const totalItems = allAlatbayar.pagination?.totalItems || 0;
+      const totalPgs = Math.ceil(totalItems / filters.limit) || 1;
+
+      setTotalPages(totalPgs); // Set state totalPages yang benar
+
+      setHasMore(bulkData.length === filters.limit * 5);
+      setShouldBulkFetch(false);
+
+      setIsFirstLoad(false);
+      setIsFetching(false);
+
+      // 2. Gunakan totalPgs agar prefetch 6-10 tidak dibatalkan
+      const initialPrefetch = Array.from(
+        { length: STREAM_BUFFER_SIZE }, // tetapkan 5
+        (_, i) => 6 + i
+      ).filter((p) => p <= totalPgs);
+
+      console.log('Total Pages Alatbayar:', totalPgs);
+      console.log('Initial Prefetch Queue:', initialPrefetch);
+
+      if (initialPrefetch.length > 0) {
+        // Pass newCache DAN totalPgs langsung — keduanya belum committed ke state saat ini
+        prefetchPages(initialPrefetch, newCache, totalPgs);
+      }
+      setTimeout(() => {
+        if (gridRef.current) {
+          setSelectedRow(0);
+          gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+        }
+      }, 100);
+    };
+    handleBulkFetch();
+  }, [
+    allAlatbayar,
+    shouldBulkFetch,
+    isDataUpdated,
+    isAfterMutation,
+    filters.limit
+  ]);
+
+  // 2. Pagination Fetch & Scroll Adjustment
+  useEffect(() => {
+    if (shouldBulkFetch || isDataUpdated || isAfterMutation) {
+      return;
+    }
+
+    if (!allAlatbayar) return;
+
+    const newRows = allAlatbayar.data || [];
+
+    const scrollContainer = scrollContainerRef.current;
+    const scrollBeforeUpdate = scrollContainer
+      ? {
+          scrollTop: scrollContainer.scrollTop,
+          scrollHeight: scrollContainer.scrollHeight,
+          clientHeight: scrollContainer.clientHeight
+        }
+      : null;
+
+    setPageDataCache((prevCache) => {
+      const newCache = new Map(prevCache);
+      newCache.set(currentPage, newRows);
+      return newCache;
+    });
+
+    setVisiblePages((prevVisible) => {
+      const maxVisible = Math.max(...prevVisible);
+      const minVisible = Math.min(...prevVisible);
+
+      // --- SCROLL KE BAWAH ---
+      if (currentPage > maxVisible) {
+        const newPages = [...prevVisible.slice(1), currentPage];
+        const removedPage = prevVisible[0];
+
+        pendingScrollAdjustment.current = -(filters.limit * 27);
+
+        // --- TAMBAHAN: Geser index selected ke atas agar data tetap menunjuk ke item yg sama ---
+        setSelectedRow((prev) => Math.max(0, prev - filters.limit));
+
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
+      }
+
+      // --- SCROLL KE ATAS ---
+      if (currentPage < minVisible) {
+        const newPages = [currentPage, ...prevVisible.slice(0, 4)];
+        const removedPage = prevVisible[4];
+
+        pendingScrollAdjustment.current = filters.limit * 27;
+
+        // --- TAMBAHAN: Geser index selected ke bawah ---
+        setSelectedRow((prev) => prev + filters.limit);
+
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
+      }
+
+      return prevVisible;
+    });
+
+    if (allAlatbayar.pagination?.totalPages) {
+      setTotalPages(allAlatbayar.pagination.totalPages);
+    }
+
+    setHasMore(newRows.length === filters.limit);
+    setPrevFilters(filters);
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setIsFetching(false);
+      const maxVis = Math.max(...visiblePages);
+      const minVis = Math.min(...visiblePages);
+
+      // Tentukan arah: jika currentPage > maxVisible sebelumnya = scroll down, sebaliknya up
+      const isScrollDown = currentPage >= maxVis;
+      const pagesToPrefetch = isScrollDown
+        ? Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => currentPage + 1 + i
+          ).filter((p) => p <= totalPages)
+        : Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => currentPage - 1 - i
+          ).filter((p) => p >= 1);
+
+      if (pagesToPrefetch.length > 0) {
+        setTimeout(() => prefetchPages(pagesToPrefetch), 200);
+      }
+    }, 100);
+  }, [
+    allAlatbayar,
+    currentPage,
+    filters,
+    isDataUpdated,
+    shouldBulkFetch,
+    isAfterMutation
+  ]);
+
+  // 3. Row Combiner (Mapping cache to rows state)
+  useEffect(() => {
+    const combinedRows: IAlatBayar[] = [];
+
+    visiblePages?.forEach((page) => {
+      const pageData = pageDataCache.get(page);
+      if (pageData) {
+        combinedRows.push(...pageData);
+      }
+    });
+
+    if (combinedRows.length > 0) {
+      const newMinPage = Math.min(...visiblePages);
+      setRows(combinedRows);
+      prevMinPageRef.current = newMinPage;
+      prevRowsLengthRef.current = combinedRows.length;
+    }
+  }, [visiblePages, pageDataCache]);
+
+  useLayoutEffect(() => {
+    if (pendingScrollAdjustment.current !== 0 && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+
+      // Geser scroll seketika (Sync)
+      container.scrollTop += pendingScrollAdjustment.current;
+
+      // Update referensi agar sistem tidak mengira user scroll manual
+      scrollPositionRef.current = container.scrollTop;
+      lastScrollTopRef.current = container.scrollTop;
+      hasAdjustedScrollRef.current = true;
+
+      // Reset
+      pendingScrollAdjustment.current = 0;
+    }
+  }, [rows]);
+
+  useEffect(() => {
+    if (rows.length > 0 && selectedRow !== null) {
+      const selectedRowData = rows[selectedRow];
+      // dispatch(setHeaderData(selectedRowData));
+      if (selectedRowData?.id !== lastDispatchedId.current) {
+        dispatch(setHeaderData(selectedRowData));
+        lastDispatchedId.current = selectedRowData?.id;
+      }
+    }
+  }, [rows, selectedRow, dispatch]);
+  useEffect(() => {
+    const preventScrollOnSpace = (event: KeyboardEvent) => {
+      if (
+        event.key === ' ' &&
+        !(
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+      ) {
+        event.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', preventScrollOnSpace);
+    return () => {
+      document.removeEventListener('keydown', preventScrollOnSpace);
+    };
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleClickOutside = (event: MouseEvent) => {
@@ -1795,83 +2488,12 @@ const GridAlatbayar = () => {
     }
   };
 
-  const orderedColumns = useMemo(() => {
-    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // filter key columns dengan key yg ada di columnsWidth
-      const filteredColumns = columns.filter((col) =>
-        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
-      );
-      // Mapping dan filter untuk menghindari undefined
-      return columnsOrder
-        .map((orderIndex) => filteredColumns[orderIndex])
-        .filter((col) => col !== undefined);
-    }
-    return columns;
-  }, [columns, columnsOrder]);
-
-  // Update properti width pada setiap kolom berdasarkan state columnsWidth
-  const finalColumns = useMemo(() => {
-    return orderedColumns.map((col) => ({
-      ...col,
-      width: columnsWidth[col.key] ?? col.width
-    }));
-  }, [orderedColumns, columnsWidth]);
-
-  useEffect(() => {
-    setIsFirstLoad(true);
-  }, []);
-  useEffect(() => {
-    if (isFirstLoad && gridRef.current && rows.length > 0) {
-      setSelectedRow(0);
-      gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-      setIsFirstLoad(false);
-    }
-  }, [rows, isFirstLoad]);
-
-  useEffect(() => {
-    if (!allAlatbayar || isDataUpdated) return;
-
-    const newRows = allAlatbayar.data || [];
-
-    setRows((prevRows: any) => {
-      // Reset data if filter changes (first page)
-      if (currentPage === 1 || filters !== prevFilters) {
-        setCurrentPage(1); // Reset currentPage to 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-        return newRows; // Use the fetched new rows directly
-      }
-
-      // Add new data to the bottom for infinite scroll
-      if (!fetchedPages.has(currentPage)) {
-        return [...prevRows, ...newRows];
-      }
-
-      return prevRows;
-    });
-
-    if (allAlatbayar.pagination.totalPages) {
-      setTotalPages(allAlatbayar.pagination.totalPages);
-    }
-
-    setHasMore(newRows.length === filters.limit);
-    setFetchedPages((prev) => new Set(prev).add(currentPage));
-    setPrevFilters(filters);
-  }, [allAlatbayar, currentPage, filters, isFetchingManually, isDataUpdated]);
-
   useEffect(() => {
     const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
     headerCells.forEach((cell) => {
       cell.setAttribute('tabindex', '-1');
     });
   }, []);
-  useEffect(() => {
-    if (gridRef.current && dataGridKey) {
-      setTimeout(() => {
-        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-        setIsFirstLoad(false);
-      }, 0);
-    }
-  }, [dataGridKey]);
   useEffect(() => {
     const preventScrollOnSpace = (event: KeyboardEvent) => {
       // Cek apakah target yang sedang fokus adalah input atau textarea
@@ -1901,6 +2523,15 @@ const GridAlatbayar = () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // --- Reset Flag Transisi saat selesai
+  useEffect(() => {
+    if (!isTransitioning && !isFetching) {
+      setTimeout(() => {
+        hasAdjustedScrollRef.current = false;
+      }, 200);
+    }
+  }, [isTransitioning, isFetching]);
 
   useEffect(() => {
     const rowData = rows[selectedRow];
@@ -1937,14 +2568,39 @@ const GridAlatbayar = () => {
       }
     });
   }, []);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        clearError();
+        forms.reset(); // Reset the form when the Escape key is pressed
+        setMode(''); // Reset the mode to empty
+        setPopOver(false);
+        dispatch(clearOpenName());
+      }
+    };
+
+    // Add event listener for keydown when the component is mounted
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup event listener when the component is unmounted or the effect is re-run
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [forms]);
+
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
     };
   }, []);
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+      <div
+        onKeyDownCapture={handleGridInputNavigationKeyDownCapture}
+        className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background"
+      >
         <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
           <div className="flex flex-row items-center">
             <label htmlFor="" className="text-xs">
@@ -2031,12 +2687,12 @@ const GridAlatbayar = () => {
           rowClass={getRowClass}
           onCellClick={handleCellClick}
           headerRowHeight={70}
-          rowHeight={30}
+          rowHeight={27}
           className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
           enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onScroll={handleScroll}
+          onScroll={suppressScrollRef.current ? undefined : handleScroll}
           onSelectedCellChange={(args) => {
             handleCellClick({ row: args.row });
           }}
@@ -2051,12 +2707,18 @@ const GridAlatbayar = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
+            shortcutAdd="A"
+            shortcutEdit="E"
+            shortcutDelete="D"
+            shortcutView="V"
             rowsLength={rows.length}
             totalItems={allAlatbayar ? allAlatbayar.pagination.totalItems : 0}
+            startRow={startRow}
             customActions={[
               {
                 label: 'Print',
                 icon: <FaPrint />,
+                shortcut: 'P',
                 onClick: () => handleReport(),
                 className: 'bg-cyan-500 hover:bg-cyan-700'
               }

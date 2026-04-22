@@ -1,5 +1,5 @@
 import { GetParams } from '../types/all.type';
-import { IAllBank, IBank } from '../types/bank.type';
+import { IAllAlatBayar, IAlatBayar } from '../types/alatbayar.type';
 import { buildQueryParams } from '../utils';
 import { api, api2 } from '../utils/AxiosInstance';
 import { AlatbayarInput } from '../validations/alatbayar.validation';
@@ -12,7 +12,7 @@ interface UpdateMenuParams {
 export const getAlatbayarFn = async (
   filters: GetParams = {},
   signal?: AbortSignal
-): Promise<IAllBank> => {
+): Promise<IAllAlatBayar> => {
   try {
     const queryParams = buildQueryParams(filters);
 

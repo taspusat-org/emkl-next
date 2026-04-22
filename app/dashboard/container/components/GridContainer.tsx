@@ -476,8 +476,6 @@ const GridContainer = () => {
         key: 'select',
         name: '',
         width: 50,
-        resizable: true,
-        draggable: true,
         headerCellClass: 'column-headers',
         renderHeaderCell: () => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
@@ -563,16 +561,9 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightText(
-                        cellValue,
-                        filters.search,
-                        columnFilter
-                      )
-                    }}
-                  ></div>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -643,16 +634,9 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightText(
-                        cellValue,
-                        filters.search,
-                        columnFilter
-                      )
-                    }}
-                  ></div>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -724,7 +708,8 @@ const GridContainer = () => {
                       <div
                         className="m-0 flex h-full w-fit cursor-pointer items-center justify-center p-0"
                         style={{
-                          backgroundColor: isDark ? '#004b23' : memoData.WARNA,
+                          // backgroundColor: isDark ? '#004b23' : memoData.WARNA,
+                          backgroundColor: memoData.WARNA,
                           color: memoData.WARNATULISAN,
                           padding: '2px 6px',
                           borderRadius: '2px',
@@ -810,16 +795,9 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightText(
-                        cellValue,
-                        filters.search,
-                        columnFilter
-                      )
-                    }}
-                  ></div>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -891,16 +869,9 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightText(
-                        cellValue,
-                        filters.search,
-                        columnFilter
-                      )
-                    }}
-                  ></div>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
@@ -973,16 +944,9 @@ const GridContainer = () => {
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightText(
-                        cellValue,
-                        filters.search,
-                        columnFilter
-                      )
-                    }}
-                  ></div>
+                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
+                    {highlightText(cellValue, filters.search, columnFilter)}
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"

@@ -16,12 +16,12 @@ import {
   setDefault,
   setType
 } from '@/lib/store/lookupSlice/lookupSlice';
-import GridKasGantungHeader from './components/GridPengeluaranHeader';
 import GridKasGantungDetail from './components/GridPengeluaranDetail';
 import { IParameter } from '@/lib/types/parameter.type';
 import FilterGrid from './components/FilterGrid';
 import { getDaftarBankFn } from '@/lib/apis/daftarbank.api';
 import { GridTabs } from './components/GridTabs';
+import GridPengeluaranHeader from './components/GridPengeluaranHeader';
 interface ApiResponse {
   type: string;
   data: any; // Define a more specific type for data if possible
@@ -126,7 +126,7 @@ const Page = () => {
           <FilterGrid />
         </div>
         <div className="col-span-10 h-[500px]">
-          <GridKasGantungHeader />
+          <GridPengeluaranHeader />
         </div>
         <div className="col-span-10 h-[500px]">
           <GridTabs />
