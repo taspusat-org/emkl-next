@@ -168,6 +168,7 @@ const InputDatePicker: React.FC<DateInputProps> = ({
           <PopoverTrigger asChild>
             <button
               type="button"
+              tabIndex={-1}
               disabled={disabled}
               className={`flex h-9 w-9 items-center justify-center border 
                 ${

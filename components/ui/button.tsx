@@ -76,6 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <Comp
+        tabIndex={-1}
         className={cn(
           buttonVariants({ variant, size, className }),
           loading && 'pointer-events-none flex items-center text-sm'

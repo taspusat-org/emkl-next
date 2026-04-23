@@ -17,12 +17,12 @@ export function highlightText(
   const highlightedText = textValue.replace(
     regex,
     (match) =>
-      `<span style="background-color: yellow; font-size: 13px">${match}</span>`
+      `<span style="background-color: yellow; font-size: 13px;color:black;">${match}</span>`
   );
 
   return (
     <span
-      className="text-sm"
+      className="text-sm text-black"
       dangerouslySetInnerHTML={{ __html: highlightedText }}
     />
   );

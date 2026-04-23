@@ -18,7 +18,7 @@ import { IoMdClose } from 'react-icons/io';
 import { FaSave } from 'react-icons/fa';
 import { setSubmitClicked } from '@/lib/store/lookupSlice/lookupSlice';
 
-interface FormBankProps {
+interface FormAlatbayarProps {
   popOver: boolean;
   setPopOver: (value: boolean) => void;
   forms: any;
@@ -30,7 +30,7 @@ interface FormBankProps {
   isLoadingDelete: boolean;
 }
 
-const FormBank = ({
+const FormAlatbayar = ({
   popOver,
   setPopOver,
   forms,
@@ -40,7 +40,7 @@ const FormBank = ({
   isLoadingCreate,
   isLoadingUpdate,
   isLoadingDelete
-}: FormBankProps) => {
+}: FormAlatbayarProps) => {
   const lookUpPropsStatusLangsungCair = [
     {
       columns: [{ key: 'text', name: 'STATUS NILAI' }],
@@ -112,76 +112,6 @@ const FormBank = ({
   const formRef = useRef<HTMLFormElement | null>(null);
   const openName = useSelector((state: RootState) => state.lookup.openName);
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (openName) {
-        return;
-      }
-
-      const form = formRef.current;
-      if (!form) return;
-
-      const inputs = Array.from(
-        form.querySelectorAll('input, select, textarea, button')
-      ).filter(
-        (element) =>
-          element.id !== 'image-dropzone' &&
-          element.tagName !== 'BUTTON' &&
-          !element.hasAttribute('readonly')
-      ) as HTMLElement[];
-
-      const focusedElement = document.activeElement as HTMLElement;
-
-      const isImageDropzone =
-        document.querySelector('input#image-dropzone') === focusedElement;
-      const isFileInput =
-        document.querySelector('input#file-input') === focusedElement;
-
-      if (isImageDropzone || isFileInput) return;
-
-      let nextElement: HTMLElement | null = null;
-
-      if (event.key === 'ArrowDown' || event.key === 'Tab') {
-        nextElement = getNextFocusableElement(inputs, focusedElement, 'down');
-        if (event.key === 'Tab') {
-          event.preventDefault();
-        }
-      } else if (
-        event.key === 'ArrowUp' ||
-        (event.shiftKey && event.key === 'Tab')
-      ) {
-        nextElement = getNextFocusableElement(inputs, focusedElement, 'up');
-      }
-
-      if (nextElement) {
-        nextElement.focus();
-      }
-    };
-
-    const getNextFocusableElement = (
-      inputs: HTMLElement[],
-      currentElement: HTMLElement,
-      direction: 'up' | 'down'
-    ): HTMLElement | null => {
-      const index = Array.from(inputs).indexOf(currentElement as any);
-
-      if (direction === 'down') {
-        if (index === inputs.length - 1) {
-          return null;
-        }
-        return inputs[index + 1];
-      } else {
-        return inputs[index - 1];
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [openName]);
-
   return (
     <Dialog open={popOver} onOpenChange={setPopOver}>
       <DialogTitle hidden={true}>Title</DialogTitle>
@@ -425,4 +355,4 @@ const FormBank = ({
   );
 };
 
-export default FormBank;
+export default FormAlatbayar;
