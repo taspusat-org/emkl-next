@@ -290,6 +290,7 @@ const GridAlatbayar = () => {
       setCurrentPage(1);
       setSelectedRow(0);
       resetBufferingCache();
+      gridRef?.current?.scrollToCell?.({ rowIdx: 0, idx: 0 });
     }, 300)
   ).current;
 
@@ -313,64 +314,10 @@ const GridAlatbayar = () => {
     setRows([]);
     setCurrentPage(1);
     resetBufferingCache();
+    gridRef?.current?.scrollToCell?.({ rowIdx: 0, idx: 0 });
   }, []);
 
   const { clearError } = useFormError();
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // 1. cari index di array columns asli
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
-
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    // update filter seperti biasa…
-    setFilters((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [colKey]: value },
-      search: '',
-      page: 1
-    }));
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setCurrentPage(1);
-    resetBufferingCache();
-
-    // 3. focus sel di grid pakai displayIndex
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    // 4. focus input filter
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-  };
-  const handleDropdownFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    setFilters((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [colKey]: value },
-      search: '',
-      page: 1
-    }));
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-    setSelectedRow(0);
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
@@ -398,7 +345,7 @@ const GridAlatbayar = () => {
     setIsAllSelected(false);
     resetBufferingCache();
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.scrollToCell({ rowIdx: 0, idx: 1 });
     }, 100);
 
     setTimeout(() => {
@@ -434,7 +381,7 @@ const GridAlatbayar = () => {
     }));
     resetBufferingCache();
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+      gridRef?.current?.scrollToCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -611,7 +558,7 @@ const GridAlatbayar = () => {
                 label="text"
                 filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
                 onChange={(value) =>
-                  handleColumnFilterChange('statusaktif', value)
+                  handleFilterInputChange('statusaktif', value)
                 } // Menangani perubahan nilai di parent
               />
             </div>
@@ -827,7 +774,7 @@ const GridAlatbayar = () => {
                   label="text"
                   filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
                   onChange={(value) =>
-                    handleColumnFilterChange('statuslangsungcair', value)
+                    handleFilterInputChange('statuslangsungcair', value)
                   } // Menangani perubahan nilai di parent
                 />
               </div>
@@ -916,7 +863,7 @@ const GridAlatbayar = () => {
                   label="text"
                   filterBy={{ grp: 'STATUS NILAI', subgrp: 'STATUS NILAI' }}
                   onChange={(value) =>
-                    handleColumnFilterChange('statusdefault', value)
+                    handleFilterInputChange('statusdefault', value)
                   } // Menangani perubahan nilai di parent
                 />
               </div>
@@ -1003,7 +950,7 @@ const GridAlatbayar = () => {
                   label="text"
                   filterBy={{ grp: 'STATUS BANK', subgrp: 'STATUS BANK' }}
                   onChange={(value) =>
-                    handleColumnFilterChange('statusbank', value)
+                    handleFilterInputChange('statusbank', value)
                   } // Menangani perubahan nilai di parent
                 />
               </div>
@@ -1475,19 +1422,12 @@ const GridAlatbayar = () => {
   }
   const orderedColumns = useMemo(() => {
     if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // filter key columns dengan key yg ada di columnsWidth
-      const filteredColumns = columns.filter((col) =>
-        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
-      );
-      // Mapping dan filter untuk menghindari undefined
       return columnsOrder
-        .map((orderIndex) => filteredColumns[orderIndex])
+        .map((orderIndex) => columns[orderIndex])
         .filter((col) => col !== undefined);
     }
     return columns;
   }, [columns, columnsOrder]);
-
-  // Update properti width pada setiap kolom berdasarkan state columnsWidth
   const finalColumns = useMemo(() => {
     return orderedColumns.map((col) => ({
       ...col,
@@ -2248,9 +2188,6 @@ const GridAlatbayar = () => {
         (_, i) => 6 + i
       ).filter((p) => p <= totalPgs);
 
-      console.log('Total Pages Alatbayar:', totalPgs);
-      console.log('Initial Prefetch Queue:', initialPrefetch);
-
       if (initialPrefetch.length > 0) {
         // Pass newCache DAN totalPgs langsung — keduanya belum committed ke state saat ini
         prefetchPages(initialPrefetch, newCache, totalPgs);
@@ -2258,7 +2195,7 @@ const GridAlatbayar = () => {
       setTimeout(() => {
         if (gridRef.current) {
           setSelectedRow(0);
-          gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+          gridRef.current.scrollToCell({ rowIdx: 0, idx: 1 });
         }
       }, 100);
     };
@@ -2660,11 +2597,12 @@ const GridAlatbayar = () => {
           headerRowHeight={70}
           rowHeight={27}
           className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
-          enableVirtualization={false}
+          enableVirtualization={true}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onScroll={suppressScrollRef.current ? undefined : handleScroll}
           onSelectedCellChange={(args) => {
+            setSelectedCellKey(args.column.key);
             handleCellClick({ row: args.row });
           }}
           renderers={{
