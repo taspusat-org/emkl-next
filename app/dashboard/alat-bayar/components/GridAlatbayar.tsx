@@ -2597,7 +2597,7 @@ const GridAlatbayar = () => {
           headerRowHeight={70}
           rowHeight={27}
           className={`${isDark ? 'rdg-dark' : 'rdg-light'} fill-grid`}
-          enableVirtualization={true}
+          enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
           onScroll={suppressScrollRef.current ? undefined : handleScroll}
