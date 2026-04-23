@@ -423,6 +423,8 @@ const GridAlatbayar = () => {
   };
 
   const handleClearInput = () => {
+    cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel();
     setFilters((prev) => ({
       ...prev,
       filters: {
@@ -431,8 +433,13 @@ const GridAlatbayar = () => {
       search: '',
       page: 1
     }));
-    setInputValue('');
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
+    setRows([]);
+    setCurrentPage(1);
     resetBufferingCache();
+    gridRef?.current?.scrollToCell?.({ rowIdx: 0, idx: 0 });
+    setInputValue('');
   };
 
   const columns = useMemo((): Column<IAlatBayar>[] => {
