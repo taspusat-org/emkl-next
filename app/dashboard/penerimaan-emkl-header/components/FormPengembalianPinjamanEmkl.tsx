@@ -316,7 +316,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center font-normal">
               <p className="text-sm">No.</p>
@@ -341,7 +341,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
@@ -370,7 +370,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Nomor Bukti</p>
@@ -393,7 +393,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>TGL Bukti</p>
@@ -417,7 +417,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         draggable: true,
         cellClass: 'form-input',
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Keterangan</p>
@@ -443,7 +443,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Jumlah Pinjaman</p>
@@ -476,7 +476,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Sudah Dibayar</p>
@@ -509,7 +509,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Nominal</p>
@@ -568,7 +568,7 @@ const FormPengembalianPinjamanEmkl = ({ forms, mode, popOver }: any) => {
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Sisa</p>

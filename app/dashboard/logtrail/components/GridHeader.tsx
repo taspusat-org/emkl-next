@@ -124,7 +124,7 @@ const GridHeader = () => {
       name: header.charAt(0).toUpperCase() + header.slice(1),
       width: 150,
       headerCellClass: 'column-headers',
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex cursor-pointer flex-col items-center">
           <div
             className="flex w-full flex-row justify-between"

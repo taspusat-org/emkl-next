@@ -205,7 +205,7 @@ export default function LookUpModalBiayaExtra({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm">aksi</p>
           </div>
@@ -239,7 +239,7 @@ export default function LookUpModalBiayaExtra({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NO BUKTI BIAYA EXTRA</p>
           </div>
@@ -269,7 +269,7 @@ export default function LookUpModalBiayaExtra({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>estimasi</p>
           </div>
@@ -299,7 +299,7 @@ export default function LookUpModalBiayaExtra({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nominal</p>
           </div>
@@ -354,7 +354,7 @@ export default function LookUpModalBiayaExtra({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>status</p>
           </div>

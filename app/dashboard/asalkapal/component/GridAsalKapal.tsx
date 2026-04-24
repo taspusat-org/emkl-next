@@ -421,7 +421,7 @@ const GridAsalKapal = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -468,7 +468,7 @@ const GridAsalKapal = () => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
@@ -499,7 +499,7 @@ const GridAsalKapal = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -570,7 +570,7 @@ const GridAsalKapal = () => {
         draggable: true,
         width: 250,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -643,7 +643,7 @@ const GridAsalKapal = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -716,7 +716,7 @@ const GridAsalKapal = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -787,47 +787,52 @@ const GridAsalKapal = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onClick={() => handleSort('statusaktif')}
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            >
-              <p
-                className={`text-sm ${
-                  filters.sortBy === 'statusaktif' ? 'font-bold' : 'font-normal'
-                }`}
+        renderHeaderCell: (column: any) => {
+          return (
+            <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+              <div
+                className="headers-cell h-[50%]"
+                onClick={() => handleSort('statusaktif')}
+                onContextMenu={(event) =>
+                  setContextMenu(handleContextMenu(event))
+                }
               >
-                Status Aktif
-              </p>
-              <div className="ml-2">
-                {filters.sortBy === 'statusaktif' &&
-                filters.sortDirection === 'asc' ? (
-                  <FaSortUp className="font-bold" />
-                ) : filters.sortBy === 'statusaktif' &&
-                  filters.sortDirection === 'desc' ? (
-                  <FaSortDown className="font-bold" />
-                ) : (
-                  <FaSort className="text-zinc-400" />
-                )}
+                <p
+                  className={`text-sm ${
+                    filters.sortBy === 'statusaktif'
+                      ? 'font-bold'
+                      : 'font-normal'
+                  }`}
+                >
+                  Status Aktif
+                </p>
+                <div className="ml-2">
+                  {filters.sortBy === 'statusaktif' &&
+                  filters.sortDirection === 'asc' ? (
+                    <FaSortUp className="font-bold" />
+                  ) : filters.sortBy === 'statusaktif' &&
+                    filters.sortDirection === 'desc' ? (
+                    <FaSortDown className="font-bold" />
+                  ) : (
+                    <FaSort className="text-zinc-400" />
+                  )}
+                </div>
+              </div>
+              <div className="relative h-[50%] w-full px-1">
+                <FilterOptions
+                  columnKey={column.column.key}
+                  endpoint="parameter"
+                  value="id"
+                  label="text"
+                  filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
+                  onChange={(value) =>
+                    handleColumnFilterChange('statusaktif', value)
+                  } // Menangani perubahan nilai di parent
+                />
               </div>
             </div>
-            <div className="relative h-[50%] w-full px-1">
-              <FilterOptions
-                endpoint="parameter"
-                value="id"
-                label="text"
-                filterBy={{ grp: 'STATUS AKTIF', subgrp: 'STATUS AKTIF' }}
-                onChange={(value) =>
-                  handleColumnFilterChange('statusaktif', value)
-                } // Menangani perubahan nilai di parent
-              />
-            </div>
-          </div>
-        ),
+          );
+        },
         renderCell: (props: any) => {
           const memoData = props.row.memo ? JSON.parse(props.row.memo) : null;
           if (memoData) {
@@ -872,7 +877,7 @@ const GridAsalKapal = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -947,7 +952,7 @@ const GridAsalKapal = () => {
         headerCellClass: 'column-headers',
 
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"

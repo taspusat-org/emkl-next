@@ -216,7 +216,7 @@ const FormRoleAcl = ({
         width: 50,
         resizable: true,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex w-full cursor-pointer justify-center"
             onClick={() => {
@@ -249,7 +249,7 @@ const FormRoleAcl = ({
         key: 'select',
         name: 'Select',
         width: 50,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex items-center justify-center">
             <Checkbox
               checked={isAllSelected}
@@ -274,7 +274,7 @@ const FormRoleAcl = ({
         resizable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -336,7 +336,7 @@ const FormRoleAcl = ({
         resizable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -398,7 +398,7 @@ const FormRoleAcl = ({
         resizable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"

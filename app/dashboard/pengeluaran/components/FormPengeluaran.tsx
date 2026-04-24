@@ -303,7 +303,7 @@ const FormPengeluaran = ({
         key: 'aksi',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Aksi</p>
           </div>
@@ -360,7 +360,7 @@ const FormPengeluaran = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
@@ -384,7 +384,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 350,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Coa Debet</p>
           </div>
@@ -425,7 +425,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 400,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Keterangan</p>
           </div>
@@ -463,7 +463,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Nominal</p>
           </div>
@@ -528,7 +528,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Dpp</p>
           </div>
@@ -601,7 +601,7 @@ const FormPengeluaran = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>no invoice emkl</p>
           </div>
@@ -646,7 +646,7 @@ const FormPengeluaran = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>
               no transaksi biaya
@@ -686,7 +686,7 @@ const FormPengeluaran = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>no transaksi lain</p>
           </div>
@@ -717,7 +717,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 170,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>
               TANGGAL INVOICE EMKL
@@ -769,7 +769,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>
               no faktur pajak emkl
@@ -809,7 +809,7 @@ const FormPengeluaran = ({
         draggable: true,
         cellClass: 'form-input',
         width: 170,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>periode refund</p>
           </div>

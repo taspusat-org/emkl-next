@@ -84,7 +84,7 @@ const createKeteranganColumns = (
       width: 65,
       resizable: true,
       cellClass: 'form-input',
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Aksi</p>
         </div>
@@ -123,7 +123,7 @@ const createKeteranganColumns = (
       width: 50,
       resizable: true,
       cellClass: 'form-input',
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">No.</p>
         </div>
@@ -142,7 +142,7 @@ const createKeteranganColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 200,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Jobmuatan</p>
         </div>
@@ -179,7 +179,7 @@ const createKeteranganColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 100,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Bongkarke</p>
         </div>
@@ -216,7 +216,7 @@ const createKeteranganColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 350,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Keterangan</p>
         </div>
@@ -268,7 +268,7 @@ const createRincianColumns = (
       width: 65,
       resizable: true,
       cellClass: 'form-input',
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Aksi</p>
         </div>
@@ -307,7 +307,7 @@ const createRincianColumns = (
       width: 50,
       resizable: true,
       cellClass: 'form-input',
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">No.</p>
         </div>
@@ -326,7 +326,7 @@ const createRincianColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 180,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Jobmuatan</p>
         </div>
@@ -355,7 +355,7 @@ const createRincianColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 100,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Bongkarke</p>
         </div>
@@ -384,7 +384,7 @@ const createRincianColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 250,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Keterangan</p>
         </div>
@@ -420,7 +420,7 @@ const createRincianColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 120,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Banyak</p>
         </div>
@@ -458,7 +458,7 @@ const createRincianColumns = (
       resizable: true,
       cellClass: 'form-input',
       width: 120,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex h-full w-full flex-col justify-center">
           <p className="text-sm font-normal">Berat</p>
         </div>
@@ -1161,7 +1161,7 @@ const FormPackingList = ({
         draggable: true,
         cellClass: 'form-input',
 
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
@@ -1182,7 +1182,7 @@ const FormPackingList = ({
         draggable: true,
 
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>JOB MUATAN</p>
           </div>
@@ -1219,7 +1219,7 @@ const FormPackingList = ({
         draggable: true,
 
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>SHIPPER</p>
           </div>
@@ -1255,7 +1255,7 @@ const FormPackingList = ({
         draggable: true,
 
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>LOKASI BONGKAR</p>
           </div>
@@ -1291,7 +1291,7 @@ const FormPackingList = ({
         draggable: true,
 
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>MARKETING</p>
           </div>
@@ -1327,7 +1327,7 @@ const FormPackingList = ({
         draggable: true,
 
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>NO CONTAINER</p>
           </div>
@@ -1363,7 +1363,7 @@ const FormPackingList = ({
         draggable: true,
 
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>NO SEAL</p>
           </div>
@@ -1400,7 +1400,7 @@ const FormPackingList = ({
         key: 'aksi',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -1445,7 +1445,7 @@ const FormPackingList = ({
         resizable: true,
         draggable: true,
         cellClass: 'form-input',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-sm font-normal`}>No.</p>
           </div>
@@ -1465,7 +1465,7 @@ const FormPackingList = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-sm font-normal`}>Job Muatan</p>
           </div>
@@ -1504,7 +1504,7 @@ const FormPackingList = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-sm font-normal`}>Bongkar Ke</p>
           </div>

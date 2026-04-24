@@ -183,7 +183,7 @@ const FormBiayaLainLainDetailMuatan = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -240,7 +240,7 @@ const FormBiayaLainLainDetailMuatan = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -261,7 +261,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NO BUKTI ORDERAN</p>
           </div>
@@ -406,7 +406,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>tgljob</p>
           </div>
@@ -442,7 +442,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>no container</p>
           </div>
@@ -472,7 +472,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>no seal</p>
           </div>
@@ -502,7 +502,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>lokasi stuffing</p>
           </div>
@@ -532,7 +532,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>shipper</p>
           </div>
@@ -562,7 +562,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>ukuran container</p>
           </div>
@@ -593,7 +593,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>estimasi</p>
           </div>
@@ -629,7 +629,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nominal</p>
           </div>
@@ -681,7 +681,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Keterangan</p>
           </div>
@@ -753,7 +753,7 @@ const FormBiayaLainLainDetailMuatan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 220,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NO BUKTI BIAYA EXTRA</p>
           </div>

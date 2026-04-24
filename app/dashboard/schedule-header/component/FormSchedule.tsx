@@ -175,7 +175,7 @@ const FormSchedule = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -226,7 +226,7 @@ const FormSchedule = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm">No.</p>
@@ -253,7 +253,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>PELAYARAN</p>
@@ -303,7 +303,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>KAPAL</p>
@@ -346,7 +346,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>TUJUAN KAPAL</p>
@@ -404,7 +404,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>TGLBERANGKAT</p>
@@ -446,7 +446,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>TGL TIBA</p>
@@ -492,7 +492,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>ETB</p>
@@ -534,7 +534,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>ETA</p>
@@ -576,7 +576,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>ETD</p>
@@ -618,7 +618,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>VOY BERANGKAT</p>
@@ -659,7 +659,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>VOY TIBA</p>
@@ -696,7 +696,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>CLOSING</p>
@@ -756,7 +756,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>ETA TUJUAN</p>
@@ -802,7 +802,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>ETD TUJUAN</p>
@@ -848,7 +848,7 @@ const FormSchedule = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Keterangan</p>

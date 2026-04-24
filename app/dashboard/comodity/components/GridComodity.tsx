@@ -460,7 +460,7 @@ const GridComodity = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -505,7 +505,7 @@ const GridComodity = () => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -541,7 +541,7 @@ const GridComodity = () => {
         draggable: true,
         width: 250,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -614,7 +614,7 @@ const GridComodity = () => {
         draggable: true,
         width: 300,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -685,7 +685,7 @@ const GridComodity = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -715,6 +715,7 @@ const GridComodity = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
+                columnKey={column.column.key}
                 endpoint="parameter"
                 value="id"
                 label="text"
@@ -772,7 +773,7 @@ const GridComodity = () => {
         headerCellClass: 'column-headers',
 
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -846,7 +847,7 @@ const GridComodity = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -921,7 +922,7 @@ const GridComodity = () => {
         headerCellClass: 'column-headers',
 
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"

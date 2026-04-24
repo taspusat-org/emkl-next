@@ -185,7 +185,7 @@ const FormPanjarHeader = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -240,7 +240,7 @@ const FormPanjarHeader = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
@@ -264,7 +264,7 @@ const FormPanjarHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>NO BUKTI ORDERAN</p>
           </div>
@@ -309,7 +309,7 @@ const FormPanjarHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>estimasi</p>
           </div>
@@ -369,7 +369,7 @@ const FormPanjarHeader = ({
         cellClass: 'form-input',
         width: 200,
 
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>nominal</p>
           </div>
@@ -429,7 +429,7 @@ const FormPanjarHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Keterangan</p>
           </div>

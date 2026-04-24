@@ -143,7 +143,7 @@ const FormMarketingDetail = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -194,7 +194,7 @@ const FormMarketingDetail = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -215,7 +215,7 @@ const FormMarketingDetail = ({
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm font-normal`}>Nominal Awal</p>
           </div>
@@ -260,7 +260,7 @@ const FormMarketingDetail = ({
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm font-normal`}>Nominal Akhir</p>
           </div>
@@ -305,7 +305,7 @@ const FormMarketingDetail = ({
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm font-normal`}>Persentase</p>
           </div>
@@ -368,7 +368,7 @@ const FormMarketingDetail = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm font-normal`}>STATUS AKTIF</p>
           </div>

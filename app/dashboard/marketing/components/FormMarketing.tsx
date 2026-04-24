@@ -547,7 +547,7 @@ const FormMarketing = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -600,7 +600,7 @@ const FormMarketing = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -621,7 +621,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NAMA</p>
           </div>
@@ -659,7 +659,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>KETERANGAN</p>
           </div>
@@ -697,7 +697,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>SINGKATAN</p>
           </div>
@@ -735,7 +735,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>STATUS AKTIF</p>
           </div>
@@ -789,7 +789,7 @@ const FormMarketing = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -842,7 +842,7 @@ const FormMarketing = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -863,7 +863,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>JENIS BIAYA MARKETING</p>
           </div>
@@ -916,7 +916,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Nominal</p>
           </div>
@@ -958,7 +958,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>STATUS AKTIF</p>
           </div>
@@ -1008,7 +1008,7 @@ const FormMarketing = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -1061,7 +1061,7 @@ const FormMarketing = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -1082,7 +1082,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>MANAGER MARKETING</p>
           </div>
@@ -1133,7 +1133,7 @@ const FormMarketing = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>STATUS AKTIF</p>
           </div>
@@ -1188,7 +1188,7 @@ const FormMarketing = ({
           headerCellClass: 'column-headers',
           cellClass: 'form-input',
           width: 65,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
               <p className="text-sm font-normal">aksi</p>
             </div>
@@ -1241,7 +1241,7 @@ const FormMarketing = ({
             }
             return undefined; // For other rows, no column spanning
           },
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full flex-col items-center justify-center gap-1">
               <p className="text-sm">No.</p>
             </div>
@@ -1262,7 +1262,7 @@ const FormMarketing = ({
           draggable: true,
           cellClass: 'form-input',
           width: 200,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
               <p className={`text-sm`}>JENIS PROSES FEE</p>
             </div>
@@ -1313,7 +1313,7 @@ const FormMarketing = ({
           draggable: true,
           cellClass: 'form-input',
           width: 250,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
               <p className={`text-sm`}>STATUS POTONG BIAYA KANTOR</p>
             </div>
@@ -1366,7 +1366,7 @@ const FormMarketing = ({
           draggable: true,
           cellClass: 'form-input',
           width: 200,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
               <p className={`text-sm`}>STATUS AKTIF</p>
             </div>

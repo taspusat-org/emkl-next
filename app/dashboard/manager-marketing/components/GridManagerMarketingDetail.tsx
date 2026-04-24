@@ -70,7 +70,7 @@ const GridManagerMarketingDetail = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -106,7 +106,7 @@ const GridManagerMarketingDetail = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -145,7 +145,7 @@ const GridManagerMarketingDetail = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -185,7 +185,7 @@ const GridManagerMarketingDetail = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -238,7 +238,7 @@ const GridManagerMarketingDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -274,7 +274,7 @@ const GridManagerMarketingDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}

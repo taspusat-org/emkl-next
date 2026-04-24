@@ -348,7 +348,7 @@ const FormBlHeader = ({
         width: 50,
         cellClass: 'form-input',
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="justify-cente flex h-full flex-col items-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -369,7 +369,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NOMOR BL</p>
           </div>
@@ -412,7 +412,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 350,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nomor shipping</p>
           </div>
@@ -446,7 +446,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>PELABUHAN ASAL</p>
           </div>
@@ -480,7 +480,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Keterangan</p>
           </div>
@@ -523,7 +523,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>consignee</p>
           </div>
@@ -557,7 +557,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>shipper</p>
           </div>
@@ -591,7 +591,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>comodity</p>
           </div>
@@ -625,7 +625,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>notify party</p>
           </div>
@@ -659,7 +659,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NAMA EMKL</p>
           </div>
@@ -693,7 +693,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NAMA PELAYARAN</p>
           </div>
@@ -730,7 +730,7 @@ const FormBlHeader = ({
         width: 50,
         cellClass: 'form-input',
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -751,7 +751,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Job</p>
           </div>
@@ -782,7 +782,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>no count</p>
           </div>
@@ -813,7 +813,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>no seal</p>
           </div>
@@ -844,7 +844,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>keterangan</p>
           </div>
@@ -887,7 +887,7 @@ const FormBlHeader = ({
         width: 50,
         cellClass: 'form-input',
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -908,7 +908,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>BIAYA EMKl</p>
           </div>
@@ -938,7 +938,7 @@ const FormBlHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NOMINAL</p>
           </div>

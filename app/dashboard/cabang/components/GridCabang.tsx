@@ -435,7 +435,7 @@ const GridCabang = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -484,7 +484,7 @@ const GridCabang = () => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -519,7 +519,7 @@ const GridCabang = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -591,7 +591,7 @@ const GridCabang = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -662,7 +662,7 @@ const GridCabang = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -738,7 +738,7 @@ const GridCabang = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -811,7 +811,7 @@ const GridCabang = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -841,6 +841,7 @@ const GridCabang = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
+                columnKey={column.column.key}
                 endpoint="parameter"
                 value="id"
                 label="text"
@@ -898,7 +899,7 @@ const GridCabang = () => {
         headerCellClass: 'column-headers',
 
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -972,7 +973,7 @@ const GridCabang = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -1047,7 +1048,7 @@ const GridCabang = () => {
         headerCellClass: 'column-headers',
 
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"

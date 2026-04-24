@@ -451,7 +451,7 @@ const GridAlatbayar = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -499,7 +499,7 @@ const GridAlatbayar = () => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
@@ -529,7 +529,7 @@ const GridAlatbayar = () => {
         draggable: true,
         width: 70,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="STATUS AKTIF"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -562,6 +562,7 @@ const GridAlatbayar = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
+                columnKey={column.column.key}
                 endpoint="parameter"
                 value="id"
                 label="text"
@@ -612,7 +613,7 @@ const GridAlatbayar = () => {
         draggable: true,
         width: 200,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="NAMA"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -676,7 +677,7 @@ const GridAlatbayar = () => {
         draggable: true,
         width: 300,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="KETERANGAN"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -742,7 +743,7 @@ const GridAlatbayar = () => {
         draggable: true,
         width: 70,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="STATUS LANGSUNG CAIR"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -778,6 +779,7 @@ const GridAlatbayar = () => {
             <div className="relative h-[50%] w-full px-1">
               <div className="relative h-[50%] w-full px-1">
                 <FilterOptions
+                  columnKey={column.column.key}
                   endpoint="parameter"
                   value="id"
                   label="text"
@@ -831,7 +833,7 @@ const GridAlatbayar = () => {
         draggable: true,
         width: 70,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="STATUS DEFAULT"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -867,6 +869,7 @@ const GridAlatbayar = () => {
             <div className="relative h-[50%] w-full px-1">
               <div className="relative h-[50%] w-full px-1">
                 <FilterOptions
+                  columnKey={column.column.key}
                   endpoint="parameter"
                   value="id"
                   label="text"
@@ -920,7 +923,7 @@ const GridAlatbayar = () => {
         draggable: true,
         width: 80,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="STATUS BANK"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -954,6 +957,7 @@ const GridAlatbayar = () => {
             <div className="relative h-[50%] w-full px-1">
               <div className="relative h-[50%] w-full px-1">
                 <FilterOptions
+                  columnKey={column.column.key}
                   endpoint="parameter"
                   value="id"
                   label="text"
@@ -1006,7 +1010,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
 
         width: 100,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="MODIFIED BY"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -1073,7 +1077,7 @@ const GridAlatbayar = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 170,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="CREATED AT"
             className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -1143,7 +1147,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
 
         width: 170,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             title="UPDATED AT"
             className="flex h-full cursor-pointer flex-col items-center gap-1"

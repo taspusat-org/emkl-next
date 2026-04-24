@@ -78,6 +78,7 @@ export const generateStatusColumns = ({
 
           <div className="relative h-[50%] w-full px-1">
             <FilterOptions
+              columnKey={column.column.key}
               endpoint="parameter"
               value="id"
               label="text"

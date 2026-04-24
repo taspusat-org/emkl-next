@@ -487,7 +487,7 @@ export default function LookUpModalPengeluaran({
       // Set width to 100% if singleColumn is true, else use the default width
       width: singleColumn ? '100%' : col.width ?? 250, // Default width if not specified
       resizable: true,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div
           key={index}
           className="flex h-full cursor-pointer flex-col items-center gap-1"

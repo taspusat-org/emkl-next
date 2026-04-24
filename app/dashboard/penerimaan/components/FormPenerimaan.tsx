@@ -145,7 +145,7 @@ const FormPenerimaan = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -196,7 +196,7 @@ const FormPenerimaan = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center font-normal">
               <p className="text-sm">No.</p>
@@ -222,7 +222,7 @@ const FormPenerimaan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <FormLabel required={true}>COA</FormLabel>
@@ -268,7 +268,7 @@ const FormPenerimaan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 500,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Keterangan</p>
@@ -310,7 +310,7 @@ const FormPenerimaan = ({
         draggable: true,
         cellClass: 'form-input',
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm font-normal`}>Nominal</p>

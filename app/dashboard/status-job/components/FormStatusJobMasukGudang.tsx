@@ -311,7 +311,7 @@ const FormStatusJobMasukGudang = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -364,7 +364,7 @@ const FormStatusJobMasukGudang = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -385,7 +385,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NO JOB</p>
           </div>
@@ -555,7 +555,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>TGL ORDER</p>
           </div>
@@ -589,7 +589,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NO CONTAINER</p>
           </div>
@@ -730,7 +730,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>NO SEAL</p>
           </div>
@@ -862,7 +862,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>SHIPPER</p>
           </div>
@@ -894,7 +894,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>LOKASI STUFFING</p>
           </div>
@@ -926,7 +926,7 @@ const FormStatusJobMasukGudang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Keterangan</p>
           </div>

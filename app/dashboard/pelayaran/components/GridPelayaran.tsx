@@ -381,7 +381,7 @@ const GridPelayaran = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -426,7 +426,7 @@ const GridPelayaran = () => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -462,7 +462,7 @@ const GridPelayaran = () => {
         draggable: true,
         width: 300,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -532,7 +532,7 @@ const GridPelayaran = () => {
         draggable: true,
         width: 250,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -605,7 +605,7 @@ const GridPelayaran = () => {
         draggable: true,
         width: 150,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -635,6 +635,7 @@ const GridPelayaran = () => {
             </div>
             <div className="relative h-[50%] w-full px-1">
               <FilterOptions
+                columnKey={column.column.key}
                 endpoint="parameter"
                 value="id"
                 label="text"
@@ -692,7 +693,7 @@ const GridPelayaran = () => {
         headerCellClass: 'column-headers',
 
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -766,7 +767,7 @@ const GridPelayaran = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -841,7 +842,7 @@ const GridPelayaran = () => {
         headerCellClass: 'column-headers',
 
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"

@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "30e76f83d382d0dab2755843349e0b69",
+  "ReportGuid": "6853d8472021e92f8f59c25f25d14300",
   "ReportName": "Report",
   "ReportAlias": "Report",
   "ReportFile": "/reports/LaporanHutang.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1757498596000+0700)/",
+  "ReportChanged": "/Date(1777020022000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -27,12 +27,220 @@
         "Ident": "StiDataTableSource",
         "Name": "data",
         "Alias": "data",
+        "Columns": {
+          "0": {
+            "Name": "id",
+            "NameInSource": "id",
+            "Alias": "id",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "nobukti",
+            "NameInSource": "nobukti",
+            "Alias": "nobukti",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "tglbukti",
+            "NameInSource": "tglbukti",
+            "Alias": "tglbukti",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "tgljatuhtempo",
+            "NameInSource": "tgljatuhtempo",
+            "Alias": "tgljatuhtempo",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "keterangan",
+            "NameInSource": "keterangan",
+            "Alias": "keterangan",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "relasi_id",
+            "NameInSource": "relasi_id",
+            "Alias": "relasi_id",
+            "Type": "System.String"
+          },
+          "6": {
+            "Name": "coa",
+            "NameInSource": "coa",
+            "Alias": "coa",
+            "Type": "System.String"
+          },
+          "7": {
+            "Name": "statusformat",
+            "NameInSource": "statusformat",
+            "Alias": "statusformat",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "modifiedby",
+            "NameInSource": "modifiedby",
+            "Alias": "modifiedby",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "created_at",
+            "NameInSource": "created_at",
+            "Alias": "created_at",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "updated_at",
+            "NameInSource": "updated_at",
+            "Alias": "updated_at",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "relasi_text",
+            "NameInSource": "relasi_text",
+            "Alias": "relasi_text",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "coa_text",
+            "NameInSource": "coa_text",
+            "Alias": "coa_text",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "judullaporan",
+            "NameInSource": "judullaporan",
+            "Alias": "judullaporan",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "usercetak",
+            "NameInSource": "usercetak",
+            "Alias": "usercetak",
+            "Type": "System.String"
+          },
+          "15": {
+            "Name": "tglcetak",
+            "NameInSource": "tglcetak",
+            "Alias": "tglcetak",
+            "Type": "System.String"
+          },
+          "16": {
+            "Name": "terbilang",
+            "NameInSource": "terbilang",
+            "Alias": "terbilang",
+            "Type": "System.String"
+          },
+          "17": {
+            "Name": "judul",
+            "NameInSource": "judul",
+            "Alias": "judul",
+            "Type": "System.String"
+          }
+        },
         "NameInSource": "Data.data"
       },
       "1": {
         "Ident": "StiDataTableSource",
         "Name": "detail",
         "Alias": "detail",
+        "Columns": {
+          "0": {
+            "Name": "id",
+            "NameInSource": "id",
+            "Alias": "id",
+            "Type": "System.String"
+          },
+          "1": {
+            "Name": "hutang_id",
+            "NameInSource": "hutang_id",
+            "Alias": "hutang_id",
+            "Type": "System.String"
+          },
+          "2": {
+            "Name": "nobukti",
+            "NameInSource": "nobukti",
+            "Alias": "nobukti",
+            "Type": "System.String"
+          },
+          "3": {
+            "Name": "coa",
+            "NameInSource": "coa",
+            "Alias": "coa",
+            "Type": "System.String"
+          },
+          "4": {
+            "Name": "keterangan",
+            "NameInSource": "keterangan",
+            "Alias": "keterangan",
+            "Type": "System.String"
+          },
+          "5": {
+            "Name": "nominal",
+            "NameInSource": "nominal",
+            "Alias": "nominal",
+            "Type": "System.Decimal"
+          },
+          "6": {
+            "Name": "dpp",
+            "NameInSource": "dpp",
+            "Alias": "dpp",
+            "Type": "System.Decimal"
+          },
+          "7": {
+            "Name": "noinvoiceemkl",
+            "NameInSource": "noinvoiceemkl",
+            "Alias": "noinvoiceemkl",
+            "Type": "System.String"
+          },
+          "8": {
+            "Name": "tglinvoiceemkl",
+            "NameInSource": "tglinvoiceemkl",
+            "Alias": "tglinvoiceemkl",
+            "Type": "System.String"
+          },
+          "9": {
+            "Name": "nofakturpajakemkl",
+            "NameInSource": "nofakturpajakemkl",
+            "Alias": "nofakturpajakemkl",
+            "Type": "System.String"
+          },
+          "10": {
+            "Name": "coa_text",
+            "NameInSource": "coa_text",
+            "Alias": "coa_text",
+            "Type": "System.String"
+          },
+          "11": {
+            "Name": "info",
+            "NameInSource": "info",
+            "Alias": "info",
+            "Type": "System.String"
+          },
+          "12": {
+            "Name": "modifiedby",
+            "NameInSource": "modifiedby",
+            "Alias": "modifiedby",
+            "Type": "System.String"
+          },
+          "13": {
+            "Name": "created_at",
+            "NameInSource": "created_at",
+            "Alias": "created_at",
+            "Type": "System.String"
+          },
+          "14": {
+            "Name": "updated_at",
+            "NameInSource": "updated_at",
+            "Alias": "updated_at",
+            "Type": "System.String"
+          },
+          "15": {
+            "Name": "link",
+            "NameInSource": "link",
+            "Alias": "link",
+            "Type": "System.String"
+          }
+        },
         "NameInSource": "Data.detail"
       }
     },
@@ -678,7 +886,7 @@
                 "WordWrap": true
               },
               "Margins": {
-                "Left": 3,
+                "Left": 4,
                 "Right": 0,
                 "Top": 0,
                 "Bottom": 0
@@ -868,7 +1076,7 @@
               "Guid": "6578112fe02678cb0e185fcbd23df1c8",
               "PrintOn": "OnlyLastPage",
               "CanGrow": true,
-              "ClientRectangle": "170.59,23,22,4",
+              "ClientRectangle": "180.59,23,22,4",
               "ComponentPlacement": "rs.ReportSummaryBand1",
               "Interaction": {
                 "Ident": "StiInteraction"
