@@ -9,9 +9,6 @@ import React, {
   useState
 } from 'react';
 
-// ─────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────
 export type ReportType = 'pdf' | 'excel';
 
 export type ReportStage =
@@ -37,14 +34,8 @@ interface CtxValue {
   dismissJob: (id: string) => void;
 }
 
-// ─────────────────────────────────────────────
-// Context
-// ─────────────────────────────────────────────
 const Ctx = createContext<CtxValue | null>(null);
 
-// ─────────────────────────────────────────────
-// Hook — dipakai di setiap Grid
-// ─────────────────────────────────────────────
 export function useReportProgress() {
   const ctx = useContext(Ctx);
   if (!ctx)
@@ -113,9 +104,6 @@ const STAGE_LABEL: Record<ReportStage, string> = {
   error: 'Gagal'
 };
 
-// ─────────────────────────────────────────────
-// CSS — slim, minimal toast
-// ─────────────────────────────────────────────
 const CSS = `
 @keyframes rpp-in  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 @keyframes rpp-out { from{opacity:1;transform:translateY(0)}   to{opacity:0;transform:translateY(6px)} }
@@ -202,9 +190,6 @@ function injectCSS() {
   document.head.appendChild(s);
 }
 
-// ─────────────────────────────────────────────
-// Toast card — slim
-// ─────────────────────────────────────────────
 function ToastCard({
   job,
   onDismiss
@@ -265,9 +250,6 @@ function ToastCard({
   );
 }
 
-// ─────────────────────────────────────────────
-// Provider
-// ─────────────────────────────────────────────
 export function ReportProgressProvider({
   children
 }: {
