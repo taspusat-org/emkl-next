@@ -1,6 +1,8 @@
 import AppSidebar from '@/components/layout/app-sidebar';
 import { Metadata } from 'next';
 import { headers } from 'next/headers';
+import { ReportProgressProvider } from '@/components/custom-ui/ReportProgressProvider';
+import Providers from '@/components/layout/providers';
 
 // Define metadata for the page
 export const metadata: Metadata = {
@@ -40,7 +42,9 @@ export default async function DashboardLayout({
   const formattedTime = `${hours}:${minutes}:${seconds}`;
   return (
     <AppSidebar ip={ip} initialDateTime={`${formattedDate} ${formattedTime}`}>
-      {children}
+      <ReportProgressProvider>
+        <Providers>{children}</Providers>
+      </ReportProgressProvider>
     </AppSidebar>
   );
 }
