@@ -101,6 +101,7 @@ import {
 
 import { getAlatbayarFn } from '@/lib/apis/alatbayar.api';
 import { useSession } from 'next-auth/react';
+import { useReportProgress } from '@/components/custom-ui/ReportProgressProvider';
 
 interface Filter {
   page: number;
@@ -148,6 +149,7 @@ const GridAlatbayar = () => {
     null
   );
   const suppressScrollRef = useRef(false);
+  const { start } = useReportProgress();
 
   const lastScrollTopRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -1787,8 +1789,10 @@ const GridAlatbayar = () => {
   };
 
   const handleReport = async () => {
+    const job = start('Alat Bayar', 'pdf');
+
     try {
-      dispatch(setProcessing());
+      job.fetching();
       const now = new Date();
       const pad = (n: any) => n.toString().padStart(2, '0');
       const tglcetak = `${pad(now.getDate())}-${pad(
@@ -1796,75 +1800,73 @@ const GridAlatbayar = () => {
       )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
         now.getMinutes()
       )}:${pad(now.getSeconds())}`;
-      const { page, limit, ...filtersWithoutLimit } = filters;
 
+      const { page, limit, ...filtersWithoutLimit } = filters;
       const response = await getAlatbayarFn(filtersWithoutLimit);
+
       const reportRows = response.data.map((row) => ({
         ...row,
         judullaporan: 'Laporan Alat Bayar',
         usercetak: user.username,
-        tglcetak: tglcetak,
+        tglcetak,
         judul: 'PT.TRANSPORINDO AGUNG SEJAHTERA'
       }));
       sessionStorage.setItem(
         'filtersWithoutLimit',
         JSON.stringify(filtersWithoutLimit)
       );
-      // Dynamically import Stimulsoft and generate the PDF report
-      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-        .then((module) => {
-          const { Stimulsoft } = module;
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahoma.ttf',
-            'Tahoma'
-          ); // Regular
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'Tahoma'
-          ); // Bold
-          Stimulsoft.Base.StiLicense.Key =
-            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-          const report = new Stimulsoft.Report.StiReport();
-          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+      job.rendering();
+      const { Stimulsoft } = await import(
+        'stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor'
+      );
 
-          // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanAlatbayar.mrt');
-          report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows });
-          report.regData(dataSet.dataSetName, '', dataSet);
-          report.dictionary.synchronize();
+      Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+        '/fonts/tahoma.ttf',
+        'Tahoma'
+      );
 
-          // Render the report asynchronously
-          report.renderAsync(() => {
-            // Export the report to PDF asynchronously
-            report.exportDocumentAsync((pdfData: any) => {
-              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+      Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+        '/fonts/tahomabd.ttf',
+        'Tahoma'
+      );
+      Stimulsoft.Base.StiLicense.Key =
+        '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+        '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+        'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+        'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+        '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+        'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+        'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
+
+      const report = new Stimulsoft.Report.StiReport();
+      const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+      report.loadFile('/reports/LaporanAlatbayar.mrt');
+      report.dictionary.dataSources.clear();
+      dataSet.readJson({ data: reportRows });
+      report.regData(dataSet.dataSetName, '', dataSet);
+      report.dictionary.synchronize();
+
+      await new Promise<void>((resolve, reject) => {
+        report.renderAsync(() => {
+          job.exporting();
+          report.exportDocumentAsync((pdfData: any) => {
+            try {
+              const blob = new Blob([new Uint8Array(pdfData)], {
                 type: 'application/pdf'
               });
-              const pdfUrl = URL.createObjectURL(pdfBlob);
-
-              // Store the Blob URL in sessionStorage
-              sessionStorage.setItem('pdfUrl', pdfUrl);
-
-              // Navigate to the report page
-              window.open('/reports/alatbayar', '_blank');
-            }, Stimulsoft.Report.StiExportFormat.Pdf);
-          });
-        })
-        .catch((error) => {
-          console.error('Failed to load Stimulsoft:', error);
+              sessionStorage.setItem('pdfUrl', URL.createObjectURL(blob));
+              job.finish(() => window.open('/reports/alatbayar', '_blank'));
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
         });
-    } catch (error) {
-      dispatch(setProcessed());
-    } finally {
-      dispatch(setProcessed());
+      });
+    } catch (err) {
+      job.fail('Gagal membuat laporan PDF');
+      console.error('[handleReport PDF]', err);
     }
   };
 
@@ -2623,10 +2625,6 @@ const GridAlatbayar = () => {
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
-            shortcutAdd="A"
-            shortcutEdit="E"
-            shortcutDelete="D"
-            shortcutView="V"
             rowsLength={rows.length}
             totalItems={allAlatbayar ? allAlatbayar.pagination.totalItems : 0}
             startRow={startRow}
