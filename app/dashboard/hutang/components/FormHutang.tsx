@@ -353,7 +353,7 @@ const FormHutang = ({
         key: 'aksi',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full flex-col justify-center px-1">
             <p className="text-center text-sm font-normal">aksi</p>
           </div>
@@ -410,7 +410,7 @@ const FormHutang = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>No.</p>
           </div>
@@ -433,7 +433,7 @@ const FormHutang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 350,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Coa</p>
           </div>
@@ -474,7 +474,7 @@ const FormHutang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>Keterangan</p>
           </div>
@@ -529,7 +529,7 @@ const FormHutang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>nominal</p>
           </div>
@@ -595,7 +595,7 @@ const FormHutang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>dpp</p>
           </div>
@@ -669,7 +669,7 @@ const FormHutang = ({
           }
           return undefined; // For other rows, no column spanning
         },
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>no invoice emkl</p>
           </div>
@@ -707,7 +707,7 @@ const FormHutang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 170,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>tgl invoice emkl</p>
           </div>
@@ -757,7 +757,7 @@ const FormHutang = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-[100%] w-full flex-col justify-center">
             <p className={`text-left text-sm font-normal`}>
               no faktur pajak emkl

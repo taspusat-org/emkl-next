@@ -651,7 +651,7 @@ export default function LookUp({
       headerCellClass: 'column-headers',
       width: singleColumn ? '100%' : col.width ?? 250,
       resizable: true,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div
           key={index}
           className="flex h-full cursor-pointer flex-col items-center gap-1"

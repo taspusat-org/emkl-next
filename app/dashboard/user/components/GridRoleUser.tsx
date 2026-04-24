@@ -91,7 +91,7 @@ const GridRoleUser = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -114,7 +114,7 @@ const GridRoleUser = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         name: 'Modified By',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -137,7 +137,7 @@ const GridRoleUser = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         name: 'Created At',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}
@@ -162,7 +162,7 @@ const GridRoleUser = () => {
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div
             className="flex h-full w-full cursor-pointer flex-col justify-center px-2"
             onContextMenu={(event) => setContextMenu(handleContextMenu(event))}

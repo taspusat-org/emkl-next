@@ -202,7 +202,7 @@ const GridJurnalUmumDetail = ({
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -244,7 +244,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 200,
         name: 'NO BUKTI',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[48%] px-8"
@@ -311,7 +311,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 200,
         name: 'TGL BUKTI',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -382,7 +382,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 150,
         name: 'keterangan',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -455,7 +455,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 150,
         name: 'coa',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -526,7 +526,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 150,
         name: 'nominal debet',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -604,7 +604,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 150,
         name: 'nominal kredit',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -682,7 +682,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 150,
         name: 'modified by',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -755,7 +755,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 200,
         name: 'Created At',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -828,7 +828,7 @@ const GridJurnalUmumDetail = ({
         draggable: true,
         width: 200,
         name: 'Updated At',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"

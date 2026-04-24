@@ -392,7 +392,7 @@ const FormPengembalianKasGantung = ({
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm  ">No.</p>
@@ -417,7 +417,7 @@ const FormPengembalianKasGantung = ({
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
@@ -446,7 +446,7 @@ const FormPengembalianKasGantung = ({
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Nomor Bukti</p>
@@ -489,7 +489,7 @@ const FormPengembalianKasGantung = ({
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>TGL Bukti</p>
@@ -531,7 +531,7 @@ const FormPengembalianKasGantung = ({
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Sisa</p>
@@ -607,7 +607,7 @@ const FormPengembalianKasGantung = ({
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Keterangan</p>
@@ -651,7 +651,7 @@ const FormPengembalianKasGantung = ({
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%] px-8">
               <p className={`text-sm`}>Nominal</p>

@@ -211,7 +211,7 @@ const GridPenerimaanDetail = ({
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -254,7 +254,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 200,
         name: 'NO BUKTI',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -294,7 +294,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'coa',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -364,7 +364,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'keterangan',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -436,7 +436,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'nominal',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -508,7 +508,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'transaksi biaya nobukti',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -582,7 +582,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'transaksi lain nobukti',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -656,7 +656,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'pengeluaran emkl header nobukti',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -736,7 +736,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'penerimaan emkl header nobukti',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -814,7 +814,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 150,
         name: 'modified by',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -886,7 +886,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 200,
         name: 'created at',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -958,7 +958,7 @@ const GridPenerimaanDetail = ({
         draggable: true,
         width: 200,
         name: 'updated at',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"

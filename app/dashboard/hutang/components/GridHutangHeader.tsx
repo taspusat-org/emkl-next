@@ -413,7 +413,7 @@ const GridHutangHeader = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -451,7 +451,7 @@ const GridHutangHeader = () => {
         name: '',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -487,7 +487,7 @@ const GridHutangHeader = () => {
         draggable: true,
         width: 300,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -566,7 +566,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -637,7 +637,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -712,7 +712,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -785,7 +785,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -858,7 +858,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -928,7 +928,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -1001,7 +1001,7 @@ const GridHutangHeader = () => {
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -1076,7 +1076,7 @@ const GridHutangHeader = () => {
         headerCellClass: 'column-headers',
 
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%]"
@@ -1566,11 +1566,14 @@ const GridHutangHeader = () => {
 
   //   try {
   //     const response = await getHutangHeaderByIdFn(
-  //       rowId,
-  //       filtersWithoutLimit
+  //       rowId
+  //       // filtersWithoutLimit
   //     );
 
-  //     const responseDetail = await getHutangDetailFn(rowId);
+  //     const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
+  //     const responseDetail = await getHutangDetailFn({
+  //       filters: { nobukti: selectedRowNobukti }
+  //     });
   //     const totalNominal = responseDetail.data.reduce(
   //       (sum: number, i: any) => sum + Number(i.nominal || 0),
   //       0
@@ -1590,7 +1593,7 @@ const GridHutangHeader = () => {
   //         terbilang: numberToTerbilang(totalNominal),
   //         judul: `Bukti Pengeluaran KAS EMKL`
   //       }));
-  //
+
   //       dispatch(setReportData(reportRows));
   //       dispatch(setDetailDataReport(responseDetail.data));
   //       window.open('/reports/designer', '_blank');

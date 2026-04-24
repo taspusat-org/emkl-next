@@ -289,7 +289,7 @@ export default function LookUp({
       // Set width to 100% if singleColumn is true, else use the default width
       width: singleColumn ? '100%' : 250,
       resizable: true,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div
           key={index}
           className="flex h-full cursor-pointer flex-col items-center gap-1"

@@ -376,7 +376,7 @@ const FormEstimasiBiayaHeader = ({
         headerCellClass: 'column-headers',
         cellClass: 'form-input',
         width: 65,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
             <p className="text-sm font-normal">aksi</p>
           </div>
@@ -429,7 +429,7 @@ const FormEstimasiBiayaHeader = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -450,7 +450,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>BIAYA EMKL</p>
           </div>
@@ -504,7 +504,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>LINK</p>
           </div>
@@ -545,7 +545,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nominal</p>
           </div>
@@ -580,7 +580,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nilai asuransi</p>
           </div>
@@ -615,7 +615,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nominal disc</p>
           </div>
@@ -650,7 +650,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nominal sebelum disc</p>
           </div>
@@ -685,7 +685,7 @@ const FormEstimasiBiayaHeader = ({
         draggable: true,
         cellClass: 'form-input',
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nominal trado luar</p>
           </div>
@@ -721,7 +721,7 @@ const FormEstimasiBiayaHeader = ({
       //   draggable: true,
       //   cellClass: 'form-input',
       //   width: 150,
-      //   renderHeaderCell: () => (
+      //   renderHeaderCell: (column: any) => (
       //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //       <div className="headers-cell h-[50%] px-8">
       //         {/* <p className={`text-sm font-normal`}>nominal</p> */}
@@ -773,7 +773,7 @@ const FormEstimasiBiayaHeader = ({
           headerCellClass: 'column-headers',
           cellClass: 'form-input',
           width: 65,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full w-full cursor-pointer flex-col justify-center px-1">
               <p className="text-sm font-normal">aksi</p>
             </div>
@@ -826,7 +826,7 @@ const FormEstimasiBiayaHeader = ({
             return undefined; // For other rows, no column spanning
           },
           headerCellClass: 'column-headers',
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full flex-col items-center justify-center gap-1">
               <p className="text-sm">No.</p>
             </div>
@@ -847,7 +847,7 @@ const FormEstimasiBiayaHeader = ({
           draggable: true,
           cellClass: 'form-input',
           width: 300,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
               <p className={`text-sm`}>BIAYA EMKL</p>
             </div>
@@ -919,7 +919,7 @@ const FormEstimasiBiayaHeader = ({
           draggable: true,
           cellClass: 'form-input',
           width: 300,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
               <p className={`text-sm`}>LINK</p>
             </div>
@@ -966,7 +966,7 @@ const FormEstimasiBiayaHeader = ({
           draggable: true,
           cellClass: 'form-input',
           width: 200,
-          renderHeaderCell: () => (
+          renderHeaderCell: (column: any) => (
             <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
               <p className={`text-sm`}>nominal</p>
             </div>

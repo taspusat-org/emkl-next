@@ -1,12 +1,12 @@
 {
   "ReportVersion": "2024.3.6",
-  "ReportGuid": "c6b1fad1255e71febb88f4a7430d35cc",
+  "ReportGuid": "93306e4992e80730dbe920bf257b7971",
   "ReportName": "Report",
   "ReportAlias": "Report",
-  "ReportFile": "LaporanPengeluaran.mrt",
+  "ReportFile": "/reports/LaporanPengeluaran.mrt",
   "ReportDescription": "14-10-2019",
   "ReportCreated": "/Date(0+0700)/",
-  "ReportChanged": "/Date(1759897310000+0700)/",
+  "ReportChanged": "/Date(1777019661000+0700)/",
   "EngineVersion": "EngineV2",
   "CalculationMode": "Interpretation",
   "ReportUnit": "Millimeters",
@@ -322,6 +322,12 @@
             "Name": "updated_at",
             "NameInSource": "updated_at",
             "Alias": "updated_at",
+            "Type": "System.String"
+          },
+          "20": {
+            "Name": "link",
+            "NameInSource": "link",
+            "Alias": "link",
             "Type": "System.String"
           }
         },
@@ -1225,7 +1231,7 @@
               "Guid": "6578112fe02678cb0e185fcbd23df1c8",
               "PrintOn": "OnlyLastPage",
               "CanGrow": true,
-              "ClientRectangle": "170.59,23,22,4",
+              "ClientRectangle": "180.59,23,22,4",
               "ComponentPlacement": "rs.ReportSummaryBand1",
               "Interaction": {
                 "Ident": "StiInteraction"

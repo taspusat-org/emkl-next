@@ -379,7 +379,7 @@ const FormShippingInstruction = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -400,7 +400,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nomor shipping</p>
           </div>
@@ -430,7 +430,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>pelabuhan asal</p>
           </div>
@@ -495,7 +495,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Keterangan</p>
           </div>
@@ -537,7 +537,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>consignee</p>
           </div>
@@ -575,7 +575,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>shipper</p>
           </div>
@@ -613,7 +613,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>comodity</p>
           </div>
@@ -651,7 +651,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>notify party</p>
           </div>
@@ -693,7 +693,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>total gw / nw</p>
           </div>
@@ -731,7 +731,7 @@ const FormShippingInstruction = ({
       //   draggable: true,
       //   cellClass: 'form-input',
       //   width: 250,
-      //   renderHeaderCell: () => (
+      //   renderHeaderCell: (column: any) => (
       //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //       <div className="headers-cell h-[50%] px-8">
       //         <p className={`text-sm`}>namapelayaran</p>
@@ -801,7 +801,7 @@ const FormShippingInstruction = ({
       //   draggable: true,
       //   cellClass: 'form-input',
       //   width: 250,
-      //   renderHeaderCell: () => (
+      //   renderHeaderCell: (column: any) => (
       //     <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //       <div className="headers-cell h-[50%] px-8">
       //         <p className={`text-sm`}>SHIPPER</p>
@@ -845,7 +845,7 @@ const FormShippingInstruction = ({
           return undefined; // For other rows, no column spanning
         },
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center justify-center gap-1">
             <p className="text-sm">No.</p>
           </div>
@@ -866,7 +866,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>Job</p>
           </div>
@@ -896,7 +896,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>comodity</p>
           </div>
@@ -935,7 +935,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>keterangan</p>
           </div>
@@ -974,7 +974,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>nocontainer</p>
           </div>
@@ -1004,7 +1004,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>noseal</p>
           </div>
@@ -1034,7 +1034,7 @@ const FormShippingInstruction = ({
         draggable: true,
         cellClass: 'form-input',
         width: 250,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center justify-center gap-1">
             <p className={`text-sm`}>shipper</p>
           </div>

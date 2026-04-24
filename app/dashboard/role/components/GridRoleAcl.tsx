@@ -61,7 +61,7 @@ const GridRoleAcl = () => {
       key: 'class',
       headerCellClass: 'column-headers',
       width: 200,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex w-full flex-col px-2">
           <p className="text-sm font-normal">CLASS</p>
         </div>
@@ -79,7 +79,7 @@ const GridRoleAcl = () => {
       key: 'method',
       headerCellClass: 'column-headers',
       width: 200,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div className="flex w-full flex-col px-2">
           <p className="text-sm font-normal">METHOD</p>
         </div>

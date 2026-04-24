@@ -204,7 +204,7 @@ const GridBiayaExtraBongkaranDetail = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -244,7 +244,7 @@ const GridBiayaExtraBongkaranDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -315,7 +315,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //     resizable: true,
       //     draggable: true,
       //     width: 200,
-      //     renderHeaderCell: () => (
+      //     renderHeaderCell: (column: any) => (
       //       <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //         <div
       //           className="headers-cell h-[50%] px-8"
@@ -386,7 +386,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //     resizable: true,
       //     draggable: true,
       //     width: 200,
-      //     renderHeaderCell: () => (
+      //     renderHeaderCell: (column: any) => (
       //       <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //         <div
       //           className="headers-cell h-[50%] px-8"
@@ -461,7 +461,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //     resizable: true,
       //     draggable: true,
       //     width: 200,
-      //     renderHeaderCell: () => (
+      //     renderHeaderCell: (column: any) => (
       //       <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //         <div
       //           className="headers-cell h-[50%] px-8"
@@ -536,7 +536,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //     draggable: true,
       //     width: 150,
       //     headerCellClass: 'column-headers',
-      //     renderHeaderCell: () => (
+      //     renderHeaderCell: (column: any) => (
       //       <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //         <div
       //           className="headers-cell h-[50%]"
@@ -568,6 +568,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //         </div>
       //         <div className="relative h-[50%] w-full px-1">
       //           <FilterOptions
+      //            columnKey={column.column.key}
       //             endpoint="parameter"
       //             value="id"
       //             label="text"
@@ -612,7 +613,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //     resizable: true,
       //     draggable: true,
       //     width: 200,
-      //     renderHeaderCell: () => (
+      //     renderHeaderCell: (column: any) => (
       //       <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //         <div
       //           className="headers-cell h-[50%] px-8"
@@ -687,7 +688,7 @@ const GridBiayaExtraBongkaranDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -760,7 +761,7 @@ const GridBiayaExtraBongkaranDetail = () => {
       //     resizable: true,
       //     draggable: true,
       //     width: 200,
-      //     renderHeaderCell: () => (
+      //     renderHeaderCell: (column: any) => (
       //       <div className="flex h-full cursor-pointer flex-col items-center gap-1">
       //         <div
       //           className="headers-cell h-[50%] px-8"

@@ -578,7 +578,7 @@ export default function LookUpModal({
       headerCellClass: 'column-headers',
       width: singleColumn ? '100%' : col.width ?? 250,
       resizable: true,
-      renderHeaderCell: () => (
+      renderHeaderCell: (column: any) => (
         <div
           key={index}
           className="flex h-full cursor-pointer flex-col items-center gap-1"
@@ -651,7 +651,7 @@ export default function LookUpModal({
         width: 50,
         resizable: true,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">

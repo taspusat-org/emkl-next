@@ -209,7 +209,7 @@ const GridBiayaMuatanDetail = () => {
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -249,7 +249,7 @@ const GridBiayaMuatanDetail = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -320,7 +320,7 @@ const GridBiayaMuatanDetail = () => {
         resizable: true,
         draggable: true,
         width: 150,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -403,7 +403,7 @@ const GridBiayaMuatanDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -477,7 +477,7 @@ const GridBiayaMuatanDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -551,7 +551,7 @@ const GridBiayaMuatanDetail = () => {
         resizable: true,
         draggable: true,
         width: 200,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -624,7 +624,7 @@ const GridBiayaMuatanDetail = () => {
         resizable: true,
         draggable: true,
         width: 300,
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"

@@ -197,7 +197,7 @@ const GridPengeluaranEmklDetail = ({
         name: 'NO',
         width: 50,
         headerCellClass: 'column-headers',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full flex-col items-center gap-1">
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
@@ -240,7 +240,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 200,
         name: 'NO BUKTI',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -268,7 +268,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 200,
         name: 'NO SEAL',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -340,7 +340,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 150,
         name: 'keterangan',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -417,7 +417,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 150,
         name: 'nominal',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -494,7 +494,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 250,
         name: 'pengeluaran emkl nobukti',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -575,7 +575,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 150,
         name: 'penerimaan emkl nobukti',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -657,7 +657,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 150,
         name: 'modified by',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -734,7 +734,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 200,
         name: 'created at',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
@@ -811,7 +811,7 @@ const GridPengeluaranEmklDetail = ({
         draggable: true,
         width: 200,
         name: 'updated at',
-        renderHeaderCell: () => (
+        renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
             <div
               className="headers-cell h-[50%] px-8"
