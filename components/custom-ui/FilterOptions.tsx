@@ -25,6 +25,12 @@ const CONFIG_PATH =
   process.env.NEXT_PUBLIC_FILTERING_CONFIG_PATH ??
   '/config/default-filter.json';
 
+// ── Module-level cache: TIDAK reset saat komponen remount ──
+const configCache: { data: Record<string, any> | null } = { data: null };
+const optionsCache: Record<string, { value: string; label: string }[]> = {};
+// Simpan apakah default sudah pernah di-apply per columnKey (bertahan lintas remount)
+const appliedKeys: Record<string, boolean> = {};
+
 const FilterOptions: React.FC<SelectOptionProps> = ({
   columnKey,
   endpoint,
@@ -37,25 +43,28 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
 }) => {
   const pathname = usePathname();
   const slug = pathname.split('/').pop() ?? '';
+  const cacheKey = `${endpoint}__${JSON.stringify(
+    filterBy
+  )}__${valueKey}__${labelKey}`;
 
   const [options, setOptions] = useState<{ value: string; label: string }[]>(
-    []
+    optionsCache[cacheKey] ?? []
   );
   const [localSelectedValue, setLocalSelectedValue] = useState<string>('');
 
-  // Ref agar tidak trigger re-render, tapi bisa diakses lintas useEffect
-  const configDefaultRef = useRef<string | null>(null);
-  const configLoadedRef = useRef(false);
-  const optionsRef = useRef<{ value: string; label: string }[]>([]);
-  const optionsLoadedRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
-  // ── Fungsi apply default: jalankan hanya saat kedua fetch sudah selesai ──
-  const applyDefault = (
+  // ── Apply default (hanya sekali per columnKey, tahan remount) ──
+  const tryApplyDefault = (
     currentOptions: { value: string; label: string }[],
     defaultVal: string
   ) => {
-    if (selectedValue !== undefined) return; // parent controlled, skip
-    if (!defaultVal) return;
+    if (appliedKeys[columnKey]) return; // sudah pernah apply → skip
+    if (selectedValue !== undefined) return; // parent controlled → skip
+    if (!defaultVal || !currentOptions.length) return;
 
     const dv = defaultVal.toLowerCase();
     const match =
@@ -63,93 +72,84 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
       currentOptions.find((o) => o.label.toLowerCase() === dv);
 
     if (match) {
+      appliedKeys[columnKey] = true; // tandai sudah apply
       setLocalSelectedValue(match.value);
-      onChange?.(match.value);
+      onChangeRef.current(match.value);
     }
   };
 
-  // ── 1. Fetch default-filter.json ──
+  // ── 1. Load config + options secara paralel, apply saat keduanya siap ──
   useEffect(() => {
-    configLoadedRef.current = false;
-    configDefaultRef.current = null;
+    let configDefault = defaultValueProp;
+    let configReady = false;
+    let optionsReady = false;
+    let loadedOptions: { value: string; label: string }[] = [];
 
-    const fetchConfig = async () => {
-      try {
-        const res = await fetch(CONFIG_PATH);
-        if (res.ok) {
-          const config = await res.json();
-          const pageSection = config[slug];
-          let found: string | undefined;
-
-          if (Array.isArray(pageSection)) {
-            // Format array: [{ "statusaktif": "AKTIF" }, ...]
-            const matched = pageSection.find(
-              (obj: Record<string, string>) => obj[columnKey] !== undefined
-            );
-            found = matched?.[columnKey];
-          } else if (pageSection && typeof pageSection === 'object') {
-            // Format object: { "statusaktif": "AKTIF", ... }
-            found = pageSection[columnKey];
-          }
-
-          configDefaultRef.current = found ?? defaultValueProp;
-        } else {
-          configDefaultRef.current = defaultValueProp;
-        }
-      } catch {
-        configDefaultRef.current = defaultValueProp;
-      }
-
-      configLoadedRef.current = true;
-
-      // Options sudah selesai duluan? Langsung apply.
-      if (optionsLoadedRef.current) {
-        applyDefault(optionsRef.current, configDefaultRef.current ?? '');
+    const checkAndApply = () => {
+      if (configReady && optionsReady) {
+        tryApplyDefault(loadedOptions, configDefault);
       }
     };
 
-    fetchConfig();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug, columnKey]);
+    // Load config
+    const loadConfig = async () => {
+      if (configCache.data) {
+        // Sudah di-cache
+        const section = configCache.data[slug];
+        configDefault =
+          extractFromSection(section, columnKey) ?? defaultValueProp;
+        configReady = true;
+        checkAndApply();
+      } else {
+        try {
+          const res = await fetch(CONFIG_PATH);
+          configCache.data = res.ok ? await res.json() : {};
+          const section = configCache.data![slug];
+          configDefault =
+            extractFromSection(section, columnKey) ?? defaultValueProp;
+        } catch {
+          configDefault = defaultValueProp;
+        }
+        configReady = true;
+        checkAndApply();
+      }
+    };
 
-  // ── 2. Fetch opsi dari API ──
-  useEffect(() => {
-    optionsLoadedRef.current = false;
-
-    const fetchData = async () => {
-      try {
-        const response = await api2.get(`/${endpoint}`, { params: filterBy });
-
-        const optionsData = (response.data?.data ?? response.data ?? []).map(
-          (item: any) => ({
-            value: String(item[valueKey] ?? ''),
-            label: String(item[labelKey] ?? '')
-          })
-        );
-
-        const finalOptions = [{ value: '', label: 'ALL' }, ...optionsData];
-
-        optionsRef.current = finalOptions;
-        setOptions(finalOptions);
-        optionsLoadedRef.current = true;
-
-        // Config sudah selesai duluan? Langsung apply.
-        if (configLoadedRef.current) {
-          applyDefault(
-            finalOptions,
-            configDefaultRef.current ?? defaultValueProp
+    // Load options
+    const loadOptions = async () => {
+      if (optionsCache[cacheKey]) {
+        loadedOptions = optionsCache[cacheKey];
+        setOptions(loadedOptions);
+        optionsReady = true;
+        checkAndApply();
+      } else {
+        try {
+          const response = await api2.get(`/${endpoint}`, { params: filterBy });
+          const optionsData = (response.data?.data ?? response.data ?? []).map(
+            (item: any) => ({
+              value: String(item[valueKey] ?? ''),
+              label: String(item[labelKey] ?? '')
+            })
           );
+          const finalOptions = [{ value: '', label: 'ALL' }, ...optionsData];
+          optionsCache[cacheKey] = finalOptions;
+          loadedOptions = finalOptions;
+          setOptions(finalOptions);
+        } catch (error) {
+          console.error('Error fetching parameter data:', error);
         }
-      } catch (error) {
-        console.error('Error fetching parameter data:', error);
+        optionsReady = true;
+        checkAndApply();
       }
     };
 
-    fetchData();
+    // Jalankan paralel
+    loadConfig();
+    loadOptions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endpoint, JSON.stringify(filterBy), valueKey, labelKey]);
+  }, []); // ← hanya sekali saat mount pertama kali
 
-  // ── 3. Sinkronkan nilai dari parent (controlled) ──
+  // ── 2. Sinkronkan nilai dari parent (controlled) ──
   useEffect(() => {
     if (selectedValue !== undefined && selectedValue !== localSelectedValue) {
       setLocalSelectedValue(selectedValue);
@@ -159,7 +159,7 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
 
   const handleChange = (val: string) => {
     setLocalSelectedValue(val);
-    onChange?.(val);
+    onChangeRef.current(val);
   };
 
   const selectedLabel =
@@ -189,5 +189,23 @@ const FilterOptions: React.FC<SelectOptionProps> = ({
     </Select>
   );
 };
+
+// Helper ekstrak nilai default dari section config
+function extractFromSection(
+  section: any,
+  columnKey: string
+): string | undefined {
+  if (!section) return undefined;
+  if (Array.isArray(section)) {
+    const matched = section.find(
+      (obj: Record<string, string>) => obj[columnKey] !== undefined
+    );
+    return matched?.[columnKey];
+  }
+  if (typeof section === 'object') {
+    return section[columnKey];
+  }
+  return undefined;
+}
 
 export default FilterOptions;

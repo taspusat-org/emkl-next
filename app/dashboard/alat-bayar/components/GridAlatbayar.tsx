@@ -280,10 +280,10 @@ const GridAlatbayar = () => {
   };
 
   const debouncedFilterUpdate = useRef(
-    debounce((colKey: string, value: string) => {
+    debounce((updates: Record<string, string>) => {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, [colKey]: value },
+        filters: { ...prev.filters, ...updates },
         page: 1
       }));
       setCheckedRows(new Set());
@@ -296,16 +296,21 @@ const GridAlatbayar = () => {
     }, 300)
   ).current;
 
+  const pendingUpdates = useRef<Record<string, string>>({});
+
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
-      debouncedFilterUpdate(colKey, value);
+      pendingUpdates.current[colKey] = value;
+      debouncedFilterUpdate(pendingUpdates.current);
     },
     []
   );
+
   const handleClearFilter = useCallback((colKey: string) => {
     cancelPreviousRequest(abortControllerRef);
-    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    debouncedFilterUpdate.cancel();
+    pendingUpdates.current[colKey] = '';
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
@@ -1255,6 +1260,16 @@ const GridAlatbayar = () => {
       return newOrder;
     });
   };
+
+  const handleBatchDefault = useCallback((updates: Record<string, string>) => {
+    setFilters((prev) => ({
+      ...prev,
+      filters: { ...prev.filters, ...updates }
+    }));
+    setRows([]);
+    resetBufferingCache();
+  }, []);
+
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
     if (
       isLoadingAlatbayar ||
