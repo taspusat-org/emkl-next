@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useLayoutEffect,
   useCallback
 } from 'react';
 import 'react-data-grid/lib/styles.scss';
@@ -19,20 +20,9 @@ import ActionButton from '@/components/custom-ui/ActionButton';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from 'react-query';
-import { MenuInput, menuSchema } from '@/lib/validations/menu.validation';
-import { useDeleteMenu, useUpdateMenu } from '@/lib/server/useMenu';
-import { syncAcosFn } from '@/lib/apis/acos.api';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/lib/store/store';
-import {
-  FaFileExport,
-  FaPlus,
-  FaPrint,
-  FaSort,
-  FaSortDown,
-  FaSortUp,
-  FaTimes
-} from 'react-icons/fa';
+import { FaPrint, FaSort, FaSortDown, FaSortUp, FaTimes } from 'react-icons/fa';
 import { Input } from '@/components/ui/input';
 import { api, api2 } from '@/lib/utils/AxiosInstance';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -44,24 +34,11 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { HiDocument } from 'react-icons/hi2';
-import {
-  setDetailDataReport,
-  setReportData
-} from '@/lib/store/reportSlice/reportSlice';
-import { useDispatch } from 'react-redux';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAlert } from '@/lib/store/client/useAlert';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import IcClose from '@/public/image/x.svg';
-import ReportDesignerMenu from '@/app/reports/menu/page';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip';
 import { debounce } from 'lodash';
 import FilterInput from '@/components/custom-ui/FilterInput';
 
@@ -72,8 +49,6 @@ import {
 import { setHeaderData } from '@/lib/store/headerSlice/headerSlice';
 import FormPengeluaran from './FormPengeluaran';
 import {
-  IAllPengeluaranHeader,
-  PengeluaranDetail,
   PengeluaranHeader,
   filterPengeluaran
 } from '@/lib/types/pengeluaran.type';
@@ -92,11 +67,8 @@ import {
   clearOpenName,
   setClearLookup
 } from '@/lib/store/lookupSlice/lookupSlice';
-import { checkBeforeDeleteFn } from '@/lib/apis/global.api';
-import { checkValidationKasGantungFn } from '@/lib/apis/kasgantungheader.api';
 import { formatCurrency, formatDateToDDMMYYYY } from '@/lib/utils';
 import { useFormError } from '@/lib/hooks/formErrorContext';
-import FilterOptions from '@/components/custom-ui/FilterOptions';
 import {
   getPengeluaranDetailFn,
   getPengeluaranHeaderByIdFn,
@@ -114,8 +86,8 @@ import {
 import DraggableColumn from '@/components/custom-ui/DraggableColumns';
 import { highlightText } from '@/components/custom-ui/HighlightText';
 import { useTheme } from 'next-themes';
-import { LoadRowsRenderer } from '@/components/LoadRows';
-import { EmptyRowsRenderer } from '@/components/EmptyRows';
+import { useSession } from 'next-auth/react';
+import { useReportProgress } from '@/components/custom-ui/ReportProgressProvider';
 
 interface Filter {
   page: number;
@@ -129,23 +101,48 @@ interface Filter {
 const GridPengeluaranHeader = () => {
   const { theme, resolvedTheme } = useTheme();
   const isDark = theme === 'dark' || resolvedTheme === 'dark';
-  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [selectedRow, setSelectedRow] = useState<number>(0);
   const [selectedCol, setSelectedCol] = useState<number>(0);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
-  const dispatch = useDispatch();
-  const searchParams = useSearchParams();
+  const { data: session } = useSession();
 
   const [totalPages, setTotalPages] = useState(1);
   const [popOver, setPopOver] = useState<boolean>(false);
+
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isAfterMutation, setIsAfterMutation] = useState(false);
+  const [shouldBulkFetch, setShouldBulkFetch] = useState(true);
+  const scrollPositionRef = useRef<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const prevRowsLengthRef = useRef<number>(0);
+  const prevMinPageRef = useRef<number>(1);
+  const hasAdjustedScrollRef = useRef<boolean>(false);
+  const [isFetching, setIsFetching] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down' | null>(
+    null
+  );
+  const suppressScrollRef = useRef(false);
+  const { start } = useReportProgress();
+
+  const lastScrollTopRef = useRef<number>(0);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingScrollAdjustment = useRef<number>(0);
+  const [visiblePages, setVisiblePages] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [pageDataCache, setPageDataCache] = useState<
+    Map<number, PengeluaranHeader[]>
+  >(new Map());
+
   const { mutateAsync: createPengeluaran, isLoading: isLoadingCreate } =
     useCreatePengeluaran();
   const { mutateAsync: updatePengeluaran, isLoading: isLoadingUpdate } =
     useUpdatePengeluaran();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState<string>('');
   const [hasMore, setHasMore] = useState(true);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const lastDispatchedId = useRef<number | null>(null);
   const { mutateAsync: deleteHutang, isLoading: isLoadingDelete } =
     useDeletePengeluaran();
   const [columnsOrder, setColumnsOrder] = useState<readonly number[]>([]);
@@ -154,7 +151,7 @@ const GridPengeluaranHeader = () => {
   );
 
   const [mode, setMode] = useState<string>('');
-
+  const [isFilteringRows, setIsFilteringRows] = useState(false);
   const [dataGridKey, setDataGridKey] = useState(0);
 
   const contextMenuRef = useRef<HTMLDivElement | null>(null);
@@ -168,14 +165,27 @@ const GridPengeluaranHeader = () => {
   const [submitSuccessful, setSubmitSuccessful] = useState(false);
   const [rows, setRows] = useState<PengeluaranHeader[]>([]);
   const [isDataUpdated, setIsDataUpdated] = useState(false);
-  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null); // Timer debounce untuk resize
+  const resizeDebounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const prevPageRef = useRef(currentPage);
+  const dispatch = useDispatch();
+  const searchParams = useSearchParams();
   const [checkedRows, setCheckedRows] = useState<Set<number>>(new Set());
   const [isAllSelected, setIsAllSelected] = useState(false);
   const { alert } = useAlert();
   const { user, cabang_id, token } = useSelector(
     (state: RootState) => state.auth
   );
+  const selectedRowRef = useRef<number>(0);
+
+  useEffect(() => {
+    selectedRowRef.current = selectedRow;
+  }, [selectedRow]);
+
+  const [selectedCellKey, setSelectedCellKey] = useState<string>('nomor');
+  const streamBufferRef = useRef<Map<number, PengeluaranHeader[]>>(new Map());
+  const prefetchingPagesRef = useRef<Set<number>>(new Set());
+  const STREAM_BUFFER_SIZE = 5;
+
   const forms = useForm<PengeluaranHeaderInput>({
     resolver:
       mode === 'delete' ? undefined : zodResolver(pengeluaranHeaderSchema),
@@ -199,21 +209,22 @@ const GridPengeluaranHeader = () => {
       daftarbank_id: null,
       daftarbank_text: '',
       statusformat: '',
-
       details: []
     }
   });
+
   const {
     setFocus,
     reset,
-
     formState: { isSubmitSuccessful }
   } = forms;
+
   const gridRef = useRef<DataGridHandle>(null);
   const router = useRouter();
   const { selectedDate, selectedDate2, selectedBank, onReload } = useSelector(
     (state: RootState) => state.filter
   );
+
   const [filters, setFilters] = useState<Filter>({
     page: 1,
     limit: 30,
@@ -228,6 +239,7 @@ const GridPengeluaranHeader = () => {
   });
 
   const [prevFilters, setPrevFilters] = useState<Filter>(filters);
+  const effectiveLimit = shouldBulkFetch ? filters.limit * 5 : filters.limit;
   const inputColRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -238,16 +250,30 @@ const GridPengeluaranHeader = () => {
   } = useGetPengeluaranHeader(
     {
       ...filters,
-      page: currentPage
+      page: currentPage,
+      limit: effectiveLimit
     },
     abortControllerRef.current?.signal
   );
 
+  const currentMinPage =
+    visiblePages.length > 0 ? Math.min(...visiblePages) : 1;
+  const startRow = (currentMinPage - 1) * filters.limit + 1;
+
+  const resetBufferingCache = () => {
+    setShouldBulkFetch(true);
+    setPageDataCache(new Map());
+    setVisiblePages([1, 2, 3, 4, 5]);
+    setIsFetching(false);
+    streamBufferRef.current = new Map();
+    prefetchingPagesRef.current = new Set();
+  };
+
   const debouncedFilterUpdate = useRef(
-    debounce((colKey: string, value: string) => {
+    debounce((updates: Record<string, string>) => {
       setFilters((prev) => ({
         ...prev,
-        filters: { ...prev.filters, [colKey]: value },
+        filters: { ...prev.filters, ...updates },
         page: 1
       }));
       setCheckedRows(new Set());
@@ -255,19 +281,26 @@ const GridPengeluaranHeader = () => {
       setRows([]);
       setCurrentPage(1);
       setSelectedRow(0);
-    }, 300) // Bisa dikurangi jadi 250-300ms
+      resetBufferingCache();
+      gridRef?.current?.scrollToCell?.({ rowIdx: 0, idx: 0 });
+    }, 300)
   ).current;
+
+  const pendingUpdates = useRef<Record<string, string>>({});
 
   const handleFilterInputChange = useCallback(
     (colKey: string, value: string) => {
       cancelPreviousRequest(abortControllerRef);
-      debouncedFilterUpdate(colKey, value);
+      pendingUpdates.current[colKey] = value;
+      debouncedFilterUpdate(pendingUpdates.current);
     },
     []
   );
+
   const handleClearFilter = useCallback((colKey: string) => {
     cancelPreviousRequest(abortControllerRef);
-    debouncedFilterUpdate.cancel(); // Cancel pending updates
+    debouncedFilterUpdate.cancel();
+    pendingUpdates.current[colKey] = '';
     setFilters((prev) => ({
       ...prev,
       filters: { ...prev.filters, [colKey]: '' },
@@ -277,46 +310,10 @@ const GridPengeluaranHeader = () => {
     setIsAllSelected(false);
     setRows([]);
     setCurrentPage(1);
+    resetBufferingCache();
   }, []);
+
   const { clearError } = useFormError();
-  const handleColumnFilterChange = (
-    colKey: keyof Filter['filters'],
-    value: string
-  ) => {
-    // 1. cari index di array columns asli
-    const originalIndex = columns.findIndex((col) => col.key === colKey);
-
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
-    const displayIndex =
-      columnsOrder.length > 0
-        ? columnsOrder.findIndex((idx) => idx === originalIndex)
-        : originalIndex;
-
-    // update filter seperti biasa…
-    setFilters((prev) => ({
-      ...prev,
-      filters: { ...prev.filters, [colKey]: value },
-      search: '',
-      page: 1
-    }));
-    setInputValue('');
-    setCheckedRows(new Set());
-    setIsAllSelected(false);
-
-    // 3. focus sel di grid pakai displayIndex
-    setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
-    }, 100);
-
-    // 4. focus input filter
-    setTimeout(() => {
-      const ref = inputColRefs.current[colKey];
-      ref?.focus();
-    }, 200);
-
-    setSelectedRow(0);
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     cancelPreviousRequest(abortControllerRef);
@@ -335,8 +332,9 @@ const GridPengeluaranHeader = () => {
     }));
     setCheckedRows(new Set());
     setIsAllSelected(false);
+    resetBufferingCache();
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: 1 });
+      gridRef?.current?.scrollToCell({ rowIdx: 0, idx: 1 });
     }, 100);
 
     setTimeout(() => {
@@ -349,11 +347,9 @@ const GridPengeluaranHeader = () => {
     setCurrentPage(1);
     setRows([]);
   };
+
   const handleSort = (column: string) => {
     const originalIndex = columns.findIndex((col) => col.key === column);
-
-    // 2. hitung index tampilan berdasar columnsOrder
-    //    jika belum ada reorder (columnsOrder kosong), fallback ke originalIndex
     const displayIndex =
       columnsOrder.length > 0
         ? columnsOrder.findIndex((idx) => idx === originalIndex)
@@ -369,8 +365,9 @@ const GridPengeluaranHeader = () => {
       sortDirection: newSortOrder,
       page: 1
     }));
+    resetBufferingCache();
     setTimeout(() => {
-      gridRef?.current?.selectCell({ rowIdx: 0, idx: displayIndex });
+      gridRef?.current?.scrollToCell({ rowIdx: 0, idx: displayIndex });
     }, 200);
     setSelectedRow(0);
 
@@ -378,11 +375,7 @@ const GridPengeluaranHeader = () => {
     setFetchedPages(new Set([1]));
     setRows([]);
   };
-  useEffect(() => {
-    if (isSubmitSuccessful) {
-      requestAnimationFrame(() => setFocus('tglbukti'));
-    }
-  }, [isSubmitSuccessful, setFocus]);
+
   const handleRowSelect = (rowId: number) => {
     setCheckedRows((prev) => {
       const updated = new Set(prev);
@@ -396,6 +389,7 @@ const GridPengeluaranHeader = () => {
       return updated;
     });
   };
+
   const handleSelectAll = () => {
     if (isAllSelected) {
       setCheckedRows(new Set());
@@ -408,8 +402,6 @@ const GridPengeluaranHeader = () => {
 
   const handleFilterRows = (val: string) => {
     setIsFilteringRows(true);
-    // setLocalSelectedValue(val);
-    // onChange?.(val);
     setTimeout(() => {
       setIsFilteringRows(false);
     }, 1000);
@@ -417,6 +409,7 @@ const GridPengeluaranHeader = () => {
 
   const handleClearInput = () => {
     cancelPreviousRequest(abortControllerRef);
+    debouncedFilterUpdate.cancel();
     setFilters((prev) => ({
       ...prev,
       filters: {
@@ -427,9 +420,13 @@ const GridPengeluaranHeader = () => {
       search: '',
       page: 1
     }));
-    setInputValue('');
-    setCurrentPage(1);
+    setCheckedRows(new Set());
+    setIsAllSelected(false);
     setRows([]);
+    setCurrentPage(1);
+    resetBufferingCache();
+    gridRef?.current?.scrollToCell?.({ rowIdx: 0, idx: 0 });
+    setInputValue('');
   };
 
   const columns = useMemo((): Column<PengeluaranHeader>[] => {
@@ -440,11 +437,13 @@ const GridPengeluaranHeader = () => {
         width: 50,
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full flex-col items-center gap-1"
+          >
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
             </div>
-
             <div
               className="flex h-[50%] w-full cursor-pointer items-center justify-center"
               onClick={() => {
@@ -464,10 +463,12 @@ const GridPengeluaranHeader = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
           return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
-              {rowIndex + 1}
+            <div
+              title={props.row.nomor}
+              className="flex h-full w-full cursor-pointer items-center justify-center text-sm"
+            >
+              {props.row.nomor}
             </div>
           );
         }
@@ -479,12 +480,7 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div className="flex h-full cursor-pointer flex-col items-center gap-1">
-            <div
-              className="headers-cell h-[50%]"
-              onContextMenu={(event) =>
-                setContextMenu(handleContextMenu(event))
-              }
-            ></div>
+            <div className="headers-cell h-[50%]"></div>
             <div className="flex h-[50%] w-full items-center justify-center">
               <Checkbox
                 checked={isAllSelected}
@@ -505,7 +501,6 @@ const GridPengeluaranHeader = () => {
           </div>
         )
       },
-
       {
         key: 'nobukti',
         name: 'no bukti',
@@ -514,7 +509,10 @@ const GridPengeluaranHeader = () => {
         width: 300,
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%] px-8"
               onClick={() => handleSort('nobukti')}
@@ -556,32 +554,22 @@ const GridPengeluaranHeader = () => {
         ),
         renderCell: (props: any) => {
           const columnFilter = filters.filters.nobukti || '';
-          const value = props.row.nobukti; // atau dari props.row
-          // Buat component wrapper untuk highlightText
+          const value = props.row.nobukti;
           const HighlightWrapper = () => {
             return highlightText(value, filters.search, columnFilter);
           };
 
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    <JsxParser
-                      components={{ HighlightWrapper }}
-                      jsx={props.row.link}
-                      renderInWrapper={false}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{value}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={value}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              <JsxParser
+                components={{ HighlightWrapper }}
+                jsx={props.row.link}
+                renderInWrapper={false}
+              />
+            </div>
           );
         }
       },
@@ -593,7 +581,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tglbukti')}
@@ -620,7 +611,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="tglbukti"
@@ -638,21 +628,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.tglbukti || '';
           const cellValue = props.row.tglbukti || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -664,7 +645,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('relasi_id')}
@@ -691,7 +675,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="relasi_text"
@@ -711,21 +694,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.relasi_text || '';
           const cellValue = props.row.relasi_text || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -737,7 +711,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('keterangan')}
@@ -764,7 +741,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="keterangan"
@@ -784,21 +760,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.keterangan || '';
           const cellValue = props.row.keterangan || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -810,7 +777,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('bank_id')}
@@ -837,7 +807,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="bank_text"
@@ -857,21 +826,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.bank_text || '';
           const cellValue = props.row.bank_text || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -883,7 +843,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('postingdari')}
@@ -910,7 +873,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="postingdari"
@@ -930,25 +892,15 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.postingdari || '';
           const cellValue = props.row.postingdari || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
-
       {
         key: 'coakredit',
         name: 'coa kredit',
@@ -957,7 +909,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('coakredit')}
@@ -984,7 +939,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="coakredit_text"
@@ -1004,21 +958,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.coakredit_text || '';
           const cellValue = props.row.coakredit_text || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -1030,7 +975,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('dibayarke')}
@@ -1057,7 +1005,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="dibayarke"
@@ -1077,25 +1024,15 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.dibayarke || '';
           const cellValue = props.row.dibayarke || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
-
       {
         key: 'alatbayar_id',
         name: 'alat bayar',
@@ -1104,7 +1041,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('alatbayar_id')}
@@ -1133,7 +1073,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="alatbayar_text"
@@ -1153,33 +1092,27 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.alatbayar_text || '';
           const cellValue = props.row.alatbayar_text || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
       {
         key: 'nowarkat',
-        name: 'no warkat',
+        name: 'nomor warkat',
         resizable: true,
         draggable: true,
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('nowarkat')}
@@ -1206,7 +1139,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="nowarkat"
@@ -1224,21 +1156,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.nowarkat || '';
           const cellValue = props.row.nowarkat || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -1250,7 +1173,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('tgljatuhtempo')}
@@ -1279,7 +1205,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="tgljatuhtempo"
@@ -1299,21 +1224,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.tgljatuhtempo || '';
           const cellValue = props.row.tgljatuhtempo || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -1325,7 +1241,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('daftarbank_id')}
@@ -1354,7 +1273,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="daftarbank_text"
@@ -1374,25 +1292,15 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.daftarbank_text || '';
           const cellValue = props.row.daftarbank_text || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
-
       {
         key: 'modifiedby',
         name: 'Modified By',
@@ -1401,7 +1309,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('modifiedby')}
@@ -1428,7 +1339,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="modifiedby"
@@ -1448,21 +1358,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.modifiedby || '';
           const cellValue = props.row.modifiedby || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -1474,7 +1375,10 @@ const GridPengeluaranHeader = () => {
         headerCellClass: 'column-headers',
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('created_at')}
@@ -1501,7 +1405,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="created_at"
@@ -1521,21 +1424,12 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.created_at || '';
           const cellValue = props.row.created_at || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       },
@@ -1544,12 +1438,13 @@ const GridPengeluaranHeader = () => {
         name: 'Updated At',
         resizable: true,
         draggable: true,
-
         headerCellClass: 'column-headers',
-
         width: 250,
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full cursor-pointer flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full cursor-pointer flex-col items-center gap-1"
+          >
             <div
               className="headers-cell h-[50%]"
               onClick={() => handleSort('updated_at')}
@@ -1576,7 +1471,6 @@ const GridPengeluaranHeader = () => {
                 )}
               </div>
             </div>
-
             <div className="relative h-[50%] w-full px-1">
               <FilterInput
                 colKey="updated_at"
@@ -1596,51 +1490,36 @@ const GridPengeluaranHeader = () => {
           const columnFilter = filters.filters.updated_at || '';
           const cellValue = props.row.updated_at || '';
           return (
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="m-0 flex h-full cursor-pointer items-center p-0 text-sm">
-                    {highlightText(cellValue, filters.search, columnFilter)}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="right"
-                  className="rounded-none border border-zinc-400 bg-white text-sm text-zinc-900"
-                >
-                  <p>{cellValue}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <div
+              title={cellValue}
+              className="m-0 flex h-full cursor-pointer items-center p-0 text-sm"
+            >
+              {highlightText(cellValue, filters.search, columnFilter)}
+            </div>
           );
         }
       }
     ];
-  }, [filters, rows, checkedRows]);
+  }, [filters, rows, checkedRows, isAllSelected]);
 
   const onColumnResize = (index: number, width: number) => {
-    // 1) Dapatkan key kolom yang di-resize
     const columnKey = columns[columnsOrder[index]].key;
-
-    // 2) Update state width seketika (biar kolom langsung responsif)
     const newWidthMap = { ...columnsWidth, [columnKey]: width };
     setColumnsWidth(newWidthMap);
 
-    // 3) Bersihkan timeout sebelumnya agar tidak menumpuk
     if (resizeDebounceTimeout.current) {
       clearTimeout(resizeDebounceTimeout.current);
     }
-
-    // 4) Set ulang timer: hanya ketika 300ms sejak resize terakhir berlalu,
-    //    saveGridConfig akan dipanggil
     resizeDebounceTimeout.current = setTimeout(() => {
       saveGridConfig(
-        user.id,
+        String(session?.user.id),
         'GridPengeluaranHeader',
         [...columnsOrder],
         newWidthMap
       );
     }, 300);
   };
+
   const onColumnsReorder = (sourceKey: string, targetKey: string) => {
     setColumnsOrder((prevOrder) => {
       const sourceIndex = prevOrder.findIndex(
@@ -1654,7 +1533,7 @@ const GridPengeluaranHeader = () => {
       newOrder.splice(targetIndex, 0, newOrder.splice(sourceIndex, 1)[0]);
 
       saveGridConfig(
-        user.id,
+        String(session?.user.id),
         'GridPengeluaranHeader',
         [...newOrder],
         columnsWidth
@@ -1662,42 +1541,155 @@ const GridPengeluaranHeader = () => {
       return newOrder;
     });
   };
-  function isAtTop({ currentTarget }: React.UIEvent<HTMLDivElement>): boolean {
-    return currentTarget.scrollTop <= 10;
-  }
-  function isAtBottom(event: React.UIEvent<HTMLDivElement>): boolean {
-    const { currentTarget } = event;
-    if (!currentTarget) return false;
 
-    return (
-      currentTarget.scrollTop + currentTarget.clientHeight >=
-      currentTarget.scrollHeight - 2
-    );
-  }
   async function handleScroll(event: React.UIEvent<HTMLDivElement>) {
-    if (isLoadingData || !hasMore || rows.length === 0) return;
+    if (isLoadingData || rows.length === 0 || isTransitioning || isFetching)
+      return;
 
-    const findUnfetchedPage = (pageOffset: number) => {
-      let page = currentPage + pageOffset;
-      while (page > 0 && fetchedPages.has(page)) {
-        page += pageOffset;
-      }
-      return page > 0 ? page : null;
-    };
+    const { currentTarget } = event;
+    const scrollTop = currentTarget.scrollTop;
+    const scrollHeight = currentTarget.scrollHeight;
+    const clientHeight = currentTarget.clientHeight;
 
-    if (isAtBottom(event)) {
-      const nextPage = findUnfetchedPage(1);
+    const hasScrolled = Math.abs(scrollTop - lastScrollTopRef.current) > 5;
+    if (!hasScrolled) {
+      return;
+    }
 
-      if (nextPage && nextPage <= totalPages && !fetchedPages.has(nextPage)) {
-        setCurrentPage(nextPage);
-        setIsAllSelected(false);
+    lastScrollTopRef.current = scrollTop;
+    setIsScrolling(true);
+
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+    }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsScrolling(false);
+    }, 150);
+
+    scrollPositionRef.current = scrollTop;
+    scrollContainerRef.current = currentTarget;
+
+    const rowHeight = 30; // Mengikuti rowHeight grid pengeluaran
+    const firstVisibleRow = Math.floor(scrollTop / rowHeight);
+    const lastVisibleRow = Math.floor((scrollTop + clientHeight) / rowHeight);
+
+    const THRESHOLD_ROWS = 50;
+
+    // SCROLL KE BAWAH
+    const rowsRemainingBelow = rows.length - lastVisibleRow;
+
+    if (rowsRemainingBelow <= THRESHOLD_ROWS) {
+      const maxPage = Math.max(...visiblePages);
+      const nextPage = maxPage + 1;
+
+      if (nextPage <= totalPages && !isFetching && isScrolling) {
+        if (streamBufferRef.current.has(nextPage)) {
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+
+          const bufferedData = streamBufferRef.current.get(nextPage)!;
+
+          setPageDataCache((prev) => {
+            const updated = new Map(prev);
+            updated.set(nextPage, bufferedData);
+            return updated;
+          });
+
+          streamBufferRef.current = new Map(streamBufferRef.current);
+          streamBufferRef.current.delete(nextPage);
+
+          setVisiblePages((prevVisible) => {
+            const removedPage = prevVisible[0];
+            const newPages = [...prevVisible.slice(1), nextPage];
+
+            pendingScrollAdjustment.current = -(filters.limit * 30);
+            setSelectedRow((prev) => Math.max(0, prev - filters.limit));
+
+            setPageDataCache((prev) => {
+              const updated = new Map(prev);
+              updated.delete(removedPage);
+              return updated;
+            });
+
+            return newPages;
+          });
+
+          setTimeout(() => {
+            setIsTransitioning(false);
+            setIsFetching(false);
+          }, 50);
+
+          const pagesToPrefetch = Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => nextPage + 1 + i
+          );
+          prefetchPages(pagesToPrefetch);
+        } else if (!pageDataCache.has(nextPage)) {
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+          setCurrentPage(nextPage);
+        }
       }
     }
 
-    if (isAtTop(event)) {
-      const prevPage = findUnfetchedPage(-1);
-      if (prevPage && !fetchedPages.has(prevPage)) {
-        setCurrentPage(prevPage);
+    // SCROLL KE ATAS
+    if (firstVisibleRow <= THRESHOLD_ROWS) {
+      const minPage = Math.min(...visiblePages);
+      const prevPage = minPage - 1;
+
+      if (prevPage >= 1 && !isFetching && isScrolling) {
+        if (streamBufferRef.current.has(prevPage)) {
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+
+          const bufferedData = streamBufferRef.current.get(prevPage)!;
+
+          setPageDataCache((prev) => {
+            const updated = new Map(prev);
+            updated.set(prevPage, bufferedData);
+            return updated;
+          });
+
+          streamBufferRef.current = new Map(streamBufferRef.current);
+          streamBufferRef.current.delete(prevPage);
+
+          setVisiblePages((prevVisible) => {
+            const removedPage = prevVisible[4];
+            const newPages = [prevPage, ...prevVisible.slice(0, 4)];
+
+            pendingScrollAdjustment.current = filters.limit * 30;
+            setSelectedRow((prev) => prev + filters.limit);
+
+            setPageDataCache((prev) => {
+              const updated = new Map(prev);
+              updated.delete(removedPage);
+              return updated;
+            });
+
+            return newPages;
+          });
+
+          setTimeout(() => {
+            setIsTransitioning(false);
+            setIsFetching(false);
+          }, 50);
+
+          const pagesToPrefetch = Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => prevPage - 1 - i
+          ).filter((p) => p >= 1);
+          prefetchPages(pagesToPrefetch);
+        } else if (!pageDataCache.has(prevPage)) {
+          setIsFetching(true);
+          setIsTransitioning(true);
+          hasAdjustedScrollRef.current = false;
+          setCurrentPage(0);
+          setTimeout(() => setCurrentPage(prevPage), 0);
+        }
       }
     }
   }
@@ -1709,62 +1701,223 @@ const GridPengeluaranHeader = () => {
       setSelectedRow(rowIndex);
     }
   }
-  async function handleKeyDown(
-    args: CellKeyDownArgs<PengeluaranHeader>,
-    event: React.KeyboardEvent
-  ) {
-    const visibleRowCount = 10;
-    const firstDataRowIndex = 0;
-    const selectedRowId = rows[selectedRow]?.id;
 
-    if (event.key === 'ArrowDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const nextRow = Math.min(prev + 1, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'ArrowUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-        const newRow = Math.max(prev - 1, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === 'ArrowRight') {
-      setSelectedCol((prev) => {
-        return Math.min(prev + 1, columns.length - 1);
-      });
-    } else if (event.key === 'ArrowLeft') {
-      setSelectedCol((prev) => {
-        return Math.max(prev - 1, 0);
-      });
-    } else if (event.key === 'PageDown') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const nextRow = Math.min(prev + visibleRowCount - 2, rows.length - 1);
-        return nextRow;
-      });
-    } else if (event.key === 'PageUp') {
-      setSelectedRow((prev) => {
-        if (prev === null) return firstDataRowIndex;
-
-        const newRow = Math.max(prev - visibleRowCount + 2, firstDataRowIndex);
-        return newRow;
-      });
-    } else if (event.key === ' ') {
-      // Handle spacebar keydown to toggle row selection
-      if (selectedRowId !== undefined) {
-        handleRowSelect(selectedRowId); // Toggling the selection of the row
-      }
+  const orderedColumns = useMemo(() => {
+    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
+      return columnsOrder
+        .map((orderIndex) => columns[orderIndex])
+        .filter((col) => col !== undefined);
     }
-  }
+    return columns;
+  }, [columns, columnsOrder]);
+
+  const finalColumns = useMemo(() => {
+    return orderedColumns.map((col) => ({
+      ...col,
+      width: columnsWidth[col.key] ?? col.width
+    }));
+  }, [orderedColumns, columnsWidth]);
+
+  const moveSelectionBy = useCallback(
+    (delta: number, focusBackTo?: HTMLElement | null) => {
+      if (rows.length === 0) return;
+
+      const nextRow = Math.min(
+        Math.max(selectedRowRef.current + delta, 0),
+        rows.length - 1
+      );
+      selectedRowRef.current = nextRow;
+
+      const idxFromKey = finalColumns.findIndex(
+        (c) => c.key === selectedCellKey
+      );
+      const idx = idxFromKey >= 0 ? idxFromKey : 0;
+
+      gridRef.current?.scrollToCell?.({ rowIdx: nextRow, idx });
+      gridRef.current?.selectCell?.({ rowIdx: nextRow, idx });
+
+      if (focusBackTo && typeof window !== 'undefined') {
+        const start =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionStart
+            : null;
+        const end =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionEnd
+            : null;
+
+        window.requestAnimationFrame(() => {
+          if (!document.contains(focusBackTo)) return;
+          focusBackTo.focus({ preventScroll: true });
+          if (
+            focusBackTo instanceof HTMLInputElement &&
+            start !== null &&
+            end !== null
+          ) {
+            focusBackTo.setSelectionRange(start, end);
+          }
+        });
+      }
+    },
+    [rows.length, finalColumns, selectedCellKey]
+  );
+
+  const moveSelectionColumnBy = useCallback(
+    (delta: number, focusBackTo?: HTMLElement | null) => {
+      if (rows.length === 0) return;
+      if (finalColumns.length === 0) return;
+
+      const currentIdxFromKey = finalColumns.findIndex(
+        (c) => c.key === selectedCellKey
+      );
+      const currentIdx = currentIdxFromKey >= 0 ? currentIdxFromKey : 0;
+
+      const nextIdx = Math.min(
+        Math.max(currentIdx + delta, 0),
+        finalColumns.length - 1
+      );
+
+      const nextKey = finalColumns[nextIdx]?.key;
+      if (nextKey) setSelectedCellKey(String(nextKey));
+
+      const rowIdx = Math.min(
+        Math.max(selectedRowRef.current, 0),
+        rows.length - 1
+      );
+
+      gridRef.current?.scrollToCell?.({ rowIdx, idx: nextIdx });
+      gridRef.current?.selectCell?.({ rowIdx, idx: nextIdx });
+
+      if (focusBackTo && typeof window !== 'undefined') {
+        const start =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionStart
+            : null;
+        const end =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionEnd
+            : null;
+
+        window.requestAnimationFrame(() => {
+          if (!document.contains(focusBackTo)) return;
+          focusBackTo.focus({ preventScroll: true });
+          if (
+            focusBackTo instanceof HTMLInputElement &&
+            start !== null &&
+            end !== null
+          ) {
+            focusBackTo.setSelectionRange(start, end);
+          }
+        });
+      }
+    },
+    [rows.length, finalColumns, selectedCellKey]
+  );
+
+  const selectColumnEdge = useCallback(
+    (edge: 'first' | 'last', focusBackTo?: HTMLElement | null) => {
+      if (rows.length === 0) return;
+      if (finalColumns.length === 0) return;
+
+      const nextIdx = edge === 'first' ? 0 : finalColumns.length - 1;
+      const nextKey = finalColumns[nextIdx]?.key;
+      if (nextKey) setSelectedCellKey(String(nextKey));
+
+      const rowIdx = Math.min(
+        Math.max(selectedRowRef.current, 0),
+        rows.length - 1
+      );
+
+      gridRef.current?.scrollToCell?.({ rowIdx, idx: nextIdx });
+      gridRef.current?.selectCell?.({ rowIdx, idx: nextIdx });
+
+      if (focusBackTo && typeof window !== 'undefined') {
+        const start =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionStart
+            : null;
+        const end =
+          focusBackTo instanceof HTMLInputElement
+            ? focusBackTo.selectionEnd
+            : null;
+
+        window.requestAnimationFrame(() => {
+          if (!document.contains(focusBackTo)) return;
+          focusBackTo.focus({ preventScroll: true });
+          if (
+            focusBackTo instanceof HTMLInputElement &&
+            start !== null &&
+            end !== null
+          ) {
+            focusBackTo.setSelectionRange(start, end);
+          }
+        });
+      }
+    },
+    [rows.length, finalColumns]
+  );
+
+  const handleGridInputNavigationKeyDownCapture = useCallback(
+    (event: React.KeyboardEvent<HTMLElement>) => {
+      const target = event.target as HTMLElement | null;
+
+      const isFilterInput =
+        target instanceof HTMLElement &&
+        target.classList.contains('filter-input');
+      const isGlobalSearchInput =
+        !!inputRef.current && target === inputRef.current;
+
+      if (!isFilterInput && !isGlobalSearchInput) return;
+
+      const visibleRowCount = 8;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(1, target);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(-1, target);
+      } else if (event.key === 'PageDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(visibleRowCount, target);
+      } else if (event.key === 'PageUp') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionBy(-visibleRowCount, target);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionColumnBy(1, target);
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectionColumnBy(-1, target);
+      } else if (event.key === 'Home') {
+        event.preventDefault();
+        event.stopPropagation();
+        selectColumnEdge('first', target);
+      } else if (event.key === 'End') {
+        event.preventDefault();
+        event.stopPropagation();
+        selectColumnEdge('last', target);
+      }
+    },
+    [moveSelectionBy, moveSelectionColumnBy, selectColumnEdge]
+  );
+
   const onSuccess = async (
-    indexOnPage: any,
-    pageNumber: any,
-    keepOpenModal: any = false
+    indexOnPage: number,
+    fetchedPages: number[],
+    pagedData: Record<string, PengeluaranHeader[]>,
+    pageNumber: number,
+    keepOpenModal = false
   ) => {
-    clearError();
     dispatch(setClearLookup(true));
+    clearError();
+    setIsFetchingManually(true);
     try {
       if (keepOpenModal) {
         forms.reset();
@@ -1772,31 +1925,43 @@ const GridPengeluaranHeader = () => {
       } else {
         forms.reset();
         setPopOver(false);
-        setIsFetchingManually(true);
-
-        if (mode !== 'delete') {
-          const response = await api2.get(
-            `/redis/get/pengeluaranheader-allItems`
-          );
-          // Set the rows only if the data has changed
-          if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
-            setRows(response.data);
-            setIsDataUpdated(true);
-            setCurrentPage(pageNumber);
-            setFetchedPages(new Set([pageNumber]));
-            setSelectedRow(indexOnPage);
-            setTimeout(() => {
-              gridRef?.current?.selectCell({
-                rowIdx: indexOnPage,
-                idx: 1
-              });
-            }, 200);
-          }
-          setSubmitSuccessful(true);
-        }
-
-        setIsDataUpdated(false);
       }
+      if (mode !== 'delete') {
+        const response = await api2.get(
+          `/redis/get/pengeluaranheader-page-${pageNumber}`
+        );
+        if (JSON.stringify(response.data) !== JSON.stringify(rows)) {
+          setRows([]);
+          setRows(response.data);
+          setIsDataUpdated(true);
+          setVisiblePages(fetchedPages);
+          setSelectedRow(indexOnPage);
+          setPageDataCache(
+            new Map(
+              Object.entries(pagedData).map(([key, value]) => [
+                Number(key),
+                value as PengeluaranHeader[]
+              ])
+            )
+          );
+          setCurrentPage(pageNumber);
+
+          const updatedBuffer = new Map(streamBufferRef.current);
+          Object.entries(pagedData).forEach(([key, value]) => {
+            updatedBuffer.set(Number(key), value as PengeluaranHeader[]);
+          });
+          streamBufferRef.current = updatedBuffer;
+
+          setTimeout(() => {
+            gridRef?.current?.selectCell({
+              rowIdx: indexOnPage,
+              idx: 1
+            });
+          }, 200);
+        }
+        setSubmitSuccessful(true);
+      }
+      setIsDataUpdated(false);
     } catch (error) {
       console.error('Error during onSuccess:', error);
       setIsFetchingManually(false);
@@ -1804,6 +1969,7 @@ const GridPengeluaranHeader = () => {
       setSubmitSuccessful(false);
     }
   };
+
   const onSubmit = async (
     values: PengeluaranHeaderInput,
     keepOpenModal = false
@@ -1821,18 +1987,15 @@ const GridPengeluaranHeader = () => {
               setRows((prevRows) =>
                 prevRows.filter((row) => row.id !== selectedRowId)
               );
-              if (selectedRow === 0) {
+              if (selectedRow !== rows.length - 1) {
                 setSelectedRow(selectedRow);
                 gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
-              } else if (selectedRow === rows.length - 1) {
+              } else {
                 setSelectedRow(selectedRow - 1);
                 gridRef?.current?.selectCell({
                   rowIdx: selectedRow - 1,
                   idx: 1
                 });
-              } else {
-                setSelectedRow(selectedRow);
-                gridRef?.current?.selectCell({ rowIdx: selectedRow, idx: 1 });
               }
             }
           });
@@ -1845,18 +2008,21 @@ const GridPengeluaranHeader = () => {
             ...values,
             details: values.details.map((detail: any) => ({
               ...detail,
-              id: 0 // Ubah id setiap detail menjadi 0
+              id: 0
             })),
-            ...filters // Kirim filter ke body/payload
+            ...filters
           },
           {
-            onSuccess: (data) =>
-              onSuccess(data.itemIndex, data.pageNumber, keepOpenModal)
+            onSuccess: (data: any) =>
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber,
+                keepOpenModal
+              )
           }
         );
-
-        if (newOrder !== undefined && newOrder !== null) {
-        }
         return;
       }
 
@@ -1866,7 +2032,15 @@ const GridPengeluaranHeader = () => {
             id: selectedRowId as unknown as string,
             fields: { ...values, ...filters }
           },
-          { onSuccess: (data) => onSuccess(data.itemIndex, data.pageNumber) }
+          {
+            onSuccess: (data: any) =>
+              onSuccess(
+                data.itemIndex,
+                data.fetchedPages,
+                data.pagedData,
+                data.pageNumber
+              )
+          }
         );
         queryClient.invalidateQueries('pengeluaran');
       }
@@ -1880,22 +2054,15 @@ const GridPengeluaranHeader = () => {
 
   const handleEdit = async () => {
     if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-
       setPopOver(true);
       setMode('edit');
     }
   };
+
   const handleDelete = async () => {
     if (selectedRow !== null) {
-      const rowData = rows[selectedRow];
-
-      try {
-        setMode('delete');
-        setPopOver(true);
-      } catch (error) {
-        console.error('Error during delete validation:', error);
-      }
+      setMode('delete');
+      setPopOver(true);
     }
   };
 
@@ -1913,7 +2080,7 @@ const GridPengeluaranHeader = () => {
         variant: 'danger',
         submitText: 'OK'
       });
-      return; // Stop execution if no rows are selected
+      return;
     }
     if (checkedRows.size > 1) {
       alert({
@@ -1921,14 +2088,13 @@ const GridPengeluaranHeader = () => {
         variant: 'danger',
         submitText: 'OK'
       });
-      return; // Stop execution if no rows are selected
+      return;
     }
     const rowId = Array.from(checkedRows)[0];
+    const job = start('Pengeluaran', 'pdf');
 
     try {
-      dispatch(setProcessing());
-
-      //TANGGAL
+      job.fetching();
       const now = new Date();
       const pad = (n: any) => n.toString().padStart(2, '0');
       const tglcetak = `${pad(now.getDate())}-${pad(
@@ -1939,14 +2105,12 @@ const GridPengeluaranHeader = () => {
 
       const { page, limit, ...filtersWithoutLimit } = filters;
       const response = await getPengeluaranHeaderByIdFn(rowId);
+
       if (!response.data?.length) {
-        alert({
-          title: 'TERJADI KESALAHAN SAAT MEMBUAT LAPORAN!',
-          variant: 'danger',
-          submitText: 'OK'
-        });
+        job.fail('DATA TIDAK TERSEDIA!');
         return;
       }
+
       const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
       const responseDetail = await getPengeluaranDetailFn({
         filters: { nobukti: selectedRowNobukti }
@@ -1972,127 +2136,66 @@ const GridPengeluaranHeader = () => {
         JSON.stringify(filtersWithoutLimit)
       );
       sessionStorage.setItem('dataId', rowId as unknown as string);
-      // Dynamically import Stimulsoft and generate the PDF report
-      import('stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor')
-        .then((module) => {
-          const { Stimulsoft } = module;
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahoma.ttf',
-            'Tahoma'
-          ); // Regular
-          Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
-            '/fonts/tahomabd.ttf',
-            'Tahoma'
-          ); // Bold
-          Stimulsoft.Base.StiLicense.Key =
-            '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
-            '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
-            'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
-            'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
-            '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
-            'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
-            'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-          const report = new Stimulsoft.Report.StiReport();
-          const dataSet = new Stimulsoft.System.Data.DataSet('Data');
+      job.rendering();
+      const { Stimulsoft } = await import(
+        'stimulsoft-reports-js/Scripts/stimulsoft.blockly.editor'
+      );
 
-          // Load the report template (MRT file)
-          report.loadFile('/reports/LaporanPengeluaran.mrt');
-          report.dictionary.dataSources.clear();
-          dataSet.readJson({ data: reportRows, detail: responseDetail.data });
+      Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+        '/fonts/tahoma.ttf',
+        'Tahoma'
+      );
+      Stimulsoft.Base.StiFontCollection.addOpentypeFontFile(
+        '/fonts/tahomabd.ttf',
+        'Tahoma'
+      );
+      Stimulsoft.Base.StiLicense.Key =
+        '6vJhGtLLLz2GNviWmUTrhSqnOItdDwjBylQzQcAOiHksEid1Z5nN/hHQewjPL/4/AvyNDbkXgG4Am2U6dyA8Ksinqp' +
+        '6agGqoHp+1KM7oJE6CKQoPaV4cFbxKeYmKyyqjF1F1hZPDg4RXFcnEaYAPj/QLdRHR5ScQUcgxpDkBVw8XpueaSFBs' +
+        'JVQs/daqfpFiipF1qfM9mtX96dlxid+K/2bKp+e5f5hJ8s2CZvvZYXJAGoeRd6iZfota7blbsgoLTeY/sMtPR2yutv' +
+        'gE9TafuTEhj0aszGipI9PgH+A/i5GfSPAQel9kPQaIQiLw4fNblFZTXvcrTUjxsx0oyGYhXslAAogi3PILS/DpymQQ' +
+        '0XskLbikFsk1hxoN5w9X+tq8WR6+T9giI03Wiqey+h8LNz6K35P2NJQ3WLn71mqOEb9YEUoKDReTzMLCA1yJoKia6Y' +
+        'JuDgUf1qamN7rRICPVd0wQpinqLYjPpgNPiVqrkGW0CQPZ2SE2tN4uFRIWw45/IITQl0v9ClCkO/gwUtwtuugegrqs' +
+        'e0EZ5j2V4a1XDmVuJaS33pAVLoUgK0M8RG72';
 
-          report.regData(dataSet.dataSetName, '', dataSet);
-          report.dictionary.synchronize();
+      const report = new Stimulsoft.Report.StiReport();
+      const dataSet = new Stimulsoft.System.Data.DataSet('Data');
 
-          // Render the report asynchronously
+      report.loadFile('/reports/LaporanPengeluaran.mrt');
+      report.dictionary.dataSources.clear();
+      dataSet.readJson({ data: reportRows, detail: responseDetail.data });
 
-          report.renderAsync(() => {
-            // Export the report to PDF asynchronously
-            report.exportDocumentAsync((pdfData: any) => {
-              const pdfBlob = new Blob([new Uint8Array(pdfData)], {
+      report.regData(dataSet.dataSetName, '', dataSet);
+      report.dictionary.synchronize();
+
+      await new Promise<void>((resolve, reject) => {
+        report.renderAsync(() => {
+          job.exporting();
+          report.exportDocumentAsync((pdfData: any) => {
+            try {
+              const blob = new Blob([new Uint8Array(pdfData)], {
                 type: 'application/pdf'
               });
-              const pdfUrl = URL.createObjectURL(pdfBlob);
-
-              // Store the Blob URL in sessionStorage
-              sessionStorage.setItem('pdfUrl', pdfUrl);
-
-              // Navigate to the report page
-              window.open('/reports/pengeluaran', '_blank');
-            }, Stimulsoft.Report.StiExportFormat.Pdf);
-          });
-        })
-        .catch((error) => {
-          console.error('Failed to load Stimulsoft:', error);
+              sessionStorage.setItem('pdfUrl', URL.createObjectURL(blob));
+              job.finish(() => window.open('/reports/pengeluaran', '_blank'));
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          }, Stimulsoft.Report.StiExportFormat.Pdf);
         });
-    } catch (error) {
-      dispatch(setProcessed());
-    } finally {
-      dispatch(setProcessed());
+      });
+    } catch (err) {
+      job.fail('Gagal membuat laporan PDF');
+      console.error('[handleReport PDF]', err);
     }
   };
-
-  // const handleReport = async () => {
-  //   const rowId = Array.from(checkedRows)[0];
-  //   const now = new Date();
-  //   const pad = (n: any) => n.toString().padStart(2, '0');
-  //   const tglcetak = `${pad(now.getDate())}-${pad(
-  //     now.getMonth() + 1
-  //   )}-${now.getFullYear()} ${pad(now.getHours())}:${pad(
-  //     now.getMinutes()
-  //   )}:${pad(now.getSeconds())}`;
-  //   const { page, limit, ...filtersWithoutLimit } = filters;
-  //   dispatch(setProcessing()); // Show loading overlay when the request starts
-
-  //   try {
-  //     const response = await getPengeluaranHeaderByIdFn(
-  //       rowId
-  //       // filtersWithoutLimit
-  //     );
-
-  //     const selectedRowNobukti = rows.find((r) => r.id === rowId)?.nobukti;
-  //     const responseDetail = await getPengeluaranDetailFn({
-  //       filters: { nobukti: selectedRowNobukti }
-  //     });
-  //     const totalNominal = responseDetail.data.reduce(
-  //       (sum: number, i: any) => sum + Number(i.nominal || 0),
-  //       0
-  //     );
-  //     if (response.data === null || response.data.length === 0) {
-  //       alert({
-  //         title: 'DATA TIDAK TERSEDIA!',
-  //         variant: 'danger',
-  //         submitText: 'OK'
-  //       });
-  //     } else {
-  //       const reportRows = response.data.map((row: any) => ({
-  //         ...row,
-  //         judullaporan: 'Laporan Pengeluaran',
-  //         usercetak: user.username,
-  //         tglcetak,
-  //         terbilang: numberToTerbilang(totalNominal),
-  //         judul: `Bukti Pengeluaran KAS EMKL`
-  //       }));
-
-  //       dispatch(setReportData(reportRows));
-  //       dispatch(setDetailDataReport(responseDetail.data));
-  //       window.open('/reports/designer', '_blank');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error generating report:', error);
-  //     alert({
-  //       title: 'Terjadi kesalahan saat memuat data!',
-  //       variant: 'danger',
-  //       submitText: 'OK'
-  //     });
-  //   } finally {
-  //     dispatch(setProcessed()); // Hide loading overlay when the request is finished
-  //   }
-  // };
 
   document.querySelectorAll('.column-headers').forEach((element) => {
     element.classList.remove('c1kqdw7y7-0-0-beta-47');
   });
+
   function getRowClass(row: PengeluaranHeader) {
     const rowIndex = rows.findIndex((r) => r.id === row.id);
     return rowIndex === selectedRow ? 'selected-row' : '';
@@ -2102,24 +2205,342 @@ const GridPengeluaranHeader = () => {
     return row.id;
   }
 
+  function EmptyRowsRenderer() {
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center"
+        style={{ textAlign: 'center', gridColumn: '1/-1' }}
+      >
+        NO ROWS DATA FOUND
+      </div>
+    );
+  }
+
+  function LoadRowsRenderer() {
+    return (
+      <div>
+        <ImSpinner2 className="animate-spin text-3xl text-primary" />
+      </div>
+    );
+  }
+
   const handleClose = () => {
     setPopOver(false);
     setMode('');
     clearError();
     forms.reset();
   };
+
   const handleAdd = async () => {
     try {
-      // Jalankan API sinkronisasi
       setMode('add');
-
       setPopOver(true);
-
       forms.reset();
     } catch (error) {
       console.error('Error syncing ACOS:', error);
     }
   };
+
+  const prefetchPages = useCallback(
+    async (
+      pagesToFetch: number[],
+      existingCache?: Map<number, PengeluaranHeader[]>,
+      knownTotalPages?: number
+    ) => {
+      const cacheToCheck = existingCache ?? pageDataCache;
+      const effectiveTotalPages = knownTotalPages ?? totalPages;
+
+      const validPages = pagesToFetch.filter(
+        (p) =>
+          p >= 1 &&
+          p <= effectiveTotalPages &&
+          !streamBufferRef.current.has(p) &&
+          !cacheToCheck.has(p) &&
+          !prefetchingPagesRef.current.has(p)
+      );
+
+      if (validPages.length === 0) return;
+
+      validPages.forEach((p) => prefetchingPagesRef.current.add(p));
+
+      await Promise.allSettled(
+        validPages.map(async (pageNum) => {
+          try {
+            const data = await getPengeluaranHeaderFn({
+              ...filters,
+              page: pageNum,
+              limit: filters.limit
+            });
+
+            if (data?.data && data.data.length > 0) {
+              streamBufferRef.current = new Map(streamBufferRef.current);
+              streamBufferRef.current.set(pageNum, data.data);
+            }
+          } catch (err) {
+            console.warn(
+              `[StreamBuffer] Prefetch page ${pageNum} failed:`,
+              err
+            );
+          } finally {
+            prefetchingPagesRef.current.delete(pageNum);
+          }
+        })
+      );
+    },
+    [filters, totalPages, pageDataCache]
+  );
+
+  useEffect(() => {
+    setIsFirstLoad(true);
+  }, []);
+
+  useEffect(() => {
+    if (isFirstLoad && gridRef.current && rows.length > 0) {
+      setSelectedRow(0);
+      gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
+      setIsFirstLoad(false);
+    }
+  }, [rows, isFirstLoad]);
+
+  useEffect(() => {
+    loadGridConfig(
+      String(session?.user.id),
+      'GridPengeluaranHeader',
+      columns,
+      setColumnsOrder,
+      setColumnsWidth
+    );
+
+    const rawNobukti = searchParams.get('pengeluaran_nobukti');
+    if (rawNobukti) {
+      setFilters((prevFilters: Filter) => ({
+        ...prevFilters,
+        filters: {
+          ...prevFilters.filters,
+          nobukti: rawNobukti
+        }
+      }));
+
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('pengeluaran_nobukti');
+        window.history.replaceState({}, '', url.toString());
+      }, 1000);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (isSubmitSuccessful) {
+      requestAnimationFrame(() => setFocus('tglbukti'));
+    }
+  }, [isSubmitSuccessful, setFocus]);
+
+  // 1. Bulk Fetch Initialization
+  useEffect(() => {
+    const handleBulkFetch = async () => {
+      if (!shouldBulkFetch || !allData || isDataUpdated || isAfterMutation) {
+        return;
+      }
+
+      const bulkData = allData.data || [];
+      if (bulkData.length === 0) return;
+
+      const pageSize = filters.limit;
+      const newCache = new Map<number, PengeluaranHeader[]>();
+
+      for (let i = 0; i < 5; i++) {
+        const pageNum = i + 1;
+        const startIdx = i * pageSize;
+        const endIdx = startIdx + pageSize;
+        const pageData = bulkData.slice(startIdx, endIdx);
+
+        if (pageData.length > 0) {
+          newCache.set(pageNum, pageData);
+        }
+      }
+
+      setPageDataCache(newCache);
+      setVisiblePages([1, 2, 3, 4, 5]);
+
+      const totalItems = allData.pagination?.totalItems || 0;
+      const totalPgs = Math.ceil(totalItems / filters.limit) || 1;
+
+      setTotalPages(totalPgs);
+
+      setHasMore(bulkData.length === filters.limit * 5);
+      setShouldBulkFetch(false);
+
+      setIsFirstLoad(false);
+      setIsFetching(false);
+
+      const initialPrefetch = Array.from(
+        { length: STREAM_BUFFER_SIZE },
+        (_, i) => 6 + i
+      ).filter((p) => p <= totalPgs);
+
+      if (initialPrefetch.length > 0) {
+        prefetchPages(initialPrefetch, newCache, totalPgs);
+      }
+      setTimeout(() => {
+        if (gridRef.current) {
+          setSelectedRow(0);
+          gridRef.current.scrollToCell({ rowIdx: 0, idx: 1 });
+        }
+      }, 100);
+    };
+    handleBulkFetch();
+  }, [allData, shouldBulkFetch, isDataUpdated, isAfterMutation, filters.limit]);
+
+  // 2. Pagination Fetch & Scroll Adjustment
+  useEffect(() => {
+    if (shouldBulkFetch || isDataUpdated || isAfterMutation) {
+      return;
+    }
+
+    if (!allData) return;
+
+    const newRows = allData.data || [];
+
+    setPageDataCache((prevCache) => {
+      const newCache = new Map(prevCache);
+      newCache.set(currentPage, newRows);
+      return newCache;
+    });
+
+    setVisiblePages((prevVisible) => {
+      const maxVisible = Math.max(...prevVisible);
+      const minVisible = Math.min(...prevVisible);
+
+      if (currentPage > maxVisible) {
+        const newPages = [...prevVisible.slice(1), currentPage];
+        const removedPage = prevVisible[0];
+
+        pendingScrollAdjustment.current = -(filters.limit * 30);
+        setSelectedRow((prev) => Math.max(0, prev - filters.limit));
+
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
+      }
+
+      if (currentPage < minVisible) {
+        const newPages = [currentPage, ...prevVisible.slice(0, 4)];
+        const removedPage = prevVisible[4];
+
+        pendingScrollAdjustment.current = filters.limit * 30;
+        setSelectedRow((prev) => prev + filters.limit);
+
+        setPageDataCache((prev) => {
+          const updated = new Map(prev);
+          updated.delete(removedPage);
+          return updated;
+        });
+
+        return newPages;
+      }
+
+      return prevVisible;
+    });
+
+    if (allData.pagination?.totalPages) {
+      setTotalPages(allData.pagination.totalPages);
+    }
+
+    setHasMore(newRows.length === filters.limit);
+    setPrevFilters(filters);
+
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setIsFetching(false);
+      const maxVis = Math.max(...visiblePages);
+      const minVis = Math.min(...visiblePages);
+
+      const isScrollDown = currentPage >= maxVis;
+      const pagesToPrefetch = isScrollDown
+        ? Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => currentPage + 1 + i
+          ).filter((p) => p <= totalPages)
+        : Array.from(
+            { length: STREAM_BUFFER_SIZE },
+            (_, i) => currentPage - 1 - i
+          ).filter((p) => p >= 1);
+
+      if (pagesToPrefetch.length > 0) {
+        setTimeout(() => prefetchPages(pagesToPrefetch), 200);
+      }
+    }, 100);
+  }, [
+    allData,
+    currentPage,
+    filters,
+    isDataUpdated,
+    shouldBulkFetch,
+    isAfterMutation
+  ]);
+
+  // 3. Row Combiner
+  useEffect(() => {
+    const combinedRows: PengeluaranHeader[] = [];
+
+    visiblePages?.forEach((page) => {
+      const pageData = pageDataCache.get(page);
+      if (pageData) {
+        combinedRows.push(...pageData);
+      }
+    });
+
+    if (combinedRows.length > 0) {
+      const newMinPage = Math.min(...visiblePages);
+      setRows(combinedRows);
+      prevMinPageRef.current = newMinPage;
+      prevRowsLengthRef.current = combinedRows.length;
+    }
+  }, [visiblePages, pageDataCache]);
+
+  useLayoutEffect(() => {
+    if (pendingScrollAdjustment.current !== 0 && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      container.scrollTop += pendingScrollAdjustment.current;
+
+      scrollPositionRef.current = container.scrollTop;
+      lastScrollTopRef.current = container.scrollTop;
+      hasAdjustedScrollRef.current = true;
+      pendingScrollAdjustment.current = 0;
+    }
+  }, [rows]);
+
+  useEffect(() => {
+    if (rows.length > 0 && selectedRow !== null) {
+      const selectedRowData = rows[selectedRow];
+      if (selectedRowData?.id !== lastDispatchedId.current) {
+        dispatch(setHeaderData(selectedRowData));
+        lastDispatchedId.current = selectedRowData?.id as number;
+      }
+    }
+  }, [rows, selectedRow, dispatch]);
+
+  useEffect(() => {
+    const preventScrollOnSpace = (event: KeyboardEvent) => {
+      if (
+        event.key === ' ' &&
+        !(
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+      ) {
+        event.preventDefault();
+      }
+    };
+    document.addEventListener('keydown', preventScrollOnSpace);
+    return () => {
+      document.removeEventListener('keydown', preventScrollOnSpace);
+    };
+  }, []);
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -2130,217 +2551,28 @@ const GridPengeluaranHeader = () => {
     }
   };
 
-  const orderedColumns = useMemo(() => {
-    if (Array.isArray(columnsOrder) && columnsOrder.length > 0) {
-      // filter key columns dengan key yg ada di columnsWidth
-      const filteredColumns = columns.filter((col) =>
-        Object.prototype.hasOwnProperty.call(columnsWidth, col.key)
-      );
-      // Mapping dan filter untuk menghindari undefined
-      return columnsOrder
-        .map((orderIndex) => filteredColumns[orderIndex])
-        .filter((col) => col !== undefined);
-    }
-    return columns;
-  }, [columns, columnsOrder]);
-
-  // Update properti width pada setiap kolom berdasarkan state columnsWidth
-  const finalColumns = useMemo(() => {
-    return orderedColumns.map((col) => ({
-      ...col,
-      width: columnsWidth[col.key] ?? col.width
-    }));
-  }, [orderedColumns, columnsWidth]);
-
-  useEffect(() => {
-    setIsFirstLoad(true);
-    loadGridConfig(
-      user.id,
-      'GridPengeluaranHeader',
-      columns,
-      setColumnsOrder,
-      setColumnsWidth
-    );
-
-    const rawNobukti = searchParams.get('pengeluaran_nobukti');
-
-    console.log(rawNobukti);
-    // Set filters
-    setFilters((prevFilters: Filter) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        nobukti: rawNobukti ?? ''
-      }
-    }));
-
-    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
-    setTimeout(() => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('pengeluaran_nobukti');
-      window.history.replaceState({}, '', url.toString());
-    }, 1000); // Delay 1 detik (1000 ms)
-  }, []);
-  console.log(filters, 'ini filter');
-
-  useEffect(() => {
-    if (isFirstLoad && gridRef.current && rows.length > 0) {
-      setSelectedRow(0);
-      gridRef.current.selectCell({ rowIdx: 0, idx: 1 });
-      dispatch(setHeaderData(rows[0]));
-      setIsFirstLoad(false);
-    }
-  }, [rows, isFirstLoad]);
-  useEffect(() => {
-    // Cek jika ini pertama kali load dan update filter dengan tanggal yang dipilih
-    if (isFirstLoad) {
-      if (
-        selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
-      ) {
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2
-          }
-        }));
-      }
-    } else if (onReload) {
-      if (filters.filters.bank_id !== selectedBank) {
-        setFilters((prevFilters: Filter) => ({
-          ...prevFilters,
-          filters: {
-            ...filterPengeluaran,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            bank_id: selectedBank
-          }
-        }));
-        setSelectedRow(0);
-        setCurrentPage(1);
-        setCheckedRows(new Set());
-        setIsAllSelected(false);
-      }
-      // Cek perubahan tanggal setelah pertama kali load, dan update filter hanya jika onReload dipanggil
-      if (
-        selectedDate !== filters.filters.tglDari ||
-        selectedDate2 !== filters.filters.tglSampai
-      ) {
-        setFilters((prevFilters) => ({
-          ...prevFilters,
-          filters: {
-            ...prevFilters.filters,
-            tglDari: selectedDate,
-            tglSampai: selectedDate2,
-            bank_id: selectedBank
-          }
-        }));
-      }
-    }
-  }, [selectedDate, selectedDate2, filters, onReload, isFirstLoad]);
-  useEffect(() => {
-    // Ambil parameter nobukti dari URL
-    const rawNobukti = searchParams.get('nobukti');
-
-    // Set filters
-    setFilters((prevFilters: Filter) => ({
-      ...prevFilters,
-      filters: {
-        ...prevFilters.filters,
-        nobukti: rawNobukti ?? ''
-      }
-    }));
-
-    // Menambahkan timeout 1 detik sebelum menghapus parameter dari URL
-    setTimeout(() => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete('nobukti');
-      window.history.replaceState({}, '', url.toString());
-    }, 1000); // Delay 1 detik (1000 ms)
-  }, []);
-  useEffect(() => {
-    if (!allData || isDataUpdated) return;
-
-    const newRows = allData.data || [];
-
-    setRows((prevRows) => {
-      // Reset data if filter changes (first page)
-      if (currentPage === 1 || filters !== prevFilters) {
-        setCurrentPage(1); // Reset currentPage to 1
-        setFetchedPages(new Set([1])); // Reset fetchedPages to [1]
-        return newRows; // Use the fetched new rows directly
-      }
-
-      // Add new data to the bottom for infinite scroll
-      if (!fetchedPages.has(currentPage)) {
-        return [...prevRows, ...newRows];
-      }
-
-      return prevRows;
-    });
-
-    if (allData.pagination.totalPages) {
-      setTotalPages(allData.pagination.totalPages);
-    }
-
-    setHasMore(newRows.length === filters.limit);
-    setFetchedPages((prev) => new Set(prev).add(currentPage));
-    setPrevFilters(filters);
-    setIsFirstLoad(false);
-  }, [allData, currentPage, filters, isFetchingManually, isDataUpdated]);
-  useEffect(() => {
-    if (rows.length > 0 && selectedRow !== null) {
-      const selectedRowData = rows[selectedRow];
-      dispatch(setHeaderData(selectedRowData)); // Pastikan data sudah benar
-    } else {
-      dispatch(setHeaderData({}));
-    }
-  }, [rows, selectedRow, dispatch]);
-  useEffect(() => {
-    const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
-    headerCells.forEach((cell) => {
-      cell.setAttribute('tabindex', '-1');
-    });
-  }, []);
-  useEffect(() => {
-    if (gridRef.current && dataGridKey) {
-      setTimeout(() => {
-        gridRef.current?.selectCell({ rowIdx: 0, idx: 1 });
-        setIsFirstLoad(false);
-      }, 0);
-    }
-  }, [dataGridKey]);
-  useEffect(() => {
-    const preventScrollOnSpace = (event: KeyboardEvent) => {
-      // Cek apakah target yang sedang fokus adalah input atau textarea
-      if (
-        event.key === ' ' &&
-        !(
-          event.target instanceof HTMLInputElement ||
-          event.target instanceof HTMLTextAreaElement
-        )
-      ) {
-        event.preventDefault(); // Mencegah scroll pada tombol space jika bukan di input
-      }
-    };
-
-    // Menambahkan event listener saat komponen di-mount
-    document.addEventListener('keydown', preventScrollOnSpace);
-
-    // Menghapus event listener saat komponen di-unmount
-    return () => {
-      document.removeEventListener('keydown', preventScrollOnSpace);
-    };
-  }, []);
-
   useEffect(() => {
     window.addEventListener('mousedown', handleClickOutside);
     return () => {
       window.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    const headerCells = document.querySelectorAll('.rdg-header-row .rdg-cell');
+    headerCells.forEach((cell) => {
+      cell.setAttribute('tabindex', '-1');
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isTransitioning && !isFetching) {
+      setTimeout(() => {
+        hasAdjustedScrollRef.current = false;
+      }, 200);
+    }
+  }, [isTransitioning, isFetching]);
+
   useEffect(() => {
     if (selectedRow !== null && rows.length > 0 && mode !== 'add') {
       const row = rows[selectedRow];
@@ -2365,7 +2597,6 @@ const GridPengeluaranHeader = () => {
       forms.setValue('details', []);
     } else {
       const currentDate = new Date();
-      // Clear or set defaults when adding a new record
       forms.setValue('relasi_text', '');
       forms.setValue('bank_text', '');
       forms.setValue('coakredit_text', '');
@@ -2374,55 +2605,50 @@ const GridPengeluaranHeader = () => {
       forms.setValue('tglbukti', formatDateToDDMMYYYY(currentDate));
     }
   }, [forms, selectedRow, rows, mode]);
+
   useEffect(() => {
-    // Initialize the refs based on columns dynamically
     columns.forEach((col) => {
       if (!inputColRefs.current[col.key]) {
         inputColRefs.current[col.key] = null;
       }
     });
   }, []);
+
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         clearError();
-        forms.reset(); // Reset the form when the Escape key is pressed
-        setMode(''); // Reset the mode to empty
+        forms.reset();
+        setMode('');
         setPopOver(false);
         dispatch(clearOpenName());
       }
     };
-
-    // Add event listener for keydown when the component is mounted
     document.addEventListener('keydown', handleEscape);
-
-    // Cleanup event listener when the component is unmounted or the effect is re-run
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [forms]);
+
   useEffect(() => {
-    // Memastikan refetch dilakukan saat filters berubah
-    if (filters !== prevFilters) {
-      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
-      setPrevFilters(filters); // Simpan filters terbaru
-    }
-  }, [filters, refetch]); // Dependency array termasuk filters dan refetch
-  useEffect(() => {
-    // Memastikan refetch dilakukan saat filters berubah
     if (onReload) {
-      refetch(); // Memanggil ulang API untuk mendapatkan data terbaru
-      setPrevFilters(filters); // Simpan filters terbaru
+      refetch();
+      setPrevFilters(filters);
     }
   }, [onReload, refetch]);
+
   useEffect(() => {
     return () => {
       debouncedFilterUpdate.cancel();
     };
   }, []);
+
   return (
     <div className={`flex h-[100%] w-full justify-center`}>
-      <div className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background">
+      <div
+        onKeyDownCapture={handleGridInputNavigationKeyDownCapture}
+        className="flex h-[100%] w-full flex-col rounded-sm border border-border bg-background"
+      >
         <div className="flex h-[38px] w-full flex-row items-center justify-between rounded-t-sm border-b border-border bg-background-grid-header px-2">
           <div className="flex flex-row items-center">
             <label htmlFor="" className="text-xs">
@@ -2488,7 +2714,7 @@ const GridPengeluaranHeader = () => {
             <DraggableColumn
               defaultColumns={columns}
               saveColumns={finalColumns}
-              userId={user.id}
+              userId={String(session?.user.id)}
               gridName="GridPengeluaranHeader"
               setColumnsOrder={setColumnsOrder}
               setColumnsWidth={setColumnsWidth}
@@ -2509,6 +2735,7 @@ const GridPengeluaranHeader = () => {
           rowKeyGetter={rowKeyGetter}
           onCellClick={handleCellClick}
           onSelectedCellChange={(args) => {
+            setSelectedCellKey(args.column.key);
             handleCellClick({ row: args.row });
           }}
           headerRowHeight={70}
@@ -2517,8 +2744,7 @@ const GridPengeluaranHeader = () => {
           enableVirtualization={false}
           onColumnResize={onColumnResize}
           onColumnsReorder={onColumnsReorder}
-          onCellKeyDown={handleKeyDown}
-          onScroll={handleScroll}
+          onScroll={suppressScrollRef.current ? undefined : handleScroll}
           renderers={{
             noRowsFallback: <EmptyRowsRenderer />
           }}
@@ -2527,12 +2753,12 @@ const GridPengeluaranHeader = () => {
           <ActionButton
             module="PENGELUARAN"
             onAdd={handleAdd}
-            // checkedRows={checkedRows}
             onDelete={handleDelete}
             onView={handleView}
             onEdit={handleEdit}
             rowsLength={rows.length}
             totalItems={allData ? allData.pagination.totalItems : 0}
+            startRow={startRow}
             customActions={[
               {
                 label: 'Print',
@@ -2548,9 +2774,9 @@ const GridPengeluaranHeader = () => {
               ref={contextMenuRef}
               className="bg-background-input"
               style={{
-                position: 'fixed', // Fixed agar koordinat sesuai dengan viewport
-                top: contextMenu.y, // Pastikan contextMenu.y berasal dari event.clientY
-                left: contextMenu.x, // Pastikan contextMenu.x berasal dari event.clientX
+                position: 'fixed',
+                top: contextMenu.y,
+                left: contextMenu.x,
                 boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                 padding: '8px',
                 borderRadius: '4px',
@@ -2561,7 +2787,7 @@ const GridPengeluaranHeader = () => {
                 variant="default"
                 onClick={() => {
                   resetGridConfig(
-                    user.id,
+                    String(session?.user.id),
                     'GridPengeluaranHeader',
                     columns,
                     setColumnsOrder,
