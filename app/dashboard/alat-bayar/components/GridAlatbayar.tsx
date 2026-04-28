@@ -321,7 +321,6 @@ const GridAlatbayar = () => {
     setRows([]);
     setCurrentPage(1);
     resetBufferingCache();
-    gridRef?.current?.scrollToCell?.({ rowIdx: 0, idx: 0 });
   }, []);
 
   const { clearError } = useFormError();
@@ -457,7 +456,10 @@ const GridAlatbayar = () => {
         width: 50,
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
-          <div className="flex h-full flex-col items-center gap-1">
+          <div
+            title={column.column.name}
+            className="flex h-full flex-col items-center gap-1"
+          >
             <div className="headers-cell h-[50%] items-center justify-center text-center">
               <p className="text-sm font-normal">No.</p>
             </div>
@@ -491,9 +493,11 @@ const GridAlatbayar = () => {
           </div>
         ),
         renderCell: (props: any) => {
-          const rowIndex = rows.findIndex((row) => row.id === props.row.id);
           return (
-            <div className="flex h-full w-full cursor-pointer items-center justify-center text-sm">
+            <div
+              title={props.row.nomor}
+              className="flex h-full w-full cursor-pointer items-center justify-center text-sm"
+            >
               {props.row.nomor}
             </div>
           );
@@ -536,7 +540,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div
-            title="STATUS AKTIF"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -604,11 +608,7 @@ const GridAlatbayar = () => {
             );
           }
 
-          return (
-            <div title="N/A" className="text-xs text-gray-500">
-              N/A
-            </div>
-          ); // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
@@ -620,7 +620,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div
-            title="NAMA"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -684,7 +684,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div
-            title="KETERANGAN"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -750,7 +750,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div
-            title="STATUS LANGSUNG CAIR"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -840,7 +840,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div
-            title="STATUS DEFAULT"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -930,7 +930,7 @@ const GridAlatbayar = () => {
         headerCellClass: 'column-headers',
         renderHeaderCell: (column: any) => (
           <div
-            title="STATUS BANK"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -1002,7 +1002,7 @@ const GridAlatbayar = () => {
             );
           }
 
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
 
@@ -1017,7 +1017,7 @@ const GridAlatbayar = () => {
         width: 100,
         renderHeaderCell: (column: any) => (
           <div
-            title="MODIFIED BY"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -1084,7 +1084,7 @@ const GridAlatbayar = () => {
         width: 170,
         renderHeaderCell: (column: any) => (
           <div
-            title="CREATED AT"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -1154,7 +1154,7 @@ const GridAlatbayar = () => {
         width: 170,
         renderHeaderCell: (column: any) => (
           <div
-            title="UPDATED AT"
+            title={column.column.name}
             className="flex h-full cursor-pointer flex-col items-center gap-1"
           >
             <div
@@ -1668,6 +1668,7 @@ const GridAlatbayar = () => {
       } else {
         forms.reset();
         setPopOver(false);
+        setMode('');
       }
       if (mode !== 'delete') {
         const response = await api2.get(

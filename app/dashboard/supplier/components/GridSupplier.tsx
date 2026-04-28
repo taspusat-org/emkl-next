@@ -2306,7 +2306,7 @@ const GridSupplier = () => {
               </div>
             );
           }
-          return <div className="text-xs text-gray-500">N/A</div>; // Tampilkan 'N/A' jika memo tidak tersedia
+          return <div className="text-xs text-gray-500"></div>; // Tampilkan 'N/A' jika memo tidak tersedia
         }
       },
       {
